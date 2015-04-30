@@ -24,8 +24,8 @@ type Ctx struct {
 	cursorX      int
 	selectedLine int
 	lines        []Match
-	//trimedLines  []Match
-	current []Match
+	trimedLines  []Match
+	current      []Match
 }
 
 type Match struct {
@@ -42,7 +42,7 @@ var ctx = Ctx{
 	0,
 	1,
 	[]Match{},
-	//[]Match{},
+	[]Match{},
 	nil,
 }
 
@@ -82,9 +82,9 @@ func percol() string {
 	//}
 	lines := fileToArray(os.Getenv("HOME") + "/.rmtrash/log")
 	//for _, line := range reverseArray(lines) {
-	//for _, line := range trimRecord(reverseArray(lines), " ", 0, 3) {
-	//	ctx.trimedLines = append(ctx.trimedLines, Match{line, nil})
-	//}
+	for _, line := range trimRecord(reverseArray(lines), " ", 0, 3) {
+		ctx.trimedLines = append(ctx.trimedLines, Match{line, nil})
+	}
 	for _, line := range reverseArray(lines) {
 		ctx.lines = append(ctx.lines, Match{line, nil})
 	}
@@ -163,10 +163,15 @@ func drawScreen() {
 
 	var targets []Match
 	if ctx.current == nil {
-		targets = ctx.lines
-		//targets = ctx.trimedLines
+		//targets = ctx.lines
+		targets = ctx.trimedLines
 	} else {
-		targets = ctx.current
+		//targets = ctx.current
+		for _, t := range ctx.current {
+			tmp := strings.Split(t.line, " ")
+			t.line = strings.Join(tmp[0:3], " ")
+			targets = append(targets, Match{t.line, t.matches})
+		}
 	}
 
 	printTB(0, 0, termbox.ColorDefault, termbox.ColorDefault, "QUERY>")
@@ -179,7 +184,8 @@ func drawScreen() {
 		fgAttr := termbox.ColorDefault
 		bgAttr := termbox.ColorDefault
 		if n == ctx.selectedLine {
-			fgAttr = termbox.AttrUnderline
+			//fgAttr = termbox.AttrUnderline
+			fgAttr = termbox.ColorBlack
 			bgAttr = termbox.ColorBlue
 		}
 
