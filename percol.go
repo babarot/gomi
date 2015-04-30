@@ -48,13 +48,7 @@ var ctx = Ctx{
 
 var timer *time.Timer
 
-func main() {
-	if d := percol(); d != "" {
-		fmt.Println(d)
-	}
-}
-
-func percol() string {
+func restore() string {
 	var err error
 
 	//defer func() {

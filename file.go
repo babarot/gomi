@@ -1,11 +1,12 @@
-package mainunch
+package main
 
 import (
-	"bufio"
+	//"bufio"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -13,45 +14,50 @@ var rm_trash string = os.Getenv("HOME") + "/.rmtrash"
 var rm_log string = rm_trash + "/log"
 
 func main() {
-	for _, gomi := range os.Args[1:] {
-		if path, err := remove(gomi); err != nil {
-			fmt.Println(err)
-		} else {
-			gomi, _ = filepath.Abs(gomi)
-			if err := logging(gomi, path); err != nil {
-				fmt.Println(err)
-			}
-		}
+	if d := restore(); d != "" {
+		e := strings.Split(d, " ")
+		fmt.Println(e[3], e[2])
 	}
+
+	//for _, gomi := range os.Args[1:] {
+	//	if path, err := remove(gomi); err != nil {
+	//		fmt.Println(err)
+	//	} else {
+	//		gomi, _ = filepath.Abs(gomi)
+	//		if err := logging(gomi, path); err != nil {
+	//			fmt.Println(err)
+	//		}
+	//	}
+	//}
 }
 
-func reverseArray(input []string) []string {
-	if len(input) == 0 {
-		return input
-	}
-	return append(reverseArray(input[1:]), input[0])
-}
-
-func fileToArray(filePath string) []string {
-	f, err := os.Open(filePath)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "File %s could not read: %v\n", filePath, err)
-		os.Exit(1)
-	}
-
-	defer f.Close()
-
-	var lines []string
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	if serr := scanner.Err(); serr != nil {
-		fmt.Fprintf(os.Stderr, "File %s scan error: %v\n", filePath, err)
-	}
-
-	return lines
-}
+//func reverseArray(input []string) []string {
+//	if len(input) == 0 {
+//		return input
+//	}
+//	return append(reverseArray(input[1:]), input[0])
+//}
+//
+//func fileToArray(filePath string) []string {
+//	f, err := os.Open(filePath)
+//	if err != nil {
+//		fmt.Fprintf(os.Stderr, "File %s could not read: %v\n", filePath, err)
+//		os.Exit(1)
+//	}
+//
+//	defer f.Close()
+//
+//	var lines []string
+//	scanner := bufio.NewScanner(f)
+//	for scanner.Scan() {
+//		lines = append(lines, scanner.Text())
+//	}
+//	if serr := scanner.Err(); serr != nil {
+//		fmt.Fprintf(os.Stderr, "File %s scan error: %v\n", filePath, err)
+//	}
+//
+//	return lines
+//}
 
 func logging(src, dest string) (err error) {
 	f, err := os.OpenFile(rm_log, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
@@ -64,15 +70,6 @@ func logging(src, dest string) (err error) {
 	text := fmt.Sprintf("%s %s %s\n", time.Now().Format("2006/01/02 15:04:05"), src, dest)
 	if _, err = f.WriteString(text); err != nil {
 		return
-	}
-
-	return
-}
-
-func restore() (err error) {
-	lines := fileToArray(os.Getenv("HOME") + "/.rmtrash/log")
-	for _, line := range reverseArray(lines) {
-		fmt.Printf("%s\n", line)
 	}
 
 	return
