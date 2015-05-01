@@ -91,10 +91,20 @@ func remove(src string) (dest string, err error) {
 	}
 
 	// Remove
-	dest = dest + "/" + filepath.Base(src) + "." + time.Now().Format("15_04_05")
-	err = os.Rename(src, dest)
-	if err != nil {
+	if filepath.Dir(src) == rm_trash {
+		err = os.Remove(src)
+		if err != nil {
+			return
+		}
+		err = fmt.Errorf("os.Remove %s, successfully", src)
 		return
+	} else {
+		dest = dest + "/" + filepath.Base(src) + "." + time.Now().Format("15_04_05")
+		err = os.Rename(src, dest)
+		if err != nil {
+			return
+		}
 	}
+
 	return
 }
