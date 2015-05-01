@@ -9,6 +9,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"log"
 	"strings"
 
 	"github.com/mattn/go-runewidth"
@@ -53,8 +54,13 @@ func restore() error {
 		e := strings.Split(d, " ")
 
 		if _, err := os.Stat(e[2]); err == nil {
-			//log.Fatal("already exists")
-			return err
+			fmt.Printf("WARNING: %s overwrite? (y/N): ", e[2])
+			if askForConfirmation() {
+				return nil
+			} else {
+				err = fmt.Errorf("%s: already exists", e[2])
+				return err
+			}
 		}
 		if err := os.Rename(e[3], e[2]); err != nil {
 			//log.Fatal(err)
@@ -330,7 +336,8 @@ func reverseArray(input []string) []string {
 func fileToArray(filePath string) []string {
 	f, err := os.Open(filePath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "File %s could not read: %v\n", filePath, err)
+		//fmt.Fprintf(os.Stderr, "File %s could not read: %v\n", filePath, err)
+		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
 	}
 
@@ -342,7 +349,11 @@ func fileToArray(filePath string) []string {
 		lines = append(lines, scanner.Text())
 	}
 	if serr := scanner.Err(); serr != nil {
-		fmt.Fprintf(os.Stderr, "File %s scan error: %v\n", filePath, err)
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+	}
+	if len(lines) == 0 {
+		fmt.Fprintf(os.Stderr, "No content in %s\n", filePath)
+		os.Exit(1)
 	}
 
 	return lines
@@ -369,7 +380,7 @@ func deleteFromLog() {
 	}
 
 	// delete ctx.result from log
-	func(lines []string, path string) error {
+	if err := func(lines []string, path string) error {
 		file, err := os.Create(path)
 		if err != nil {
 			return err
@@ -381,6 +392,48 @@ func deleteFromLog() {
 			fmt.Fprintln(w, line)
 		}
 		return w.Flush()
-	}(logline, os.Getenv("HOME")+"/.rmtrash/log")
+	}(logline, os.Getenv("HOME")+"/.rmtrash/log"); err != nil {
+		log.Fatal(err)
+	}
+}
 
+// askForConfirmation uses Scanln to parse user input. A user must type in "yes" or "no" and
+// then press enter. It has fuzzy matching, so "y", "Y", "yes", "YES", and "Yes" all count as
+// confirmations. If the input is not recognized, it will ask again. The function does not return
+// until it gets a valid response from the user. Typically, you should use fmt to print out a question
+// before calling askForConfirmation. E.g. fmt.Println("WARNING: Are you sure? (yes/no)")
+func askForConfirmation() bool {
+	var response string
+	_, err := fmt.Scanln(&response)
+	if err != nil {
+		log.Fatal(err)
+	}
+	okayResponses := []string{"y", "Y", "yes", "Yes", "YES"}
+	nokayResponses := []string{"n", "N", "no", "No", "NO"}
+	if containsString(okayResponses, response) {
+		return true
+	} else if containsString(nokayResponses, response) {
+		return false
+	} else {
+		fmt.Println("Please type yes or no and then press enter:")
+		return askForConfirmation()
+	}
+}
+
+// You might want to put the following two functions in a separate utility package.
+
+// posString returns the first index of element in slice.
+// If slice does not contain element, returns -1.
+func posString(slice []string, element string) int {
+	for index, elem := range slice {
+		if elem == element {
+			return index
+		}
+	}
+	return -1
+}
+
+// containsString returns true iff slice contains element
+func containsString(slice []string, element string) bool {
+	return !(posString(slice, element) == -1)
 }

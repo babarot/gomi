@@ -2,7 +2,7 @@ package main
 
 import (
 	//"bufio"
-	"errors"
+	//"errors"
 	"fmt"
 	"github.com/jessevdk/go-flags"
 	"os"
@@ -27,6 +27,7 @@ func main() {
 
 	if opts.Restore {
 		if err := restore(); err != nil {
+			fmt.Fprintf(os.Stderr, "%s\n", err)
 			os.Exit(1)
 		}
 		os.Exit(0)
@@ -71,13 +72,14 @@ func remove(src string) (dest string, err error) {
 		return
 	}
 	if !path.IsDir() {
-		err = errors.New("an error")
+		err = fmt.Errorf("%s: fatal error", rm_trash)
 		return
 	}
 
 	// Check if src exists
 	_, err = os.Stat(src)
 	if os.IsNotExist(err) {
+		err = fmt.Errorf("%s: No such file or directory", src)
 		return
 	}
 
