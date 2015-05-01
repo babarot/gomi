@@ -57,7 +57,7 @@ func logging(src, dest string) (err error) {
 
 	defer f.Close()
 
-	text := fmt.Sprintf("%s %s %s\n", time.Now().Format("2006/01/02 15:04:05"), src, dest)
+	text := fmt.Sprintf("%s %s %s\n", time.Now().Format("2006-01-02 15:04:05"), src, dest)
 	if _, err = f.WriteString(text); err != nil {
 		return
 	}
