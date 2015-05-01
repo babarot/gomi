@@ -48,7 +48,25 @@ var ctx = Ctx{
 
 var timer *time.Timer
 
-func restore() string {
+func restore() error {
+	if d := percol(); d != "" {
+		e := strings.Split(d, " ")
+
+		if _, err := os.Stat(e[2]); err == nil {
+			//log.Fatal("already exists")
+			return err
+		}
+		if err := os.Rename(e[3], e[2]); err != nil {
+			//log.Fatal(err)
+			return err
+		}
+
+		deleteFromLog()
+	}
+	return nil
+}
+
+func percol() string {
 	var err error
 
 	//defer func() {
@@ -338,4 +356,31 @@ func trimRecord(data []string, delimiter string, start, end int) []string {
 		ret = append(ret, line)
 	}
 	return ret
+}
+
+func deleteFromLog() {
+	var logline []string
+
+	for _, line := range fileToArray(os.Getenv("HOME") + "/.rmtrash/log") {
+		if line == ctx.result {
+			continue
+		}
+		logline = append(logline, line)
+	}
+
+	// delete ctx.result from log
+	func(lines []string, path string) error {
+		file, err := os.Create(path)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		w := bufio.NewWriter(file)
+		for _, line := range lines {
+			fmt.Fprintln(w, line)
+		}
+		return w.Flush()
+	}(logline, os.Getenv("HOME")+"/.rmtrash/log")
+
 }

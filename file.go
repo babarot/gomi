@@ -4,60 +4,49 @@ import (
 	//"bufio"
 	"errors"
 	"fmt"
+	"github.com/jessevdk/go-flags"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 )
 
 var rm_trash string = os.Getenv("HOME") + "/.rmtrash"
 var rm_log string = rm_trash + "/log"
 
-func main() {
-	if d := restore(); d != "" {
-		e := strings.Split(d, " ")
-		fmt.Println(e[3], e[2])
-	}
-
-	//for _, gomi := range os.Args[1:] {
-	//	if path, err := remove(gomi); err != nil {
-	//		fmt.Println(err)
-	//	} else {
-	//		gomi, _ = filepath.Abs(gomi)
-	//		if err := logging(gomi, path); err != nil {
-	//			fmt.Println(err)
-	//		}
-	//	}
-	//}
+type Options struct {
+	Restore bool `short:"r" long:"restore" description:"Restore removed files from gomi box"`
 }
 
-//func reverseArray(input []string) []string {
-//	if len(input) == 0 {
-//		return input
-//	}
-//	return append(reverseArray(input[1:]), input[0])
-//}
-//
-//func fileToArray(filePath string) []string {
-//	f, err := os.Open(filePath)
-//	if err != nil {
-//		fmt.Fprintf(os.Stderr, "File %s could not read: %v\n", filePath, err)
-//		os.Exit(1)
-//	}
-//
-//	defer f.Close()
-//
-//	var lines []string
-//	scanner := bufio.NewScanner(f)
-//	for scanner.Scan() {
-//		lines = append(lines, scanner.Text())
-//	}
-//	if serr := scanner.Err(); serr != nil {
-//		fmt.Fprintf(os.Stderr, "File %s scan error: %v\n", filePath, err)
-//	}
-//
-//	return lines
-//}
+var opts Options
+
+func main() {
+	args, err := flags.Parse(&opts)
+	if err != nil {
+		os.Exit(1)
+	}
+
+	if opts.Restore {
+		if err := restore(); err != nil {
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
+
+	if len(args) == 0 {
+		fmt.Println("too few arguments")
+		os.Exit(1)
+	}
+	for _, gomi := range args {
+		if path, err := remove(gomi); err != nil {
+			fmt.Println(err)
+		} else {
+			gomi, _ = filepath.Abs(gomi)
+			if err := logging(gomi, path); err != nil {
+				fmt.Println(err)
+			}
+		}
+	}
+}
 
 func logging(src, dest string) (err error) {
 	f, err := os.OpenFile(rm_log, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
