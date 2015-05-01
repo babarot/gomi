@@ -16,6 +16,8 @@ import (
 	"github.com/nsf/termbox-go"
 )
 
+//var update bool
+
 type Ctx struct {
 	result       string
 	loop         bool
@@ -67,6 +69,15 @@ func restore() error {
 			return err
 		}
 
+		//fmt.Println(len(e))
+		//for _, e := range e {
+		//	fmt.Println(e)
+		//}
+
+		//t := strings.Split(d, " ")
+		//fmt.Println(strings.Join(t[0:3], " "))
+		//fmt.Println(d)
+
 		deleteFromLog()
 	}
 	return nil
@@ -99,12 +110,14 @@ func percol() string {
 	//	ctx.lines = append(ctx.lines, Match{line, nil})
 	//}
 	lines := fileToArray(os.Getenv("HOME") + "/.rmtrash/log")
-	//for _, line := range reverseArray(lines) {
-	for _, line := range trimRecord(reverseArray(lines), " ", 0, 3) {
-		ctx.trimedLines = append(ctx.trimedLines, Match{line, nil})
-	}
 	for _, line := range reverseArray(lines) {
 		ctx.lines = append(ctx.lines, Match{line, nil})
+	}
+	for _, line := range reverseArray(lines) {
+		//ctx.trimedLines = append(ctx.trimedLines, Match{trimRecord2(line), nil})
+		s := strings.Split(line, " ")
+		s2 := strings.Join(s[0:3], " ")
+		ctx.trimedLines = append(ctx.trimedLines, Match{s2, nil})
 	}
 
 	err = termbox.Init()
@@ -117,6 +130,13 @@ func percol() string {
 	termbox.SetInputMode(termbox.InputEsc)
 	refreshScreen(0)
 	mainLoop()
+
+	for _, line := range lines {
+		if strings.Contains(line, ctx.result) {
+			ctx.result = line
+			break
+		}
+	}
 
 	return ctx.result
 }
@@ -143,14 +163,17 @@ func filterLines() {
 	default:
 		str = string(ctx.query)
 	}
+
 	re := regexp.MustCompile(regexp.QuoteMeta(str))
 	//for _, line := range ctx.lines {
 	for _, line := range ctx.lines {
-		ms := re.FindAllStringSubmatchIndex(line.line, 1)
+		linelines := strings.Split(line.line, " ")
+		lineline := strings.Join(linelines[0:3], " ")
+		ms := re.FindAllStringSubmatchIndex(lineline, 1)
 		if ms == nil {
 			continue
 		}
-		ctx.current = append(ctx.current, Match{line.line, ms})
+		ctx.current = append(ctx.current, Match{lineline, ms})
 	}
 	if len(ctx.current) == 0 {
 		ctx.current = nil
@@ -184,15 +207,16 @@ func drawScreen() {
 		//targets = ctx.lines
 		targets = ctx.trimedLines
 	} else {
-		//targets = ctx.current
-		for _, t := range ctx.current {
-			tmp := strings.Split(t.line, " ")
-			t.line = strings.Join(tmp[0:3], " ")
-			targets = append(targets, Match{t.line, t.matches})
-		}
+		targets = ctx.current
+		//for _, t := range ctx.current {
+		//	//tmp := strings.Split(t.line, " ")
+		//	//t.line = strings.Join(tmp[0:3], " ")
+		//	//t.line = trimRecord2(t.line)
+		//	targets = append(targets, Match{t.line, t.matches})
+		//}
 	}
 
-	printTB(0, 0, termbox.ColorDefault, termbox.ColorDefault, "QUERY>")
+	printTB(0, 0, termbox.ColorDefault, termbox.ColorDefault, "SEARCH>")
 	printTB(8, 0, termbox.ColorDefault, termbox.ColorDefault, string(ctx.query))
 	for n := 1; n+2 < height; n++ {
 		if n-1 >= len(targets) {
@@ -247,7 +271,7 @@ func mainLoop() {
 func handleKeyEvent(ev termbox.Event) {
 	update := true
 	switch ev.Key {
-	case termbox.KeyEsc:
+	case termbox.KeyEsc, termbox.KeyCtrlC:
 		termbox.Close()
 		os.Exit(1)
 		/*
@@ -256,8 +280,8 @@ func handleKeyEvent(ev termbox.Event) {
 			case termbox.KeyEnd, termbox.KeyCtrlE:
 				cursor_x = len(input)
 		*/
-	case termbox.KeyCtrlC:
-		ctx.loop = false
+	//case termbox.KeyCtrlC:
+	//	ctx.loop = false
 	case termbox.KeyEnter:
 		//if len(ctx.current) == 1 {
 		//	ctx.result = ctx.current[0].line
@@ -436,4 +460,15 @@ func posString(slice []string, element string) int {
 // containsString returns true iff slice contains element
 func containsString(slice []string, element string) bool {
 	return !(posString(slice, element) == -1)
+}
+
+func trimRecord2(s string) string {
+	re1, _ := regexp.Compile("(.*/.*/.*) (.*:.*:.*) (/.*) (/.*_.*_.*)")
+	result := re1.FindStringSubmatch(s)
+
+	var l []string
+	for _, v := range result {
+		l = append(l, v)
+	}
+	return strings.Join(l[1:4], " ")
 }
