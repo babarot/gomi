@@ -109,7 +109,7 @@ func percol() string {
 
 	//	ctx.lines = append(ctx.lines, Match{line, nil})
 	//}
-	lines := fileToArray(os.Getenv("HOME") + "/.rmtrash/log")
+	lines := fileToArray(rm_log)
 	for _, line := range reverseArray(lines) {
 		ctx.lines = append(ctx.lines, Match{line, nil})
 	}
@@ -396,7 +396,7 @@ func trimRecord(data []string, delimiter string, start, end int) []string {
 func deleteFromLog() {
 	var logline []string
 
-	for _, line := range fileToArray(os.Getenv("HOME") + "/.rmtrash/log") {
+	for _, line := range fileToArray(rm_log) {
 		if line == ctx.result {
 			continue
 		}
@@ -416,7 +416,7 @@ func deleteFromLog() {
 			fmt.Fprintln(w, line)
 		}
 		return w.Flush()
-	}(logline, os.Getenv("HOME")+"/.rmtrash/log"); err != nil {
+	}(logline, rm_log); err != nil {
 		log.Fatal(err)
 	}
 }

@@ -67,14 +67,17 @@ func logging(src, dest string) (err error) {
 
 func remove(src string) (dest string, err error) {
 	// Check if rm_trash exists
-	path, err := os.Stat(rm_trash)
+	_, err = os.Stat(rm_trash)
 	if os.IsNotExist(err) {
-		return
+		err = os.MkdirAll(rm_trash, 0777)
+		if err != nil {
+			return
+		}
 	}
-	if !path.IsDir() {
-		err = fmt.Errorf("%s: fatal error", rm_trash)
-		return
-	}
+	//if !path.IsDir() {
+	//	err = fmt.Errorf("%s: fatal error", rm_trash)
+	//	return
+	//}
 
 	// Check if src exists
 	_, err = os.Stat(src)
