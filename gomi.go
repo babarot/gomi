@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/b4b4r07/gomi/yaml"
 )
 
 var rm_trash string = os.Getenv("HOME") + "/.gomi"
@@ -54,8 +56,13 @@ func logging(src, dest string) (err error) {
 	if err != nil {
 		return
 	}
-
 	defer f.Close()
+
+	for _, ignore := range config() {
+		if filepath.Base(src) == ignore {
+			return nil
+		}
+	}
 
 	text := fmt.Sprintf("%s %s %s\n", time.Now().Format("2006-01-02 15:04:05"), src, dest)
 	if _, err = f.WriteString(text); err != nil {
