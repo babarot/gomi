@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-var rm_trash string = os.Getenv("HOME") + "/.rmtrash"
+var rm_trash string = os.Getenv("HOME") + "/.gomi"
 var rm_log string = rm_trash + "/log"
 
 type Options struct {
