@@ -8,8 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-
-	"github.com/b4b4r07/gomi/yaml"
 )
 
 var rm_trash string = os.Getenv("HOME") + "/.gomi"
