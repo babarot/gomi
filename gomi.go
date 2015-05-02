@@ -1,13 +1,12 @@
 package main
 
 import (
-	//"bufio"
-	//"errors"
 	"fmt"
-	"github.com/jessevdk/go-flags"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/jessevdk/go-flags"
 )
 
 var rm_trash string = os.Getenv("HOME") + "/.gomi"
@@ -79,10 +78,6 @@ func remove(src string) (dest string, err error) {
 			return
 		}
 	}
-	//if !path.IsDir() {
-	//	err = fmt.Errorf("%s: fatal error", rm_trash)
-	//	return
-	//}
 
 	// Check if src exists
 	_, err = os.Stat(src)

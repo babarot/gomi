@@ -16,8 +16,6 @@ import (
 	"github.com/nsf/termbox-go"
 )
 
-//var update bool
-
 type Ctx struct {
 	result       string
 	loop         bool
@@ -65,18 +63,8 @@ func restore() error {
 			}
 		}
 		if err := os.Rename(e[3], e[2]); err != nil {
-			//log.Fatal(err)
 			return err
 		}
-
-		//fmt.Println(len(e))
-		//for _, e := range e {
-		//	fmt.Println(e)
-		//}
-
-		//t := strings.Split(d, " ")
-		//fmt.Println(strings.Join(t[0:3], " "))
-		//fmt.Println(d)
 
 		deleteFromLog()
 	}
@@ -86,35 +74,11 @@ func restore() error {
 func percol() string {
 	var err error
 
-	//defer func() {
-	//	if ctx.result != "" {
-	//		os.Stdout.WriteString(ctx.result)
-	//	}
-	//}()
-
-	//var input *os.File
-
-	//// receive input from either a file or Stdin
-	//input, err = os.Open(os.Getenv("HOME") + "/.rmtrash/log")
-	//if err != nil {
-	//	os.Exit(1)
-	//}
-
-	//rdr := bufio.NewReader(input)
-	//for {
-	//	line, err := rdr.ReadString('\n')
-	//	if err != nil {
-	//		break
-	//	}
-
-	//	ctx.lines = append(ctx.lines, Match{line, nil})
-	//}
 	lines := fileToArray(rm_log)
 	for _, line := range reverseArray(lines) {
 		ctx.lines = append(ctx.lines, Match{line, nil})
 	}
 	for _, line := range reverseArray(lines) {
-		//ctx.trimedLines = append(ctx.trimedLines, Match{trimRecord2(line), nil})
 		s := strings.Split(line, " ")
 		s2 := strings.Join(s[0:3], " ")
 		ctx.trimedLines = append(ctx.trimedLines, Match{s2, nil})
@@ -165,7 +129,6 @@ func filterLines() {
 	}
 
 	re := regexp.MustCompile(regexp.QuoteMeta(str))
-	//for _, line := range ctx.lines {
 	for _, line := range ctx.lines {
 		linelines := strings.Split(line.line, " ")
 		lineline := strings.Join(linelines[0:3], " ")
@@ -208,12 +171,6 @@ func drawScreen() {
 		targets = ctx.trimedLines
 	} else {
 		targets = ctx.current
-		//for _, t := range ctx.current {
-		//	//tmp := strings.Split(t.line, " ")
-		//	//t.line = strings.Join(tmp[0:3], " ")
-		//	//t.line = trimRecord2(t.line)
-		//	targets = append(targets, Match{t.line, t.matches})
-		//}
 	}
 
 	printTB(0, 0, termbox.ColorDefault, termbox.ColorDefault, "SEARCH>")
@@ -280,30 +237,7 @@ func handleKeyEvent(ev termbox.Event) {
 			case termbox.KeyEnd, termbox.KeyCtrlE:
 				cursor_x = len(input)
 		*/
-	//case termbox.KeyCtrlC:
-	//	ctx.loop = false
 	case termbox.KeyEnter:
-		//if len(ctx.current) == 1 {
-		//	ctx.result = ctx.current[0].line
-		//} else if ctx.selectedLine > 0 && ctx.selectedLine < len(ctx.current) {
-		//	ctx.result = ctx.current[ctx.selectedLine].line
-		//}
-
-		//if ctx.selectedLine < len(ctx.lines) && ctx.selectedLine > len(ctx.current) {
-		//	ctx.result = ctx.lines[ctx.selectedLine-1].line
-		//} else if ctx.selectedLine < len(ctx.lines) && ctx.selectedLine < len(ctx.current) {
-		//	ctx.result = ctx.current[ctx.selectedLine-1].line
-		//}
-
-		//if ctx.selectedLine < len(ctx.lines) && ctx.selectedLine > len(ctx.current) {
-		//	ctx.result = ctx.lines[ctx.selectedLine-1].line
-		//} else if ctx.selectedLine < len(ctx.lines) && ctx.selectedLine < len(ctx.current) {
-		//	ctx.result = ctx.current[ctx.selectedLine-1].line
-		//} else {
-		//	ctx.result = ctx.lines[ctx.selectedLine-1].line
-		//}
-
-		//if ctx.selectedLine < len(ctx.lines) && ctx.selectedLine < len(ctx.current) {
 		if ctx.selectedLine <= len(ctx.current) {
 			ctx.result = ctx.current[ctx.selectedLine-1].line
 		} else {
@@ -315,9 +249,6 @@ func handleKeyEvent(ev termbox.Event) {
 			ctx.selectedLine--
 		}
 	case termbox.KeyArrowDown, termbox.KeyCtrlN:
-		// filer when if ctx.selectedLine < len(ctx.current) {
-		// normal whn if ctx.selectedLine < len(ctx.lines) {
-
 		if ctx.selectedLine < len(ctx.lines) && ctx.selectedLine > len(ctx.current) {
 			if ctx.selectedLine < len(ctx.lines) {
 				ctx.selectedLine++
@@ -381,16 +312,6 @@ func fileToArray(filePath string) []string {
 	}
 
 	return lines
-}
-
-func trimRecord(data []string, delimiter string, start, end int) []string {
-	var ret, tmp []string
-	for _, line := range data {
-		tmp = strings.Split(line, delimiter)
-		line = strings.Join(tmp[start:end], delimiter)
-		ret = append(ret, line)
-	}
-	return ret
 }
 
 func deleteFromLog() {
@@ -460,15 +381,4 @@ func posString(slice []string, element string) int {
 // containsString returns true iff slice contains element
 func containsString(slice []string, element string) bool {
 	return !(posString(slice, element) == -1)
-}
-
-func trimRecord2(s string) string {
-	re1, _ := regexp.Compile("(.*/.*/.*) (.*:.*:.*) (/.*) (/.*_.*_.*)")
-	result := re1.FindStringSubmatch(s)
-
-	var l []string
-	for _, v := range result {
-		l = append(l, v)
-	}
-	return strings.Join(l[1:4], " ")
 }

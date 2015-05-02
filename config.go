@@ -5,10 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	//"yaml"
 	"github.com/b4b4r07/gomi/yaml"
-
-	//"github.com/beego/goyaml2"
 )
 
 func nodeToMap(node interface{}) map[string]interface{} {
@@ -45,13 +42,10 @@ func config() []interface{} {
 	if err != nil {
 		panic(err)
 	}
-	//value := nodeToMap(nodeToMap(object)["config"])["admin"]
-	//value := nodeToMap(nodeToMap(object)["mapping"])["key1"]
 	//value := nodeToMap(object)
 	ignore_files := nodeToList(nodeToMap(object)["ignore_files"])
-	//fmt.Printf("%s\n", ignore_files)
+
 	return ignore_files
-	//fmt.Printf("%v\n", Keys(value))
 }
 
 func Keys(m map[string]interface{}) (keys []string) {
