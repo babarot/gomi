@@ -5,7 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 
-	"yaml"
+	//"yaml"
+	"github.com/b4b4r07/gomi/yaml"
 
 	//"github.com/beego/goyaml2"
 )
