@@ -25,7 +25,12 @@ func main() {
 	}
 
 	if opts.Restore {
-		if err := restore(); err != nil {
+		path := ""
+		if len(args) != 0 {
+			path = args[0]
+		}
+
+		if err := restore(path); err != nil {
 			fmt.Fprintf(os.Stderr, "%s\n", err)
 			os.Exit(1)
 		}

@@ -10,6 +10,7 @@ import (
 	"unicode/utf8"
 
 	"log"
+	"path/filepath"
 	"strings"
 
 	"github.com/mattn/go-runewidth"
@@ -49,25 +50,47 @@ var ctx = Ctx{
 
 var timer *time.Timer
 
-func restore() error {
+func restore(path string) error {
 	if d := percol(); d != "" {
 		e := strings.Split(d, " ")
+		src := e[3]
+		dest := e[2]
 
-		if _, err := os.Stat(e[2]); err == nil {
-			fmt.Printf("WARNING: %s overwrite? (y/N): ", e[2])
+		// gomi -r arg
+		if path != "" {
+			// case:
+			// given `gomi -r dir/file` as arguments
+			// --> if dir dose not exist
+			if _, err := os.Stat(filepath.Dir(path)); err != nil {
+				if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
+					log.Fatal(err)
+				}
+			}
+
+			dest = path
+			if info, err := os.Stat(path); err == nil {
+				if info.IsDir() {
+					dest = path + "/" + filepath.Base(src)
+				}
+			}
+		}
+
+		if _, err := os.Stat(dest); err == nil {
+			fmt.Printf("WARNING: %s overwrite? (y/N): ", dest)
 			if askForConfirmation() {
 				return nil
 			} else {
-				err = fmt.Errorf("%s: already exists", e[2])
+				err = fmt.Errorf("%s: already exists", dest)
 				return err
 			}
 		}
-		if err := os.Rename(e[3], e[2]); err != nil {
+		if err := os.Rename(src, dest); err != nil {
 			return err
 		}
 
 		deleteFromLog()
 	}
+
 	return nil
 }
 
