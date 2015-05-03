@@ -28,6 +28,7 @@ type Ctx struct {
 	lines        []Match
 	trimedLines  []Match
 	current      []Match
+	ql           bool
 }
 
 type Match struct {
@@ -46,12 +47,13 @@ var ctx = Ctx{
 	[]Match{},
 	[]Match{},
 	nil,
+	false,
 }
 
 var timer *time.Timer
 
 func restore(path string) error {
-	if d := percol(); d != "" {
+	if d := percol(); d != "" && !ctx.ql {
 		e := strings.Split(d, " ")
 		src := e[3]
 		dest := e[2]
@@ -172,7 +174,11 @@ func refreshScreen(delay time.Duration) {
 			if ctx.dirty {
 				filterLines()
 			}
-			drawScreen()
+			if ctx.ql {
+				quickLook()
+			} else {
+				drawScreen()
+			}
 			ctx.dirty = false
 		})
 	} else {
@@ -252,8 +258,12 @@ func handleKeyEvent(ev termbox.Event) {
 	update := true
 	switch ev.Key {
 	case termbox.KeyEsc, termbox.KeyCtrlC:
-		termbox.Close()
-		os.Exit(1)
+		if ctx.ql {
+			ctx.ql = false
+		} else {
+			termbox.Close()
+			os.Exit(1)
+		}
 		/*
 			case termbox.KeyHome, termbox.KeyCtrlA:
 				cursor_x = 0
@@ -267,6 +277,14 @@ func handleKeyEvent(ev termbox.Event) {
 			ctx.result = ctx.lines[ctx.selectedLine-1].line
 		}
 		ctx.loop = false
+	case termbox.KeyCtrlQ:
+		//quickLook()
+		if ctx.ql {
+			ctx.ql = false
+		} else {
+			ctx.dirty = false
+			ctx.ql = true
+		}
 	case termbox.KeyArrowUp, termbox.KeyCtrlP:
 		if 1 < ctx.selectedLine {
 			ctx.selectedLine--
@@ -404,4 +422,89 @@ func posString(slice []string, element string) int {
 // containsString returns true iff slice contains element
 func containsString(slice []string, element string) bool {
 	return !(posString(slice, element) == -1)
+}
+
+func quickLook() {
+	ctx.ql = true
+	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+
+	width, height := termbox.Size()
+
+	// Get selected line string
+	var selected string
+	if ctx.selectedLine < len(ctx.lines) && ctx.selectedLine > len(ctx.current) {
+		if ctx.selectedLine < len(ctx.lines) {
+			selected = ctx.lines[ctx.selectedLine-1].line
+		}
+	} else if ctx.selectedLine < len(ctx.lines) && ctx.selectedLine < len(ctx.current) {
+		if ctx.selectedLine < len(ctx.current) {
+			selected = ctx.current[ctx.selectedLine-1].line
+		}
+	}
+
+	// Check if rm_log contains selected line string
+	log_lines := reverseArray(fileToArray(rm_log))
+	for _, line := range log_lines {
+		if strings.Contains(line, selected) {
+			selected = line
+			break
+		}
+	}
+
+	// Get gomi-ed file name
+	splited_line := strings.Split(selected, " ")
+	file := splited_line[3]
+	attr := ""
+	var lines []string
+
+	if info, err := os.Stat(file); err != nil {
+		panic(err)
+	} else {
+		if info.IsDir() {
+			attr = "directory"
+			err := filepath.Walk(file,
+				func(path string, info os.FileInfo, err error) error {
+					if info.IsDir() {
+						return nil
+					}
+					rel, err := filepath.Rel(file, path)
+					lines = append(lines, rel)
+					return nil
+				})
+			if err != nil {
+				panic(err)
+			}
+		} else {
+			attr = "file"
+			f, err := os.Open(file)
+			if err != nil {
+				panic(err)
+			}
+			defer f.Close()
+
+			scanner := bufio.NewScanner(f)
+			for scanner.Scan() {
+				lines = append(lines, scanner.Text())
+			}
+		}
+	}
+
+	//return lines, scanner.Err()
+	fgAttr := termbox.ColorDefault
+	bgAttr := termbox.ColorDefault
+
+	printTB(0, 0, termbox.ColorRed, bgAttr, strings.Repeat("=", width))
+	printTB(0, 1, termbox.ColorRed, bgAttr, fmt.Sprintf(" filename:    %s (%s)\n", filepath.Base(splited_line[3]), attr))
+	printTB(0, 2, termbox.ColorRed, bgAttr, fmt.Sprintf(" delete-date: %s\n", splited_line[0:2]))
+	printTB(0, 3, termbox.ColorRed, bgAttr, fmt.Sprintf(" dest:        %s\n", filepath.Dir(splited_line[2])))
+	printTB(0, 4, termbox.ColorRed, bgAttr, strings.Repeat("=", width))
+	for i, e := range lines {
+		printTB(0, i+5, fgAttr, bgAttr, e)
+		if i == height-1 {
+			break
+		}
+	}
+	printTB(0, height-1, termbox.ColorRed, bgAttr, strings.Repeat("=", width))
+
+	termbox.Flush()
 }
