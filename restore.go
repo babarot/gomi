@@ -506,5 +506,9 @@ func quickLook() {
 	}
 	printTB(0, height-1, termbox.ColorRed, bgAttr, strings.Repeat("=", width))
 
+	// If Enter key is pressed in QuickLook,
+	// the gomi qill restore file opening by quicklook.
+	ctx.ql = false
+
 	termbox.Flush()
 }
