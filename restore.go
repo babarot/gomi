@@ -432,14 +432,19 @@ func quickLook() {
 
 	// Get selected line string
 	var selected string
-	if ctx.selectedLine < len(ctx.lines) && ctx.selectedLine > len(ctx.current) {
-		if ctx.selectedLine < len(ctx.lines) {
-			selected = ctx.lines[ctx.selectedLine-1].line
-		}
-	} else if ctx.selectedLine < len(ctx.lines) && ctx.selectedLine < len(ctx.current) {
-		if ctx.selectedLine < len(ctx.current) {
-			selected = ctx.current[ctx.selectedLine-1].line
-		}
+	//if ctx.selectedLine < len(ctx.lines) && ctx.selectedLine >= len(ctx.current) {
+	//	if ctx.selectedLine < len(ctx.lines) {
+	//		selected = ctx.lines[ctx.selectedLine-1].line
+	//	}
+	//} else if ctx.selectedLine < len(ctx.lines) && ctx.selectedLine <= len(ctx.current) {
+	//	if ctx.selectedLine < len(ctx.current) {
+	//		selected = ctx.current[ctx.selectedLine-1].line
+	//	}
+	//}
+	if ctx.current == nil {
+		selected = ctx.lines[ctx.selectedLine-1].line
+	} else {
+		selected = ctx.current[ctx.selectedLine-1].line
 	}
 
 	// Check if rm_log contains selected line string
