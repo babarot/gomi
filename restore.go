@@ -271,6 +271,7 @@ func handleKeyEvent(ev termbox.Event) {
 				cursor_x = len(input)
 		*/
 	case termbox.KeyEnter:
+		ctx.ql = false
 		if ctx.selectedLine <= len(ctx.current) {
 			ctx.result = ctx.current[ctx.selectedLine-1].line
 		} else {
@@ -513,7 +514,7 @@ func quickLook() {
 
 	// If Enter key is pressed in QuickLook,
 	// the gomi qill restore file opening by quicklook.
-	ctx.ql = false
+	//ctx.ql = false
 
 	termbox.Flush()
 }
