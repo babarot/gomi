@@ -54,9 +54,12 @@ var timer *time.Timer
 
 func restore(path string) error {
 	if d := percol(); d != "" && !ctx.ql {
-		e := strings.Split(d, " ")
-		src := e[3]
-		dest := e[2]
+		//e := strings.Split(d, " ")
+		e := splitLine(d)
+		//src := e[3]
+		//dest := e[2]
+		src := e[2]
+		dest := e[1]
 
 		// gomi -r arg
 		if path != "" {
@@ -104,8 +107,10 @@ func percol() string {
 		ctx.lines = append(ctx.lines, Match{line, nil})
 	}
 	for _, line := range reverseArray(lines) {
-		s := strings.Split(line, " ")
-		s2 := strings.Join(s[0:3], " ")
+		//s := strings.Split(line, " ")
+		//s2 := strings.Join(s[0:3], " ")
+		s := splitLine(line)
+		s2 := strings.Join(s[0:2], " ")
 		ctx.trimedLines = append(ctx.trimedLines, Match{s2, nil})
 	}
 
@@ -155,8 +160,10 @@ func filterLines() {
 
 	re := regexp.MustCompile(regexp.QuoteMeta(str))
 	for _, line := range ctx.lines {
-		linelines := strings.Split(line.line, " ")
-		lineline := strings.Join(linelines[0:3], " ")
+		//linelines := strings.Split(line.line, " ")
+		//lineline := strings.Join(linelines[0:3], " ")
+		linelines := splitLine(line.line)
+		lineline := strings.Join(linelines[0:2], " ")
 		ms := re.FindAllStringSubmatchIndex(lineline, 1)
 		if ms == nil {
 			continue
@@ -458,8 +465,10 @@ func quickLook() {
 	}
 
 	// Get gomi-ed file name
-	splited_line := strings.Split(selected, " ")
-	file := splited_line[3]
+	//splited_line := strings.Split(selected, " ")
+	//file := splited_line[3]
+	splited_line := splitLine(selected)
+	file := splited_line[2]
 	attr := ""
 	var lines []string
 
@@ -500,9 +509,9 @@ func quickLook() {
 	bgAttr := termbox.ColorDefault
 
 	printTB(0, 0, termbox.ColorRed, bgAttr, strings.Repeat("=", width))
-	printTB(0, 1, termbox.ColorRed, bgAttr, fmt.Sprintf(" filename:    %s (%s)\n", filepath.Base(splited_line[3]), attr))
-	printTB(0, 2, termbox.ColorRed, bgAttr, fmt.Sprintf(" delete-date: %s\n", splited_line[0:2]))
-	printTB(0, 3, termbox.ColorRed, bgAttr, fmt.Sprintf(" dest:        %s\n", filepath.Dir(splited_line[2])))
+	printTB(0, 1, termbox.ColorRed, bgAttr, fmt.Sprintf(" filename:    %s (%s)\n", filepath.Base(splited_line[2]), attr))
+	printTB(0, 2, termbox.ColorRed, bgAttr, fmt.Sprintf(" delete-date: %s\n", splited_line[0:1]))
+	printTB(0, 3, termbox.ColorRed, bgAttr, fmt.Sprintf(" dest:        %s\n", filepath.Dir(splited_line[1])))
 	printTB(0, 4, termbox.ColorRed, bgAttr, strings.Repeat("=", width))
 	for i, e := range lines {
 		printTB(0, i+5, fgAttr, bgAttr, e)
@@ -517,4 +526,25 @@ func quickLook() {
 	//ctx.ql = false
 
 	termbox.Flush()
+}
+
+func splitLine(line string) []string {
+	//str := []byte("2015-05-02 11:47:21 /Users/b4b4r07/README.md /Users/b4b4r07/.gomi/2015/05/02/README.md.11_47_21")
+
+	str := []byte(line)
+	assigned := regexp.MustCompile(`(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d) (/.*) (/.*\.\d\d_\d\d_\d\d)`)
+	group := assigned.FindSubmatch(str)
+	//fmt.Println(string(group[0]));
+	//fmt.Println();
+	//fmt.Println(string(group[1]))
+	//fmt.Println(string(group[2]))
+	//for _, e := range group {
+
+	var ret []string
+	for i := 1; i < len(group); i++ {
+		//fmt.Println(string(group[i]))
+		ret = append(ret, string(group[i]))
+	}
+
+	return ret
 }
