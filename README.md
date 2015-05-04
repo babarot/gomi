@@ -1,6 +1,6 @@
 # gomi
 
-`gomi` is a simple trash script that works on CLI, written in golang
+`gomi` is a simple trash script that works on CLI, written in Go
 
 ## Description
 
@@ -10,7 +10,20 @@
 
 ![demo](./gomi.gif)
 
-To make it easier to restore, it was adopted an interactive interface, such as a [peco]() and [percol]().
+Incidentally, *gomi* means the trash in Japanese.
+
+## Features
+
+- `rm` command with the trash
+- Easy to restore (thanks to [`peco`](https://github.com/peco/peco)-like UI)
+- **QuickLook** files in Restore mode
+- A single binary
+
+### QuickLook
+
+`gomi` has QuickLook (almost the same QuickLook of OS X) that can look through the file a little.
+
+To QuickLook under the cursor file, type the *C-q* in Restore mode.
 
 ## Requirement
 
@@ -26,20 +39,30 @@ To make it easier to restore, it was adopted an interactive interface, such as a
 
 		$ gomi -r
 
-To delete really:
+-----
+
+To actually delete:
 
 	$ gomi ~/.gomi/2015/05/01/gomi_file.13_55_01
 
-It runs twice `gomi`.
+Run twice.
 
-### Options
+To specify the location where you want to restore:
 
-| Option | Description |
+	$ gomi -r .
+
+In the above example, it's restored to the current directory.
+
+### Keymap
+
+| Key | Action |
 |:---:|:---:|
-| -h, --help | Show help message |
-| -r, --restore | Restore files  form `.gomi` directory|
-
-Emacs-like key bindings such as *C-n* and *C-p* are available in the Restore Mode (`--restore`).
+| Enter | Restore under the cursor |
+| Esc | Quit Restore mode or QuickLook |
+| C-c | Same as *Esc* |
+| C-n | Select Down |
+| C-p | Select Up |
+| C-q | Toggle the QuickLook |
 
 ## Installation
 
@@ -47,7 +70,7 @@ Emacs-like key bindings such as *C-n* and *C-p* are available in the Restore Mod
 
 ## Setup
 
-(*Recommendation*) Put something like this in your ~/.bashrc or ~/.zshrc:
+Put something like this in your ~/.bashrc or ~/.zshrc:
 
 ```
 alias rm="gomi"
