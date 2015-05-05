@@ -8,7 +8,7 @@
 
 ***DEMO:***
 
-![demo](./gomi.gif)
+![demo](./img/gomi.gif)
 
 Incidentally, *gomi* means the trash in Japanese.
 
