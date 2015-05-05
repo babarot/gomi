@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"time"
 
 	"github.com/jessevdk/go-flags"
@@ -61,7 +62,8 @@ func logging(src, dest string) (err error) {
 	defer f.Close()
 
 	for _, ignore := range config() {
-		if filepath.Base(src) == ignore {
+		if m, _ := regexp.MatchString(ignore.(string), filepath.Base(src)); m {
+			//if filepath.Base(src) == ignore {
 			return nil
 		}
 	}
