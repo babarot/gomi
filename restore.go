@@ -479,8 +479,9 @@ func quickLook() {
 			attr = "directory"
 			err := filepath.Walk(file,
 				func(path string, info os.FileInfo, err error) error {
-					if info.IsDir() {
-						return nil
+					//if info.IsDir() && filepath.HasPrefix(info.Name(), ".") {
+					if filepath.HasPrefix(info.Name(), ".") {
+						return filepath.SkipDir
 					}
 					rel, err := filepath.Rel(file, path)
 					lines = append(lines, rel)
