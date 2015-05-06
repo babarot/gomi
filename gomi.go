@@ -15,10 +15,20 @@ var rm_log string = rm_trash + "/log"
 
 type Options struct {
 	Restore bool `short:"r" long:"restore" description:"Restore removed files from gomi box"`
+	System  bool `short:"s" long:"system" description:"Use system recycle bin"`
 }
 
 var opts Options
 
+func checkPath(cmd string) (ret string, err error) {
+	ret, err = exec.LookPath(cmd)
+	if err != nil {
+		err = fmt.Errorf("%s: executable file not found in $PATH", cmd)
+		return
+	}
+
+	return ret, nil
+}
 func main() {
 	args, err := flags.Parse(&opts)
 	if err != nil {
@@ -38,18 +48,41 @@ func main() {
 		os.Exit(0)
 	}
 
+	var path string
 	if len(args) == 0 {
 		fmt.Println("too few arguments")
 		os.Exit(1)
 	}
 	for _, gomi := range args {
-		if path, err := remove(gomi); err != nil {
-			fmt.Println(err)
-		} else {
-			gomi, _ = filepath.Abs(gomi)
-			if err := logging(gomi, path); err != nil {
-				fmt.Println(err)
+		if _, err := os.Stat(gomi); err != nil {
+			fmt.Fprintf(os.Stderr, "%s: no such file or directory\n", gomi)
+			continue
+		}
+		if opts.System {
+			cmd := ""
+			if runtime.GOOS == "darwin" {
+				if cmd, err = checkPath(cmd); err != nil {
+					cmd = "./bin/osx-trash"
+				}
+			} else {
+				fmt.Fprintf(os.Stderr, "Not yet\n")
+				os.Exit(1)
 			}
+			_, err := exec.Command(cmd, gomi).Output()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "%s: error: %v\n", cmd, err)
+			}
+			path = filepath.Clean(os.Getenv("HOME") + "/.Trash/" + filepath.Base(gomi))
+		} else {
+			path, err = remove(gomi)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "couldn't remove\n")
+			}
+		}
+
+		gomi, _ = filepath.Abs(gomi)
+		if err := logging(gomi, path); err != nil {
+			fmt.Fprintf(os.Stderr, "couldn't logging to %s\n", rm_log)
 		}
 	}
 }
@@ -89,7 +122,7 @@ func remove(src string) (dest string, err error) {
 	// Check if src exists
 	_, err = os.Stat(src)
 	if os.IsNotExist(err) {
-		err = fmt.Errorf("%s: No such file or directory", src)
+		err = fmt.Errorf("%s: no such file or directory", src)
 		return
 	}
 

@@ -533,7 +533,8 @@ func splitLine(line string) []string {
 	//str := []byte("2015-05-02 11:47:21 /Users/b4b4r07/README.md /Users/b4b4r07/.gomi/2015/05/02/README.md.11_47_21")
 
 	str := []byte(line)
-	assigned := regexp.MustCompile(`(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d) (/.*) (/.*\.\d\d_\d\d_\d\d)`)
+	//assigned := regexp.MustCompile(`(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d) (/.*) (/.*\.\d\d_\d\d_\d\d)`)
+	assigned := regexp.MustCompile(`(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d) (/.*) (/.*)`)
 	group := assigned.FindSubmatch(str)
 	//fmt.Println(string(group[0]));
 	//fmt.Println();
