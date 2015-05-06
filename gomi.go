@@ -63,6 +63,7 @@ func main() {
 		if opts.System {
 			cmd := ""
 			if runtime.GOOS == "darwin" {
+				cmd := "osx-trash"
 				if cmd, err = checkPath(cmd); err != nil {
 					cmd = "./bin/osx-trash"
 				}
