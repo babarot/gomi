@@ -12,7 +12,9 @@ import (
 	"log"
 	"path/filepath"
 	"strings"
+	"syscall"
 
+	//"github.com/djherbis/atime"
 	"github.com/mattn/go-runewidth"
 	"github.com/nsf/termbox-go"
 )
@@ -33,6 +35,7 @@ type Ctx struct {
 
 type Match struct {
 	line    string
+	isdir   bool
 	matches [][]int
 }
 
@@ -52,7 +55,35 @@ var ctx = Ctx{
 
 var timer *time.Timer
 
+func cleanLog() {
+	var array []string
+	for _, line := range fileToArray(rm_log) {
+		s := splitLine(line)
+		if _, err := os.Stat(s[2]); err == nil {
+			array = append(array, line)
+		}
+	}
+
+	if err := func(lines []string, path string) error {
+		file, err := os.Create(path)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		w := bufio.NewWriter(file)
+		for _, line := range lines {
+			fmt.Fprintln(w, line)
+		}
+		return w.Flush()
+	}(array, rm_log); err != nil {
+		log.Fatal(err)
+	}
+}
+
 func restore(path string) error {
+	cleanLog()
+
 	if d := percol(); d != "" && !ctx.ql {
 		//e := strings.Split(d, " ")
 		e := splitLine(d)
@@ -93,7 +124,8 @@ func restore(path string) error {
 			return err
 		}
 
-		deleteFromLog()
+		//deleteFromLog()
+		cleanLog()
 	}
 
 	return nil
@@ -104,14 +136,23 @@ func percol() string {
 
 	lines := fileToArray(rm_log)
 	for _, line := range reverseArray(lines) {
-		ctx.lines = append(ctx.lines, Match{line, nil})
+		isdir := false
+		s := splitLine(line)
+		if info, err := os.Stat(s[2]); err == nil && info.IsDir() {
+			isdir = true
+		}
+		ctx.lines = append(ctx.lines, Match{line, isdir, nil})
 	}
 	for _, line := range reverseArray(lines) {
 		//s := strings.Split(line, " ")
 		//s2 := strings.Join(s[0:3], " ")
 		s := splitLine(line)
 		s2 := strings.Join(s[0:2], " ")
-		ctx.trimedLines = append(ctx.trimedLines, Match{s2, nil})
+		isdir := false
+		if info, err := os.Stat(s[2]); err == nil && info.IsDir() {
+			isdir = true
+		}
+		ctx.trimedLines = append(ctx.trimedLines, Match{s2, isdir, nil})
 	}
 
 	err = termbox.Init()
@@ -168,7 +209,11 @@ func filterLines() {
 		if ms == nil {
 			continue
 		}
-		ctx.current = append(ctx.current, Match{lineline, ms})
+		isdir := false
+		if info, err := os.Stat(linelines[2]); err == nil && info.IsDir() {
+			isdir = true
+		}
+		ctx.current = append(ctx.current, Match{lineline, isdir, ms})
 	}
 	if len(ctx.current) == 0 {
 		ctx.current = nil
@@ -220,19 +265,32 @@ func drawScreen() {
 		bgAttr := termbox.ColorDefault
 		if n == ctx.selectedLine {
 			//fgAttr = termbox.AttrUnderline
-			fgAttr = termbox.ColorBlack
-			bgAttr = termbox.ColorBlue
+			//bgAttr = termbox.ColorBlue
+
+			//fgAttr = termbox.ColorBlack
+			//bgAttr = termbox.ColorWhite
+			fgAttr = termbox.AttrUnderline
 		}
 
 		target := targets[n-1]
 		line := target.line
 		if target.matches == nil {
 			printTB(0, n, fgAttr, bgAttr, line)
+			if target.isdir {
+				l := splitLine(nobasu(line))
+				printTB(20, n, fgAttr|termbox.ColorBlue, bgAttr, l[1])
+			}
+
 		} else {
 			prev := 0
 			for _, m := range target.matches {
 				if m[0] > prev {
 					printTB(prev, n, fgAttr, bgAttr, line[prev:m[0]])
+					if target.isdir {
+						//printTB(prev, n, fgAttr|termbox.ColorBlue, bgAttr, line[prev:m[0]])
+						l := splitLine(nobasu(line[prev:m[0]]))
+						printTB(20, n, fgAttr|termbox.ColorBlue, bgAttr, l[1])
+					}
 					prev += runewidth.StringWidth(line[prev:m[0]])
 				}
 				printTB(prev, n, fgAttr|termbox.ColorGreen, bgAttr, line[m[0]:m[1]])
@@ -244,6 +302,26 @@ func drawScreen() {
 				printTB(prev, n, fgAttr|termbox.ColorGreen, bgAttr, line[m[0]:m[1]])
 			} else if len(line) > m[1] {
 				printTB(prev, n, fgAttr, bgAttr, line[m[1]:len(line)])
+				//printTB(prev, n, fgAttr|termbox.ColorBlue, bgAttr, line[m[1]:len(line)])
+				if target.isdir {
+					printTB(prev, n, fgAttr|termbox.ColorBlue, bgAttr, line[m[1]:len(line)])
+				}
+				l := splitLine(nobasu(target.line))
+				printTB(0, n, fgAttr, bgAttr, l[0])
+
+				//for i := m[1]; i < len(line); i++ {
+				//	printTB(prev, n, fgAttr, bgAttr, line[i])
+				//	if target.isdir {
+				//		l := splitLine(nobasu(line[i]))
+				//		printTB(20, n, fgAttr|termbox.ColorBlue, bgAttr, l[1])
+				//	}
+				//}
+
+				//if target.isdir {
+				//	//printTB(0, n, fgAttr|termbox.ColorBlue, bgAttr, line)
+				//	l := splitLine(nobasu(line))
+				//	printTB(20, n, fgAttr|termbox.ColorBlue, bgAttr, l[1])
+				//}
 			}
 		}
 	}
@@ -479,12 +557,21 @@ func quickLook() {
 			attr = "directory"
 			err := filepath.Walk(file,
 				func(path string, info os.FileInfo, err error) error {
-					//if info.IsDir() && filepath.HasPrefix(info.Name(), ".") {
-					if filepath.HasPrefix(info.Name(), ".") {
+					if info.IsDir() && filepath.HasPrefix(info.Name(), ".") {
+						//if filepath.HasPrefix(info.Name(), ".") {
 						return filepath.SkipDir
 					}
+
 					rel, err := filepath.Rel(file, path)
-					lines = append(lines, rel)
+					//at, err := atime.Stat(rel)
+					//if err != nil {
+					//	at = time.Now()
+					//}
+					//_ = at
+					c, _ := info.Sys().(*syscall.Stat_t).Ctimespec.Unix()
+					w := width/2 - len(rel)
+					//lines = append(lines, fmt.Sprintf("%s %s %s\n", rel+strings.Repeat(" ", w), at.Format("2006-01-02 15:04:05"), info.Mode()))
+					lines = append(lines, fmt.Sprintf("%s %s %s %d\n", rel+strings.Repeat(" ", w), time.Unix(c, 0).Format("2006-01-02 15:04:05"), info.Mode(), info.Size()))
 					return nil
 				})
 			if err != nil {
@@ -511,7 +598,7 @@ func quickLook() {
 
 	printTB(0, 0, termbox.ColorRed, bgAttr, strings.Repeat("=", width))
 	printTB(0, 1, termbox.ColorRed, bgAttr, fmt.Sprintf(" filename:    %s (%s)\n", filepath.Base(splited_line[2]), attr))
-	printTB(0, 2, termbox.ColorRed, bgAttr, fmt.Sprintf(" delete-date: %s\n", splited_line[0:1]))
+	printTB(0, 2, termbox.ColorRed, bgAttr, fmt.Sprintf(" delete-date: %s\n", splited_line[0]))
 	printTB(0, 3, termbox.ColorRed, bgAttr, fmt.Sprintf(" dest:        %s\n", filepath.Dir(splited_line[1])))
 	printTB(0, 4, termbox.ColorRed, bgAttr, strings.Repeat("=", width))
 	for i, e := range lines {
@@ -549,4 +636,15 @@ func splitLine(line string) []string {
 	}
 
 	return ret
+}
+
+func nobasu(line string) (ret string) {
+	log_lines := reverseArray(fileToArray(rm_log))
+	for _, logline := range log_lines {
+		if strings.Contains(logline, line) {
+			ret = logline
+			break
+		}
+	}
+	return
 }

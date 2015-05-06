@@ -5,9 +5,11 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"time"
 
 	"github.com/jessevdk/go-flags"
+	"os/exec"
 )
 
 var rm_trash string = os.Getenv("HOME") + "/.gomi"
