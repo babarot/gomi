@@ -61,21 +61,20 @@ func main() {
 			continue
 		}
 		if opts.System {
-			cmd := ""
 			if runtime.GOOS == "darwin" {
 				cmd := "osx-trash"
 				if cmd, err = checkPath(cmd); err != nil {
 					cmd = "./bin/osx-trash"
 				}
+				_, err := exec.Command(cmd, gomi).Output()
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "%s: error: %v\n", cmd, err)
+				}
+				path = filepath.Clean(os.Getenv("HOME") + "/.Trash/" + filepath.Base(gomi))
 			} else {
 				fmt.Fprintf(os.Stderr, "Not yet\n")
 				os.Exit(1)
 			}
-			_, err := exec.Command(cmd, gomi).Output()
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "%s: error: %v\n", cmd, err)
-			}
-			path = filepath.Clean(os.Getenv("HOME") + "/.Trash/" + filepath.Base(gomi))
 		} else {
 			path, err = remove(gomi)
 			if err != nil {
