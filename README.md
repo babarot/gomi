@@ -1,4 +1,4 @@
-![log](./img/gomi-logo.png)
+[![log](./img/gomi.png)](https://github.com/b4b4r07/gomi "./gomi -r")
 
 `gomi` is a simple trash tool that works on CLI, written in Go
 
@@ -15,11 +15,11 @@
 ## Features
 
 - `rm` command with the trash
-- Easy to restore (thanks to [`peco`](https://github.com/peco/peco)-like UI)
+- Easy to restore (thanks to [`peco`](https://github.com/peco/peco)-like interface)
 - QuickLook files in Restore mode
 - A single binary
-- Work with `trash` on OS and supports [`Put Back`](http://www.mac-fusion.com/trash-tip-how-to-put-files-back-to-their-original-location/)
-- It can be customized in the file of YAML format
+- Work with `trash` on OS and support [`Put Back`](http://www.mac-fusion.com/trash-tip-how-to-put-files-back-to-their-original-location/)
+- Read YAML format configuration file
 
 ### QuickLook
 
@@ -31,7 +31,7 @@ To QuickLook, type the *C-q* in Restore mode. The other key bindings is also ena
 
 ### Put Back
 
-Supports [`Put Back`](http://www.mac-fusion.com/trash-tip-how-to-put-files-back-to-their-original-location/). It is possible to use the `trash` system that is a special file or device as a trash for `gomi`. Currently it has only supported Macintosh OS.
+`gomi` supports [`Put Back`](http://www.mac-fusion.com/trash-tip-how-to-put-files-back-to-their-original-location/). It is possible to use the `trash` system that is a special file or device as a trash for `gomi`. Currently it has only supported Macintosh OS.
 
 ![put back](./img/gomi_system.gif)
 
@@ -44,11 +44,11 @@ Supports [`Put Back`](http://www.mac-fusion.com/trash-tip-how-to-put-files-back-
 
 Basically usage is...
 
-1. **Remove!** Throw away the trash files :package:
+1. **Remove!** Throw away the trash :package:
 
 		$ gomi files
 
-2. **Restore!** Scavenge the trash box :mag:
+2. **Restore!** Scavenge the trash :mag:
 
 		$ gomi -r
 
@@ -91,6 +91,10 @@ To work with the trash of the system standard:
 
 Otherwise, download the binary from [GitHub Releases](https://github.com/b4b4r07/gomi/releases) and drop it in your `$PATH`.
 
+- [OS X (386)](https://github.com/b4b4r07/gomi/releases/download/v0.1.2/gomi_darwin_386)
+- [Linux (386)](https://github.com/b4b4r07/gomi/releases/download/v0.1.2/gomi_linux_386)
+- [Windows (386)](https://github.com/b4b4r07/gomi/releases/download/v0.1.2/gomi_windows_386.exe)
+
 ## Setup
 
 ### Replace rm with gomi
@@ -124,7 +128,7 @@ ignore_files:
 
 	> Cross-platform command-line app for moving files and directories to the trash - A safer alternative to `rm`
 
-:do_not_litter: Do NOT litter([trash-cli](https://github.com/andreafrancia/trash-cli), [trash](https://github.com/sindresorhus/trash)), use [gomi](https://github.com/b4b4r07/gomi)
+:do_not_litter: Do not use litter, use [gomi](https://github.com/b4b4r07/gomi).
 
 ## Author
 
