@@ -1,10 +1,12 @@
 [![log](./img/gomi.png)](https://github.com/b4b4r07/gomi "./gomi -r")
 
+[![GitHub Releases](https://img.shields.io/badge/Works%20on-Anywhere-ff69b4.svg)](https://github.com/b4b4r07/gomi/releases "Works on OS X, Linux and Windows")
+
 `gomi` is a simple trash tool that works on CLI, written in Go
 
 ## Description
 
-`rm` command threaten the CLI beginner. This is because it would delete the file without going through the trash. I was re-invented the `rm` as delete command with the concept of trash. It's `gomi`. Even if you delete the file by mistake, it can easily be restored.
+`rm` command threaten the CLI beginner. This is because it would delete the file without going through the [trash](http://en.wikipedia.org/wiki/Trash_(computing)). I was re-invented the `rm` as delete command with the concept of trash. It's `gomi`. Even if you delete the file by mistake, it can easily be restored.
 
 ***DEMO:***
 
@@ -19,7 +21,7 @@
 - QuickLook files in Restore mode
 - A single binary
 - Work with `trash` on OS and support [`Put Back`](http://www.mac-fusion.com/trash-tip-how-to-put-files-back-to-their-original-location/)
-- Read YAML format configuration file
+- Read [YAML format](http://www.yaml.org) configuration file
 
 ### QuickLook
 
@@ -66,12 +68,14 @@ To specify the location where you want to restore:
 
 In the above example, it's restored to the current directory.
 
+For more information, see `gomi --help`.
+
 ### Keymap
 
 | Key | Action |
 |:---:|:---:|
 | Enter | Restore under the cursor |
-| Esc, C-c | Quit Restore mode or QuickLook |
+| C-c, Esc | Quit Restore mode or QuickLook |
 | C-n, Down | Select Down |
 | C-p, Up | Select Up |
 | C-q | Toggle the QuickLook |
@@ -130,10 +134,6 @@ ignore_files:
 
 :do_not_litter: Do not use litter, use [gomi](https://github.com/b4b4r07/gomi).
 
-## Author
-
-BABAROT a.k.a. [@b4b4r07](https://twitter.com/b4b4r07)
-
 ## License
 
-[MIT](https://raw.githubusercontent.com/b4b4r07/dotfiles/master/doc/LICENSE-MIT.txt)
+[MIT](https://raw.githubusercontent.com/b4b4r07/dotfiles/master/doc/LICENSE-MIT.txt) © BABAROT (a.k.a. [b4b4r07](http://tellme.tokyo))
