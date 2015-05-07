@@ -1,6 +1,6 @@
-# gomi
+![log](./img/gomi-logo.png)
 
-`gomi` is a simple trash script that works on CLI, written in Go
+`gomi` is a simple trash tool that works on CLI, written in Go
 
 ## Description
 
@@ -10,26 +10,39 @@
 
 ![demo](./img/gomi.gif)
 
-Incidentally, *gomi* means the trash in Japanese.
+*gomi* means the trash in Japanese.
 
 ## Features
 
 - `rm` command with the trash
 - Easy to restore (thanks to [`peco`](https://github.com/peco/peco)-like UI)
-- **QuickLook** files in Restore mode
+- QuickLook files in Restore mode
 - A single binary
+- Work with `trash` on OS and supports [`Put Back`](http://www.mac-fusion.com/trash-tip-how-to-put-files-back-to-their-original-location/)
+- It can be customized in the file of YAML format
 
 ### QuickLook
 
-`gomi` has QuickLook (almost the same QuickLook of OS X) that can look through the file a little.
+`gomi` has the function that view file quickly (almost the same QuickLook of OS X). If the file under the cursor is directory, recursively it will list the files and subdirectories.
 
-To QuickLook under the cursor file, type the *C-q* in Restore mode.
+To QuickLook, type the *C-q* in Restore mode. The other key bindings is also enabled, by typing *C-n*, it is possible to view the next file in the state of QuickLook.
+
+![ql](./img/quicklook.png)
+
+### Put Back
+
+Supports [`Put Back`](http://www.mac-fusion.com/trash-tip-how-to-put-files-back-to-their-original-location/). It is possible to use the `trash` system that is a special file or device as a trash for `gomi`. Currently it has only supported Macintosh OS.
+
+![put back](./img/gomi_system.gif)
 
 ## Requirement
 
 - Go
+- On OS X [`osx-trash`](https://github.com/sindresorhus/osx-trash) is used (Optional; you don't need to install this)
 
 ## Usage
+
+Basically usage is...
 
 1. **Remove!** Throw away the trash files :package:
 
@@ -39,9 +52,9 @@ To QuickLook under the cursor file, type the *C-q* in Restore mode.
 
 		$ gomi -r
 
------
+It is able to replace `rm` with `gomi`. However, on the characteristics of it, it dosen't have options such as `-f` and `-i` at all. The available option is `-r`.
 
-To actually delete:
+To actually delete rather than the trash:
 
 	$ gomi ~/.gomi/2015/05/01/gomi_file.13_55_01
 
@@ -58,23 +71,60 @@ In the above example, it's restored to the current directory.
 | Key | Action |
 |:---:|:---:|
 | Enter | Restore under the cursor |
-| Esc | Quit Restore mode or QuickLook |
-| C-c | Same as *Esc* |
-| C-n | Select Down |
-| C-p | Select Up |
+| Esc, C-c | Quit Restore mode or QuickLook |
+| C-n, Down | Select Down |
+| C-p, Up | Select Up |
 | C-q | Toggle the QuickLook |
 
 ## Installation
 
+If you want to go the Go way (install in GOPATH/bin) and just want the command:
+
 	$ go get -u github.com/b4b4r07/gomi
+
+To work with the trash of the system standard:
+
+	$ cd $GOPATH/src/b4b4r07/gomi
+	$ make install
+
+### Binary only
+
+Otherwise, download the binary from [GitHub Releases](https://github.com/b4b4r07/gomi/releases) and drop it in your `$PATH`.
 
 ## Setup
 
-Put something like this in your ~/.bashrc or ~/.zshrc:
+### Replace rm with gomi
+
+Put something like this in your `~/.bashrc` or `~/.zshrc`:
 
 ```
 alias rm="gomi"
 ```
+
+This is recommended. By doing, it is possible to prevent that `rm` command would remove an important file.
+
+### config.yaml
+
+Then `gomi` read the configuration such as the following from the `~/.gomi/config.yaml`. In ignore_file, you can describe file that you do not want to add to history for restoration using regular expressions.
+
+```yaml
+ignore_files:
+  - \.DS_Store
+  - ~$
+  - _test$
+```
+
+## Rivals
+
+- [andreafrancia/trash-cli](https://github.com/andreafrancia/trash-cli)
+
+	> Command line interface to the freedesktop.org trashcan.
+
+- [sindresorhus/trash](https://github.com/sindresorhus/trash)
+
+	> Cross-platform command-line app for moving files and directories to the trash - A safer alternative to `rm`
+
+:do_not_litter: Do NOT litter([trash-cli](https://github.com/andreafrancia/trash-cli), [trash](https://github.com/sindresorhus/trash)), use [gomi](https://github.com/b4b4r07/gomi)
 
 ## Author
 
