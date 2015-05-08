@@ -10,8 +10,8 @@ import (
 	"unicode/utf8"
 
 	"path/filepath"
+	"runtime"
 	"strings"
-	"syscall"
 
 	"github.com/mattn/go-runewidth"
 	"github.com/nsf/termbox-go"
@@ -56,7 +56,7 @@ var timer *time.Timer
 func cleanLog() error {
 	var array []string
 	for _, line := range fileToArray(rm_log) {
-		s := logLineSplitter(line)
+		s := logLineSplitter(filepath.Join(line))
 		if len(s) < 2 {
 			continue
 		}
@@ -90,7 +90,7 @@ func restore(path string) error {
 	}
 
 	if d := pecoInterface(); d != "" && !ctx.quicklook {
-		e := logLineSplitter(d)
+		e := logLineSplitter(filepath.Join(d))
 		src := e[2]
 		dest := e[1]
 
@@ -139,7 +139,7 @@ func pecoInterface() string {
 	lines := fileToArray(rm_log)
 	for _, line := range reverseArray(lines) {
 		isdir := false
-		s := logLineSplitter(line)
+		s := logLineSplitter(filepath.Join(line))
 		if info, err := os.Stat(s[2]); err == nil && info.IsDir() {
 			isdir = true
 		}
@@ -148,7 +148,7 @@ func pecoInterface() string {
 
 	// Make ctx.trimedLines
 	for _, line := range reverseArray(lines) {
-		s := logLineSplitter(line)
+		s := logLineSplitter(filepath.Join(line))
 		s2 := strings.Join(s[0:2], " ")
 		isdir := false
 		if info, err := os.Stat(s[2]); err == nil && info.IsDir() {
@@ -198,7 +198,7 @@ func filterLines() {
 
 	re := regexp.MustCompile(regexp.QuoteMeta(str))
 	for _, line := range ctx.lines {
-		linelines := logLineSplitter(line.line)
+		linelines := logLineSplitter(filepath.Join(line.line))
 		lineline := strings.Join(linelines[0:2], " ")
 		ms := re.FindAllStringSubmatchIndex(lineline, 1)
 		if ms == nil {
@@ -268,7 +268,7 @@ func drawScreen() {
 		if target.matches == nil {
 			printTB(0, n, fgAttr, bgAttr, line)
 			if target.isdir {
-				l := logLineSplitter(logLineSearcher(line))
+				l := logLineSplitter(filepath.Join(logLineSearcher(line)))
 				printTB(20, n, fgAttr|termbox.ColorBlue, bgAttr, l[1])
 			}
 
@@ -278,7 +278,7 @@ func drawScreen() {
 				if m[0] > prev {
 					printTB(prev, n, fgAttr, bgAttr, line[prev:m[0]])
 					if target.isdir {
-						l := logLineSplitter(logLineSearcher(line[prev:m[0]]))
+						l := logLineSplitter(filepath.Join(logLineSearcher(line[prev:m[0]])))
 						printTB(20, n, fgAttr|termbox.ColorBlue, bgAttr, l[1])
 					}
 					prev += runewidth.StringWidth(line[prev:m[0]])
@@ -295,7 +295,7 @@ func drawScreen() {
 				if target.isdir {
 					printTB(prev, n, fgAttr|termbox.ColorBlue, bgAttr, line[m[1]:len(line)])
 				}
-				l := logLineSplitter(logLineSearcher(target.line))
+				l := logLineSplitter(filepath.Join(logLineSearcher(target.line)))
 				printTB(0, n, fgAttr, bgAttr, l[0])
 			}
 		}
@@ -472,7 +472,7 @@ func quickLook() {
 	selected = logLineSearcher(selected)
 
 	// Get gomi-ed file name
-	splited_line := logLineSplitter(selected)
+	splited_line := logLineSplitter(filepath.Join(selected))
 	file := splited_line[2]
 	attr := ""
 	var lines []string
@@ -489,9 +489,10 @@ func quickLook() {
 					}
 
 					rel, err := filepath.Rel(file, path)
-					c, _ := info.Sys().(*syscall.Stat_t).Ctimespec.Unix()
 					w := width/2 - len(rel)
-					lines = append(lines, fmt.Sprintf("%s %s %s %d\n", rel+strings.Repeat(" ", w), time.Unix(c, 0).Format("2006-01-02 15:04:05"), info.Mode(), info.Size()))
+					//c, _ := info.Sys().(*syscall.Stat_t).Ctimespec.Unix()
+					//lines = append(lines, fmt.Sprintf("%s %s %s %d\n", rel+strings.Repeat(" ", w), time.Unix(c, 0).Format("2006-01-02 15:04:05"), info.Mode(), info.Size()))
+					lines = append(lines, fmt.Sprintf("%s %s %d\n", rel+strings.Repeat(" ", w), info.Mode(), info.Size()))
 					return nil
 				})
 			if err != nil {
@@ -520,7 +521,7 @@ func quickLook() {
 		fmt.Sprintf(" filename:    %s (%s)\n", filepath.Base(splited_line[2]), attr),
 		fmt.Sprintf(" delete-date: %s\n", splited_line[0]),
 		fmt.Sprintf(" dest:        %s\n", filepath.Dir(splited_line[1])),
-		fmt.Sprintf(" dest:        %s\n", splited_line[2]),
+		fmt.Sprintf(" store-dest:  %s\n", splited_line[2]),
 		strings.Repeat("=", width),
 	}
 
@@ -546,7 +547,12 @@ func quickLook() {
 // 2. /Users/b4b4r07/.gomi/2006/01/02/README.md.15_04_05
 func logLineSplitter(line string) []string {
 	str := []byte(line)
-	assigned := regexp.MustCompile(`(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d) (/.*) (/.*)`)
+	var assigned *regexp.Regexp
+	if runtime.GOOS == "windows" {
+		assigned = regexp.MustCompile(`(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d) (C:.*) (C:.*)`)
+	} else {
+		assigned = regexp.MustCompile(`(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d) (/.*) (/.*)`)
+	}
 	group := assigned.FindSubmatch(str)
 
 	var ret []string

@@ -1,6 +1,7 @@
 [![log](./img/gomi.png)](https://github.com/b4b4r07/gomi "./gomi -r")
 
-[![GitHub Releases](https://img.shields.io/badge/Works%20on-Anywhere-ff69b4.svg)](https://github.com/b4b4r07/gomi/releases "Works on OS X, Linux and Windows")
+[![GitHub Releases](https://img.shields.io/badge/platform-OSX%20|%20Linux%20|%20Windows-ff69b4.svg)](https://github.com/b4b4r07/gomi/releases "Works on OS X, Linux and Windows")
+[![License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://raw.githubusercontent.com/b4b4r07/dotfiles/master/doc/LICENSE-MIT.txt "License")
 
 `gomi` is a simple trash tool that works on CLI, written in Go
 
@@ -22,6 +23,7 @@
 - A single binary
 - Work with `trash` on OS and support [`Put Back`](http://www.mac-fusion.com/trash-tip-how-to-put-files-back-to-their-original-location/)
 - Read [YAML format](http://www.yaml.org) configuration file
+- Support for all platforms 
 
 ### QuickLook
 
@@ -36,6 +38,12 @@ To QuickLook, type the *C-q* in Restore mode. The other key bindings is also ena
 `gomi` supports [`Put Back`](http://www.mac-fusion.com/trash-tip-how-to-put-files-back-to-their-original-location/). It is possible to use the `trash` system that is a special file or device as a trash for `gomi`. Currently it has only supported Macintosh OS.
 
 ![put back](./img/gomi_system.gif)
+
+### Works on Windows
+
+We have confirmed that there is no problem in the basic operation. However, there is a high possibility that there is an unknown bug for Windows OS. We're going to continue to steadily improve in the future. We welcome the pull request.
+
+![windows](./img/gomi_windows.png)
 
 ## Requirement
 
@@ -122,7 +130,7 @@ ignore_files:
   - _test$
 ```
 
-## Rivals
+## Versus Other Trash Tools
 
 - [andreafrancia/trash-cli](https://github.com/andreafrancia/trash-cli)
 

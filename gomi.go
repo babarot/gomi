@@ -12,9 +12,6 @@ import (
 	"os/exec"
 )
 
-var rm_trash string = os.Getenv("HOME") + "/.gomi"
-var rm_log string = rm_trash + "/log"
-
 type Options struct {
 	Restore bool `short:"r" long:"restore" description:"Restore removed files from gomi box"`
 	System  bool `short:"s" long:"system" description:"Use system recycle bin"`
@@ -161,7 +158,7 @@ func removeTo(src string) (dest string, err error) {
 
 	// Main
 	switch runtime.GOOS {
-	case "darwin":
+	case "windows":
 		cmd := "Recycle.exe"
 		if cmd, err = checkPath(cmd); err != nil {
 			cmd = "./bin/cmdutils/Recycle.exe"
@@ -172,7 +169,17 @@ func removeTo(src string) (dest string, err error) {
 			return
 		}
 		dest = filepath.Clean(`C:\$RECYCLER.BIN\` + filepath.Base(src))
-	case "windows":
+	case "darwin":
+		cmd := "osx-trash"
+		if cmd, err = checkPath(cmd); err != nil {
+			cmd = "./bin/osx-trash"
+		}
+		_, cmderr := exec.Command(cmd, src).Output()
+		if cmderr != nil {
+			err = fmt.Errorf("error: %s: %v", cmd, cmderr)
+			return
+		}
+		dest = filepath.Clean(os.Getenv("HOME") + "/.Trash/" + filepath.Base(src))
 	default:
 		err = fmt.Errorf("not yet supported")
 	}
