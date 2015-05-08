@@ -31,12 +31,14 @@ func checkPath(cmd string) (ret string, err error) {
 
 	return ret, nil
 }
+
 func main() {
 	args, err := flags.Parse(&opts)
 	if err != nil {
 		os.Exit(1)
 	}
 
+	// Restore Mode
 	if opts.Restore {
 		path := ""
 		if len(args) != 0 {
@@ -44,71 +46,66 @@ func main() {
 		}
 
 		if err := restore(path); err != nil {
-			fmt.Fprintf(os.Stderr, "%s\n", err)
+			fmt.Fprintf(os.Stderr, "%v\n", err)
 			os.Exit(1)
 		}
 		os.Exit(0)
 	}
 
+	// Check arguments
 	var path string
 	if len(args) == 0 {
-		fmt.Println("too few arguments")
+		fmt.Fprintf(os.Stderr, "too few arguments\n")
 		os.Exit(1)
 	}
+
+	// Main
 	for _, gomi := range args {
-		if _, err := os.Stat(gomi); err != nil {
-			fmt.Fprintf(os.Stderr, "%s: no such file or directory\n", gomi)
-			continue
-		}
 		if opts.System {
-			if runtime.GOOS == "darwin" {
-				cmd := "osx-trash"
-				if cmd, err = checkPath(cmd); err != nil {
-					cmd = "./bin/osx-trash"
-				}
-				_, err := exec.Command(cmd, gomi).Output()
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "%s: error: %v\n", cmd, err)
-				}
-				path = filepath.Clean(os.Getenv("HOME") + "/.Trash/" + filepath.Base(gomi))
-			} else {
-				fmt.Fprintf(os.Stderr, "Not yet\n")
-				os.Exit(1)
-			}
+			path, err = removeTo(gomi)
 		} else {
 			path, err = remove(gomi)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "couldn't remove\n")
-			}
+		}
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%v\n", err)
+			os.Exit(1)
+		}
+		if path == "" {
+			fmt.Fprintf(os.Stderr, "no\n")
+			os.Exit(1)
 		}
 
 		gomi, _ = filepath.Abs(gomi)
 		if err := logging(gomi, path); err != nil {
-			fmt.Fprintf(os.Stderr, "couldn't logging to %s\n", rm_log)
+			fmt.Fprintf(os.Stderr, "%v\n", err)
+			os.Exit(1)
 		}
 	}
 }
 
-func logging(src, dest string) (err error) {
+func logging(src, dest string) error {
+	// Open or create rm_log if rm_log doesn't exist
 	f, err := os.OpenFile(rm_log, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
-		return
+		return err
 	}
 	defer f.Close()
 
+	// Ignore exclude file in the configuration file
 	for _, ignore := range config() {
 		if m, _ := regexp.MatchString(ignore.(string), filepath.Base(src)); m {
-			//if filepath.Base(src) == ignore {
 			return nil
 		}
 	}
 
+	// Main
 	text := fmt.Sprintf("%s %s %s\n", time.Now().Format("2006-01-02 15:04:05"), src, dest)
 	if _, err = f.WriteString(text); err != nil {
-		return
+		err = fmt.Errorf("couldn't logging to %s", rm_log)
+		return err
 	}
 
-	return
+	return nil
 }
 
 func remove(src string) (dest string, err error) {
@@ -149,6 +146,35 @@ func remove(src string) (dest string, err error) {
 		if err != nil {
 			return
 		}
+	}
+
+	return
+}
+
+func removeTo(src string) (dest string, err error) {
+	// Check if src exists
+	_, err = os.Stat(src)
+	if err != nil {
+		err = fmt.Errorf("%s: no such file or directory", src)
+		return
+	}
+
+	// Main
+	switch runtime.GOOS {
+	case "darwin":
+		cmd := "Recycle.exe"
+		if cmd, err = checkPath(cmd); err != nil {
+			cmd = "./bin/cmdutils/Recycle.exe"
+		}
+		_, cmderr := exec.Command(cmd, src).Output()
+		if cmderr != nil {
+			err = fmt.Errorf("error: %s: %v", cmd, cmderr)
+			return
+		}
+		dest = filepath.Clean(`C:\$RECYCLER.BIN\` + filepath.Base(src))
+	case "windows":
+	default:
+		err = fmt.Errorf("not yet supported")
 	}
 
 	return
