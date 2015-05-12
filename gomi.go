@@ -1,4 +1,4 @@
-package main
+package gomi
 
 import (
 	"bufio"
@@ -44,7 +44,7 @@ func cleanLog() error {
 	return nil
 }
 
-func restore(path string) error {
+func Restore(path string) error {
 	var answer string
 
 	if err := cleanLog(); err != nil {
@@ -98,7 +98,7 @@ func restore(path string) error {
 	return nil
 }
 
-func logging(src, dest string) error {
+func Logging(src, dest string) error {
 	// Open or create rm_log if rm_log doesn't exist
 	f, err := os.OpenFile(rm_log, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
@@ -123,7 +123,7 @@ func logging(src, dest string) error {
 	return nil
 }
 
-func remove(src string) (dest string, err error) {
+func Remove(src string) (dest string, err error) {
 	// Check if rm_trash exists
 	_, err = os.Stat(rm_trash)
 	if os.IsNotExist(err) {
@@ -166,7 +166,7 @@ func remove(src string) (dest string, err error) {
 	return
 }
 
-func removeTo(src string) (dest string, err error) {
+func RemoveTo(src string) (dest string, err error) {
 	// Check if src exists
 	_, err = os.Stat(src)
 	if err != nil {

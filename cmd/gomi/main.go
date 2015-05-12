@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/b4b4r07/gomi"
 	"github.com/jessevdk/go-flags"
 	"os"
 	"path/filepath"
@@ -27,7 +28,7 @@ func main() {
 			path = args[0]
 		}
 
-		if err := restore(path); err != nil {
+		if err := gomi.Restore(path); err != nil {
 			fmt.Fprintf(os.Stderr, "%v\n", err)
 			os.Exit(1)
 		}
@@ -43,11 +44,11 @@ func main() {
 	}
 
 	// Main
-	for _, gomi := range args {
+	for _, g := range args {
 		if opts.System {
-			path, err = removeTo(gomi)
+			path, err = gomi.RemoveTo(g)
 		} else {
-			path, err = remove(gomi)
+			path, err = gomi.Remove(g)
 		}
 
 		if err != nil {
@@ -59,8 +60,8 @@ func main() {
 			os.Exit(1)
 		}
 
-		gomi, _ = filepath.Abs(gomi)
-		if err := logging(gomi, path); err != nil {
+		g, _ = filepath.Abs(g)
+		if err := gomi.Logging(g, path); err != nil {
 			fmt.Fprintf(os.Stderr, "%v\n", err)
 			os.Exit(1)
 		}
