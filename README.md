@@ -31,7 +31,7 @@
 
 To QuickLook, type the *C-q* in Restore mode. The other key bindings is also enabled, by typing *C-n*, it is possible to view the next file in the state of QuickLook.
 
-![ql](./img/quicklook.png)
+![ql](./img/gomi_quicklook.png)
 
 ### Put Back
 
