@@ -52,7 +52,8 @@ func main() {
 	// Check arguments
 	var path string
 	if len(args) == 0 {
-		fmt.Fprintf(os.Stderr, "too few arguments\n")
+		fmt.Fprintf(os.Stderr, "error: gomi: too few arguments\n")
+		fmt.Fprintf(os.Stderr, "Try `gomi --help' for more information.\n")
 		os.Exit(1)
 	}
 
