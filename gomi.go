@@ -1,84 +1,101 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"runtime"
 	"time"
-
-	"github.com/jessevdk/go-flags"
-	"os/exec"
 )
 
-type Options struct {
-	Restore bool `short:"r" long:"restore" description:"Restore removed files from gomi box"`
-	System  bool `short:"s" long:"system" description:"Use system recycle bin"`
-}
+var timer *time.Timer
 
-var opts Options
-
-func checkPath(cmd string) (ret string, err error) {
-	ret, err = exec.LookPath(cmd)
-	if err != nil {
-		err = fmt.Errorf("%s: executable file not found in $PATH", cmd)
-		return
-	}
-
-	return ret, nil
-}
-
-func main() {
-	args, err := flags.Parse(&opts)
-	if err != nil {
-		os.Exit(1)
-	}
-
-	// Restore Mode
-	if opts.Restore {
-		path := ""
-		if len(args) != 0 {
-			path = args[0]
+func cleanLog() error {
+	var array []string
+	for _, line := range fileToArray(rm_log) {
+		s := logLineSplitter(filepath.Join(line))
+		if len(s) < 2 {
+			continue
 		}
-
-		if err := restore(path); err != nil {
-			fmt.Fprintf(os.Stderr, "%v\n", err)
-			os.Exit(1)
+		if _, err := os.Stat(s[2]); err == nil {
+			array = append(array, line)
 		}
-		os.Exit(0)
 	}
 
-	// Check arguments
-	var path string
-	if len(args) == 0 {
-		fmt.Fprintf(os.Stderr, "error: gomi: too few arguments\n")
-		fmt.Fprintf(os.Stderr, "Try `gomi --help' for more information.\n")
-		os.Exit(1)
-	}
-
-	// Main
-	for _, gomi := range args {
-		if opts.System {
-			path, err = removeTo(gomi)
-		} else {
-			path, err = remove(gomi)
-		}
+	if err := func(lines []string, path string) error {
+		file, err := os.Create(path)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "%v\n", err)
-			os.Exit(1)
+			return err
 		}
-		if path == "" {
-			fmt.Fprintf(os.Stderr, "no\n")
-			os.Exit(1)
+		defer file.Close()
+
+		w := bufio.NewWriter(file)
+		for _, line := range lines {
+			fmt.Fprintln(w, line)
+		}
+		return w.Flush()
+	}(array, rm_log); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func restore(path string) error {
+	var answer string
+
+	if err := cleanLog(); err != nil {
+		return err
+	}
+
+	if d := pecoInterface(); d != "" && !ctx.quicklook {
+		e := logLineSplitter(filepath.Join(d))
+		src := e[2]
+		dest := e[1]
+
+		// gomi -r arg
+		if path != "" {
+			// case:
+			// given `gomi -r dir/file` as arguments
+			// --> if dir dose not exist
+			if _, err := os.Stat(filepath.Dir(path)); err != nil {
+				if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
+					return err
+				}
+			}
+
+			dest = path
+			if info, err := os.Stat(path); err == nil {
+				if info.IsDir() {
+					dest = path + "/" + filepath.Base(src)
+				}
+			}
 		}
 
-		gomi, _ = filepath.Abs(gomi)
-		if err := logging(gomi, path); err != nil {
-			fmt.Fprintf(os.Stderr, "%v\n", err)
-			os.Exit(1)
+		if _, err := os.Stat(dest); err == nil {
+			fmt.Printf("WARNING: %s overwrite? (y/N): ", dest)
+			_, err := fmt.Scanln(&answer)
+			if err != nil {
+				return err
+			}
+			if answer != "y" {
+				err = fmt.Errorf("%s: already exists", dest)
+				return err
+			}
+		}
+
+		if err := os.Rename(src, dest); err != nil {
+			return err
+		}
+		if err := cleanLog(); err != nil {
+			return err
 		}
 	}
+
+	return nil
 }
 
 func logging(src, dest string) error {
