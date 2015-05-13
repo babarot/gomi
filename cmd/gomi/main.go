@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/b4b4r07/gomi"
+	//"github.com/b4b4r07/gomi/mac"
 	"github.com/jessevdk/go-flags"
 	"os"
 	"path/filepath"
@@ -19,7 +20,6 @@ func main() {
 	// Parse arguments
 	args, err := flags.Parse(&opts)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
@@ -31,7 +31,7 @@ func main() {
 		}
 
 		if err := gomi.Restore(path); err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintln(os.Stderr, "gomi: ", err)
 			os.Exit(1)
 		}
 		os.Exit(0)
@@ -39,8 +39,8 @@ func main() {
 
 	// Check arguments
 	if len(args) == 0 {
-		fmt.Fprintf(os.Stderr, "error: gomi: too few arguments\n")
-		fmt.Fprintf(os.Stderr, "Try `gomi --help' for more information.\n")
+		err = fmt.Errorf("too few arguments")
+		fmt.Fprintln(os.Stderr, "gomi: ", err)
 		os.Exit(1)
 	}
 
@@ -48,19 +48,20 @@ func main() {
 	var save string
 	for _, arg := range args {
 		if opts.System {
-			save, err = gomi.RemoveTo(arg)
+			//save, err = mac.Trash(arg)
+			save, err = gomi.System(arg)
 		} else {
 			save, err = gomi.Remove(arg)
 		}
 
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintln(os.Stderr, "gomi: ", err)
 			os.Exit(1)
 		}
 
 		arg, _ = filepath.Abs(arg)
 		if err := gomi.Logging(arg, save); err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintln(os.Stderr, "gomi: ", err)
 			os.Exit(1)
 		}
 	}

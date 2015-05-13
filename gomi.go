@@ -3,6 +3,7 @@ package gomi
 import (
 	"bufio"
 	"fmt"
+	"github.com/b4b4r07/gomi/mac"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -166,7 +167,7 @@ func Remove(src string) (dest string, err error) {
 	return
 }
 
-func RemoveTo(src string) (dest string, err error) {
+func System(src string) (dest string, err error) {
 	// Check if src exists
 	_, err = os.Stat(src)
 	if err != nil {
@@ -188,16 +189,17 @@ func RemoveTo(src string) (dest string, err error) {
 		}
 		dest = filepath.Clean(`C:\$RECYCLER.BIN\` + filepath.Base(src))
 	case "darwin":
-		cmd := "osx-trash"
-		if cmd, err = checkPath(cmd); err != nil {
-			cmd = "./bin/osx-trash"
-		}
-		_, cmderr := exec.Command(cmd, src).Output()
-		if cmderr != nil {
-			err = fmt.Errorf("error: %s: %v", cmd, cmderr)
-			return
-		}
-		dest = filepath.Clean(os.Getenv("HOME") + "/.Trash/" + filepath.Base(src))
+		//cmd := "osx-trash"
+		//if cmd, err = checkPath(cmd); err != nil {
+		//	cmd = "./bin/osx-trash"
+		//}
+		//_, cmderr := exec.Command(cmd, src).Output()
+		//if cmderr != nil {
+		//	err = fmt.Errorf("error: %s: %v", cmd, cmderr)
+		//	return
+		//}
+		//dest = filepath.Clean(os.Getenv("HOME") + "/.Trash/" + filepath.Base(src))
+		dest, err = mac.Trash(src)
 	default:
 		err = fmt.Errorf("not yet supported")
 	}
