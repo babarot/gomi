@@ -1,7 +1,6 @@
 package gomi
 
 import (
-	"fmt"
 	"os"
 	"regexp"
 	"sync"
@@ -49,7 +48,7 @@ var ctx = Ctx{
 	false,
 }
 
-func pecoInterface() string {
+func pecoInterface() (ret string) {
 	var err error
 
 	// Make ctx.lines
@@ -65,29 +64,31 @@ func pecoInterface() string {
 
 	// Make ctx.trimedLines
 	for _, line := range reverseArray(lines) {
-		s := logLineSplitter(filepath.Join(line))
-		s2 := strings.Join(s[0:2], " ")
 		isdir := false
+		s := logLineSplitter(filepath.Join(line))
+		line = strings.Join(s[0:2], " ")
 		if info, err := os.Stat(s[2]); err == nil && info.IsDir() {
 			isdir = true
 		}
-		ctx.trimedLines = append(ctx.trimedLines, Match{s2, isdir, nil})
+		ctx.trimedLines = append(ctx.trimedLines, Match{line, isdir, nil})
 	}
 
 	// Termbox init
 	err = termbox.Init()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		return
 	}
 	defer termbox.Close()
 
+	// Main
 	termbox.SetInputMode(termbox.InputEsc)
 	refreshScreen(0)
 	mainLoop()
 
 	ctx.result = logLineSearcher(ctx.result)
-	return ctx.result
+	ret = ctx.result
+
+	return
 }
 
 func printTB(x, y int, fg, bg termbox.Attribute, msg string) {
@@ -100,7 +101,8 @@ func printTB(x, y int, fg, bg termbox.Attribute, msg string) {
 }
 
 func filterLines() {
-	// reset selected line
+	// Reset selected line
+	// --> Go to top of line (peco interface)
 	ctx.selectedLine = 1
 
 	ctx.current = []Match{}

@@ -16,27 +16,28 @@ type Options struct {
 var opts Options
 
 func main() {
+	// Parse arguments
 	args, err := flags.Parse(&opts)
 	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
 	// Restore Mode
 	if opts.Restore {
-		path := ""
-		if len(args) != 0 {
+		var path string
+		if len(args) > 0 {
 			path = args[0]
 		}
 
 		if err := gomi.Restore(path); err != nil {
-			fmt.Fprintf(os.Stderr, "%v\n", err)
+			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
 		os.Exit(0)
 	}
 
 	// Check arguments
-	var path string
 	if len(args) == 0 {
 		fmt.Fprintf(os.Stderr, "error: gomi: too few arguments\n")
 		fmt.Fprintf(os.Stderr, "Try `gomi --help' for more information.\n")
@@ -44,25 +45,22 @@ func main() {
 	}
 
 	// Main
-	for _, g := range args {
+	var save string
+	for _, arg := range args {
 		if opts.System {
-			path, err = gomi.RemoveTo(g)
+			save, err = gomi.RemoveTo(arg)
 		} else {
-			path, err = gomi.Remove(g)
+			save, err = gomi.Remove(arg)
 		}
 
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "%v\n", err)
-			os.Exit(1)
-		}
-		if path == "" {
-			fmt.Fprintf(os.Stderr, "no\n")
+			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
 
-		g, _ = filepath.Abs(g)
-		if err := gomi.Logging(g, path); err != nil {
-			fmt.Fprintf(os.Stderr, "%v\n", err)
+		arg, _ = filepath.Abs(arg)
+		if err := gomi.Logging(arg, save); err != nil {
+			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
 	}
