@@ -3,13 +3,13 @@ package gomi
 import (
 	"bufio"
 	"fmt"
-	"github.com/b4b4r07/gomi/mac"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"time"
+
+	"github.com/b4b4r07/gomi/mac"
 )
 
 var timer *time.Timer
@@ -108,8 +108,14 @@ func Logging(src, dest string) error {
 	defer f.Close()
 
 	// Ignore exclude file in the configuration file
-	for _, ignore := range config() {
-		if m, _ := regexp.MatchString(ignore.(string), filepath.Base(src)); m {
+
+	c, err := readYaml()
+	if err != nil {
+		return err
+	}
+	for _, ignore := range c.Ignore {
+		//if m, _ := regexp.MatchString(ignore, filepath.Base(src)); m {
+		if m, _ := filepath.Match(ignore, filepath.Base(src)); m {
 			return nil
 		}
 	}
@@ -154,7 +160,6 @@ func Remove(src string) (dest string, err error) {
 		if err != nil {
 			return
 		}
-		err = fmt.Errorf("os.Remove %s, successfully", src)
 		return
 	} else {
 		dest = dest + "/" + filepath.Base(src) + "." + time.Now().Format("15_04_05")

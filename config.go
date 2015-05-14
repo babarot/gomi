@@ -2,55 +2,50 @@ package gomi
 
 import (
 	"fmt"
+	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
-
-	"github.com/b4b4r07/gomi/yaml"
+	"path/filepath"
+	"regexp"
 )
 
-func nodeToMap(node interface{}) map[string]interface{} {
-	m, ok := node.(map[string]interface{})
-	if !ok {
-		panic(fmt.Sprintf("%v is not of type map", node))
-	}
-	return m
+type Config struct {
+	Root   string   `yaml:"root"`
+	Ignore []string `yaml:"ignore_files"`
 }
 
-func nodeToList(node interface{}) []interface{} {
-	m, ok := node.([]interface{})
-	if !ok {
-		panic(fmt.Sprintf("%v is not of type list", node))
-	}
-	return m
-}
+var rm_config string = filepath.Join(rm_trash, "config.yaml")
+var config_raw string = `root: ~/.gomi
 
-var rm_config string = rm_trash + "/config.yaml"
-var config_raw string = `ignore_files:
+# Interpret if name matches the shell file name pattern
+ignore_files:
   - .DS_Store
+  - "*~"
 `
 
-func config() []interface{} {
-	if _, err := os.Stat(rm_config); err != nil {
-		ioutil.WriteFile(rm_config, []byte(config_raw), os.ModePerm)
+func readYaml() (c Config, err error) {
+	if _, err = os.Stat(rm_config); err != nil {
+		err = ioutil.WriteFile(rm_config, []byte(config_raw), os.ModePerm)
+		if err != nil {
+			return
+		}
 	}
 
-	file, err := os.Open(rm_config)
+	buf, err := ioutil.ReadFile(rm_config)
 	if err != nil {
-		panic(err)
+		return
 	}
-	object, err := yaml.Read(file)
+
+	err = yaml.Unmarshal(buf, &c)
 	if err != nil {
-		panic(err)
+		str := []byte(err.Error())
+		assigned := regexp.MustCompile(`(line \d+)`)
+		group := assigned.FindSubmatch(str)
+		if len(group) != 0 {
+			err = fmt.Errorf("Syntax Error at %s in %s", string(group[0]), rm_config)
+		}
+		return
 	}
-	//value := nodeToMap(object)
-	ignore_files := nodeToList(nodeToMap(object)["ignore_files"])
 
-	return ignore_files
-}
-
-func Keys(m map[string]interface{}) (keys []string) {
-	for k := range m {
-		keys = append(keys, k)
-	}
-	return keys
+	return
 }
