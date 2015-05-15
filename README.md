@@ -1,4 +1,4 @@
-[![log](./img/gomi.png)](https://github.com/b4b4r07/gomi "./gomi -r")
+[![./gomi -r](./img/gomi.png)](https://github.com/b4b4r07/gomi "./gomi -r")
 
 [![GitHub Releases](https://img.shields.io/badge/platform-OSX%20|%20Linux%20|%20Windows-ff69b4.svg)](https://github.com/b4b4r07/gomi/releases "Works on OS X, Linux and Windows")
 [![License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://raw.githubusercontent.com/b4b4r07/dotfiles/master/doc/LICENSE-MIT.txt "License")
@@ -11,7 +11,7 @@ The concept of the trashcan does not exist in Command-line Interface (CLI). If y
 
 ***DEMO:***
 
-![demo](./img/gomi.gif)
+![DEMO](./img/gomi.gif)
 
 *gomi* means the trash in Japanese.
 
@@ -32,19 +32,19 @@ If the discarded file is a directory, it is recursively scan its contents and ma
 
 To QuickLook, type the *C-q* in Restore mode. Available key map in QuickLook is here: [Keymap](#keymap)
 
-![ql](./img/gomi_quicklook.png)
+![QuickLook](./img/gomi_quicklook.png)
 
 ### Put Back
 
 `gomi` supports [`Put Back`](http://www.mac-fusion.com/trash-tip-how-to-put-files-back-to-their-original-location/). Because it is possible to combine the GUI trashcan with `gomi`, it is possible to restore the discard file from the GUI menu. Currently it has supported OS X only.
 
-![put back](./img/gomi_system.gif)
+![Put Back](./img/gomi_system.gif)
 
 ### Works on Windows
 
 `gomi` is a Cross-platform application. Basically, you can also use Windows. In the future, it will be possible to combine the Recycle Bin with `gomi`. We welcome the pull request.
 
-![windows](./img/gomi_windows.png)
+![Windows](./img/gomi_windows.gif)
 
 ## Usage
 
@@ -111,7 +111,7 @@ Otherwise, download the binary from [GitHub Releases](https://github.com/b4b4r07
 
 Put something like this in your `~/.bashrc` or `~/.zshrc`:
 
-```
+```bash
 alias rm="gomi"
 ```
 
