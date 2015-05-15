@@ -7,7 +7,7 @@
 
 ## Description
 
-`rm` command threaten the CLI beginner. This is because it would delete the file without going through the [trash](http://en.wikipedia.org/wiki/Trash_(computing)). I was re-invented the `rm` as delete command with the concept of trash. It's `gomi`. Even if you delete the file by mistake, it can easily be restored.
+The concept of the trashcan does not exist in Command-line Interface (CLI). If you have deleted an important file by mistake with the `rm` command, it would be difficult to restore. Then, it's this `gomi`. Unlike `rm` command, it is possible to easily restore deleted files because `gomi` have the trashcan for the CLI. It is also possible to work with trashcan for Graphical user interface (GUI).
 
 ***DEMO:***
 
@@ -17,42 +17,38 @@
 
 ## Features
 
-- `rm` command with the trash
 - Easy to restore (thanks to [`peco`](https://github.com/peco/peco)-like interface)
-- QuickLook files in Restore mode
+- QuickLook removed files
+- Customize [YAML format](http://www.yaml.org) configuration file
+- Works with [`Trash`](http://en.wikipedia.org/wiki/Trash_(computing))
+- Supports [`Put Back`](http://www.mac-fusion.com/trash-tip-how-to-put-files-back-to-their-original-location/)
 - A single binary
-- Work with `trash` on OS and support [`Put Back`](http://www.mac-fusion.com/trash-tip-how-to-put-files-back-to-their-original-location/)
-- Read [YAML format](http://www.yaml.org) configuration file
-- Support for all platforms 
+- Cross-platform CLI app 
 
 ### QuickLook
 
-`gomi` has the function that view file quickly (almost the same QuickLook of OS X). If the file under the cursor is directory, recursively it will list the files and subdirectories.
+Before you restore a file that was discarded from the trashcan, `gomi` has a function that browse the contents of the file. It is almost the same as the QuickLook of OS X.
+If the discarded file is a directory, it is recursively scan its contents and make the files and subdirectories list.
 
-To QuickLook, type the *C-q* in Restore mode. The other key bindings is also enabled, by typing *C-n*, it is possible to view the next file in the state of QuickLook.
+To QuickLook, type the *C-q* in Restore mode. Available key map in QuickLook is here: [Keymap](#keymap)
 
 ![ql](./img/gomi_quicklook.png)
 
 ### Put Back
 
-`gomi` supports [`Put Back`](http://www.mac-fusion.com/trash-tip-how-to-put-files-back-to-their-original-location/). It is possible to use the `trash` system that is a special file or device as a trash for `gomi`. Currently it has only supported Macintosh OS.
+`gomi` supports [`Put Back`](http://www.mac-fusion.com/trash-tip-how-to-put-files-back-to-their-original-location/). Because it is possible to combine the GUI trashcan with `gomi`, it is possible to restore the discard file from the GUI menu. Currently it has supported OS X only.
 
 ![put back](./img/gomi_system.gif)
 
 ### Works on Windows
 
-We have confirmed that there is no problem in the basic operation. However, there is a high possibility that there is an unknown bug for Windows OS. We're going to continue to steadily improve in the future. We welcome the pull request.
+`gomi` is a Cross-platform application. Basically, you can also use Windows. In the future, it will be possible to combine the Recycle Bin with `gomi`. We welcome the pull request.
 
 ![windows](./img/gomi_windows.png)
 
-## Requirement
-
-- Go
-- On OS X [`osx-trash`](https://github.com/sindresorhus/osx-trash) is used (Optional; you don't need to install this)
-
 ## Usage
 
-Basically usage is...
+Basic usage is...
 
 1. **Remove!** Throw away the trash :package:
 
@@ -94,10 +90,12 @@ If you want to go the Go way (install in GOPATH/bin) and just want the command:
 
 	$ go get -u github.com/b4b4r07/gomi
 
-To work with the trash of the system standard:
+### Mac OS X / Homebrew
 
-	$ cd $GOPATH/src/b4b4r07/gomi
-	$ make install
+If you're on OS X and want to use [Homebrew](https://brew.sh):
+
+	$ brew tap b4b4r07/gomi
+	$ brew install gomi
 
 ### Binary only
 
@@ -117,17 +115,16 @@ Put something like this in your `~/.bashrc` or `~/.zshrc`:
 alias rm="gomi"
 ```
 
-This is recommended. By doing, it is possible to prevent that `rm` command would remove an important file.
+This is recommended. By doing so, it is possible to prevent `rm` command from removing an important file.
 
 ### config.yaml
 
-Then `gomi` read the configuration such as the following from the `~/.gomi/config.yaml`. In ignore_file, you can describe file that you do not want to add to history for restoration using regular expressions.
+`gomi` read the YAML configuration such as the following from the `~/.gomi/config.yaml`. In ***ignore_files***, you can describe shell file name pattern that you do not want to add to history for restoration.
 
 ```yaml
 ignore_files:
-  - \.DS_Store
-  - ~$
-  - _test$
+  - .DS_Store
+  - "*~"
 ```
 
 ## Versus Other Trash Tools
