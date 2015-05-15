@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/b4b4r07/gomi"
-	//"github.com/b4b4r07/gomi/mac"
-	"github.com/jessevdk/go-flags"
 	"os"
 	"path/filepath"
+
+	"github.com/b4b4r07/gomi"
+	"github.com/jessevdk/go-flags"
 )
 
 type Options struct {
@@ -39,8 +39,7 @@ func main() {
 
 	// Check arguments
 	if len(args) == 0 {
-		err = fmt.Errorf("too few arguments")
-		fmt.Fprintln(os.Stderr, "gomi: ", err)
+		fmt.Fprintln(os.Stderr, "gomi: ", fmt.Errorf("too few arguments"))
 		os.Exit(1)
 	}
 
@@ -48,7 +47,6 @@ func main() {
 	var save string
 	for _, arg := range args {
 		if opts.System {
-			//save, err = mac.Trash(arg)
 			save, err = gomi.System(arg)
 		} else {
 			save, err = gomi.Remove(arg)

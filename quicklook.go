@@ -7,6 +7,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/b4b4r07/ctime"
+	//"syscall"
+	//"time"
 )
 
 func quickLook() {
@@ -23,38 +27,45 @@ func quickLook() {
 		selected = ctx.current[ctx.selectedLine-1].line
 	}
 
-	// Check if rm_log contains selected line string
-	//log_lines := reverseArray(fileToArray(rm_log))
-	//for _, line := range log_lines {
-	//	if strings.Contains(line, selected) {
-	//		selected = line
-	//		break
-	//	}
-	//}
 	selected = logLineSearcher(selected)
 
 	// Get gomi-ed file name
-	splited_line := logLineSplitter(filepath.Join(selected))
-	file := splited_line[2]
+	datetime, location, trashcan, err := logLineSplitter(selected)
+	if err != nil {
+	}
 	attr := ""
 	var lines []string
 
-	if info, err := os.Stat(file); err != nil {
+	if info, err := os.Stat(trashcan); err != nil {
 		panic(err)
 	} else {
 		if info.IsDir() {
 			attr = "directory"
-			err := filepath.Walk(file,
+			err := filepath.Walk(trashcan,
 				func(path string, info os.FileInfo, err error) error {
+					//fi, err := os.Stat(path)
+					//if err != nil {
+					//	return err
+					//}
+					//mtime := fi.ModTime()
+					ct, err := ctime.Stat(path)
+					if err != nil {
+						return err
+					}
+
 					if info.IsDir() && filepath.HasPrefix(info.Name(), ".") {
 						return filepath.SkipDir
 					}
 
-					rel, err := filepath.Rel(file, path)
+					rel, err := filepath.Rel(trashcan, path)
 					w := width/2 - len(rel)
-					//c, _ := info.Sys().(*syscall.Stat_t).Ctimespec.Unix()
-					//lines = append(lines, fmt.Sprintf("%s %s %s %d\n", rel+strings.Repeat(" ", w), time.Unix(c, 0).Format("2006-01-02 15:04:05"), info.Mode(), info.Size()))
-					lines = append(lines, fmt.Sprintf("%s %s %d\n", rel+strings.Repeat(" ", w), info.Mode(), info.Size()))
+					lines = append(lines, fmt.Sprintf("%s %v %s %s",
+						rel+strings.Repeat(" ", w),
+						//mtime.Format("2006/01/02 15:04:05"),
+						ct.Format("2006/01/02 15:04:05"),
+						info.Mode(),
+						calcSize(info.Size()),
+					))
 					return nil
 				})
 			if err != nil {
@@ -62,7 +73,7 @@ func quickLook() {
 			}
 		} else {
 			attr = "file"
-			f, err := os.Open(file)
+			f, err := os.Open(trashcan)
 			if err != nil {
 				panic(err)
 			}
@@ -78,12 +89,15 @@ func quickLook() {
 	fgAttr := termbox.ColorDefault
 	bgAttr := termbox.ColorDefault
 
+	_ = attr
 	info := []string{
 		strings.Repeat("=", width),
-		fmt.Sprintf(" filename:    %s (%s)\n", filepath.Base(splited_line[2]), attr),
-		fmt.Sprintf(" delete-date: %s\n", splited_line[0]),
-		fmt.Sprintf(" dest:        %s\n", filepath.Dir(splited_line[1])),
-		fmt.Sprintf(" store-dest:  %s\n", splited_line[2]),
+		fmt.Sprintf("# File Name:     %s", strings.TrimSuffix(filepath.Base(trashcan), filepath.Ext(filepath.Base(trashcan)))),
+		fmt.Sprintf("# Deleted time:  %s", datetime),
+		fmt.Sprintf("# Restore dest:  %s", filepath.Dir(location)),
+		fmt.Sprintf("# Repository:    %s", trashcan),
+		fmt.Sprintf("# Quick Help:"),
+		fmt.Sprintf("#   %s", "<C-n> Next, <C-p> Previous, <C-q><Esc><C-c> Quit, <Enter> Restore"),
 		strings.Repeat("=", width),
 	}
 

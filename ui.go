@@ -1,14 +1,12 @@
 package gomi
 
 import (
+	"fmt"
 	"os"
 	"regexp"
 	"sync"
 	"time"
 	"unicode/utf8"
-
-	"path/filepath"
-	"strings"
 
 	"github.com/mattn/go-runewidth"
 	"github.com/nsf/termbox-go"
@@ -55,8 +53,8 @@ func pecoInterface() (ret string) {
 	lines := fileToArray(rm_log)
 	for _, line := range reverseArray(lines) {
 		isdir := false
-		s := logLineSplitter(filepath.Join(line))
-		if info, err := os.Stat(s[2]); err == nil && info.IsDir() {
+		_, _, trashcan, _ := logLineSplitter(line)
+		if info, err := os.Stat(trashcan); err == nil && info.IsDir() {
 			isdir = true
 		}
 		ctx.lines = append(ctx.lines, Match{line, isdir, nil})
@@ -65,9 +63,9 @@ func pecoInterface() (ret string) {
 	// Make ctx.trimedLines
 	for _, line := range reverseArray(lines) {
 		isdir := false
-		s := logLineSplitter(filepath.Join(line))
-		line = strings.Join(s[0:2], " ")
-		if info, err := os.Stat(s[2]); err == nil && info.IsDir() {
+		datetime, location, trashcan, _ := logLineSplitter(line)
+		line = fmt.Sprintf("%s %s", datetime, location)
+		if info, err := os.Stat(trashcan); err == nil && info.IsDir() {
 			isdir = true
 		}
 		ctx.trimedLines = append(ctx.trimedLines, Match{line, isdir, nil})
@@ -78,6 +76,10 @@ func pecoInterface() (ret string) {
 	if err != nil {
 		return
 	}
+	if isTty() {
+		termbox.SetInputMode(termbox.InputEsc)
+	}
+
 	defer termbox.Close()
 
 	// Main
@@ -117,14 +119,14 @@ func filterLines() {
 
 	re := regexp.MustCompile(regexp.QuoteMeta(str))
 	for _, line := range ctx.lines {
-		linelines := logLineSplitter(filepath.Join(line.line))
-		lineline := strings.Join(linelines[0:2], " ")
+		datetime, location, trashcan, _ := logLineSplitter(line.line)
+		lineline := fmt.Sprintf("%s %s", datetime, location)
 		ms := re.FindAllStringSubmatchIndex(lineline, 1)
 		if ms == nil {
 			continue
 		}
 		isdir := false
-		if info, err := os.Stat(linelines[2]); err == nil && info.IsDir() {
+		if info, err := os.Stat(trashcan); err == nil && info.IsDir() {
 			isdir = true
 		}
 		ctx.current = append(ctx.current, Match{lineline, isdir, ms})
@@ -168,7 +170,7 @@ func drawScreen() {
 	}
 
 	printTB(0, 0, termbox.ColorDefault, termbox.ColorDefault, "SEARCH>")
-	printTB(8, 0, termbox.ColorDefault, termbox.ColorDefault, string(ctx.query))
+	printTB(8+2, 0, termbox.ColorDefault, termbox.ColorDefault, string(ctx.query))
 	for n := 1; n+2 < height; n++ {
 		if n-1 >= len(targets) {
 			break
@@ -185,39 +187,40 @@ func drawScreen() {
 		target := targets[n-1]
 		line := target.line
 		if target.matches == nil {
-			printTB(0, n, fgAttr, bgAttr, line)
+			printTB(0+2, n, fgAttr, bgAttr, line)
 			if target.isdir {
-				l := logLineSplitter(filepath.Join(logLineSearcher(line)))
-				printTB(20, n, fgAttr|termbox.ColorBlue, bgAttr, l[1])
+				_, location, _, _ := logLineSplitter(logLineSearcher(line))
+				printTB(20+2, n, fgAttr|termbox.ColorBlue, bgAttr, location)
 			}
 
 		} else {
 			prev := 0
 			for _, m := range target.matches {
 				if m[0] > prev {
-					printTB(prev, n, fgAttr, bgAttr, line[prev:m[0]])
+					printTB(prev+2, n, fgAttr, bgAttr, line[prev:m[0]])
 					if target.isdir {
-						l := logLineSplitter(filepath.Join(logLineSearcher(line[prev:m[0]])))
-						printTB(20, n, fgAttr|termbox.ColorBlue, bgAttr, l[1])
+						_, location, _, _ := logLineSplitter(logLineSearcher(line[prev:m[0]]))
+						printTB(20+2, n, fgAttr|termbox.ColorBlue, bgAttr, location)
 					}
 					prev += runewidth.StringWidth(line[prev:m[0]])
 				}
-				printTB(prev, n, fgAttr|termbox.ColorGreen, bgAttr, line[m[0]:m[1]])
+				printTB(prev+2, n, fgAttr|termbox.ColorGreen, bgAttr, line[m[0]:m[1]])
 				prev += runewidth.StringWidth(line[m[0]:m[1]])
 			}
 
 			m := target.matches[len(target.matches)-1]
 			if m[0] > prev {
-				printTB(prev, n, fgAttr|termbox.ColorGreen, bgAttr, line[m[0]:m[1]])
+				printTB(prev+2, n, fgAttr|termbox.ColorGreen, bgAttr, line[m[0]:m[1]])
 			} else if len(line) > m[1] {
-				printTB(prev, n, fgAttr, bgAttr, line[m[1]:len(line)])
+				printTB(prev+2, n, fgAttr, bgAttr, line[m[1]:len(line)])
 				if target.isdir {
-					printTB(prev, n, fgAttr|termbox.ColorBlue, bgAttr, line[m[1]:len(line)])
+					printTB(prev+2, n, fgAttr|termbox.ColorBlue, bgAttr, line[m[1]:len(line)])
 				}
-				l := logLineSplitter(filepath.Join(logLineSearcher(target.line)))
-				printTB(0, n, fgAttr, bgAttr, l[0])
+				datetime, _, _, _ := logLineSplitter(logLineSearcher(target.line))
+				printTB(0+2, n, fgAttr, bgAttr, datetime)
 			}
 		}
+		printTB(0, ctx.selectedLine, termbox.ColorRed, termbox.ColorDefault, "> ")
 	}
 	termbox.Flush()
 }
@@ -233,6 +236,10 @@ func mainLoop() {
 }
 
 func handleKeyEvent(ev termbox.Event) {
+	defer func() {
+		recover()
+	}()
+
 	update := true
 	switch ev.Key {
 	case termbox.KeyEsc, termbox.KeyCtrlC:

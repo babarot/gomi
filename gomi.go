@@ -1,7 +1,6 @@
 package gomi
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
@@ -14,84 +13,46 @@ import (
 
 var timer *time.Timer
 
-func cleanLog() error {
-	var array []string
-	for _, line := range fileToArray(rm_log) {
-		s := logLineSplitter(filepath.Join(line))
-		if len(s) < 2 {
-			continue
-		}
-		if _, err := os.Stat(s[2]); err == nil {
-			array = append(array, line)
-		}
-	}
-
-	if err := func(lines []string, path string) error {
-		file, err := os.Create(path)
-		if err != nil {
-			return err
-		}
-		defer file.Close()
-
-		w := bufio.NewWriter(file)
-		for _, line := range lines {
-			fmt.Fprintln(w, line)
-		}
-		return w.Flush()
-	}(array, rm_log); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func Restore(path string) error {
-	var answer string
-
 	if err := cleanLog(); err != nil {
 		return err
 	}
 
-	if d := pecoInterface(); d != "" && !ctx.quicklook {
-		e := logLineSplitter(filepath.Join(d))
-		src := e[2]
-		dest := e[1]
+	if line := pecoInterface(); line != "" && !ctx.quicklook {
+		_, location, trashcan, err := logLineSplitter(line)
+		if err != nil {
+			return err
+		}
 
-		// gomi -r arg
-		if path != "" {
-			// case:
-			// given `gomi -r dir/file` as arguments
-			// --> if dir dose not exist
-			if _, err := os.Stat(filepath.Dir(path)); err != nil {
-				if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
+		if path == "" {
+			path = location
+		}
+
+		if _, err := os.Stat(filepath.Dir(path)); err != nil {
+			if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
+				return err
+			}
+		}
+		if info, err := os.Stat(path); err == nil {
+			if info.IsDir() {
+				location = filepath.Join(path, filepath.Base(trashcan))
+			} else {
+				var answer = "no"
+				if runtime.GOOS != "windows" {
+					fmt.Printf("WARNING: %s overwrite? (y/N): ", location)
+					_, err := fmt.Scanf("%s", &answer)
+					if err != nil {
+						return err
+					}
+				}
+				if answer != "y" {
+					err = fmt.Errorf("%s: already exists", location)
 					return err
 				}
 			}
-
-			dest = path
-			if info, err := os.Stat(path); err == nil {
-				if info.IsDir() {
-					dest = path + "/" + filepath.Base(src)
-				}
-			}
 		}
 
-		if _, err := os.Stat(dest); err == nil {
-			fmt.Printf("WARNING: %s overwrite? (y/N): ", dest)
-			_, err := fmt.Scanln(&answer)
-			if err != nil {
-				return err
-			}
-			if answer != "y" {
-				err = fmt.Errorf("%s: already exists", dest)
-				return err
-			}
-		}
-
-		if err := os.Rename(src, dest); err != nil {
-			return err
-		}
-		if err := cleanLog(); err != nil {
+		if err := os.Rename(trashcan, location); err != nil {
 			return err
 		}
 	}
@@ -100,38 +61,40 @@ func Restore(path string) error {
 }
 
 func Logging(src, dest string) error {
-	// Open or create rm_log if rm_log doesn't exist
-	f, err := os.OpenFile(rm_log, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+	src = filepath.Join(src)
+	dest = filepath.Join(dest)
+
+	lines, err := readLines(rm_log)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
 
-	// Ignore exclude file in the configuration file
-
+	// Read config.yaml
 	c, err := readYaml()
 	if err != nil {
 		return err
 	}
+
+	// Ignore exclude file in the configuration file
 	for _, ignore := range c.Ignore {
-		//if m, _ := regexp.MatchString(ignore, filepath.Base(src)); m {
 		if m, _ := filepath.Match(ignore, filepath.Base(src)); m {
 			return nil
 		}
 	}
-
-	// Main
-	text := fmt.Sprintf("%s %s %s\n", time.Now().Format("2006-01-02 15:04:05"), src, dest)
-	if _, err = f.WriteString(text); err != nil {
-		err = fmt.Errorf("couldn't logging to %s", rm_log)
+	lines = append(lines, fmt.Sprintf("%s %s %s",
+		time.Now().Format("2006-01-02 15:04:05"),
+		src,
+		dest,
+	))
+	if err := writeLines(lines, rm_log); err != nil {
 		return err
 	}
-
 	return nil
 }
 
 func Remove(src string) (dest string, err error) {
 	// Check if rm_trash exists
+	src = filepath.Join(src)
 	_, err = os.Stat(rm_trash)
 	if os.IsNotExist(err) {
 		err = os.MkdirAll(rm_trash, 0777)
@@ -148,7 +111,7 @@ func Remove(src string) (dest string, err error) {
 	}
 
 	// Make directory for trash
-	dest = rm_trash + "/" + time.Now().Format("2006/01/02")
+	dest = filepath.Join(rm_trash, time.Now().Format("2006"), time.Now().Format("01"), time.Now().Format("02"))
 	err = os.MkdirAll(dest, 0777)
 	if err != nil {
 		return
@@ -162,7 +125,7 @@ func Remove(src string) (dest string, err error) {
 		}
 		return
 	} else {
-		dest = dest + "/" + filepath.Base(src) + "." + time.Now().Format("15_04_05")
+		dest = filepath.Join(dest, filepath.Base(src)+"."+time.Now().Format("15_04_05"))
 		err = os.Rename(src, dest)
 		if err != nil {
 			return
@@ -174,6 +137,7 @@ func Remove(src string) (dest string, err error) {
 
 func System(src string) (dest string, err error) {
 	// Check if src exists
+	src = filepath.Join(src)
 	_, err = os.Stat(src)
 	if err != nil {
 		err = fmt.Errorf("%s: no such file or directory", src)
@@ -194,16 +158,6 @@ func System(src string) (dest string, err error) {
 		}
 		dest = filepath.Clean(`C:\$RECYCLER.BIN\` + filepath.Base(src))
 	case "darwin":
-		//cmd := "osx-trash"
-		//if cmd, err = checkPath(cmd); err != nil {
-		//	cmd = "./bin/osx-trash"
-		//}
-		//_, cmderr := exec.Command(cmd, src).Output()
-		//if cmderr != nil {
-		//	err = fmt.Errorf("error: %s: %v", cmd, cmderr)
-		//	return
-		//}
-		//dest = filepath.Clean(os.Getenv("HOME") + "/.Trash/" + filepath.Base(src))
 		dest, err = mac.Trash(src)
 	default:
 		err = fmt.Errorf("not yet supported")
