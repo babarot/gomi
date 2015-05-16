@@ -9,11 +9,9 @@ import (
 	"strings"
 
 	"github.com/b4b4r07/ctime"
-	//"syscall"
-	//"time"
 )
 
-func quickLook() {
+func quickLook() error {
 	ctx.quicklook = true
 	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 
@@ -29,18 +27,17 @@ func quickLook() {
 
 	selected = logLineSearcher(selected)
 
-	// Get gomi-ed file name
+	// Get the discarded files
 	datetime, location, trashcan, err := logLineSplitter(selected)
 	if err != nil {
+		panic(err)
 	}
-	attr := ""
 	var lines []string
 
 	if info, err := os.Stat(trashcan); err != nil {
-		panic(err)
+		return err
 	} else {
 		if info.IsDir() {
-			attr = "directory"
 			err := filepath.Walk(trashcan,
 				func(path string, info os.FileInfo, err error) error {
 					//fi, err := os.Stat(path)
@@ -69,13 +66,12 @@ func quickLook() {
 					return nil
 				})
 			if err != nil {
-				panic(err)
+				return err
 			}
 		} else {
-			attr = "file"
 			f, err := os.Open(trashcan)
 			if err != nil {
-				panic(err)
+				return err
 			}
 			defer f.Close()
 
@@ -89,7 +85,6 @@ func quickLook() {
 	fgAttr := termbox.ColorDefault
 	bgAttr := termbox.ColorDefault
 
-	_ = attr
 	info := []string{
 		strings.Repeat("=", width),
 		fmt.Sprintf("# File Name:     %s", strings.TrimSuffix(filepath.Base(trashcan), filepath.Ext(filepath.Base(trashcan)))),
@@ -104,13 +99,16 @@ func quickLook() {
 	for i, e := range info {
 		printTB(0, i, termbox.ColorRed, bgAttr, e)
 	}
+
 	for i, e := range lines {
 		printTB(0, len(info)+i, fgAttr, bgAttr, e)
 		if i == height-1 {
 			break
 		}
 	}
+
 	printTB(0, height-1, termbox.ColorRed, bgAttr, strings.Repeat("=", width))
 
 	termbox.Flush()
+	return nil
 }

@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"strconv"
 	"strings"
 )
 
@@ -26,11 +25,8 @@ func calcSize(size int64) string {
 	f = float64(size) / 1024
 	sizeStr = fmt.Sprintf("%.2f", f)
 	sizeStr = strings.TrimSuffix(sizeStr, filepath.Ext(sizeStr))
-	//if sizeStr != "0" {
-	return fmt.Sprintf("%6.2fKB", f)
-	//}
 
-	return strconv.Itoa(int(size))
+	return fmt.Sprintf("%6.2fKB", f)
 }
 
 func cleanLog() error {

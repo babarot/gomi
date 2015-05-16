@@ -2,7 +2,10 @@
 
 package gomi
 
-import "os"
+import (
+	"os"
+	"path/filepath"
+)
 
-var rm_trash string = os.Getenv("HOME") + "/.gomi"
-var rm_log string = rm_trash + "/log"
+var rm_trash = filepath.Join(os.Getenv("HOME"), ".gomi")
+var rm_log = filepath.Join(rm_trash, "log")

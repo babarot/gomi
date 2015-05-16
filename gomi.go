@@ -3,7 +3,6 @@ package gomi
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"time"
@@ -147,16 +146,6 @@ func System(src string) (dest string, err error) {
 	// Main
 	switch runtime.GOOS {
 	case "windows":
-		cmd := "Recycle.exe"
-		if cmd, err = checkPath(cmd); err != nil {
-			cmd = "./bin/cmdutils/Recycle.exe"
-		}
-		_, cmderr := exec.Command(cmd, src).Output()
-		if cmderr != nil {
-			err = fmt.Errorf("error: %s: %v", cmd, cmderr)
-			return
-		}
-		dest = filepath.Clean(`C:\$RECYCLER.BIN\` + filepath.Base(src))
 	case "darwin":
 		dest, err = mac.Trash(src)
 	default:

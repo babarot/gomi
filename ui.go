@@ -143,7 +143,11 @@ func refreshScreen(delay time.Duration) {
 				filterLines()
 			}
 			if ctx.quicklook {
-				quickLook()
+				if err := quickLook(); err != nil {
+					// Use the panic() instead
+					// because it's a function doesn't have return value
+					panic(err)
+				}
 			} else {
 				drawScreen()
 			}

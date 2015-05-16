@@ -7,7 +7,7 @@
 
 ## Description
 
-The concept of the trashcan does not exist in Command-line Interface (CLI). If you have deleted an important file by mistake with the `rm` command, it would be difficult to restore. Then, it's this `gomi`. Unlike `rm` command, it is possible to easily restore deleted files because `gomi` have the trashcan for the CLI. It is also possible to work with trashcan for Graphical user interface (GUI).
+The concept of the trashcan does not exist in Command-line interface ([CLI](http://en.wikipedia.org/wiki/Command-line_interface)). If you have deleted an important file by mistake with the `rm` command, it would be difficult to restore. Then, it's this `gomi`. Unlike `rm` command, it is possible to easily restore deleted files because `gomi` have the trashcan for the CLI. It is also possible to work with trashcan for Graphical user interface ([GUI](http://en.wikipedia.org/wiki/Graphical_user_interface)).
 
 ***DEMO:***
 
@@ -18,19 +18,19 @@ The concept of the trashcan does not exist in Command-line Interface (CLI). If y
 ## Features
 
 - Easy to restore (thanks to [`peco`](https://github.com/peco/peco)-like interface)
-- QuickLook removed files
+- Quick preview feature
 - Customize [YAML format](http://www.yaml.org) configuration file
 - Works with [`Trash`](http://en.wikipedia.org/wiki/Trash_(computing))
 - Supports [`Put Back`](http://www.mac-fusion.com/trash-tip-how-to-put-files-back-to-their-original-location/)
 - A single binary
 - Cross-platform CLI app 
 
-### QuickLook
+### Quick Look
 
-Before you restore a file that was discarded from the trashcan, `gomi` has a function that browse the contents of the file. It is almost the same as the QuickLook of OS X.
+Before you restore a file that was discarded from the trashcan, `gomi` has a function that browse the contents of the file. It is almost the same as the [Quick Look](http://en.wikipedia.org/wiki/Quick_Look) of OS X.
 If the discarded file is a directory, it is recursively scan its contents and make the files and subdirectories list.
 
-To QuickLook, type the *C-q* in Restore mode. Available key map in QuickLook is here: [Keymap](#keymap)
+To QuickLook, type the *C-q* in Restore mode. Available key map in Quick Look is here: [Keymap](#keymap)
 
 ![QuickLook](./img/gomi_quicklook.png)
 
