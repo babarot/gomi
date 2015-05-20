@@ -2,11 +2,12 @@ package gomi
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
+
+	"gopkg.in/yaml.v2"
 )
 
 type Config struct {
@@ -23,20 +24,24 @@ ignore_files:
   - "*~"
 `
 
-func readYaml() (c Config, err error) {
-	if _, err = os.Stat(rm_config); err != nil {
+func (q *Config) ReadConfig() error {
+	setting := []byte(config_raw)
+
+	if _, err := os.Stat(rm_config); err == nil {
+		setting, err = ioutil.ReadFile(rm_config)
+		if err != nil {
+			return err
+		}
+	} else {
 		err = ioutil.WriteFile(rm_config, []byte(config_raw), os.ModePerm)
 		if err != nil {
-			return
+			return err
 		}
 	}
 
-	buf, err := ioutil.ReadFile(rm_config)
-	if err != nil {
-		return
-	}
+	var data = &q
+	err := yaml.Unmarshal(setting, data)
 
-	err = yaml.Unmarshal(buf, &c)
 	if err != nil {
 		str := []byte(err.Error())
 		assigned := regexp.MustCompile(`(line \d+)`)
@@ -44,8 +49,8 @@ func readYaml() (c Config, err error) {
 		if len(group) != 0 {
 			err = fmt.Errorf("Syntax Error at %s in %s", string(group[0]), rm_config)
 		}
-		return
+		return err
 	}
 
-	return
+	return nil
 }

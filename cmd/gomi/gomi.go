@@ -23,14 +23,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	err = gomi.Init()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "gomi: ", err)
+		os.Exit(1)
+	}
+
 	// Restore Mode
 	if opts.Restore {
-		var path string
+		var location string
 		if len(args) > 0 {
-			path = args[0]
+			location = args[0]
 		}
 
-		if err := gomi.Restore(path); err != nil {
+		if err := gomi.Restore(location); err != nil {
 			fmt.Fprintln(os.Stderr, "gomi: ", err)
 			os.Exit(1)
 		}
@@ -43,13 +49,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Main
-	var save string
+	var location, trashcan string
+
 	for _, arg := range args {
 		if opts.System {
-			save, err = gomi.System(arg)
+			trashcan, err = gomi.System(arg)
 		} else {
-			save, err = gomi.Remove(arg)
+			trashcan, err = gomi.Remove(arg)
 		}
 
 		if err != nil {
@@ -57,8 +63,8 @@ func main() {
 			os.Exit(1)
 		}
 
-		arg, _ = filepath.Abs(arg)
-		if err := gomi.Logging(arg, save); err != nil {
+		location, _ = filepath.Abs(arg)
+		if err := gomi.Logging(location, trashcan); err != nil {
 			fmt.Fprintln(os.Stderr, "gomi: ", err)
 			os.Exit(1)
 		}

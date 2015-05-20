@@ -4,61 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
 )
-
-func calcSize(size int64) string {
-	if size == 0 {
-		return "0"
-	}
-
-	f := float64(size) / 1024 / 1024
-	sizeStr := fmt.Sprintf("%.2f", f)
-	sizeStr = strings.TrimSuffix(sizeStr, filepath.Ext(sizeStr))
-	if sizeStr != "0" {
-		return fmt.Sprintf("%6.2fMB", f)
-	}
-	f = float64(size) / 1024
-	sizeStr = fmt.Sprintf("%.2f", f)
-	sizeStr = strings.TrimSuffix(sizeStr, filepath.Ext(sizeStr))
-
-	return fmt.Sprintf("%6.2fKB", f)
-}
-
-func cleanLog() error {
-	var array []string
-	for _, line := range fileToArray(rm_log) {
-		_, _, trashcan, err := logLineSplitter(line)
-		if err != nil {
-			continue
-		}
-		if _, err := os.Stat(trashcan); err == nil {
-			array = append(array, line)
-		}
-	}
-
-	if err := func(lines []string, path string) error {
-		file, err := os.Create(path)
-		if err != nil {
-			return err
-		}
-		defer file.Close()
-
-		w := bufio.NewWriter(file)
-		for _, line := range lines {
-			fmt.Fprintln(w, line)
-		}
-		return w.Flush()
-	}(array, rm_log); err != nil {
-		return err
-	}
-
-	return nil
-}
 
 // Split line
 // 2006-01-02 15:04:05 /Users/b4b4r07/work/README.md /Users/b4b4r07/.gomi/2006/01/02/README.md.15_04_05
@@ -66,7 +16,7 @@ func cleanLog() error {
 // 0. 2006-01-02 15:04:05
 // 1. /Users/b4b4r07/work/README.md
 // 2. /Users/b4b4r07/.gomi/2006/01/02/README.md.15_04_05
-func logLineSplitter(str string) (datetime, location, trashcan string, err error) {
+func Split(str string) (datetime, location, trashcan string, err error) {
 	b := []byte(str)
 	var assigned *regexp.Regexp
 
@@ -86,21 +36,8 @@ func logLineSplitter(str string) (datetime, location, trashcan string, err error
 	location = filepath.Join(string(group[2]))
 	trashcan = filepath.Join(string(group[3]))
 	err = nil
-	return
-}
 
-// Search line from rm_log
-// 2006-01-02 15:04:05 /Users/b4b4r07/work/README.md
-// -->
-// 2006-01-02 15:04:05 /Users/b4b4r07/work/README.md /Users/b4b4r07/.gomi/2006/01/02/README.md.15_04_05
-func logLineSearcher(str string) string {
-	log := reverseArray(fileToArray(rm_log))
-	for _, line := range log {
-		if strings.Contains(line, str) {
-			return line
-		}
-	}
-	return ""
+	return
 }
 
 func reverseArray(input []string) []string {
@@ -110,8 +47,8 @@ func reverseArray(input []string) []string {
 	return append(reverseArray(input[1:]), input[0])
 }
 
-func fileToArray(filePath string) []string {
-	f, err := os.Open(filePath)
+func fileToArray(path string) []string {
+	f, err := os.Open(path)
 	if err != nil {
 		panic(err)
 	}
@@ -126,22 +63,77 @@ func fileToArray(filePath string) []string {
 	if serr := scanner.Err(); serr != nil {
 		panic(err)
 	}
-	if len(lines) == 0 {
-		fmt.Fprintln(os.Stderr, "No content in %s", filePath)
-		os.Exit(1)
-	}
+	//if len(lines) == 0 {
+	//	fmt.Fprintln(os.Stderr, "No content in %s", path)
+	//	os.Exit(1)
+	//}
 
 	return lines
 }
 
-func checkPath(cmd string) (ret string, err error) {
-	ret, err = exec.LookPath(cmd)
-	if err != nil {
-		err = fmt.Errorf("%s: executable file not found in $PATH", cmd)
-		return
+func calcSize(size int64) string {
+	if size == 0 {
+		return fmt.Sprintf("%6dKB", size)
 	}
 
-	return ret, nil
+	f := float64(size) / 1024 / 1024
+	sizeStr := fmt.Sprintf("%.2f", f)
+	sizeStr = strings.TrimSuffix(sizeStr, filepath.Ext(sizeStr))
+	if sizeStr != "0" {
+		return fmt.Sprintf("%6.2fMB", f)
+	}
+	f = float64(size) / 1024
+	sizeStr = fmt.Sprintf("%.2f", f)
+	sizeStr = strings.TrimSuffix(sizeStr, filepath.Ext(sizeStr))
+
+	return fmt.Sprintf("%6.2fKB", f)
+}
+
+func cleanLog() error {
+	var array []string
+	for _, line := range fileToArray(rm_log) {
+		// relieve line error splitted from log
+		_, _, trashcan, err := Split(line)
+		if err != nil {
+			continue
+		}
+		// relieve non-existing trashcan from log
+		if _, err := os.Stat(trashcan); err == nil {
+			array = append(array, line)
+		}
+	}
+
+	// relieve duplicate line from log
+	cleaned := []string{}
+	for _, value := range array {
+		if !stringInSlice(value, cleaned) {
+			cleaned = append(cleaned, value)
+		}
+	}
+
+	// write new log lines to log
+	return func(lines []string, path string) error {
+		file, err := os.Create(path)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		w := bufio.NewWriter(file)
+		for _, line := range lines {
+			fmt.Fprintln(w, line)
+		}
+		return w.Flush()
+	}(cleaned, rm_log)
+}
+
+func stringInSlice(str string, list []string) bool {
+	for _, v := range list {
+		if v == str {
+			return true
+		}
+	}
+	return false
 }
 
 // readLines reads a whole file into memory

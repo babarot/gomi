@@ -1,4 +1,4 @@
-package mac
+package darwin
 
 import (
 	"fmt"
@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	//"time"
 )
 
 const raw = `
@@ -21,9 +20,15 @@ end run
 
 var trash = filepath.Join(os.Getenv("HOME"), ".Trash")
 
-func Trash(f string) (save string, err error) {
+func Trash(f string) (trashcan string, err error) {
 	bin, err := exec.LookPath("osascript")
 	if err != nil {
+		err = fmt.Errorf("not yet supported")
+		return
+	}
+
+	if _, err = os.Stat(trash); err != nil {
+		err = fmt.Errorf("not yet supported")
 		return
 	}
 
@@ -37,12 +42,11 @@ func Trash(f string) (save string, err error) {
 	_ = name
 
 	dest := filepath.Join(trash, base)
-	if _, err = os.Stat(dest); err != nil {
-		save = dest
-	} else {
-		//save = filepath.Join(trash, fmt.Sprintf("%s %s%s", name, time.Now().Format("15.04.05"), ext))
+	if _, err = os.Stat(dest); err == nil {
 		err = fmt.Errorf("already exists")
 		return
+	} else {
+		trashcan = dest
 	}
 
 	params := append([]string{"-e", raw}, path)
@@ -51,8 +55,8 @@ func Trash(f string) (save string, err error) {
 		return
 	}
 
-	if _, err = os.Stat(save); err != nil {
-		save = ""
+	if _, err = os.Stat(trashcan); err != nil {
+		trashcan = ""
 	}
 
 	return

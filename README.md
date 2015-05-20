@@ -1,4 +1,4 @@
-[![./gomi -r](./img/gomi.png)](https://github.com/b4b4r07/gomi "./gomi -r")
+[![./gomi](./images/gomi_logo.png)](https://github.com/b4b4r07/gomi "./gomi")
 
 [![GitHub Releases](https://img.shields.io/badge/platform-OSX%20|%20Linux%20|%20Windows-ff69b4.svg)](https://github.com/b4b4r07/gomi/releases "Works on OS X, Linux and Windows")
 [![License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://raw.githubusercontent.com/b4b4r07/dotfiles/master/doc/LICENSE-MIT.txt "License")
@@ -11,16 +11,18 @@ The concept of the trashcan does not exist in Command-line interface ([CLI](http
 
 ***DEMO:***
 
-![DEMO](./img/gomi.gif)
+![DEMO](./images/gomi.gif)
 
-*gomi* means the trash in Japanese.
+\*1 *gomi* means a trash in Japanese.
+
+\*2 It was heavily inspired by [peco/peco](https://github.com/peco/peco) and [mattn/gof](https://github.com/mattn/gof).
 
 ## Features
 
 - Easy to restore (thanks to [`peco`](https://github.com/peco/peco)-like interface)
 - Quick preview feature
-- Customize [YAML format](http://www.yaml.org) configuration file
-- Works with [`Trash`](http://en.wikipedia.org/wiki/Trash_(computing))
+- Customizes [YAML format](http://www.yaml.org) configuration file
+- Interacts nicely with [`Trash`](http://en.wikipedia.org/wiki/Trash_(computing))
 - Supports [`Put Back`](http://www.mac-fusion.com/trash-tip-how-to-put-files-back-to-their-original-location/)
 - A single binary
 - Cross-platform CLI app 
@@ -30,21 +32,21 @@ The concept of the trashcan does not exist in Command-line interface ([CLI](http
 Before you restore a file that was discarded from the trashcan, `gomi` has a function that browse the contents of the file. It is almost the same as the [Quick Look](http://en.wikipedia.org/wiki/Quick_Look) of OS X.
 If the discarded file is a directory, it is recursively scan its contents and make the files and subdirectories list.
 
-To QuickLook, type the *C-q* in Restore mode. Available key map in Quick Look is here: [Keymap](#keymap)
+To QuickLook, type the *C-q* in Restore mode. Available key map is here: [Keymap](#keymap)
 
-![QuickLook](./img/gomi_quicklook.png)
+![QuickLook](./images/gomi_quicklook.png)
 
 ### Put Back
 
 `gomi` supports [`Put Back`](http://www.mac-fusion.com/trash-tip-how-to-put-files-back-to-their-original-location/). Because it is possible to combine the GUI trashcan with `gomi`, it is possible to restore the discard file from the GUI menu. Currently it has supported OS X only.
 
-![Put Back](./img/gomi_system.gif)
+![Put Back](./images/gomi_putback.gif)
 
 ### Works on Windows
 
 `gomi` is a Cross-platform application. Basically, you can also use Windows. In the future, it will be possible to combine the Recycle Bin with `gomi`. We welcome the pull request.
 
-![Windows](./img/gomi_windows.gif)
+![Windows](./images/gomi_windows.gif)
 
 ## Usage
 
@@ -76,13 +78,24 @@ For more information, see `gomi --help`.
 
 ### Keymap
 
-| Key | Action |
-|:---:|:---:|
-| Enter | Restore under the cursor |
-| C-c, Esc | Quit Restore mode or QuickLook |
-| C-n, Down | Select Down |
-| C-p, Up | Select Up |
-| C-q | Toggle the QuickLook |
+| Keys | Actions |
+|------|-------|
+| Enter      | Restore a file under the cursor or selected files |
+| C-c, Esc   | Exit from Restore mode or Quick Look mode with success status |
+| C-n, Down  | Move the selected line cursor to one line below |
+| C-p, Up    | Move the selected line cursor to one line above |
+| C-f, Right | Move caret forward 1 character |
+| C-b, Left  | Move caret backward 1 character |
+| C-a        | Move caret to the beginning of line |
+| C-e        | Move caret to the end of line |
+| BackSpace  | Delete one character backward |
+| C-u        | Delete the characters under the cursor backward until the beginning of the line |
+| C-w        | Delete one word backward |
+| C-l        | Redraws the screen |
+| C-q        | Toggle Quick Look |
+| C-i, Tab   | Toggle showing help message about gomi |
+| C-z        | Select multiple lines |
+| C-\_        | Remove a file under the cursor or selected files |
 
 ## Installation
 
@@ -92,7 +105,7 @@ If you want to go the Go way (install in GOPATH/bin) and just want the command:
 
 ### Mac OS X / Homebrew
 
-If you're on OS X and want to use [Homebrew](https://brew.sh):
+If you're on OS X and want to use [Homebrew](https://github.com/b4b4r07/homebrew-gomi):
 
 	$ brew tap b4b4r07/gomi
 	$ brew install gomi
@@ -122,6 +135,7 @@ This is recommended. By doing so, it is possible to prevent `rm` command from re
 `gomi` read the YAML configuration such as the following from the `~/.gomi/config.yaml`. In ***ignore_files***, you can describe shell file name pattern that you do not want to add to history for restoration.
 
 ```yaml
+root: ~/.gomi
 ignore_files:
   - .DS_Store
   - "*~"
