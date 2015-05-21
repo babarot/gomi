@@ -94,7 +94,7 @@ For more information, see `gomi --help`.
 | C-l        | Redraws the screen |
 | C-q        | Toggle Quick Look |
 | C-i, Tab   | Toggle showing help message about gomi |
-| C-z        | Select multiple lines |
+| C-v        | Select multiple lines |
 | C-\_        | Remove a file under the cursor or selected files |
 
 ## Installation

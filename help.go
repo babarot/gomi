@@ -78,7 +78,7 @@ func HelpKeymap() error {
 		fmt.Sprintf("# Ctrl-q               : Toggle Quick Look"),
 		fmt.Sprintf("# Ctrl-u               : Delete the characters under the cursor backward until the beginning of the line"),
 		fmt.Sprintf("# Ctrl-w               : Delete one word backward"),
-		fmt.Sprintf("# Ctrl-z               : Select multiple lines"),
+		fmt.Sprintf("# Ctrl-v               : Select multiple lines"),
 		strings.Repeat("=", width),
 	}
 

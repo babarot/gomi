@@ -107,9 +107,8 @@ func filterLine() {
 					datetime: datetime,
 					location: location,
 					trashcan: trashcan,
-					//name:     strings.TrimSuffix(filepath.Base(f.trashcan), filepath.Ext(filepath.Base(f.trashcan))),
-					name:  filepath.Base(f.location),
-					isdir: f.isdir,
+					name:     filepath.Base(f.location),
+					isdir:    f.isdir,
 				},
 				pos1:     -1,
 				pos2:     -1,
@@ -145,9 +144,8 @@ func filterLine() {
 					datetime: datetime,
 					location: location,
 					trashcan: trashcan,
-					//name:     strings.TrimSuffix(filepath.Base(f.trashcan), filepath.Ext(filepath.Base(f.trashcan))),
-					name:  filepath.Base(f.location),
-					isdir: f.isdir,
+					name:     filepath.Base(f.location),
+					isdir:    f.isdir,
 				},
 				pos1:     len([]rune(f.disp[0:ms[0][2]])),
 				pos2:     len([]rune(f.disp[0:ms[0][3]])),
@@ -283,9 +281,8 @@ func NewLines(line string) Lines {
 		datetime: datetime,
 		location: location,
 		trashcan: trashcan,
-		//name:     strings.TrimSuffix(filepath.Base(trashcan), filepath.Ext(filepath.Base(trashcan))),
-		name:  filepath.Base(location),
-		isdir: isdir,
+		name:     filepath.Base(location),
+		isdir:    isdir,
 	}
 	return lines
 }
@@ -469,7 +466,7 @@ func handleKeyEvent(ev termbox.Event) {
 			ctx.lines = append(ctx.lines, NewLines(line))
 		}
 		ctx.update = true
-	case termbox.KeyCtrlZ:
+	case termbox.KeyCtrlV:
 		found := -1
 		line := current[cursor_y].line
 		for i, s := range ctx.selected {
