@@ -21,6 +21,7 @@ var (
 	cursor_x, cursor_y int
 	width, height      int
 	timer              *time.Timer
+	gomiSize           int64
 )
 
 type Ctx struct {
@@ -325,6 +326,11 @@ func Init() error {
 		} else if !strings.HasPrefix(config.Root, "/") {
 			rm_trash = filepath.Join(os.Getenv("HOME"), config.Root)
 		}
+	}
+	if config.Size == 0 {
+		gomiSize = 1000000000 // 1GB
+	} else {
+		gomiSize = config.Size
 	}
 
 	// Clean rm_log

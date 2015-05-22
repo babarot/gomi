@@ -102,9 +102,13 @@ func Remove(path string) (trashcan string, err error) {
 		}
 	}
 
-	if _, sterr := os.Stat(path); sterr == nil {
+	if info, sterr := os.Stat(path); sterr == nil {
 		path, _ = filepath.Abs(path)
 		path = filepath.Join(path)
+		if info.Size() > gomiSize {
+			err = fmt.Errorf("%s: file size is too large", path)
+			return
+		}
 	} else {
 		err = fmt.Errorf("%s: no such file or directory", path)
 		return

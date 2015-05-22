@@ -32,7 +32,7 @@ The concept of the trashcan does not exist in Command-line interface ([CLI](http
 Before you restore a file that was discarded from the trashcan, `gomi` has a function that browse the contents of the file. It is almost the same as the [Quick Look](http://en.wikipedia.org/wiki/Quick_Look) of OS X.
 If the discarded file is a directory, it is recursively scan its contents and make the files and subdirectories list.
 
-To QuickLook, type the *C-q* in Restore mode. Available key map is here: [Keymap](#keymap)
+To QuickLook, type the <kbd>C-q</kbd> in Restore mode. Available key map is here: [Keymap](#keymap)
 
 ![QuickLook](./images/gomi_quicklook.png)
 
@@ -139,6 +139,7 @@ root: ~/.gomi
 ignore_files:
   - .DS_Store
   - "*~"
+gomi_size: 1000000000 # 1GB
 ```
 
 ## Versus Other Trash Tools

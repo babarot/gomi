@@ -13,6 +13,7 @@ import (
 type Config struct {
 	Root   string   `yaml:"root"`
 	Ignore []string `yaml:"ignore_files"`
+	Size   int64    `yaml:"gomi_size"`
 }
 
 var rm_config string = filepath.Join(rm_trash, "config.yaml")
@@ -22,6 +23,8 @@ var config_raw string = `root: ~/.gomi
 ignore_files:
   - .DS_Store
   - "*~"
+
+gomi_size: 1000000000 # 1GB
 `
 
 func (q *Config) ReadConfig() error {
