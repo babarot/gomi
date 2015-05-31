@@ -1,7 +1,12 @@
 [![./gomi](./images/gomi_logo.png)](https://github.com/b4b4r07/gomi "./gomi")
 
-[![GitHub Releases](https://img.shields.io/badge/platform-OSX%20|%20Linux%20|%20Windows-ff69b4.svg)](https://github.com/b4b4r07/gomi/releases "Works on OS X, Linux and Windows")
-[![License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://raw.githubusercontent.com/b4b4r07/dotfiles/master/doc/LICENSE-MIT.txt "License")
+[![GitHub Releases](https://img.shields.io/badge/platform-OSX%20|%20Linux%20|%20Windows-ff69b4.svg?style=flat-square)][release]
+[![GitHub Releases](http://img.shields.io/github/release/b4b4r07/gomi.svg?style=flat-square)][release]
+[![License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)][license]
+
+[release]: https://github.com/b4b4r07/gomi/releases
+[license]: https://raw.githubusercontent.com/b4b4r07/dotfiles/master/doc/LICENSE-MIT.txt
+
 
 `gomi` is a simple trash tool that works on CLI, written in Go
 
@@ -44,7 +49,7 @@ To QuickLook, type the <kbd>C-q</kbd> in Restore mode. Available key map is here
 
 ### Works on Windows
 
-`gomi` is a Cross-platform application. Basically, you can also use Windows. In the future, it will be possible to combine the Recycle Bin with `gomi`. We welcome the pull request.
+`gomi` is a Cross-platform application. Basically, you can also use Windows. In the future, it will be possible to combine the Recycle Bin with `gomi`. We welcome your pull request.
 
 ![Windows](./images/gomi_windows.gif)
 
