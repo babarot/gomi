@@ -7,24 +7,26 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"gopkg.in/yaml.v2"
+	"github.com/BurntSushi/toml"
 )
 
 type Config struct {
-	Root   string   `yaml:"root"`
-	Ignore []string `yaml:"ignore_files"`
-	Size   int64    `yaml:"gomi_size"`
+	Root   string   `toml:"root"`
+	Ignore []string `toml:"ignore_files"`
+	Size   int64    `toml:"gomi_size"`
 }
 
-var rm_config string = filepath.Join(rm_trash, "config.yaml")
-var config_raw string = `root: ~/.gomi
+var rm_config string = filepath.Join(rm_trash, "config.toml")
+var config_raw string = `# config.toml
+root = "~/.gomi"
 
 # Interpret if name matches the shell file name pattern
-ignore_files:
-  - .DS_Store
-  - "*~"
+ignore_files = [
+  ".DS_Store",
+  "*~",
+]
 
-gomi_size: 1000000000 # 1GB
+gomi_size = 1000000000 # 1GB
 `
 
 func (q *Config) ReadConfig() error {
@@ -43,7 +45,7 @@ func (q *Config) ReadConfig() error {
 	}
 
 	var data = &q
-	err := yaml.Unmarshal(setting, data)
+	err := toml.Unmarshal(setting, data)
 
 	if err != nil {
 		str := []byte(err.Error())
