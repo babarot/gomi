@@ -11,11 +11,6 @@ import (
 )
 
 const (
-	Name    = "gomi"
-	Version = "0.1.6"
-)
-
-const (
 	ExitCodeOK    int = 0
 	ExitCodeError int = 1 + iota
 	ExitCodeFlagParseError
@@ -97,11 +92,6 @@ func (cli *CLI) Run(args []string) int {
 	}
 
 	return ExitCodeOK
-}
-
-func main() {
-	cli := &CLI{outStream: os.Stdout, errStream: os.Stderr}
-	os.Exit(cli.Run(os.Args))
 }
 
 var helpText = `Usage: gomi [options] [path]
