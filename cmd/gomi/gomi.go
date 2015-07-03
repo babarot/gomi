@@ -3,26 +3,39 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
 	"github.com/b4b4r07/gomi"
 )
 
-type Options struct {
-	Restore bool `short:"r" long:"restore" description:"Restore removed files from the trash"`
-	System  bool `short:"s" long:"system" description:"Use the trash of OSes instead of the trash of gomi"`
+const (
+	Name    = "gomi"
+	Version = "0.1.6"
+)
+
+const (
+	ExitCodeOK    int = 0
+	ExitCodeError int = 1 + iota
+	ExitCodeFlagParseError
+	ExitCodeRemoveError
+	ExitCodeRestoreError
+	ExitCodeLoggingError
+	ExitCodeBadArgs
+)
+
+type CLI struct {
+	outStream, errStream io.Writer
 }
 
-var opts Options
-
-func main() {
-	// Parse arguments
+func (cli *CLI) Run(args []string) int {
 	var version, system, restore bool
-	flags := flag.NewFlagSet("gch", flag.ContinueOnError)
+
+	flags := flag.NewFlagSet("gomi", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
 	flags.Usage = func() {
-		fmt.Fprint(os.Stderr, "help")
+		fmt.Fprint(os.Stderr, helpText)
 	}
 
 	flags.BoolVar(&version, "version", false, "")
@@ -33,13 +46,13 @@ func main() {
 
 	// Parse all the flags
 	if err := flags.Parse(os.Args[1:]); err != nil {
-		os.Exit(1)
+		return ExitCodeFlagParseError
 	}
 
 	err := gomi.Init()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "gomi: ", err)
-		os.Exit(1)
+		fmt.Fprintln(cli.errStream, "gomi: ", err)
+		return ExitCodeError
 	}
 
 	if restore {
@@ -48,18 +61,18 @@ func main() {
 			location = flags.Args()[0]
 		}
 		if err := gomi.Restore(location); err != nil {
-			fmt.Fprintln(os.Stderr, "gomi: ", err)
-			os.Exit(1)
+			fmt.Fprintln(cli.errStream, "gomi: ", err)
+			return ExitCodeRestoreError
 		}
-		os.Exit(1)
+		return ExitCodeOK
 	} else if version {
-		fmt.Fprintln(os.Stderr, "version")
-		os.Exit(0)
+		fmt.Fprintf(cli.errStream, "%s v%s\n", Name, Version)
+		return ExitCodeOK
 	}
 
 	if flags.NArg() < 1 {
-		fmt.Fprintln(os.Stderr, "gomi: ", fmt.Errorf("too few arguments"))
-		os.Exit(1)
+		fmt.Fprintln(cli.errStream, "gomi: ", fmt.Errorf("too few arguments"))
+		return ExitCodeBadArgs
 	}
 
 	var location, trashcan string
@@ -72,16 +85,23 @@ func main() {
 		}
 
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "gomi: ", err)
-			os.Exit(1)
+			fmt.Fprintln(cli.errStream, "gomi: ", err)
+			return ExitCodeRemoveError
 		}
 
 		location, _ = filepath.Abs(arg)
 		if err := gomi.Logging(location, trashcan); err != nil {
-			fmt.Fprintln(os.Stderr, "gomi: ", err)
-			os.Exit(1)
+			fmt.Fprintln(cli.errStream, "gomi: ", err)
+			return ExitCodeLoggingError
 		}
 	}
+
+	return ExitCodeOK
+}
+
+func main() {
+	cli := &CLI{outStream: os.Stdout, errStream: os.Stderr}
+	os.Exit(cli.Run(os.Args))
 }
 
 var helpText = `Usage: gomi [options] [path]
