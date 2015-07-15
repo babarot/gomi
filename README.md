@@ -1,12 +1,8 @@
-[![./gomi](./images/gomi_logo.png)](https://github.com/b4b4r07/gomi "./gomi")
+[![](https://raw.githubusercontent.com/b4b4r07/screenshots/master/gomi/logo.png)][gomi]
 
-[![GitHub Releases](https://img.shields.io/badge/platform-OSX%20|%20Linux%20|%20Windows-ff69b4.svg?style=flat-square)][release]
-[![GitHub Releases](http://img.shields.io/github/release/b4b4r07/gomi.svg?style=flat-square)][release]
-[![License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)][license]
-
-[release]: https://github.com/b4b4r07/gomi/releases
-[license]: https://raw.githubusercontent.com/b4b4r07/dotfiles/master/doc/LICENSE-MIT.txt
-
+[![](https://img.shields.io/badge/platform-OSX%20|%20Linux%20|%20Windows-ff69b4.svg?style=flat-square)][release]
+[![](http://img.shields.io/github/release/b4b4r07/gomi.svg?style=flat-square)][release]
+[![](http://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)][license]
 
 `gomi` is a simple trash tool that works on CLI, written in Go
 
@@ -16,7 +12,7 @@ The concept of the trashcan does not exist in Command-line interface ([CLI](http
 
 ***DEMO:***
 
-![DEMO](./images/gomi.gif)
+[![DEMO](https://raw.githubusercontent.com/b4b4r07/screenshots/master/gomi/demo.gif)][gomi]
 
 \*1 *gomi* means a trash in Japanese.
 
@@ -39,19 +35,19 @@ If the discarded file is a directory, it is recursively scan its contents and ma
 
 To QuickLook, type the <kbd>C-q</kbd> in Restore mode. Available key map is here: [Keymap](#keymap)
 
-![QuickLook](./images/gomi_quicklook.png)
+[![QuickLook](https://raw.githubusercontent.com/b4b4r07/screenshots/master/gomi/quicklook.png)][gomi]
 
 ### Put Back
 
 `gomi` supports [`Put Back`](http://www.mac-fusion.com/trash-tip-how-to-put-files-back-to-their-original-location/). Because it is possible to combine the GUI trashcan with `gomi`, it is possible to restore the discard file from the GUI menu. Currently it has supported OS X only.
 
-![Put Back](./images/gomi_putback.gif)
+[![Put Back](https://raw.githubusercontent.com/b4b4r07/screenshots/master/gomi/putback.gif)][gomi]
 
 ### Works on Windows
 
 `gomi` is a Cross-platform application. Basically, you can also use Windows. In the future, it will be possible to combine the Recycle Bin with `gomi`. We welcome your pull request.
 
-![Windows](./images/gomi_windows.gif)
+[![Windows](https://raw.githubusercontent.com/b4b4r07/screenshots/master/gomi/windows.gif)][gomi]
 
 ## Usage
 
@@ -162,3 +158,8 @@ gomi_size: 1000000000 # 1GB
 ## License
 
 [MIT](https://raw.githubusercontent.com/b4b4r07/dotfiles/master/doc/LICENSE-MIT.txt) © BABAROT (a.k.a. [b4b4r07](http://tellme.tokyo))
+
+
+[release]: https://github.com/b4b4r07/gomi/releases
+[license]: https://raw.githubusercontent.com/b4b4r07/dotfiles/master/doc/LICENSE-MIT.txt
+[gomi]: http://b4b4r07.com/gomi
