@@ -100,6 +100,10 @@ For more information, see `gomi --help`.
 
 ## Installation
 
+[![QuickLook](https://raw.githubusercontent.com/b4b4r07/screenshots/master/gomi/installation.png)][gomi]
+
+	$ curl -L git.io/gomi | sh
+
 If you want to go the Go way (install in GOPATH/bin) and just want the command:
 
 	$ go get -u github.com/b4b4r07/gomi/...
