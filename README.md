@@ -102,7 +102,7 @@ For more information, see `gomi --help`.
 
 If you want to go the Go way (install in GOPATH/bin) and just want the command:
 
-	$ go get -u github.com/b4b4r07/gomi
+	$ go get -u github.com/b4b4r07/gomi/...
 
 ### Mac OS X / Homebrew
 
@@ -115,9 +115,9 @@ If you're on OS X and want to use [Homebrew](https://github.com/b4b4r07/homebrew
 
 Otherwise, download the binary from [GitHub Releases](https://github.com/b4b4r07/gomi/releases) and drop it in your `$PATH`.
 
-- [OS X (386)](https://github.com/b4b4r07/gomi/releases/download/v0.1.2/gomi_darwin_386)
-- [Linux (386)](https://github.com/b4b4r07/gomi/releases/download/v0.1.2/gomi_linux_386)
-- [Windows (386)](https://github.com/b4b4r07/gomi/releases/download/v0.1.2/gomi_windows_386.exe)
+- [OS X (386)](https://github.com/b4b4r07/gomi/releases/latest)
+- [Linux (386)](https://github.com/b4b4r07/gomi/releases/latest)
+- [Windows (386)](https://github.com/b4b4r07/gomi/releases/latest)
 
 ## Setup
 
@@ -131,16 +131,22 @@ alias rm="gomi"
 
 This is recommended. By doing so, it is possible to prevent `rm` command from removing an important file.
 
-### config.yaml
+### config.toml
 
-`gomi` read the YAML configuration such as the following from the `~/.gomi/config.yaml`. In ***ignore_files***, you can describe shell file name pattern that you do not want to add to history for restoration.
+`gomi` read the TOML configuration such as the following from the `~/.gomi/config.ytoml`. In ***ignore_files***, you can describe shell file name pattern that you do not want to add to history for restoration.
 
-```yaml
-root: ~/.gomi
-ignore_files:
-  - .DS_Store
-  - "*~"
-gomi_size: 1000000000 # 1GB
+```toml
+root = "~/.gomi"
+
+# Interpret if name matches the shell file name pattern
+ignore_files = [
+  ".DS_Store",
+  "*~",
+  "unko",
+]
+
+gomi_size = 1000000000 # 1GB
+
 ```
 
 ## Versus Other Trash Tools
