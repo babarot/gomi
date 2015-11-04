@@ -22,7 +22,7 @@ The concept of the trashcan does not exist in Command-line interface ([CLI](http
 
 - Easy to restore (thanks to [`peco`](https://github.com/peco/peco)-like interface)
 - Quick preview feature
-- Customizes [YAML format](http://www.yaml.org) configuration file
+- Customizes [TOML format](https://github.com/toml-lang/toml) configuration file
 - Interacts nicely with [`Trash`](http://en.wikipedia.org/wiki/Trash_(computing))
 - Supports [`Put Back`](http://www.mac-fusion.com/trash-tip-how-to-put-files-back-to-their-original-location/)
 - A single binary
@@ -110,14 +110,14 @@ If you want to go the Go way (install in GOPATH/bin) and just want the command:
 
 ### Mac OS X / Homebrew
 
-If you're on OS X and want to use [Homebrew](https://github.com/b4b4r07/homebrew-gomi):
+If you're on OS X and want to use [Homebrew](https://github.com/Homebrew/homebrew):
 
 	$ brew tap b4b4r07/gomi
 	$ brew install gomi
 
 ### Binary only
 
-Otherwise, download the binary from [GitHub Releases](https://github.com/b4b4r07/gomi/releases) and drop it in your `$PATH`.
+Otherwise, download the binary from [GitHub Releases][release] and drop it in your `$PATH`.
 
 - [OS X (386)](https://github.com/b4b4r07/gomi/releases/latest)
 - [Linux (386)](https://github.com/b4b4r07/gomi/releases/latest)
@@ -163,13 +163,12 @@ gomi_size = 1000000000 # 1GB
 
 	> Cross-platform command-line app for moving files and directories to the trash - A safer alternative to `rm`
 
-:do_not_litter: Do not use litter, use [gomi](https://github.com/b4b4r07/gomi).
+:do_not_litter: Do not use litter, use [gomi][gomi].
 
 ## License
 
-[MIT](https://raw.githubusercontent.com/b4b4r07/dotfiles/master/doc/LICENSE-MIT.txt) © BABAROT (a.k.a. [b4b4r07](http://tellme.tokyo))
-
+[MIT](license) © BABAROT (a.k.a. [b4b4r07](http://tellme.tokyo))
 
 [release]: https://github.com/b4b4r07/gomi/releases
-[license]: https://raw.githubusercontent.com/b4b4r07/dotfiles/master/doc/LICENSE-MIT.txt
+[license]: http://b4b4r07.mit-license.org
 [gomi]: http://b4b4r07.com/gomi
