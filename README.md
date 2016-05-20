@@ -100,9 +100,9 @@ For more information, see `gomi --help`.
 
 ## Installation
 
-[![QuickLook](https://raw.githubusercontent.com/b4b4r07/screenshots/master/gomi/installation.png)][gomi]
+The installation script requires bash 3+:
 
-	$ curl -L git.io/gomi | sh
+	$ curl -L git.io/gomi | bash
 
 If you want to go the Go way (install in GOPATH/bin) and just want the command:
 
@@ -137,7 +137,7 @@ This is recommended. By doing so, it is possible to prevent `rm` command from re
 
 ### config.toml
 
-`gomi` read the TOML configuration such as the following from the `~/.gomi/config.ytoml`. In ***ignore_files***, you can describe shell file name pattern that you do not want to add to history for restoration.
+`gomi` read the TOML configuration such as the following from the `~/.gomi/config.toml`. In ***ignore_files***, you can describe shell file name pattern that you do not want to add to history for restoration.
 
 ```toml
 root = "~/.gomi"
