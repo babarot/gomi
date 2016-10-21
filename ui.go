@@ -110,6 +110,13 @@ func Remove(path string) (trashcan string, err error) {
 			return
 		}
 	} else {
+		// Check if symlink
+		fi, _ := os.Lstat(path)
+		if fi.Mode()&os.ModeSymlink == os.ModeSymlink {
+			// Forcibly remove that
+			os.Remove(path)
+			return
+		}
 		err = fmt.Errorf("%s: no such file or directory", path)
 		return
 	}
