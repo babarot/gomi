@@ -1,19 +1,20 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/b4b4r07/gomi"
 )
 
+var re = regexp.MustCompile("^-.*")
+
 const (
 	ExitCodeOK    int = 0
 	ExitCodeError int = 1 + iota
-	ExitCodeFlagParseError
 	ExitCodeRemoveError
 	ExitCodeRestoreError
 	ExitCodeLoggingError
@@ -25,23 +26,33 @@ type CLI struct {
 }
 
 func (cli *CLI) Run(args []string) int {
-	var version, system, restore bool
+	var system, restore bool
+	// args := os.Args[1:]
 
-	flags := flag.NewFlagSet("gomi", flag.ContinueOnError)
-	flags.SetOutput(os.Stderr)
-	flags.Usage = func() {
-		fmt.Fprint(os.Stderr, helpText)
-	}
-
-	flags.BoolVar(&version, "version", false, "")
-	flags.BoolVar(&restore, "restore", false, "")
-	flags.BoolVar(&restore, "r", false, "")
-	flags.BoolVar(&system, "system", false, "")
-	flags.BoolVar(&system, "s", false, "")
-
-	// Parse all the flags
-	if err := flags.Parse(os.Args[1:]); err != nil {
-		return ExitCodeFlagParseError
+L:
+	for _, arg := range args {
+		switch arg {
+		case "-h", "--help":
+			fmt.Fprintln(cli.errStream, helpText)
+			return ExitCodeError
+		case "--version":
+			fmt.Fprintf(cli.errStream, "%s v%s\n", Name, Version)
+			return ExitCodeOK
+		case "-r", "--restore":
+			restore = true
+			args = args[1:]
+		case "-s", "--system":
+			system = true
+			args = args[1:]
+		case "--":
+			args = args[1:]
+			break L
+		default:
+			if re.Match([]byte(arg)) {
+				fmt.Fprintf(cli.errStream, "gomi: %s: no such option\n", arg)
+				return ExitCodeError
+			}
+		}
 	}
 
 	err := gomi.Init()
@@ -52,27 +63,28 @@ func (cli *CLI) Run(args []string) int {
 
 	if restore {
 		var location string
-		if flags.NArg() > 0 {
-			location = flags.Args()[0]
+		if len(args) > 0 {
+			location = args[0]
 		}
 		if err := gomi.Restore(location); err != nil {
 			fmt.Fprintln(cli.errStream, "gomi: ", err)
 			return ExitCodeRestoreError
 		}
 		return ExitCodeOK
-	} else if version {
-		fmt.Fprintf(cli.errStream, "%s v%s\n", Name, Version)
-		return ExitCodeOK
 	}
 
-	if flags.NArg() < 1 {
+	if len(args) == 0 {
 		fmt.Fprintln(cli.errStream, "gomi: ", fmt.Errorf("too few arguments"))
 		return ExitCodeBadArgs
 	}
 
 	var location, trashcan string
-
-	for _, arg := range flags.Args() {
+	for _, arg := range args {
+		if _, err := os.Stat(arg); err == nil {
+		} else {
+			fmt.Fprintf(cli.errStream, "gomi: %s not found\n", arg)
+			continue
+		}
 		if system {
 			trashcan, err = gomi.System(arg)
 		} else {
