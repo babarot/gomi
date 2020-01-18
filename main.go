@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,8 +19,14 @@ import (
 
 const gomiDir = ".gomi"
 
+var (
+	gomiPath      = filepath.Join(os.Getenv("HOME"), gomiDir)
+	inventoryFile = "inventory.json"
+	inventoryPath = filepath.Join(gomiPath, inventoryFile)
+)
+
 type Option struct {
-	Restore  bool     `long:"restore" description:"Restore deleted file"`
+	Restore  bool     `short:"b" long:"restore" description:"Restore deleted file"`
 	RmOption RmOption `group:"Emulation Options for rm command"`
 }
 
@@ -50,13 +55,11 @@ type File struct {
 }
 
 type CLI struct {
-	Option         Option
-	Stdout, Stderr io.Writer
-	Inventory      Inventory
+	Option    Option
+	Inventory Inventory
 }
 
-func (i *Inventory) Open(path string) error {
-	i.Path = path
+func (i *Inventory) Open() error {
 	f, err := os.Open(i.Path)
 	if err != nil {
 		return err
@@ -75,10 +78,10 @@ func (i *Inventory) Save(files []File) error {
 	return json.NewEncoder(f).Encode(&i)
 }
 
-func (i *Inventory) Remove(remove File) error {
+func (i *Inventory) Delete(target File) error {
 	var files []File
 	for _, file := range i.Files {
-		if file.ID == remove.ID {
+		if file.ID == target.ID {
 			continue
 		}
 		files = append(files, file)
@@ -127,7 +130,7 @@ func (c CLI) Tag(gid GroupID, arg string) (File, error) {
 		IsDir: fi.IsDir(),
 		From:  from,
 		To: filepath.Join(
-			os.Getenv("HOME"), gomiDir,
+			gomiPath,
 			fmt.Sprintf("%04d", now.Year()),
 			fmt.Sprintf("%02d", now.Month()),
 			fmt.Sprintf("%02d", now.Day()),
@@ -138,7 +141,12 @@ func (c CLI) Tag(gid GroupID, arg string) (File, error) {
 	}, nil
 }
 
-func (c CLI) Prompt(files []File) (File, error) {
+func (c CLI) Prompt() (File, error) {
+	files := c.Inventory.Files
+	if len(files) == 0 {
+		return File{}, errors.New("no deleted files found")
+	}
+
 	funcMap := promptui.FuncMap
 	funcMap["time"] = humanize.Time
 	templates := &promptui.SelectTemplates{
@@ -164,27 +172,24 @@ func (c CLI) Prompt(files []File) (File, error) {
 	}
 
 	prompt := promptui.Select{
-		Label:             "Select a page",
+		Label:             "Which to restore?",
 		Items:             files,
 		Templates:         templates,
 		Searcher:          searcher,
 		StartInSearchMode: true,
 		HideSelected:      true,
 	}
+
 	i, _, err := prompt.Run()
 	return files[i], err
 }
 
 func (c CLI) Restore() error {
-	files := c.Inventory.Files
-	if len(files) == 0 {
-		return errors.New("no deleted files found")
-	}
-	file, err := c.Prompt(files)
+	file, err := c.Prompt()
 	if err != nil {
 		return err
 	}
-	defer c.Inventory.Remove(file)
+	defer c.Inventory.Delete(file)
 	_, err = os.Stat(file.From)
 	if err == nil {
 		file.From = file.From + "." + file.ID
@@ -193,6 +198,10 @@ func (c CLI) Restore() error {
 }
 
 func (c CLI) Remove(args []string) error {
+	if len(args) == 0 {
+		return errors.New("too few aruments")
+	}
+
 	var files []File
 	id := xid.New().String()
 
@@ -213,8 +222,7 @@ func (c CLI) Remove(args []string) error {
 }
 
 func (c CLI) Run(args []string) error {
-	f := filepath.Join(os.Getenv("HOME"), gomiDir, "inventory.json")
-	c.Inventory.Open(f)
+	c.Inventory.Open()
 
 	switch {
 	case c.Option.Restore:
@@ -222,29 +230,24 @@ func (c CLI) Run(args []string) error {
 	default:
 	}
 
-	if len(args) == 0 {
-		return errors.New("too few aruments")
-	}
-
 	return c.Remove(args)
 }
 
 func main() {
-	var opt Option
+	var option Option
 
 	// if making error output, ignore PrintErrors from Default
 	// flags.Default&^flags.PrintErrors
 	// https://godoc.org/github.com/jessevdk/go-flags#pkg-constants
-	parser := flags.NewParser(&opt, flags.HelpFlag|flags.PrintErrors|flags.PassDoubleDash)
+	parser := flags.NewParser(&option, flags.HelpFlag|flags.PrintErrors|flags.PassDoubleDash)
 	args, err := parser.Parse()
 	if err != nil {
 		os.Exit(2)
 	}
 
 	cli := CLI{
-		Option: opt,
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
+		Option:    option,
+		Inventory: Inventory{Path: inventoryPath},
 	}
 
 	if err := cli.Run(args); err != nil {
