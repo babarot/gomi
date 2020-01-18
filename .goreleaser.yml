@@ -9,8 +9,8 @@ builds:
     binary: gomi
     ldflags: 
       - -s -w
-      - -X github.com/b4b4r07/gomi/main.Version={{.Version}}
-      - -X github.com/b4b4r07/gomi/main.Revision={{.ShortCommit}}
+      - -X main.Version={{.Version}}
+      - -X main.Revision={{.ShortCommit}}
     env:
       - CGO_ENABLED=0
 archives:
