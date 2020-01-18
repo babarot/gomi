@@ -2,15 +2,21 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/jessevdk/go-flags"
 	"github.com/k0kubun/pp"
+	"github.com/manifoldco/promptui"
 	"github.com/rs/xid"
+	"golang.org/x/sync/errgroup"
 )
 
 const gomiDir = ".gomi"
@@ -19,6 +25,7 @@ type Option struct {
 	Interactive bool `short:"i" description:"emulate -i option of rm command"`
 	Recursive   bool `short:"r" description:"emulate -r option of rm command"`
 	Force       bool `short:"f" description:"emulate -f option of rm command"`
+	Restore     bool `long:"restore" description:"restore"`
 }
 
 type Inventory struct {
@@ -45,12 +52,33 @@ type CLI struct {
 }
 
 func (i *Inventory) Open() error {
-	return nil
+	f, err := os.Open(i.Path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return json.NewDecoder(f).Decode(&i)
 }
 
 func (i *Inventory) Save(files []File) error {
+	f, err := os.Create(i.Path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
 	i.Files = files
-	return nil
+	return json.NewEncoder(f).Encode(&i)
+}
+
+func (i *Inventory) Remove(remove File) error {
+	var files []File
+	for _, file := range i.Files {
+		if file.ID == remove.ID {
+			continue
+		}
+		files = append(files, file)
+	}
+	return i.Save(files)
 }
 
 func (c CLI) Tag(gid GroupID, arg string) (File, error) {
@@ -72,13 +100,14 @@ func (c CLI) Tag(gid GroupID, arg string) (File, error) {
 	defer fp.Close()
 	var content string
 	if !fi.IsDir() {
+		content += "\n"
 		var i int
 		s := bufio.NewScanner(fp)
 		for s.Scan() {
 			i++
 			content += fmt.Sprintf("  %s\n", s.Text())
 			if i > 4 {
-				content += "  ..."
+				content += "  ...\n"
 				break
 			}
 		}
@@ -104,7 +133,52 @@ func (c CLI) Tag(gid GroupID, arg string) (File, error) {
 	}, nil
 }
 
+func (c CLI) Prompt(files []File) (File, error) {
+	funcMap := promptui.FuncMap
+	funcMap["time"] = humanize.Time
+	templates := &promptui.SelectTemplates{
+		Label:    "{{ . }}",
+		Active:   promptui.IconSelect + " {{ .Name | cyan }}",
+		Inactive: "  {{ .Name | faint }}",
+		Selected: promptui.IconGood + " {{ .Name }}",
+		Details: `
+{{ "ID:" | faint }}	{{ .ID }}
+{{ "Path:" | faint }}	{{ .From }}
+{{ "IsDir:" | faint }}	{{ not .IsDir }}
+{{ "DeletedAt:" | faint }}	{{ .Timestamp | time }}
+{{ "Content:" | faint }}	{{ .Content }}
+		`,
+		FuncMap: funcMap,
+	}
+
+	searcher := func(input string, index int) bool {
+		file := files[index]
+		name := strings.Replace(strings.ToLower(file.Name), " ", "", -1)
+		input = strings.Replace(strings.ToLower(input), " ", "", -1)
+		return strings.Contains(name, input)
+	}
+
+	prompt := promptui.Select{
+		Label:             "Select a page",
+		Items:             files,
+		Templates:         templates,
+		Searcher:          searcher,
+		StartInSearchMode: true,
+		HideSelected:      true,
+	}
+	i, _, err := prompt.Run()
+	return files[i], err
+}
+
 func (c CLI) Run(args []string) error {
+	var files []File
+
+	inv := Inventory{
+		Path:  filepath.Join(os.Getenv("HOME"), gomiDir, "inventory.json"),
+		Files: files,
+	}
+	inv.Open()
+
 	if c.Option.Force {
 		fmt.Println("force")
 	}
@@ -112,23 +186,37 @@ func (c CLI) Run(args []string) error {
 		fmt.Println("recursive")
 	}
 
+	if c.Option.Restore {
+		if len(inv.Files) == 0 {
+			return errors.New("no deleted files found")
+		}
+		file, err := c.Prompt(inv.Files)
+		if err != nil {
+			return err
+		}
+		pp.Println(file)
+		return inv.Remove(file)
+	}
+
 	id := xid.New().String()
 
-	var files []File
+	var eg errgroup.Group
 	for _, arg := range args {
 		file, err := c.Tag(GroupID(id), arg)
 		if err != nil {
 			return err
 		}
 		files = append(files, file)
-		os.MkdirAll(filepath.Dir(file.To), 0777)
-		if err := os.Rename(file.From, file.To); err != nil {
-			return err
-		}
+		eg.Go(func() error {
+			os.MkdirAll(filepath.Dir(file.To), 0777)
+			return os.Rename(file.From, file.To)
+		})
+	}
+	if err := eg.Wait(); err != nil {
+		return err
 	}
 
-	pp.Println(files)
-	return nil
+	return inv.Save(files)
 }
 
 func main() {
