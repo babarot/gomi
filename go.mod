@@ -8,5 +8,6 @@ require (
 	github.com/manifoldco/promptui v0.7.0
 	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/rs/xid v1.2.1
+	golang.org/x/crypto v0.0.0-20200117160349-530e935923ad
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 )

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/jessevdk/go-flags"
 	"github.com/manifoldco/promptui"
 	"github.com/rs/xid"
+	"golang.org/x/crypto/ssh/terminal"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -41,17 +43,13 @@ type Inventory struct {
 	Files []File `json:"files"`
 }
 
-type GroupID string
-
 type File struct {
-	Name      string    `json:"name"`   // file.go
-	ID        string    `json:"id"`     // asfasfafd
-	GID       GroupID   `json:"gid"`    // zoapompji
-	IsDir     bool      `json:"is_dir"` // false
-	From      string    `json:"from"`   // $PWD/file.go
-	To        string    `json:"to"`     // ~/.gomi/2020/01/16/zoapompji/file.go.asfasfafd
+	Name      string    `json:"name"`     // file.go
+	ID        string    `json:"id"`       // asfasfafd
+	GroupID   string    `json:"group_id"` // zoapompji
+	From      string    `json:"from"`     // $PWD/file.go
+	To        string    `json:"to"`       // ~/.gomi/2020/01/16/zoapompji/file.go.asfasfafd
 	Timestamp time.Time `json:"timestamp"`
-	Content   string    `json:"content"` // 5 lines from head
 }
 
 type CLI struct {
@@ -68,13 +66,23 @@ func (i *Inventory) Open() error {
 	return json.NewDecoder(f).Decode(&i)
 }
 
-func (i *Inventory) Save(files []File) error {
+func (i *Inventory) Update(files []File) error {
 	f, err := os.Create(i.Path)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 	i.Files = files
+	return json.NewEncoder(f).Encode(&i)
+}
+
+func (i *Inventory) Save(files []File) error {
+	f, err := os.Create(i.Path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	i.Files = append(i.Files, files...)
 	return json.NewEncoder(f).Encode(&i)
 }
 
@@ -86,10 +94,10 @@ func (i *Inventory) Delete(target File) error {
 		}
 		files = append(files, file)
 	}
-	return i.Save(files)
+	return i.Update(files)
 }
 
-func (c CLI) Tag(gid GroupID, arg string) (File, error) {
+func makeFile(groupID string, arg string) (File, error) {
 	id := xid.New().String()
 	name := filepath.Base(arg)
 	from, err := filepath.Abs(arg)
@@ -97,48 +105,58 @@ func (c CLI) Tag(gid GroupID, arg string) (File, error) {
 		return File{}, err
 	}
 	now := time.Now()
-	fi, err := os.Stat(arg)
-	if err != nil {
-		return File{}, err
-	}
-	fp, err := os.Open(arg)
-	if err != nil {
-		return File{}, err
-	}
-	defer fp.Close()
-	var content string
-	if !fi.IsDir() {
-		content += "\n"
-		var i int
-		s := bufio.NewScanner(fp)
-		for s.Scan() {
-			i++
-			content += fmt.Sprintf("  %s\n", s.Text())
-			if i > 4 {
-				content += "  ...\n"
-				break
-			}
-		}
-		if err := s.Err(); err != nil {
-			return File{}, err
-		}
-	}
 	return File{
-		Name:  name,
-		ID:    id,
-		GID:   gid,
-		IsDir: fi.IsDir(),
-		From:  from,
+		Name:    name,
+		ID:      id,
+		GroupID: groupID,
+		From:    from,
 		To: filepath.Join(
 			gomiPath,
 			fmt.Sprintf("%04d", now.Year()),
 			fmt.Sprintf("%02d", now.Month()),
 			fmt.Sprintf("%02d", now.Day()),
-			string(gid), fmt.Sprintf("%s.%s", name, id),
+			groupID, fmt.Sprintf("%s.%s", name, id),
 		),
 		Timestamp: now,
-		Content:   content,
 	}, nil
+}
+
+func head(path string) string {
+	wrap := func(line string) string {
+		line = strings.ReplaceAll(line, "\t", "  ")
+		id := int(os.Stdout.Fd())
+		width, _, _ := terminal.GetSize(id)
+		if width < 10 {
+			return line
+		}
+		if len(line) < width-10 {
+			return line
+		}
+		return line[:width-10] + "..."
+	}
+	fi, err := os.Stat(path)
+	if err != nil {
+		return "(panic: not found)"
+	}
+	var content string
+	if fi.IsDir() {
+		return "(directory)"
+	} else {
+		content += "\n"
+		var i int
+		fp, _ := os.Open(path)
+		defer fp.Close()
+		s := bufio.NewScanner(fp)
+		for s.Scan() {
+			i++
+			content += fmt.Sprintf("  %s\n", wrap(s.Text()))
+			if i > 4 {
+				content += "  ...\n"
+				break
+			}
+		}
+	}
+	return content
 }
 
 func (c CLI) Prompt() (File, error) {
@@ -147,19 +165,23 @@ func (c CLI) Prompt() (File, error) {
 		return File{}, errors.New("no deleted files found")
 	}
 
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].Timestamp.After(files[j].Timestamp)
+	})
+
 	funcMap := promptui.FuncMap
 	funcMap["time"] = humanize.Time
+	funcMap["head"] = head
 	templates := &promptui.SelectTemplates{
 		Label:    "{{ . }}",
 		Active:   promptui.IconSelect + " {{ .Name | cyan }}",
 		Inactive: "  {{ .Name | faint }}",
 		Selected: promptui.IconGood + " {{ .Name }}",
 		Details: `
-{{ "ID:" | faint }}	{{ .ID }}
+{{ "Name:" | faint }}	{{ .Name }}
 {{ "Path:" | faint }}	{{ .From }}
-{{ "IsDir:" | faint }}	{{ not .IsDir }}
 {{ "DeletedAt:" | faint }}	{{ .Timestamp | time }}
-{{ "Content:" | faint }}	{{ .Content }}
+{{ "Content:" | faint }}	{{ .To | head }}
 		`,
 		FuncMap: funcMap,
 	}
@@ -203,11 +225,15 @@ func (c CLI) Remove(args []string) error {
 	}
 
 	var files []File
-	id := xid.New().String()
+	groupID := xid.New().String()
 
 	var eg errgroup.Group
 	for _, arg := range args {
-		file, err := c.Tag(GroupID(id), arg)
+		_, err := os.Stat(arg)
+		if os.IsNotExist(err) {
+			return fmt.Errorf("%s: no such file or directory", arg)
+		}
+		file, err := makeFile(groupID, arg)
 		if err != nil {
 			return err
 		}
