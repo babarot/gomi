@@ -1,4 +1,6 @@
-![](./docs/screenshot.png)
+<p align="center">
+  <img src="./docs/screenshot.png" width="500" alt="gomi">
+</p>
 
 [![](http://img.shields.io/github/release/b4b4r07/gomi.svg?style=flat-square)][release] [![](http://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)][license]
 
