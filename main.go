@@ -55,7 +55,8 @@ type CLI struct {
 	Inventory      Inventory
 }
 
-func (i *Inventory) Open() error {
+func (i *Inventory) Open(path string) error {
+	i.Path = path
 	f, err := os.Open(i.Path)
 	if err != nil {
 		return err
@@ -183,7 +184,12 @@ func (c CLI) Restore() error {
 	if err != nil {
 		return err
 	}
-	return c.Inventory.Remove(file)
+	defer c.Inventory.Remove(file)
+	_, err = os.Stat(file.From)
+	if err == nil {
+		file.From = file.From + "." + file.ID
+	}
+	return os.Rename(file.To, file.From)
 }
 
 func (c CLI) Remove(args []string) error {
@@ -207,18 +213,17 @@ func (c CLI) Remove(args []string) error {
 }
 
 func (c CLI) Run(args []string) error {
+	f := filepath.Join(os.Getenv("HOME"), gomiDir, "inventory.json")
+	c.Inventory.Open(f)
+
+	switch {
+	case c.Option.Restore:
+		return c.Restore()
+	default:
+	}
+
 	if len(args) == 0 {
 		return errors.New("too few aruments")
-	}
-
-	c.Inventory = Inventory{
-		Path:  filepath.Join(os.Getenv("HOME"), gomiDir, "inventory.json"),
-		Files: []File{},
-	}
-	c.Inventory.Open()
-
-	if c.Option.Restore {
-		return c.Restore()
 	}
 
 	return c.Remove(args)
