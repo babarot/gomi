@@ -13,7 +13,6 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/jessevdk/go-flags"
-	"github.com/k0kubun/pp"
 	"github.com/manifoldco/promptui"
 	"github.com/rs/xid"
 	"golang.org/x/sync/errgroup"
@@ -22,10 +21,14 @@ import (
 const gomiDir = ".gomi"
 
 type Option struct {
-	Interactive bool `short:"i" description:"emulate -i option of rm command"`
-	Recursive   bool `short:"r" description:"emulate -r option of rm command"`
-	Force       bool `short:"f" description:"emulate -f option of rm command"`
-	Restore     bool `long:"restore" description:"restore"`
+	Restore  bool     `long:"restore" description:"Restore deleted file"`
+	RmOption RmOption `group:"Emulation Options for rm command"`
+}
+
+type RmOption struct {
+	Interactive bool `short:"i" description:"Emulate -i option of rm command"`
+	Recursive   bool `short:"r" description:"Emulate -r option of rm command"`
+	Force       bool `short:"f" description:"Emulate -f option of rm command"`
 }
 
 type Inventory struct {
@@ -49,6 +52,7 @@ type File struct {
 type CLI struct {
 	Option         Option
 	Stdout, Stderr io.Writer
+	Inventory      Inventory
 }
 
 func (i *Inventory) Open() error {
@@ -170,34 +174,20 @@ func (c CLI) Prompt(files []File) (File, error) {
 	return files[i], err
 }
 
-func (c CLI) Run(args []string) error {
+func (c CLI) Restore() error {
+	files := c.Inventory.Files
+	if len(files) == 0 {
+		return errors.New("no deleted files found")
+	}
+	file, err := c.Prompt(files)
+	if err != nil {
+		return err
+	}
+	return c.Inventory.Remove(file)
+}
+
+func (c CLI) Remove(args []string) error {
 	var files []File
-
-	inv := Inventory{
-		Path:  filepath.Join(os.Getenv("HOME"), gomiDir, "inventory.json"),
-		Files: files,
-	}
-	inv.Open()
-
-	if c.Option.Force {
-		fmt.Println("force")
-	}
-	if c.Option.Recursive {
-		fmt.Println("recursive")
-	}
-
-	if c.Option.Restore {
-		if len(inv.Files) == 0 {
-			return errors.New("no deleted files found")
-		}
-		file, err := c.Prompt(inv.Files)
-		if err != nil {
-			return err
-		}
-		pp.Println(file)
-		return inv.Remove(file)
-	}
-
 	id := xid.New().String()
 
 	var eg errgroup.Group
@@ -212,18 +202,38 @@ func (c CLI) Run(args []string) error {
 			return os.Rename(file.From, file.To)
 		})
 	}
-	if err := eg.Wait(); err != nil {
-		return err
+	defer c.Inventory.Save(files)
+	return eg.Wait()
+}
+
+func (c CLI) Run(args []string) error {
+	if len(args) == 0 {
+		return errors.New("too few aruments")
 	}
 
-	return inv.Save(files)
+	c.Inventory = Inventory{
+		Path:  filepath.Join(os.Getenv("HOME"), gomiDir, "inventory.json"),
+		Files: []File{},
+	}
+	c.Inventory.Open()
+
+	if c.Option.Restore {
+		return c.Restore()
+	}
+
+	return c.Remove(args)
 }
 
 func main() {
 	var opt Option
-	args, err := flags.ParseArgs(&opt, os.Args[1:])
+
+	// if making error output, ignore PrintErrors from Default
+	// flags.Default&^flags.PrintErrors
+	// https://godoc.org/github.com/jessevdk/go-flags#pkg-constants
+	parser := flags.NewParser(&opt, flags.HelpFlag|flags.PrintErrors|flags.PassDoubleDash)
+	args, err := parser.Parse()
 	if err != nil {
-		panic(err)
+		os.Exit(2)
 	}
 
 	cli := CLI{
@@ -231,9 +241,9 @@ func main() {
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	}
-	if err := cli.Run(args); err != nil {
-		panic(err)
-	}
 
-	// https://golangcode.com/get-the-content-type-of-file/
+	if err := cli.Run(args); err != nil {
+		fmt.Fprintf(os.Stderr, "[ERROR] %v\n", err)
+		os.Exit(1)
+	}
 }
