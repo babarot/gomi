@@ -37,13 +37,15 @@ var (
 type Option struct {
 	Restore  bool     `short:"b" long:"restore" description:"Restore deleted file"`
 	Version  bool     `long:"version" description:"Show version"`
-	RmOption RmOption `group:"Emulation Options for rm command"`
+	RmOption RmOption `group:"Dummy options"`
 }
 
 type RmOption struct {
-	Interactive bool `short:"i" description:"Emulate -i option of rm command"`
-	Recursive   bool `short:"r" description:"Emulate -r option of rm command"`
-	Force       bool `short:"f" description:"Emulate -f option of rm command"`
+	Interactive bool `short:"i" description:"To make compatible with rm command"`
+	Recursive   bool `short:"r" description:"To make compatible with rm command"`
+	Force       bool `short:"f" description:"To make compatible with rm command"`
+	Directory   bool `short:"d" description:"To make compatible with rm command"`
+	Verbose     bool `short:"v" description:"To make compatible with rm command"`
 }
 
 type Inventory struct {
@@ -323,7 +325,7 @@ func main() {
 	}
 
 	if err := cli.Run(args); err != nil {
-		fmt.Fprintf(os.Stderr, "[ERROR] %v\n", err)
+		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
 	}
 }
