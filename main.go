@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -139,24 +140,40 @@ func head(path string) string {
 	if err != nil {
 		return "(panic: not found)"
 	}
-	var content string
-	var count int
-	if fi.IsDir() {
-		return "(directory)"
+	content := func(lines []string) string {
+		if len(lines) == 0 {
+			return "(no content)"
+		}
+		var content string
+		var i int
+		for _, line := range lines {
+			i++
+			content += fmt.Sprintf("  %s\n", wrap(line))
+			if i > max {
+				content += "  ...\n"
+				break
+			}
+		}
+		return content
 	}
-	content += "\n"
-	fp, _ := os.Open(path)
-	defer fp.Close()
-	s := bufio.NewScanner(fp)
-	for s.Scan() {
-		count++
-		content += fmt.Sprintf("  %s\n", wrap(s.Text()))
-		if count > max {
-			content += "  ...\n"
-			break
+	var lines []string
+	switch {
+	case fi.IsDir():
+		lines = []string{"(directory)"}
+		dirs, _ := ioutil.ReadDir(path)
+		for _, dir := range dirs {
+			lines = append(lines, fmt.Sprintf("%s\t%s", dir.Mode().String(), dir.Name()))
+		}
+	default:
+		lines = []string{""}
+		fp, _ := os.Open(path)
+		defer fp.Close()
+		s := bufio.NewScanner(fp)
+		for s.Scan() {
+			lines = append(lines, s.Text())
 		}
 	}
-	return content
+	return content(lines)
 }
 
 func (c CLI) Prompt() (File, error) {
@@ -214,6 +231,8 @@ func (c CLI) Restore() error {
 	defer c.Inventory.Delete(file)
 	_, err = os.Stat(file.From)
 	if err == nil {
+		// already exists so to prevent to overwrite
+		// add id to the end of filename
 		file.From = file.From + "." + file.ID
 	}
 	return os.Rename(file.To, file.From)
