@@ -23,6 +23,11 @@ import (
 const gomiDir = ".gomi"
 
 var (
+	Version  = "unset"
+	Revision = "unset"
+)
+
+var (
 	gomiPath      = filepath.Join(os.Getenv("HOME"), gomiDir)
 	inventoryFile = "inventory.json"
 	inventoryPath = filepath.Join(gomiPath, inventoryFile)
@@ -30,6 +35,7 @@ var (
 
 type Option struct {
 	Restore  bool     `short:"b" long:"restore" description:"Restore deleted file"`
+	Version  bool     `long:"version" description:"Show version"`
 	RmOption RmOption `group:"Emulation Options for rm command"`
 }
 
@@ -270,6 +276,8 @@ func (c CLI) Run(args []string) error {
 	c.Inventory.Open()
 
 	switch {
+	case c.Option.Version:
+		fmt.Fprintf(os.Stdout, "%s (%s)\n", Version, Revision)
 	case c.Option.Restore:
 		return c.Restore()
 	default:
