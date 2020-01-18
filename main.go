@@ -122,6 +122,7 @@ func makeFile(groupID string, arg string) (File, error) {
 }
 
 func head(path string) string {
+	max := 5
 	wrap := func(line string) string {
 		line = strings.ReplaceAll(line, "\t", "  ")
 		id := int(os.Stdout.Fd())
@@ -139,21 +140,20 @@ func head(path string) string {
 		return "(panic: not found)"
 	}
 	var content string
+	var count int
 	if fi.IsDir() {
 		return "(directory)"
-	} else {
-		content += "\n"
-		var i int
-		fp, _ := os.Open(path)
-		defer fp.Close()
-		s := bufio.NewScanner(fp)
-		for s.Scan() {
-			i++
-			content += fmt.Sprintf("  %s\n", wrap(s.Text()))
-			if i > 4 {
-				content += "  ...\n"
-				break
-			}
+	}
+	content += "\n"
+	fp, _ := os.Open(path)
+	defer fp.Close()
+	s := bufio.NewScanner(fp)
+	for s.Scan() {
+		count++
+		content += fmt.Sprintf("  %s\n", wrap(s.Text()))
+		if count > max {
+			content += "  ...\n"
+			break
 		}
 	}
 	return content
