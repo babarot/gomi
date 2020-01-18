@@ -278,6 +278,7 @@ func (c CLI) Run(args []string) error {
 	switch {
 	case c.Option.Version:
 		fmt.Fprintf(os.Stdout, "%s (%s)\n", Version, Revision)
+		return nil
 	case c.Option.Restore:
 		return c.Restore()
 	default:
