@@ -4,6 +4,7 @@ go 1.12
 
 require (
 	github.com/dustin/go-humanize v1.0.0
+	github.com/gabriel-vasile/mimetype v1.0.2
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/manifoldco/promptui v0.7.0
 	github.com/mattn/go-colorable v0.1.4 // indirect

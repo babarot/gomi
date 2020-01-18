@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
+	"github.com/gabriel-vasile/mimetype"
 	"github.com/jessevdk/go-flags"
 	"github.com/manifoldco/promptui"
 	"github.com/rs/xid"
@@ -128,6 +129,20 @@ func makeFile(groupID string, arg string) (File, error) {
 	}, nil
 }
 
+func isBinary(path string) bool {
+	detectedMIME, err := mimetype.DetectFile(path)
+	if err != nil {
+		return true
+	}
+	isBinary := true
+	for mime := detectedMIME; mime != nil; mime = mime.Parent() {
+		if mime.Is("text/plain") {
+			isBinary = false
+		}
+	}
+	return isBinary
+}
+
 func head(path string) string {
 	max := 5
 	wrap := func(line string) string {
@@ -171,6 +186,9 @@ func head(path string) string {
 			lines = append(lines, fmt.Sprintf("%s\t%s", dir.Mode().String(), dir.Name()))
 		}
 	default:
+		if isBinary(path) {
+			return "(binary file)"
+		}
 		lines = []string{""}
 		fp, _ := os.Open(path)
 		defer fp.Close()
