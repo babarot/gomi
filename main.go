@@ -269,26 +269,32 @@ func (c CLI) Remove(args []string) error {
 		return errors.New("too few aruments")
 	}
 
-	var files []File
+	files := make([]File, len(args))
 	groupID := xid.New().String()
 
 	var eg errgroup.Group
-	for _, arg := range args {
-		_, err := os.Stat(arg)
-		if os.IsNotExist(err) {
-			return fmt.Errorf("%s: no such file or directory", arg)
-		}
-		file, err := makeFile(groupID, arg)
-		if err != nil {
-			return err
-		}
-		files = append(files, file)
+
+	for i, arg := range args {
+		i, arg := i, arg // https://golang.org/doc/faq#closures_and_goroutines
 		eg.Go(func() error {
+			_, err := os.Stat(arg)
+			if os.IsNotExist(err) {
+				return fmt.Errorf("%s: no such file or directory", arg)
+			}
+			file, err := makeFile(groupID, arg)
+			if err != nil {
+				return err
+			}
+			files[i] = file
 			os.MkdirAll(filepath.Dir(file.To), 0777)
 			return os.Rename(file.From, file.To)
 		})
 	}
 	defer c.Inventory.Save(files)
+
+	if c.Option.RmOption.Force {
+		return nil
+	}
 	return eg.Wait()
 }
 
