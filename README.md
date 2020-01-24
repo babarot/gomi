@@ -14,6 +14,7 @@ The concept of the trashcan does not exist in Command-line interface ([CLI](http
 - Easy to restore, super intuitive
 - Compatible with `rm` command, e.g. `-r`, `-f` options
 - Nice UI, awesome CLI UX
+- Easy to debug with setting `GOMI_LOG=[trace|debug|info|warn|error]`
 
 ## Installation
 

@@ -2,16 +2,20 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
 
+	clilog "github.com/b4b4r07/go-cli-log"
 	"github.com/dustin/go-humanize"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/jessevdk/go-flags"
@@ -68,6 +72,7 @@ type CLI struct {
 }
 
 func (i *Inventory) Open() error {
+	log.Printf("[DEBUG] opening inventry")
 	f, err := os.Open(i.Path)
 	if err != nil {
 		return err
@@ -77,6 +82,7 @@ func (i *Inventory) Open() error {
 }
 
 func (i *Inventory) Update(files []File) error {
+	log.Printf("[DEBUG] updating inventry")
 	f, err := os.Create(i.Path)
 	if err != nil {
 		return err
@@ -87,6 +93,7 @@ func (i *Inventory) Update(files []File) error {
 }
 
 func (i *Inventory) Save(files []File) error {
+	log.Printf("[DEBUG] saving inventry")
 	f, err := os.Create(i.Path)
 	if err != nil {
 		return err
@@ -97,6 +104,7 @@ func (i *Inventory) Save(files []File) error {
 }
 
 func (i *Inventory) Delete(target File) error {
+	log.Printf("[DEBUG] deleting %v from inventry", target)
 	var files []File
 	for _, file := range i.Files {
 		if file.ID == target.ID {
@@ -129,6 +137,14 @@ func makeFile(groupID string, arg string) (File, error) {
 		),
 		Timestamp: now,
 	}, nil
+}
+
+func (f File) ToJSON(w io.Writer) {
+	out, err := json.Marshal(&f)
+	if err != nil {
+		return
+	}
+	fmt.Fprint(w, string(out))
 }
 
 func isBinary(path string) bool {
@@ -261,6 +277,7 @@ func (c CLI) Restore() error {
 		// add id to the end of filename
 		file.From = file.From + "." + file.ID
 	}
+	log.Printf("[DEBUG] restoring %q -> %q", file.To, file.From)
 	return os.Rename(file.To, file.From)
 }
 
@@ -285,8 +302,15 @@ func (c CLI) Remove(args []string) error {
 			if err != nil {
 				return err
 			}
+
+			// For debugging
+			var buf bytes.Buffer
+			file.ToJSON(&buf)
+			log.Printf("[DEBUG] generating file metadata: %s", buf.String())
+
 			files[i] = file
 			os.MkdirAll(filepath.Dir(file.To), 0777)
+			log.Printf("[DEBUG] moving %q -> %q", file.From, file.To)
 			return os.Rename(file.From, file.To)
 		})
 	}
@@ -314,6 +338,18 @@ func (c CLI) Run(args []string) error {
 }
 
 func main() {
+	os.Exit(realMain())
+}
+
+func realMain() int {
+	clilog.Env = "GOMI_LOG"
+	clilog.SetOutput()
+	defer log.Printf("[INFO] finish main function")
+
+	log.Printf("[INFO] Version: %s (%s)", Version, Revision)
+	log.Printf("[INFO] gomiPath: %s", gomiPath)
+	log.Printf("[INFO] inventoryPath: %s", inventoryPath)
+
 	var option Option
 
 	// if making error output, ignore PrintErrors from Default
@@ -322,7 +358,8 @@ func main() {
 	parser := flags.NewParser(&option, flags.HelpFlag|flags.PrintErrors|flags.PassDoubleDash)
 	args, err := parser.Parse()
 	if err != nil {
-		os.Exit(2)
+		log.Printf("[ERROR] failed to run parser: %v", err)
+		return 2
 	}
 
 	cli := CLI{
@@ -330,8 +367,11 @@ func main() {
 		Inventory: Inventory{Path: inventoryPath},
 	}
 
+	log.Printf("[INFO] Args: %v", args)
 	if err := cli.Run(args); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
+		return 1
 	}
+
+	return 0
 }
