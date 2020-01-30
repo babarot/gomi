@@ -39,9 +39,10 @@ var (
 )
 
 type Option struct {
-	Restore  bool     `short:"b" long:"restore" description:"Restore deleted file"`
-	Version  bool     `long:"version" description:"Show version"`
-	RmOption RmOption `group:"Dummy options"`
+	Restore    bool     `short:"b" long:"restore" description:"Restore deleted file"`
+	RestoreOps bool     `short:"B" long:"restore-by-ops" description:"Restore deleted files by the operation"`
+	Version    bool     `long:"version" description:"Show version"`
+	RmOption   RmOption `group:"Dummy options"`
 }
 
 type RmOption struct {
@@ -113,6 +114,16 @@ func (i *Inventory) Delete(target File) error {
 		files = append(files, file)
 	}
 	return i.Update(files)
+}
+
+func (i *Inventory) Filter(f func(File) bool) {
+	files := make([]File, 0)
+	for _, file := range i.Files {
+		if f(file) {
+			files = append(files, file)
+		}
+	}
+	i.Files = files
 }
 
 func makeFile(groupID string, arg string) (File, error) {
@@ -218,7 +229,7 @@ func head(path string) string {
 	return content(lines)
 }
 
-func (c CLI) Prompt() (File, error) {
+func (c CLI) FilePrompt() (File, error) {
 	files := c.Inventory.Files
 	if len(files) == 0 {
 		return File{}, errors.New("no deleted files found")
@@ -266,7 +277,7 @@ func (c CLI) Prompt() (File, error) {
 }
 
 func (c CLI) Restore() error {
-	file, err := c.Prompt()
+	file, err := c.FilePrompt()
 	if err != nil {
 		return err
 	}
@@ -279,6 +290,113 @@ func (c CLI) Restore() error {
 	}
 	log.Printf("[DEBUG] restoring %q -> %q", file.To, file.From)
 	return os.Rename(file.To, file.From)
+}
+
+type Op struct {
+	ID        string
+	Dir       string
+	Timestamp time.Time
+	Files     []File
+}
+
+func (c CLI) OpsPrompt() (Op, error) {
+	files := c.Inventory.Files
+	if len(files) == 0 {
+		return Op{}, errors.New("no deleted files found")
+	}
+
+	m := map[string][]File{}
+	for _, file := range c.Inventory.Files {
+		m[file.GroupID] = append(m[file.GroupID], file)
+	}
+
+	var ops []Op
+	for id, files := range m {
+		ops = append(ops, Op{
+			ID:        id,
+			Dir:       filepath.Dir(files[0].From),
+			Timestamp: files[0].Timestamp,
+			Files:     files,
+		})
+	}
+
+	sort.Slice(ops, func(i, j int) bool {
+		return ops[i].Timestamp.After(ops[j].Timestamp)
+	})
+
+	funcMap := promptui.FuncMap
+	funcMap["time"] = humanize.Time
+	// funcMap["head"] = head
+
+	templates := &promptui.SelectTemplates{
+		Label:    "{{ . }}",
+		Active:   promptui.IconSelect + " {{ .Dir | cyan }}",
+		Inactive: "  {{ .Dir | faint }}",
+		Selected: promptui.IconGood + " {{ .Dir }}",
+		Details: `
+{{ "DeletedAt:" | faint }}	{{ .Timestamp | time }}
+{{ "Files:" | faint }}
+    {{- range .Files }}
+    - {{ .From }}
+    {{- end }}
+`,
+		FuncMap: funcMap,
+	}
+
+	searcher := func(input string, index int) bool {
+		files := ops[index].Files
+		contains := func(Files []File, input string) bool {
+			for _, file := range files {
+				// ignorecase
+				from := strings.ToLower(file.From)
+				input = strings.ToLower(input)
+				if strings.Contains(from, input) {
+					return true
+				}
+			}
+			return false
+		}
+		return contains(files, input)
+	}
+
+	prompt := promptui.Select{
+		Label:             "Which to restore?",
+		Items:             ops,
+		Templates:         templates,
+		Searcher:          searcher,
+		StartInSearchMode: true,
+		HideSelected:      true,
+	}
+
+	i, _, err := prompt.Run()
+	return ops[i], err
+}
+
+func (c CLI) RestoreOps() error {
+	op, err := c.OpsPrompt()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		for _, file := range op.Files {
+			c.Inventory.Delete(file)
+		}
+	}()
+	var eg errgroup.Group
+	for _, file := range op.Files {
+		file := file
+		_, err = os.Stat(file.From)
+		if err == nil {
+			// already exists so to prevent to overwrite
+			// add id to the end of filename
+			file.From = file.From + "." + file.ID
+		}
+		eg.Go(func() error {
+			log.Printf("[DEBUG] restoring %q -> %q", file.To, file.From)
+			return os.Rename(file.To, file.From)
+		})
+	}
+	return eg.Wait()
 }
 
 func (c CLI) Remove(args []string) error {
@@ -331,6 +449,8 @@ func (c CLI) Run(args []string) error {
 		return nil
 	case c.Option.Restore:
 		return c.Restore()
+	case c.Option.RestoreOps:
+		return c.RestoreOps()
 	default:
 	}
 
