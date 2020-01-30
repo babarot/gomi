@@ -39,10 +39,10 @@ var (
 )
 
 type Option struct {
-	Restore    bool     `short:"b" long:"restore" description:"Restore deleted file"`
-	RestoreOps bool     `short:"B" long:"restore-by-ops" description:"Restore deleted files by the operation"`
-	Version    bool     `long:"version" description:"Show version"`
-	RmOption   RmOption `group:"Dummy options"`
+	Restore      bool     `short:"b" long:"restore" description:"Restore deleted file"`
+	RestoreGroup bool     `short:"B" long:"restore-by-group" description:"Restore deleted files based on one operation"`
+	Version      bool     `long:"version" description:"Show version"`
+	RmOption     RmOption `group:"Dummy options"`
 }
 
 type RmOption struct {
@@ -230,6 +230,11 @@ func head(path string) string {
 }
 
 func (c CLI) FilePrompt() (File, error) {
+	// Filter invalid logs
+	c.Inventory.Filter(func(file File) bool {
+		return file.ID != ""
+	})
+
 	files := c.Inventory.Files
 	if len(files) == 0 {
 		return File{}, errors.New("no deleted files found")
@@ -292,17 +297,22 @@ func (c CLI) Restore() error {
 	return os.Rename(file.To, file.From)
 }
 
-type Op struct {
+type Group struct {
 	ID        string
 	Dir       string
 	Timestamp time.Time
 	Files     []File
 }
 
-func (c CLI) OpsPrompt() (Op, error) {
+func (c CLI) GroupPrompt() (Group, error) {
+	// Filter invalid logs
+	c.Inventory.Filter(func(file File) bool {
+		return file.ID != ""
+	})
+
 	files := c.Inventory.Files
 	if len(files) == 0 {
-		return Op{}, errors.New("no deleted files found")
+		return Group{}, errors.New("no deleted files found")
 	}
 
 	m := map[string][]File{}
@@ -310,18 +320,41 @@ func (c CLI) OpsPrompt() (Op, error) {
 		m[file.GroupID] = append(m[file.GroupID], file)
 	}
 
-	var ops []Op
+	hasMultiDirs := func(files []File) bool {
+		if len(files) == 0 {
+			return false
+		}
+		var dirs []string
+		unique := map[string]bool{}
+		for _, file := range files {
+			dir := filepath.Dir(file.From)
+			if !unique[dir] {
+				unique[dir] = true
+				dirs = append(dirs, dir)
+			}
+		}
+		if len(dirs) > 1 {
+			return true
+		}
+		return false
+	}
+
+	var groups []Group
 	for id, files := range m {
-		ops = append(ops, Op{
+		dir := filepath.Dir(files[0].From)
+		if hasMultiDirs(files) {
+			dir = "(multiple directories)"
+		}
+		groups = append(groups, Group{
 			ID:        id,
-			Dir:       filepath.Dir(files[0].From),
+			Dir:       dir,
 			Timestamp: files[0].Timestamp,
 			Files:     files,
 		})
 	}
 
-	sort.Slice(ops, func(i, j int) bool {
-		return ops[i].Timestamp.After(ops[j].Timestamp)
+	sort.Slice(groups, func(i, j int) bool {
+		return groups[i].Timestamp.After(groups[j].Timestamp)
 	})
 
 	funcMap := promptui.FuncMap
@@ -344,7 +377,7 @@ func (c CLI) OpsPrompt() (Op, error) {
 	}
 
 	searcher := func(input string, index int) bool {
-		files := ops[index].Files
+		files := groups[index].Files
 		contains := func(Files []File, input string) bool {
 			for _, file := range files {
 				// ignorecase
@@ -361,7 +394,7 @@ func (c CLI) OpsPrompt() (Op, error) {
 
 	prompt := promptui.Select{
 		Label:             "Which to restore?",
-		Items:             ops,
+		Items:             groups,
 		Templates:         templates,
 		Searcher:          searcher,
 		StartInSearchMode: true,
@@ -369,21 +402,21 @@ func (c CLI) OpsPrompt() (Op, error) {
 	}
 
 	i, _, err := prompt.Run()
-	return ops[i], err
+	return groups[i], err
 }
 
-func (c CLI) RestoreOps() error {
-	op, err := c.OpsPrompt()
+func (c CLI) RestoreGroup() error {
+	group, err := c.GroupPrompt()
 	if err != nil {
 		return err
 	}
 	defer func() {
-		for _, file := range op.Files {
+		for _, file := range group.Files {
 			c.Inventory.Delete(file)
 		}
 	}()
 	var eg errgroup.Group
-	for _, file := range op.Files {
+	for _, file := range group.Files {
 		file := file
 		_, err = os.Stat(file.From)
 		if err == nil {
@@ -449,8 +482,8 @@ func (c CLI) Run(args []string) error {
 		return nil
 	case c.Option.Restore:
 		return c.Restore()
-	case c.Option.RestoreOps:
-		return c.RestoreOps()
+	case c.Option.RestoreGroup:
+		return c.RestoreGroup()
 	default:
 	}
 
