@@ -70,6 +70,8 @@ type File struct {
 type CLI struct {
 	Option    Option
 	Inventory Inventory
+	Stdout    io.Writer
+	Stderr    io.Writer
 }
 
 func (i *Inventory) Open() error {
@@ -478,7 +480,7 @@ func (c CLI) Run(args []string) error {
 
 	switch {
 	case c.Option.Version:
-		fmt.Fprintf(os.Stdout, "%s (%s)\n", Version, Revision)
+		fmt.Fprintf(c.Stdout, "%s (%s)\n", Version, Revision)
 		return nil
 	case c.Option.Restore:
 		return c.Restore()
@@ -491,10 +493,10 @@ func (c CLI) Run(args []string) error {
 }
 
 func main() {
-	os.Exit(realMain())
+	os.Exit(run(os.Args[1:]))
 }
 
-func realMain() int {
+func run(args []string) int {
 	clilog.Env = "GOMI_LOG"
 	clilog.SetOutput()
 	defer log.Printf("[INFO] finish main function")
@@ -502,25 +504,21 @@ func realMain() int {
 	log.Printf("[INFO] Version: %s (%s)", Version, Revision)
 	log.Printf("[INFO] gomiPath: %s", gomiPath)
 	log.Printf("[INFO] inventoryPath: %s", inventoryPath)
+	log.Printf("[INFO] Args: %#v", args)
 
-	var option Option
-
-	// if making error output, ignore PrintErrors from Default
-	// flags.Default&^flags.PrintErrors
-	// https://godoc.org/github.com/jessevdk/go-flags#pkg-constants
-	parser := flags.NewParser(&option, flags.HelpFlag|flags.PrintErrors|flags.PassDoubleDash)
-	args, err := parser.Parse()
+	var opt Option
+	args, err := flags.ParseArgs(&opt, args)
 	if err != nil {
-		log.Printf("[ERROR] failed to run parser: %v", err)
 		return 2
 	}
 
 	cli := CLI{
-		Option:    option,
+		Option:    opt,
 		Inventory: Inventory{Path: inventoryPath},
+		Stdout:    os.Stdout,
+		Stderr:    os.Stderr,
 	}
 
-	log.Printf("[INFO] Args: %v", args)
 	if err := cli.Run(args); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		return 1
