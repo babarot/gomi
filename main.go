@@ -27,6 +27,7 @@ import (
 
 const gomiDir = ".gomi"
 
+// These variables are set in build step
 var (
 	Version  = "unset"
 	Revision = "unset"
@@ -38,6 +39,7 @@ var (
 	inventoryPath = filepath.Join(gomiPath, inventoryFile)
 )
 
+// Option represents application options
 type Option struct {
 	Restore      bool     `short:"b" long:"restore" description:"Restore deleted file"`
 	RestoreGroup bool     `short:"B" long:"restore-by-group" description:"Restore deleted files based on one operation"`
@@ -45,6 +47,8 @@ type Option struct {
 	RmOption     RmOption `group:"Dummy options"`
 }
 
+// RmOption represents rm command option
+// This should be not conflicts with app option
 type RmOption struct {
 	Interactive bool `short:"i" description:"To make compatible with rm command"`
 	Recursive   bool `short:"r" description:"To make compatible with rm command"`
@@ -53,11 +57,13 @@ type RmOption struct {
 	Verbose     bool `short:"v" description:"To make compatible with rm command"`
 }
 
+// Inventory represents the log data of deleted objects
 type Inventory struct {
 	Path  string `json:"path"`
 	Files []File `json:"files"`
 }
 
+// File represents the metadata of deleted object itself
 type File struct {
 	Name      string    `json:"name"`     // file.go
 	ID        string    `json:"id"`       // asfasfafd
@@ -67,6 +73,7 @@ type File struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
+// CLI represents this application itself
 type CLI struct {
 	Option    Option
 	Inventory Inventory
@@ -109,6 +116,7 @@ func run(args []string) int {
 	return 0
 }
 
+// Run runs gomi main logic
 func (c CLI) Run(args []string) error {
 	c.Inventory.Open()
 
@@ -126,6 +134,7 @@ func (c CLI) Run(args []string) error {
 	return c.Remove(args)
 }
 
+// Restore moves deleted file/dir to original place
 func (c CLI) Restore() error {
 	file, err := c.FilePrompt()
 	if err != nil {
@@ -142,6 +151,7 @@ func (c CLI) Restore() error {
 	return os.Rename(file.To, file.From)
 }
 
+// RestoreGroup moves deleted file(s)/dir(s) which are deleted in one operation to original place
 func (c CLI) RestoreGroup() error {
 	group, err := c.GroupPrompt()
 	if err != nil {
@@ -169,6 +179,7 @@ func (c CLI) RestoreGroup() error {
 	return eg.Wait()
 }
 
+// Remove moves files to gomi dir
 func (c CLI) Remove(args []string) error {
 	if len(args) == 0 {
 		return errors.New("too few aruments")
@@ -205,11 +216,14 @@ func (c CLI) Remove(args []string) error {
 	defer c.Inventory.Save(files)
 
 	if c.Option.RmOption.Force {
+		// ignore errors when gaven rm -f option
 		return nil
 	}
+
 	return eg.Wait()
 }
 
+// Open opens inventory file
 func (i *Inventory) Open() error {
 	log.Printf("[DEBUG] opening inventry")
 	f, err := os.Open(i.Path)
@@ -220,6 +234,7 @@ func (i *Inventory) Open() error {
 	return json.NewDecoder(f).Decode(&i)
 }
 
+// Update updates inventory file (this may overwrite the inventory file)
 func (i *Inventory) Update(files []File) error {
 	log.Printf("[DEBUG] updating inventry")
 	f, err := os.Create(i.Path)
@@ -231,6 +246,7 @@ func (i *Inventory) Update(files []File) error {
 	return json.NewEncoder(f).Encode(&i)
 }
 
+// Save updates inventory file (this should not overwrite the inventory file)
 func (i *Inventory) Save(files []File) error {
 	log.Printf("[DEBUG] saving inventry")
 	f, err := os.Create(i.Path)
@@ -242,6 +258,8 @@ func (i *Inventory) Save(files []File) error {
 	return json.NewEncoder(f).Encode(&i)
 }
 
+// Delete deletes a file from the inventory file
+// This should not delete the inventory file itself
 func (i *Inventory) Delete(target File) error {
 	log.Printf("[DEBUG] deleting %v from inventry", target)
 	var files []File
@@ -254,6 +272,7 @@ func (i *Inventory) Delete(target File) error {
 	return i.Update(files)
 }
 
+// Filter filters inventory entries based on given function
 func (i *Inventory) Filter(f func(File) bool) {
 	files := make([]File, 0)
 	for _, file := range i.Files {
@@ -288,6 +307,7 @@ func makeFile(groupID string, arg string) (File, error) {
 	}, nil
 }
 
+// ToJSON writes json objects based on File
 func (f File) ToJSON(w io.Writer) {
 	out, err := json.Marshal(&f)
 	if err != nil {
@@ -367,8 +387,9 @@ func head(path string) string {
 	return content(lines)
 }
 
+// FilePrompt prompts inventory entries, and select one and return it
 func (c CLI) FilePrompt() (File, error) {
-	// Filter invalid logs
+	// Filter out invalid logs
 	c.Inventory.Filter(func(file File) bool {
 		return file.ID != ""
 	})
@@ -419,6 +440,7 @@ func (c CLI) FilePrompt() (File, error) {
 	return files[i], err
 }
 
+// Group represents files ([]File) deleted by one operation
 type Group struct {
 	ID        string
 	Dir       string
@@ -426,8 +448,10 @@ type Group struct {
 	Files     []File
 }
 
+// GroupPrompt prompts inventory entries which are grouped by one operation
+// and select one group and return it
 func (c CLI) GroupPrompt() (Group, error) {
-	// Filter invalid logs
+	// Filter out invalid logs
 	c.Inventory.Filter(func(file File) bool {
 		return file.ID != ""
 	})
@@ -481,7 +505,6 @@ func (c CLI) GroupPrompt() (Group, error) {
 
 	funcMap := promptui.FuncMap
 	funcMap["time"] = humanize.Time
-	// funcMap["head"] = head
 
 	templates := &promptui.SelectTemplates{
 		Label:    "{{ . }}",
