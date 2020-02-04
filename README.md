@@ -16,6 +16,36 @@ The concept of the trashcan does not exist in Command-line interface ([CLI](http
 - Nice UI, awesome CLI UX
 - Easy to see what gomi does with setting `GOMI_LOG=[trace|debug|info|warn|error]`
 
+## Usage
+
+```console
+$ alias rm=gomi
+```
+```console
+$ rm -rf important-dir
+```
+```console
+$ rm --restore
+Search: █
+Which to restore?
+    CODEOWNERS.orig
+    CODEOWNERS.rej
+    main.go
+  ▸ .git
+↓   validate_containers_readiness_probe_test.rego
+
+Name:             .git
+Path:             /Users/b4b4r07/src/github.com/b4b4r07/.git
+DeletedAt:        5 days ago
+Content:            (directory)
+  -rw-r--r--  HEAD
+  -rw-r--r--  config
+  -rw-r--r--  description
+  drwxr-xr-x  hooks
+  drwxr-xr-x  info
+  ...
+```
+
 ## Installation
 
 Download the binary from [GitHub Releases][release] and drop it in your `$PATH`.
