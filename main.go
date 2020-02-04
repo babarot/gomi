@@ -74,6 +74,142 @@ type CLI struct {
 	Stderr    io.Writer
 }
 
+func main() {
+	os.Exit(run(os.Args[1:]))
+}
+
+func run(args []string) int {
+	clilog.Env = "GOMI_LOG"
+	clilog.SetOutput()
+	defer log.Printf("[INFO] finish main function")
+
+	log.Printf("[INFO] Version: %s (%s)", Version, Revision)
+	log.Printf("[INFO] gomiPath: %s", gomiPath)
+	log.Printf("[INFO] inventoryPath: %s", inventoryPath)
+	log.Printf("[INFO] Args: %#v", args)
+
+	var opt Option
+	args, err := flags.ParseArgs(&opt, args)
+	if err != nil {
+		return 2
+	}
+
+	cli := CLI{
+		Option:    opt,
+		Inventory: Inventory{Path: inventoryPath},
+		Stdout:    os.Stdout,
+		Stderr:    os.Stderr,
+	}
+
+	if err := cli.Run(args); err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		return 1
+	}
+
+	return 0
+}
+
+func (c CLI) Run(args []string) error {
+	c.Inventory.Open()
+
+	switch {
+	case c.Option.Version:
+		fmt.Fprintf(c.Stdout, "%s (%s)\n", Version, Revision)
+		return nil
+	case c.Option.Restore:
+		return c.Restore()
+	case c.Option.RestoreGroup:
+		return c.RestoreGroup()
+	default:
+	}
+
+	return c.Remove(args)
+}
+
+func (c CLI) Restore() error {
+	file, err := c.FilePrompt()
+	if err != nil {
+		return err
+	}
+	defer c.Inventory.Delete(file)
+	_, err = os.Stat(file.From)
+	if err == nil {
+		// already exists so to prevent to overwrite
+		// add id to the end of filename
+		file.From = file.From + "." + file.ID
+	}
+	log.Printf("[DEBUG] restoring %q -> %q", file.To, file.From)
+	return os.Rename(file.To, file.From)
+}
+
+func (c CLI) RestoreGroup() error {
+	group, err := c.GroupPrompt()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		for _, file := range group.Files {
+			c.Inventory.Delete(file)
+		}
+	}()
+	var eg errgroup.Group
+	for _, file := range group.Files {
+		file := file
+		_, err = os.Stat(file.From)
+		if err == nil {
+			// already exists so to prevent to overwrite
+			// add id to the end of filename
+			file.From = file.From + "." + file.ID
+		}
+		eg.Go(func() error {
+			log.Printf("[DEBUG] restoring %q -> %q", file.To, file.From)
+			return os.Rename(file.To, file.From)
+		})
+	}
+	return eg.Wait()
+}
+
+func (c CLI) Remove(args []string) error {
+	if len(args) == 0 {
+		return errors.New("too few aruments")
+	}
+
+	files := make([]File, len(args))
+	groupID := xid.New().String()
+
+	var eg errgroup.Group
+
+	for i, arg := range args {
+		i, arg := i, arg // https://golang.org/doc/faq#closures_and_goroutines
+		eg.Go(func() error {
+			_, err := os.Stat(arg)
+			if os.IsNotExist(err) {
+				return fmt.Errorf("%s: no such file or directory", arg)
+			}
+			file, err := makeFile(groupID, arg)
+			if err != nil {
+				return err
+			}
+
+			// For debugging
+			var buf bytes.Buffer
+			file.ToJSON(&buf)
+			log.Printf("[DEBUG] generating file metadata: %s", buf.String())
+
+			files[i] = file
+			os.MkdirAll(filepath.Dir(file.To), 0777)
+			log.Printf("[DEBUG] moving %q -> %q", file.From, file.To)
+			return os.Rename(file.From, file.To)
+		})
+	}
+	defer c.Inventory.Save(files)
+
+	if c.Option.RmOption.Force {
+		return nil
+	}
+	return eg.Wait()
+}
+
 func (i *Inventory) Open() error {
 	log.Printf("[DEBUG] opening inventry")
 	f, err := os.Open(i.Path)
@@ -283,22 +419,6 @@ func (c CLI) FilePrompt() (File, error) {
 	return files[i], err
 }
 
-func (c CLI) Restore() error {
-	file, err := c.FilePrompt()
-	if err != nil {
-		return err
-	}
-	defer c.Inventory.Delete(file)
-	_, err = os.Stat(file.From)
-	if err == nil {
-		// already exists so to prevent to overwrite
-		// add id to the end of filename
-		file.From = file.From + "." + file.ID
-	}
-	log.Printf("[DEBUG] restoring %q -> %q", file.To, file.From)
-	return os.Rename(file.To, file.From)
-}
-
 type Group struct {
 	ID        string
 	Dir       string
@@ -405,124 +525,4 @@ func (c CLI) GroupPrompt() (Group, error) {
 
 	i, _, err := prompt.Run()
 	return groups[i], err
-}
-
-func (c CLI) RestoreGroup() error {
-	group, err := c.GroupPrompt()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		for _, file := range group.Files {
-			c.Inventory.Delete(file)
-		}
-	}()
-	var eg errgroup.Group
-	for _, file := range group.Files {
-		file := file
-		_, err = os.Stat(file.From)
-		if err == nil {
-			// already exists so to prevent to overwrite
-			// add id to the end of filename
-			file.From = file.From + "." + file.ID
-		}
-		eg.Go(func() error {
-			log.Printf("[DEBUG] restoring %q -> %q", file.To, file.From)
-			return os.Rename(file.To, file.From)
-		})
-	}
-	return eg.Wait()
-}
-
-func (c CLI) Remove(args []string) error {
-	if len(args) == 0 {
-		return errors.New("too few aruments")
-	}
-
-	files := make([]File, len(args))
-	groupID := xid.New().String()
-
-	var eg errgroup.Group
-
-	for i, arg := range args {
-		i, arg := i, arg // https://golang.org/doc/faq#closures_and_goroutines
-		eg.Go(func() error {
-			_, err := os.Stat(arg)
-			if os.IsNotExist(err) {
-				return fmt.Errorf("%s: no such file or directory", arg)
-			}
-			file, err := makeFile(groupID, arg)
-			if err != nil {
-				return err
-			}
-
-			// For debugging
-			var buf bytes.Buffer
-			file.ToJSON(&buf)
-			log.Printf("[DEBUG] generating file metadata: %s", buf.String())
-
-			files[i] = file
-			os.MkdirAll(filepath.Dir(file.To), 0777)
-			log.Printf("[DEBUG] moving %q -> %q", file.From, file.To)
-			return os.Rename(file.From, file.To)
-		})
-	}
-	defer c.Inventory.Save(files)
-
-	if c.Option.RmOption.Force {
-		return nil
-	}
-	return eg.Wait()
-}
-
-func (c CLI) Run(args []string) error {
-	c.Inventory.Open()
-
-	switch {
-	case c.Option.Version:
-		fmt.Fprintf(c.Stdout, "%s (%s)\n", Version, Revision)
-		return nil
-	case c.Option.Restore:
-		return c.Restore()
-	case c.Option.RestoreGroup:
-		return c.RestoreGroup()
-	default:
-	}
-
-	return c.Remove(args)
-}
-
-func main() {
-	os.Exit(run(os.Args[1:]))
-}
-
-func run(args []string) int {
-	clilog.Env = "GOMI_LOG"
-	clilog.SetOutput()
-	defer log.Printf("[INFO] finish main function")
-
-	log.Printf("[INFO] Version: %s (%s)", Version, Revision)
-	log.Printf("[INFO] gomiPath: %s", gomiPath)
-	log.Printf("[INFO] inventoryPath: %s", inventoryPath)
-	log.Printf("[INFO] Args: %#v", args)
-
-	var opt Option
-	args, err := flags.ParseArgs(&opt, args)
-	if err != nil {
-		return 2
-	}
-
-	cli := CLI{
-		Option:    opt,
-		Inventory: Inventory{Path: inventoryPath},
-		Stdout:    os.Stdout,
-		Stderr:    os.Stderr,
-	}
-
-	if err := cli.Run(args); err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		return 1
-	}
-
-	return 0
 }
