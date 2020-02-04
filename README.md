@@ -1,6 +1,7 @@
 <p align="center">
   <img src="./docs/screenshot.png" width="500" alt="gomi">
 </p>
+
 [![](http://img.shields.io/github/release/b4b4r07/gomi.svg?style=flat)][release] [![](http://img.shields.io/badge/license-MIT-blue.svg?style=flat)][license] [![](https://github.com/b4b4r07/gomi/workflows/release/badge.svg)](https://github.com/b4b4r07/gomi/releases)
 
 `gomi` is a simple trash tool that works on CLI, written in Go
