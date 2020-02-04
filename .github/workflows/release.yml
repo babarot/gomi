@@ -21,4 +21,7 @@ jobs:
           version: latest
           args: release --rm-dist
         env:
-          GITHUB_TOKEN: ${{ secrets.github_token }}
+          # To upload homebrew formula to other repos,
+          # need to set the dedicated token having enough permissions
+          # https://github.com/goreleaser/goreleaser/issues/982
+          GITHUB_TOKEN: ${{ secrets.GORELEASER_GITHUB_TOKEN }}
