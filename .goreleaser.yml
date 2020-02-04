@@ -26,3 +26,15 @@ archives:
         format: zip
 release:
   prerelease: auto
+
+# https://goreleaser.com/customization/#Homebrew
+brews:
+- github:
+    owner: b4b4r07
+    name: homebrew-tap
+  folder: Formula
+  homepage: https://github.com/b4b4r07/gomi
+  description: Replacement for UNIX rm command!
+  skip_upload: auto
+  test: |
+    system "#{bin}/gomi", "--version"
