@@ -8,6 +8,18 @@
 
 The concept of the trashcan does not exist in Command-line interface ([CLI](http://en.wikipedia.org/wiki/Command-line_interface)). If you have deleted an important file by mistake with the `rm` command, it would be difficult to restore. Then, it's this `gomi`. Unlike `rm` command, it is possible to easily restore deleted files because `gomi` have the trashcan for the CLI.
 
+## Usage
+
+```console
+$ alias rm=gomi
+```
+```console
+$ rm -rf important-dir
+```
+```console
+$ rm --restore
+```
+
 ## Features
 
 - Like a `rm` command but not unlink (delete) in fact (just move to another place)
@@ -52,6 +64,12 @@ Download the binary from [GitHub Releases][release] and drop it in your `$PATH`.
 
 - [Darwin / Mac][release]
 - [Linux][release]
+
+**For macOS / [Homebrew](https://brew.sh/) user**:
+
+```console
+$ brew install b4b4r07/tap/gomi
+```
 
 ## Versus
 
