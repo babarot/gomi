@@ -4,6 +4,8 @@
 
 [![](http://img.shields.io/github/release/b4b4r07/gomi.svg?style=flat)][release] [![](http://img.shields.io/badge/license-MIT-blue.svg?style=flat)][license] [![](https://github.com/b4b4r07/gomi/workflows/release/badge.svg)](https://github.com/b4b4r07/gomi/releases)
 
+# 🗑️ Replacement for UNIX rm command!
+
 `gomi` is a simple trash tool that works on CLI, written in Go
 
 The concept of the trashcan does not exist in Command-line interface ([CLI](http://en.wikipedia.org/wiki/Command-line_interface)). If you have deleted an important file by mistake with the `rm` command, it would be difficult to restore. Then, it's this `gomi`. Unlike `rm` command, it is possible to easily restore deleted files because `gomi` have the trashcan for the CLI.
@@ -28,21 +30,20 @@ $ rm -rf important-dir
 $ rm --restore
 Search: █
 Which to restore?
-    CODEOWNERS.orig
-    CODEOWNERS.rej
+  ▸ important-dir
+    main_test.go
     main.go
-  ▸ .git
-↓   validate_containers_readiness_probe_test.rego
+    test-dir
+↓   validate_test.rego
 
-Name:             .git
-Path:             /Users/b4b4r07/src/github.com/b4b4r07/.git
+Name:             important-dir
+Path:             /Users/b4b4r07/src/github.com/b4b4r07/important-dir
 DeletedAt:        5 days ago
 Content:            (directory)
-  -rw-r--r--  HEAD
-  -rw-r--r--  config
-  -rw-r--r--  description
-  drwxr-xr-x  hooks
-  drwxr-xr-x  info
+  -rw-r--r--  important-file-1
+  -rw-r--r--  important-file-2
+  drwxr-xr-x  important-subdir-1
+  drwxr-xr-x  important-subdir-2
   ...
 ```
 
