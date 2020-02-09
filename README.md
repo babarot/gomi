@@ -2,7 +2,35 @@
   <img src="./docs/screenshot.png" width="500" alt="gomi">
 </p>
 
-[![](http://img.shields.io/github/release/b4b4r07/gomi.svg?style=flat)][release] [![](http://img.shields.io/badge/license-MIT-blue.svg?style=flat)][license] [![](https://github.com/b4b4r07/gomi/workflows/release/badge.svg)](https://github.com/b4b4r07/gomi/releases)
+<p align="center">
+    <a href="https://b4b4r07.mit-license.org">
+        <img src="https://img.shields.io/github/license/b4b4r07/gomi" alt="License"/>
+    </a>
+    <a href="https://github.com/b4b4r07/gomi/releases">
+        <img
+            src="https://img.shields.io/github/v/release/b4b4r07/gomi"
+            alt="GitHub Releases"/>
+    </a>
+    <br />
+    <a href="https://b4b4r07.github.io/gomi/">
+        <img
+            src="https://img.shields.io/website?down_color=lightgrey&down_message=donw&up_color=green&up_message=up&url=https%3A%2F%2Fb4b4r07.github.io%2Fgomi"
+            alt="Website"
+            />
+    </a>
+    <a href="https://github.com/b4b4r07/gomi/actions?query=workflow%3Arelease">
+        <img
+            src="https://github.com/b4b4r07/gomi/workflows/release/badge.svg?branch=master&event=push"
+            alt="GitHub Releases"
+            />
+    </a>
+    <a href="https://github.com/b4b4r07/gomi/blob/master/go.mod">
+        <img
+            src="https://img.shields.io/github/go-mod/go-version/b4b4r07/gomi"
+            alt="Go version"
+            />
+    </a>
+</p>
 
 # 🗑️ Replacement for UNIX rm command!
 
