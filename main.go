@@ -182,7 +182,7 @@ func (c CLI) RestoreGroup() error {
 // Remove moves files to gomi dir
 func (c CLI) Remove(args []string) error {
 	if len(args) == 0 {
-		return errors.New("too few aruments")
+		return errors.New("too few arguments")
 	}
 
 	files := make([]File, len(args))
@@ -225,7 +225,7 @@ func (c CLI) Remove(args []string) error {
 
 // Open opens inventory file
 func (i *Inventory) Open() error {
-	log.Printf("[DEBUG] opening inventry")
+	log.Printf("[DEBUG] opening inventory")
 	f, err := os.Open(i.Path)
 	if err != nil {
 		return err
@@ -236,7 +236,7 @@ func (i *Inventory) Open() error {
 
 // Update updates inventory file (this may overwrite the inventory file)
 func (i *Inventory) Update(files []File) error {
-	log.Printf("[DEBUG] updating inventry")
+	log.Printf("[DEBUG] updating inventory")
 	f, err := os.Create(i.Path)
 	if err != nil {
 		return err
@@ -248,7 +248,7 @@ func (i *Inventory) Update(files []File) error {
 
 // Save updates inventory file (this should not overwrite the inventory file)
 func (i *Inventory) Save(files []File) error {
-	log.Printf("[DEBUG] saving inventry")
+	log.Printf("[DEBUG] saving inventory")
 	f, err := os.Create(i.Path)
 	if err != nil {
 		return err
@@ -261,7 +261,7 @@ func (i *Inventory) Save(files []File) error {
 // Delete deletes a file from the inventory file
 // This should not delete the inventory file itself
 func (i *Inventory) Delete(target File) error {
-	log.Printf("[DEBUG] deleting %v from inventry", target)
+	log.Printf("[DEBUG] deleting %v from inventory", target)
 	var files []File
 	for _, file := range i.Files {
 		if file.ID == target.ID {
