@@ -109,7 +109,10 @@ func run(args []string) int {
 	}
 
 	if err := cli.Run(args); err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+		// ignore errors when gaven rm -f option
+		if !cli.Option.RmOption.Force {
+			fmt.Fprintf(os.Stderr, "%v\n", err)
+		}
 		return 1
 	}
 
@@ -214,11 +217,6 @@ func (c CLI) Remove(args []string) error {
 		})
 	}
 	defer c.Inventory.Save(files)
-
-	if c.Option.RmOption.Force {
-		// ignore errors when gaven rm -f option
-		return nil
-	}
 
 	return eg.Wait()
 }
