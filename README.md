@@ -88,6 +88,10 @@ Download the binary from [GitHub Releases][release] and drop it in your `$PATH`.
 $ brew install b4b4r07/tap/gomi
 ```
 
+**AUR users**:
+
+https://aur.archlinux.org/packages/gomi/
+
 ## Versus
 
 - [andreafrancia/trash-cli](https://github.com/andreafrancia/trash-cli)
