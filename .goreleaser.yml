@@ -7,7 +7,7 @@ before:
 builds:
   - main: .
     binary: gomi
-    ldflags: 
+    ldflags:
       - -s -w
       - -X main.Version={{.Version}}
       - -X main.Revision={{.ShortCommit}}
@@ -29,7 +29,8 @@ release:
 
 # https://goreleaser.com/customization/#Homebrew
 brews:
-- github:
+- name: gomi
+  tap:
     owner: b4b4r07
     name: homebrew-tap
   folder: Formula
