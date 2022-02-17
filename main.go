@@ -178,6 +178,7 @@ func (c CLI) RestoreGroup() error {
 			return os.Rename(file.To, file.From)
 		})
 	}
+
 	return eg.Wait()
 }
 
@@ -217,8 +218,9 @@ func (c CLI) Remove(args []string) error {
 	}
 	defer c.Inventory.Save(files)
 
+	defer eg.Wait()
 	if c.Option.RmOption.Force {
-		// ignore errors when gaven rm -f option
+		// ignore errors when given rm -f option
 		return nil
 	}
 
