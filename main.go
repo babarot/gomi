@@ -145,6 +145,8 @@ func (c CLI) Restore() error {
 	if err == nil {
 		// already exists so to prevent to overwrite
 		// add id to the end of filename
+		// TODO: Ask to overwrite?
+		// e.g. using github.com/AlecAivazis/survey
 		file.From = file.From + "." + file.ID
 	}
 	log.Printf("[DEBUG] restoring %q -> %q", file.To, file.From)
