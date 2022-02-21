@@ -29,13 +29,16 @@ release:
 
 # https://goreleaser.com/customization/#Homebrew
 brews:
-- name: gomi
-  tap:
+- tap:
     owner: b4b4r07
     name: homebrew-tap
+    token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
   folder: Formula
-  homepage: https://github.com/b4b4r07/gomi
-  description: Replacement for UNIX rm command!
+  commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
+  homepage: https://babarot.me/gomi
+  description: |
+    Replacement for UNIX rm command!
+  license: MIT
   skip_upload: auto
   test: |
     system "#{bin}/gomi", "--version"
