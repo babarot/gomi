@@ -12,5 +12,5 @@ require (
 	github.com/rs/xid v1.2.1
 	golang.org/x/crypto v0.0.0-20200117160349-530e935923ad
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
-	golang.org/x/sys v0.0.0-20190726091711-fc99dfbffb4e // indirect
+	golang.org/x/sys v0.0.0-20220408201424-a24fb2fb8a0f // indirect
 )
