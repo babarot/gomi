@@ -18,9 +18,9 @@
             alt="Website"
             />
     </a>
-    <a href="https://github.com/b4b4r07/gomi/actions?query=workflow%3Arelease">
+    <a href="https://github.com/b4b4r07/gomi/actions/workflows/release.yml">
         <img
-            src="https://github.com/b4b4r07/gomi/workflows/release/badge.svg?branch=master&event=push"
+            src="https://github.com/b4b4r07/gomi/actions/workflows/release.yml/badge.svg"
             alt="GitHub Releases"
             />
     </a>
@@ -84,8 +84,8 @@ Download the binary from [GitHub Releases][release] and drop it in your `$PATH`.
 
 **For macOS / [Homebrew](https://brew.sh/) user**:
 
-```console
-$ brew install b4b4r07/tap/gomi
+```bash
+brew install b4b4r07/tap/gomi
 ```
 
 **AUR users**:
