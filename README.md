@@ -20,7 +20,7 @@
     </a>
     <a href="https://github.com/b4b4r07/gomi/actions/workflows/release.yaml">
         <img
-            src="https://github.com/b4b4r07/gomi/actions/workflows/release.yml/badge.svg"
+            src="https://github.com/b4b4r07/gomi/actions/workflows/release.yaml/badge.svg"
             alt="GitHub Releases"
             />
     </a>
