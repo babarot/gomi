@@ -18,9 +18,9 @@
             alt="Website"
             />
     </a>
-    <a href="https://github.com/b4b4r07/gomi/actions?query=workflow%3Arelease">
+    <a href="https://github.com/b4b4r07/gomi/actions/workflows/release.yaml">
         <img
-            src="https://github.com/b4b4r07/gomi/workflows/release/badge.svg?branch=master&event=push"
+            src="https://github.com/b4b4r07/gomi/actions/workflows/release.yml/badge.svg"
             alt="GitHub Releases"
             />
     </a>
@@ -34,7 +34,7 @@
 
 # 🗑️ Replacement for UNIX rm command!
 
-`gomi` is a simple trash tool that works on CLI, written in Go
+`gomi` (ごみ/go-mi means a trash in Japanese) is a simple trash tool that works on CLI, written in Go
 
 The concept of the trashcan does not exist in Command-line interface ([CLI](http://en.wikipedia.org/wiki/Command-line_interface)). If you have deleted an important file by mistake with the `rm` command, it would be difficult to restore. Then, it's this `gomi`. Unlike `rm` command, it is possible to easily restore deleted files because `gomi` have the trashcan for the CLI.
 
@@ -84,8 +84,8 @@ Download the binary from [GitHub Releases][release] and drop it in your `$PATH`.
 
 **For macOS / [Homebrew](https://brew.sh/) user**:
 
-```console
-$ brew install b4b4r07/tap/gomi
+```bash
+brew install b4b4r07/tap/gomi
 ```
 
 **AUR users**:
