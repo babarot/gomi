@@ -88,6 +88,26 @@ Download the binary from [GitHub Releases][release] and drop it in your `$PATH`.
 brew install b4b4r07/tap/gomi
 ```
 
+**Using [afx](https://github.com/b4b4r07/afx), package manager for CLI**:
+
+```yaml
+github:
+- name: b4b4r07/gomi
+  description: Trash can in CLI
+  owner: b4b4r07
+  repo: gomi
+  release:
+    name: gomi
+    tag: v1.1.5 ## NEED UPDATE!
+  command:
+    link:
+    - from: gomi
+      to: gomi
+    alias:
+      rm: gomi ## --> alias rm=gomi
+```
+
+
 **AUR users**:
 
 https://aur.archlinux.org/packages/gomi/
