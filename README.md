@@ -18,7 +18,7 @@
             alt="Website"
             />
     </a>
-    <a href="https://github.com/b4b4r07/gomi/actions/workflows/release.yml">
+    <a href="https://github.com/b4b4r07/gomi/actions/workflows/release.yaml">
         <img
             src="https://github.com/b4b4r07/gomi/actions/workflows/release.yml/badge.svg"
             alt="GitHub Releases"
@@ -34,7 +34,7 @@
 
 # 🗑️ Replacement for UNIX rm command!
 
-`gomi` is a simple trash tool that works on CLI, written in Go
+`gomi` (ごみ/go-mi means a trash in Japanese) is a simple trash tool that works on CLI, written in Go
 
 The concept of the trashcan does not exist in Command-line interface ([CLI](http://en.wikipedia.org/wiki/Command-line_interface)). If you have deleted an important file by mistake with the `rm` command, it would be difficult to restore. Then, it's this `gomi`. Unlike `rm` command, it is possible to easily restore deleted files because `gomi` have the trashcan for the CLI.
 
