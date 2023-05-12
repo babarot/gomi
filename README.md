@@ -45,6 +45,9 @@ The concept of the trashcan does not exist in Command-line interface ([CLI](http
 - Compatible with `rm` command, e.g. `-r`, `-f` options
 - Nice UI, awesome CLI UX
 - Easy to see what gomi does with setting `GOMI_LOG=[trace|debug|info|warn|error]`
+- Trashcan can be located under
+    - `$XDG_CONFIG_HOME/gomi`
+    - `$HOME/.gomi`
 
 ## Usage
 

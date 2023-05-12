@@ -25,19 +25,28 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const gomiDir = ".gomi"
-
 // These variables are set in build step
 var (
 	Version  = "unset"
 	Revision = "unset"
 )
 
-var (
-	gomiPath      = filepath.Join(os.Getenv("HOME"), gomiDir)
-	inventoryFile = "inventory.json"
-	inventoryPath = filepath.Join(gomiPath, inventoryFile)
-)
+var gomiPath string
+var inventoryPath string
+
+// Load Gomi Path from environment variable
+// $XDG_CONFIG_HOME/gomi > $HOME/.gomi
+func init() {
+	gomiDir := "gomi"
+  inventoryFile := "inventory.json"
+	if os.Getenv("XDG_CONFIG_HOME") != "" {
+		gomiPath = filepath.Join(os.Getenv("XDG_CONFIG_HOME"), gomiDir)
+    inventoryPath = filepath.Join(gomiPath, inventoryFile)
+	} else {
+		gomiPath = filepath.Join(os.Getenv("HOME"), "."+gomiDir)
+    inventoryPath = filepath.Join(gomiPath, inventoryFile)
+	}
+}
 
 // Option represents application options
 type Option struct {
