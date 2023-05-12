@@ -19,6 +19,7 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/jessevdk/go-flags"
+	"github.com/lithammer/fuzzysearch/fuzzy"
 	"github.com/manifoldco/promptui"
 	"github.com/rs/xid"
 	"golang.org/x/crypto/ssh/terminal"
@@ -428,7 +429,7 @@ func (c CLI) FilePrompt() (File, error) {
 		file := files[index]
 		name := strings.Replace(strings.ToLower(file.Name), " ", "", -1)
 		input = strings.Replace(strings.ToLower(input), " ", "", -1)
-		return strings.Contains(name, input)
+		return fuzzy.Match(input, name)
 	}
 
 	prompt := promptui.Select{
