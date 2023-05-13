@@ -39,6 +39,10 @@ var (
 	inventoryPath = filepath.Join(gomiPath, inventoryFile)
 )
 
+var (
+	progName = os.Args[0]
+)
+
 // Option represents application options
 type Option struct {
 	Restore      bool     `short:"b" long:"restore" description:"Restore deleted file"`
@@ -109,7 +113,7 @@ func run(args []string) int {
 	}
 
 	if err := cli.Run(args); err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+		fmt.Fprintf(os.Stderr, "%v: %v\n", progName, err)
 		return 1
 	}
 
@@ -179,7 +183,7 @@ func (c CLI) RestoreGroup() error {
 		})
 	}
 
-	return eg.Wait()
+	return nil
 }
 
 // Remove moves files to gomi dir
@@ -188,43 +192,63 @@ func (c CLI) Remove(args []string) error {
 		return errors.New("too few arguments")
 	}
 
-	files := make([]File, len(args))
+	files := make([]File, 0, len(args))
 	groupID := xid.New().String()
 
-	var eg errgroup.Group
+	removeFailed := false
 
-	for i, arg := range args {
-		i, arg := i, arg // https://golang.org/doc/faq#closures_and_goroutines
-		eg.Go(func() error {
-			_, err := os.Stat(arg)
+	printFileErr := func(filepath string, errStr string) {
+		fmt.Fprintf(c.Stderr, "%s: cannot remove '%s': %s\n", progName, filepath, errStr)
+		removeFailed = true
+	}
+
+	for _, arg := range args {
+		_, err := os.Stat(arg)
+		if err != nil {
 			if os.IsNotExist(err) {
-				return fmt.Errorf("%s: no such file or directory", arg)
+				// If -f is used, ignore it (comparable to rm).
+				if !c.Option.RmOption.Force {
+					printFileErr(arg, "no such file or directory")
+				}
+			} else {
+				printFileErr(arg, err.Error())
 			}
-			file, err := makeFile(groupID, arg)
-			if err != nil {
-				return err
+			continue
+		}
+		file, err := makeFile(groupID, arg)
+		if err != nil {
+			printFileErr(arg, err.Error())
+			continue
+		}
+
+		// For debugging
+		var buf bytes.Buffer
+		file.ToJSON(&buf)
+		log.Printf("[DEBUG] generating file metadata: %s", buf.String())
+
+		os.MkdirAll(filepath.Dir(file.To), 0777)
+		log.Printf("[DEBUG] moving %q -> %q", file.From, file.To)
+		err = os.Rename(file.From, file.To)
+		if err != nil {
+			if os.IsPermission(err) {
+				printFileErr(arg, "permission denied")
+			} else {
+				printFileErr(arg, err.Error())
 			}
-
-			// For debugging
-			var buf bytes.Buffer
-			file.ToJSON(&buf)
-			log.Printf("[DEBUG] generating file metadata: %s", buf.String())
-
-			files[i] = file
-			os.MkdirAll(filepath.Dir(file.To), 0777)
-			log.Printf("[DEBUG] moving %q -> %q", file.From, file.To)
-			return os.Rename(file.From, file.To)
-		})
-	}
-	defer c.Inventory.Save(files)
-
-	defer eg.Wait()
-	if c.Option.RmOption.Force {
-		// ignore errors when given rm -f option
-		return nil
+			continue
+		}
+		files = append(files, file)
 	}
 
-	return eg.Wait()
+	// save to inventory
+	if len(files) > 0 {
+		c.Inventory.Save(files)
+	}
+
+	if removeFailed {
+		return errors.New("could not remove some files to gomi")
+	}
+	return nil
 }
 
 // Open opens inventory file
