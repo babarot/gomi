@@ -54,11 +54,11 @@ type Option struct {
 // RmOption represents rm command option
 // This should be not conflicts with app option
 type RmOption struct {
-	Interactive bool `short:"i" description:"To make compatible with rm command"`
-	Recursive   bool `short:"r" description:"To make compatible with rm command"`
+	Interactive bool `short:"i" description:"To make compatible with rm command (dummy)"`
+	Recursive   bool `short:"r" description:"To make compatible with rm command (dummy)"`
 	Force       bool `short:"f" description:"To make compatible with rm command"`
-	Directory   bool `short:"d" description:"To make compatible with rm command"`
-	Verbose     bool `short:"v" description:"To make compatible with rm command"`
+	Directory   bool `short:"d" description:"To make compatible with rm command (dummy)"`
+	Verbose     bool `short:"v" description:"To make compatible with rm command (dummy)"`
 }
 
 // Inventory represents the log data of deleted objects
