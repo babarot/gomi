@@ -22,7 +22,6 @@ import (
 	"github.com/manifoldco/promptui"
 	"github.com/rs/xid"
 	"golang.org/x/crypto/ssh/terminal"
-	"golang.org/x/sync/errgroup"
 )
 
 const gomiDir = ".gomi"
@@ -163,24 +162,20 @@ func (c CLI) RestoreGroup() error {
 	if err != nil {
 		return err
 	}
-	defer func() {
-		for _, file := range group.Files {
-			c.Inventory.Delete(file)
-		}
-	}()
-	var eg errgroup.Group
+
 	for _, file := range group.Files {
-		file := file
 		_, err = os.Stat(file.From)
 		if err == nil {
 			// already exists so to prevent to overwrite
 			// add id to the end of filename
 			file.From = file.From + "." + file.ID
 		}
-		eg.Go(func() error {
-			log.Printf("[DEBUG] restoring %q -> %q", file.To, file.From)
-			return os.Rename(file.To, file.From)
-		})
+		log.Printf("[DEBUG] restoring %q -> %q", file.To, file.From)
+		err = os.Rename(file.To, file.From)
+		if err != nil {
+			return err
+		}
+		c.Inventory.Delete(file)
 	}
 
 	return nil
