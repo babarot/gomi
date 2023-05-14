@@ -22,6 +22,7 @@ import (
 	"github.com/manifoldco/promptui"
 	"github.com/rs/xid"
 	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/exp/slices"
 )
 
 const gomiDir = ".gomi"
@@ -163,6 +164,16 @@ func (c CLI) RestoreGroup() error {
 		return err
 	}
 
+	deleteIDs := make([]string, 0, len(group.Files))
+	defer func() {
+		if len(deleteIDs) > 0 {
+			c.Inventory.Filter(func(f File) bool {
+				return !slices.Contains(deleteIDs, f.ID)
+			})
+			c.Inventory.Update(c.Inventory.Files)
+		}
+	}()
+
 	for _, file := range group.Files {
 		_, err = os.Stat(file.From)
 		if err == nil {
@@ -175,7 +186,8 @@ func (c CLI) RestoreGroup() error {
 		if err != nil {
 			return err
 		}
-		c.Inventory.Delete(file)
+		log.Printf("[DEBUG] deleting %v from inventory (deferred)", file)
+		deleteIDs = append(deleteIDs, file.ID)
 	}
 
 	return nil

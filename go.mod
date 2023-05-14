@@ -10,6 +10,7 @@ require (
 	github.com/manifoldco/promptui v0.7.0
 	github.com/rs/xid v1.2.1
 	golang.org/x/crypto v0.0.0-20200117160349-530e935923ad
+	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea
 )
 
 require (
