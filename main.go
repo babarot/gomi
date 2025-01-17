@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	clilog "github.com/b4b4r07/go-cli-log"
+	clilog "github.com/babarot/go-cli-log"
 	"github.com/dustin/go-humanize"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/jessevdk/go-flags"

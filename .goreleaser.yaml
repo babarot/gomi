@@ -30,7 +30,7 @@ release:
 # https://goreleaser.com/customization/#Homebrew
 brews:
 - tap:
-    owner: b4b4r07
+    owner: babarot
     name: homebrew-tap
     token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
   folder: Formula

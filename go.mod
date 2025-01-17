@@ -1,9 +1,9 @@
-module github.com/b4b4r07/gomi
+module github.com/babarot/gomi
 
 go 1.18
 
 require (
-	github.com/b4b4r07/go-cli-log v0.0.0-20200124120248-8fac4d71de01
+	github.com/babarot/go-cli-log v0.0.0-20200124120248-8fac4d71de01
 	github.com/dustin/go-humanize v1.0.0
 	github.com/gabriel-vasile/mimetype v1.0.2
 	github.com/jessevdk/go-flags v1.4.0

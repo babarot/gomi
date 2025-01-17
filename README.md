@@ -4,29 +4,29 @@
 
 <p align="center">
     <a href="https://b4b4r07.mit-license.org">
-        <img src="https://img.shields.io/github/license/b4b4r07/gomi" alt="License"/>
+        <img src="https://img.shields.io/github/license/babarot/gomi" alt="License"/>
     </a>
-    <a href="https://github.com/b4b4r07/gomi/releases">
+    <a href="https://github.com/babarot/gomi/releases">
         <img
-            src="https://img.shields.io/github/v/release/b4b4r07/gomi"
+            src="https://img.shields.io/github/v/release/babarot/gomi"
             alt="GitHub Releases"/>
     </a>
     <br />
-    <a href="https://b4b4r07.github.io/gomi/">
+    <a href="https://babarot.github.io/gomi/">
         <img
-            src="https://img.shields.io/website?down_color=lightgrey&down_message=donw&up_color=green&up_message=up&url=https%3A%2F%2Fb4b4r07.github.io%2Fgomi"
+            src="https://img.shields.io/website?down_color=lightgrey&down_message=donw&up_color=green&up_message=up&url=https%3A%2F%2Fbabarot.me%2Fgomi"
             alt="Website"
             />
     </a>
-    <a href="https://github.com/b4b4r07/gomi/actions/workflows/release.yaml">
+    <a href="https://github.com/babarot/gomi/actions/workflows/release.yaml">
         <img
-            src="https://github.com/b4b4r07/gomi/actions/workflows/release.yaml/badge.svg"
+            src="https://github.com/babarot/gomi/actions/workflows/release.yaml/badge.svg"
             alt="GitHub Releases"
             />
     </a>
-    <a href="https://github.com/b4b4r07/gomi/blob/master/go.mod">
+    <a href="https://github.com/babarot/gomi/blob/master/go.mod">
         <img
-            src="https://img.shields.io/github/go-mod/go-version/b4b4r07/gomi"
+            src="https://img.shields.io/github/go-mod/go-version/babarot/gomi"
             alt="Go version"
             />
     </a>
@@ -65,7 +65,7 @@ Which to restore?
 ↓   validate_test.rego
 
 Name:             important-dir
-Path:             /Users/b4b4r07/src/github.com/b4b4r07/important-dir
+Path:             /Users/babarot/src/github.com/babarot/important-dir
 DeletedAt:        5 days ago
 Content:            (directory)
   -rw-r--r--  important-file-1
@@ -85,16 +85,16 @@ Download the binary from [GitHub Releases][release] and drop it in your `$PATH`.
 **For macOS / [Homebrew](https://brew.sh/) user**:
 
 ```bash
-brew install b4b4r07/tap/gomi
+brew install babarot/tap/gomi
 ```
 
-**Using [afx](https://github.com/b4b4r07/afx), package manager for CLI**:
+**Using [afx](https://github.com/babarot/afx), package manager for CLI**:
 
 ```yaml
 github:
-- name: b4b4r07/gomi
+- name: babarot/gomi
   description: Trash can in CLI
-  owner: b4b4r07
+  owner: babarot
   repo: gomi
   release:
     name: gomi
@@ -121,5 +121,5 @@ https://aur.archlinux.org/packages/gomi/
 
 [MIT][license]
 
-[release]: https://github.com/b4b4r07/gomi/releases/latest
+[release]: https://github.com/babarot/gomi/releases/latest
 [license]: https://b4b4r07.mit-license.org
