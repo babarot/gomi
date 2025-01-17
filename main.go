@@ -15,9 +15,9 @@ import (
 	"strings"
 	"time"
 
-	clilog "github.com/babarot/go-cli-log"
 	"github.com/dustin/go-humanize"
 	"github.com/gabriel-vasile/mimetype"
+	"github.com/hashicorp/logutils"
 	"github.com/jessevdk/go-flags"
 	"github.com/manifoldco/promptui"
 	"github.com/rs/xid"
@@ -26,6 +26,7 @@ import (
 )
 
 const gomiDir = ".gomi"
+const invVer = 1
 
 // These variables are set in build step
 var (
@@ -59,8 +60,9 @@ type RmOption struct {
 
 // Inventory represents the log data of deleted objects
 type Inventory struct {
-	Path  string `json:"path"`
-	Files []File `json:"files"`
+	Version int    `json:"version"`
+	Path    string `json:"path"`
+	Files   []File `json:"files"`
 }
 
 // File represents the metadata of deleted object itself
@@ -73,7 +75,6 @@ type File struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
-// CLI represents this application itself
 type CLI struct {
 	Option    Option
 	Inventory Inventory
@@ -86,8 +87,7 @@ func main() {
 }
 
 func run(args []string) int {
-	clilog.Env = "GOMI_LOG"
-	clilog.SetOutput()
+	log.SetOutput(logOutput("GOMI_LOG"))
 	defer log.Printf("[INFO] finish main function")
 
 	log.Printf("[INFO] Version: %s (%s)", Version, Revision)
@@ -235,7 +235,11 @@ func (i *Inventory) Open() error {
 		return err
 	}
 	defer f.Close()
-	return json.NewDecoder(f).Decode(&i)
+	if err := json.NewDecoder(f).Decode(&i); err != nil {
+		return err
+	}
+	log.Printf("[DEBUG] get inventory version: %d", i.Version)
+	return nil
 }
 
 // Update updates inventory file (this may overwrite the inventory file)
@@ -247,6 +251,7 @@ func (i *Inventory) Update(files []File) error {
 	}
 	defer f.Close()
 	i.Files = files
+	i.setVersion()
 	return json.NewEncoder(f).Encode(&i)
 }
 
@@ -259,6 +264,7 @@ func (i *Inventory) Save(files []File) error {
 	}
 	defer f.Close()
 	i.Files = append(i.Files, files...)
+	i.setVersion()
 	return json.NewEncoder(f).Encode(&i)
 }
 
@@ -274,6 +280,13 @@ func (i *Inventory) Delete(target File) error {
 		files = append(files, file)
 	}
 	return i.Update(files)
+}
+
+func (i *Inventory) setVersion() {
+	if i.Version == 0 {
+		log.Printf("[DEBUG] set inventory version: %d", invVer)
+		i.Version = invVer
+	}
 }
 
 // Filter filters inventory entries based on given function
@@ -552,4 +565,26 @@ func (c CLI) GroupPrompt() (Group, error) {
 
 	i, _, err := prompt.Run()
 	return groups[i], err
+}
+
+func logOutput(env string) io.Writer {
+	levels := []logutils.LogLevel{"TRACE", "DEBUG", "INFO", "WARN", "ERROR"}
+	minLevel := os.Getenv(env)
+	if len(minLevel) == 0 {
+		minLevel = "ERROR" // default log level
+	}
+
+	// default log writer is null
+	writer := ioutil.Discard
+	if minLevel != "" {
+		writer = os.Stderr
+	}
+
+	filter := &logutils.LevelFilter{
+		Levels:   levels,
+		MinLevel: logutils.LogLevel(strings.ToUpper(minLevel)),
+		Writer:   writer,
+	}
+
+	return filter
 }

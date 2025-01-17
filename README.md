@@ -82,13 +82,13 @@ Download the binary from [GitHub Releases][release] and drop it in your `$PATH`.
 - [Darwin / Mac][release]
 - [Linux][release]
 
-**For macOS / [Homebrew](https://brew.sh/) user**:
+For macOS / [Homebrew](https://brew.sh/) user:
 
 ```bash
 brew install babarot/tap/gomi
 ```
 
-**Using [afx](https://github.com/babarot/afx), package manager for CLI**:
+Using [afx](https://github.com/babarot/afx), package manager for CLI:
 
 ```yaml
 github:
@@ -98,17 +98,16 @@ github:
   repo: gomi
   release:
     name: gomi
-    tag: v1.1.5 ## NEED UPDATE!
+    tag: v1.1.5
   command:
     link:
     - from: gomi
-      to: gomi
     alias:
-      rm: gomi ## --> alias rm=gomi
+      rm: gomi
 ```
 
 
-**AUR users**:
+AUR users:
 
 https://aur.archlinux.org/packages/gomi/
 
