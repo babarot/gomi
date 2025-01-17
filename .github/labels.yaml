@@ -1,0 +1,30 @@
+# tag management - used by tagpr management
+- name: tagpr
+  description: Used by tagpr for managing the release
+  color: ededed
+- name: tagpr:minor
+  description: Used by tagpr for managing the release
+  color: ededed
+- name: tagpr:major
+  description: Used by tagpr for managing the release
+  color: ededed
+- name: no-update-changelog
+  description: Used in case of no need to update changelog
+  color: ededed
+
+# kind/ - the type of issue
+- name: kind/bug
+  description: A bug; unintended behavior
+  color: 425df5
+- name: kind/feature
+  description: A feature request; new or enhanced behavior
+  color: 425df5
+- name: kind/deprecation
+  description: Related to a feature or part of code being deprecated.
+  color: 425df5
+- name: kind/cleanup
+  description: Categorizes issue or PR as related to cleaning up code, issues, etc.
+  color: 425df5
+- name: kind/breaking-change
+  description: Denotes a PR that introduces potentially breaking changes that require user action.
+  color: 425df5

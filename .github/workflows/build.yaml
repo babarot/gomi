@@ -1,0 +1,23 @@
+name: Go
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        go-version: ['stable']
+        os: ['ubuntu-latest', 'macos-latest', 'windows-latest']
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v4
+    - name: Install Go
+      if: success()
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go-version }}
+        cache: true
+    - name: Run tests
+      run: make test

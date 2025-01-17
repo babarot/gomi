@@ -1,0 +1,24 @@
+changelog:
+  exclude:
+    labels:
+      - tagpr
+      - no-update-changelog
+  categories:
+    - title: Breaking Changes
+      labels:
+        - kind/breaking-change
+    - title: New Features
+      labels:
+        - kind/feature
+    - title: Bug fixes
+      labels:
+        - kind/bug
+    - title: Deprecated features
+      labels:
+        - kind/deprecation
+    - title: Refactorings
+      labels:
+        - kind/cleanup
+    - title: Others
+      labels:
+        - "*"
