@@ -34,17 +34,15 @@
 
 # 🗑️ Replacement for UNIX rm command!
 
-`gomi` (ごみ/go-mi means a trash in Japanese) is a simple trash tool that works on CLI, written in Go
+`gomi` (ごみ/go-mi means a trash in Japanese) is a simple trash tool that works on CLI, written in Go.
 
-The concept of the trashcan does not exist in Command-line interface ([CLI](http://en.wikipedia.org/wiki/Command-line_interface)). If you have deleted an important file by mistake with the `rm` command, it would be difficult to restore. Then, it's this `gomi`. Unlike `rm` command, it is possible to easily restore deleted files because `gomi` have the trashcan for the CLI.
+There's no something like Trash folder in the command-line interface ([CLI](http://en.wikipedia.org/wiki/Command-line_interface)). So if you've deleted some important files by mistake with the `rm` command, it would be difficult to restore them. So I've made this tool. Unlike `rm` command, it is possible to easily restore deleted files because `gomi` have the trashcan for the CLI.
 
 ## Features
 
-- Like a `rm` command but not unlink (delete) in fact (just move to another place)
-- Easy to restore, super intuitive
-- Compatible with `rm` command, e.g. `-r`, `-f` options
-- Nice UI, awesome CLI UX
-- Easy to see what gomi does with setting `GOMI_LOG=[trace|debug|info|warn|error]`
+- Behaves like `rm` command but not delete actually
+- Easy to restore with nice UI, it's super intuitive!
+- Compatible with `rm` command
 
 ## Usage
 
@@ -77,41 +75,30 @@ Content:            (directory)
 
 ## Installation
 
-Download the binary from [GitHub Releases][release] and drop it in your `$PATH`.
+1. Download a command directly from [GitHub Releases][release] and drop it in your `$PATH`.
+2. Using [afx](https://github.com/babarot/afx) (CLI package manager).
 
-- [Darwin / Mac][release]
-- [Linux][release]
+    ```yaml
+    github:
+    - name: babarot/gomi
+      description: Trash can in CLI
+      owner: babarot
+      repo: gomi
+      release:
+        name: gomi
+        tag: v1.1.5
+      command:
+        link:
+        - from: gomi
+        alias:
+          rm: gomi
+    ```
+    ```console
+    afx install
+    ```
+3. (For Linux users) Using [AUR](https://aur.archlinux.org/packages/gomi/).
 
-For macOS / [Homebrew](https://brew.sh/) user:
-
-```bash
-brew install babarot/tap/gomi
-```
-
-Using [afx](https://github.com/babarot/afx), package manager for CLI:
-
-```yaml
-github:
-- name: babarot/gomi
-  description: Trash can in CLI
-  owner: babarot
-  repo: gomi
-  release:
-    name: gomi
-    tag: v1.1.5
-  command:
-    link:
-    - from: gomi
-    alias:
-      rm: gomi
-```
-
-
-AUR users:
-
-https://aur.archlinux.org/packages/gomi/
-
-## Versus
+## Similar projects
 
 - [andreafrancia/trash-cli](https://github.com/andreafrancia/trash-cli)
 - [sindresorhus/trash](https://github.com/sindresorhus/trash)

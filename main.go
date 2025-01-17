@@ -25,8 +25,14 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const gomiDir = ".gomi"
-const invVer = 1
+const (
+	appName = "gomi"
+	gomiDir = ".gomi"
+	envLog  = "GOMI_LOG"
+
+	inventoryVersion = 1
+	inventoryFile    = "inventory.json"
+)
 
 // These variables are set in build step
 var (
@@ -36,7 +42,6 @@ var (
 
 var (
 	gomiPath      = filepath.Join(os.Getenv("HOME"), gomiDir)
-	inventoryFile = "inventory.json"
 	inventoryPath = filepath.Join(gomiPath, inventoryFile)
 )
 
@@ -45,21 +50,22 @@ type Option struct {
 	Restore      bool     `short:"b" long:"restore" description:"Restore deleted file"`
 	RestoreGroup bool     `short:"B" long:"restore-by-group" description:"Restore deleted files based on one operation"`
 	Version      bool     `long:"version" description:"Show version"`
-	RmOption     RmOption `group:"Dummy options"`
+	RmOption     RmOption `group:"Dummy Options (compatible with rm)"`
 }
 
-// RmOption represents rm command option
 // This should be not conflicts with app option
+// https://man7.org/linux/man-pages/man1/rm.1.html
 type RmOption struct {
-	Interactive bool `short:"i" description:"To make compatible with rm command"`
-	Recursive   bool `short:"r" description:"To make compatible with rm command"`
-	Force       bool `short:"f" description:"To make compatible with rm command"`
-	Directory   bool `short:"d" description:"To make compatible with rm command"`
-	Verbose     bool `short:"v" description:"To make compatible with rm command"`
+	Interactive   bool `short:"i" description:"(dummy) prompt before every removal"`
+	Recursive     bool `short:"r" long:"recursive" description:"(dummy) remove directories and their contents recursively"`
+	Force         bool `short:"f" long:"force" description:"(dummy) ignore nonexistent files, never prompt"`
+	Directory     bool `short:"d" long:"dir" description:"(dummy) remove empty directories"`
+	Verbose       bool `short:"v" long:"verbose" description:"(dummy) explain what is being done"`
+	OneFileSystem bool `long:"one-file-system" description:"(dummy) when removing a hierarchy recursively, skip any directory\n....... that is on a file system different from that of the\n....... corresponding command line argument"`
 }
 
-// Inventory represents the log data of deleted objects
-type Inventory struct {
+// inventory represents the log data of deleted objects
+type inventory struct {
 	Version int    `json:"version"`
 	Path    string `json:"path"`
 	Files   []File `json:"files"`
@@ -77,52 +83,56 @@ type File struct {
 
 type CLI struct {
 	Option    Option
-	Inventory Inventory
+	inventory inventory
 	Stdout    io.Writer
 	Stderr    io.Writer
 }
 
 func main() {
-	os.Exit(run(os.Args[1:]))
+	if err := runMain(); err != nil {
+		fmt.Fprintf(os.Stderr, "[ERROR] error occured while processing %s: %v\n", appName, err)
+		os.Exit(1)
+	}
 }
 
-func run(args []string) int {
-	log.SetOutput(logOutput("GOMI_LOG"))
+func runMain() error {
+	log.SetOutput(logOutput(envLog))
 	defer log.Printf("[INFO] finish main function")
 
 	log.Printf("[INFO] Version: %s (%s)", Version, Revision)
 	log.Printf("[INFO] gomiPath: %s", gomiPath)
 	log.Printf("[INFO] inventoryPath: %s", inventoryPath)
-	log.Printf("[INFO] Args: %#v", args)
 
 	var opt Option
-	args, err := flags.ParseArgs(&opt, args)
+	parser := flags.NewParser(&opt, flags.Default)
+	parser.Name = appName
+	parser.Usage = "[OPTIONS] files..."
+	args, err := parser.Parse()
 	if err != nil {
-		return 2
+		if flags.WroteHelp(err) {
+			return nil
+		}
+		return err
 	}
 
 	cli := CLI{
 		Option:    opt,
-		Inventory: Inventory{Path: inventoryPath},
+		inventory: inventory{Path: inventoryPath},
 		Stdout:    os.Stdout,
 		Stderr:    os.Stderr,
 	}
 
-	if err := cli.Run(args); err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		return 1
-	}
-
-	return 0
+	log.Printf("[INFO] Args: %#v", args)
+	return cli.Run(args)
 }
 
 // Run runs gomi main logic
 func (c CLI) Run(args []string) error {
-	c.Inventory.Open()
+	c.inventory.open()
 
 	switch {
 	case c.Option.Version:
-		fmt.Fprintf(c.Stdout, "%s (%s)\n", Version, Revision)
+		fmt.Fprintf(c.Stdout, "%s %s (%s)\n", appName, Version, Revision)
 		return nil
 	case c.Option.Restore:
 		return c.Restore()
@@ -140,7 +150,7 @@ func (c CLI) Restore() error {
 	if err != nil {
 		return err
 	}
-	defer c.Inventory.Delete(file)
+	defer c.inventory.remove(file)
 	_, err = os.Stat(file.From)
 	if err == nil {
 		// already exists so to prevent to overwrite
@@ -161,7 +171,7 @@ func (c CLI) RestoreGroup() error {
 	}
 	defer func() {
 		for _, file := range group.Files {
-			c.Inventory.Delete(file)
+			c.inventory.remove(file)
 		}
 	}()
 	var eg errgroup.Group
@@ -216,7 +226,7 @@ func (c CLI) Remove(args []string) error {
 			return os.Rename(file.From, file.To)
 		})
 	}
-	defer c.Inventory.Save(files)
+	defer c.inventory.save(files)
 
 	defer eg.Wait()
 	if c.Option.RmOption.Force {
@@ -227,8 +237,8 @@ func (c CLI) Remove(args []string) error {
 	return eg.Wait()
 }
 
-// Open opens inventory file
-func (i *Inventory) Open() error {
+// open opens inventory file
+func (i *inventory) open() error {
 	log.Printf("[DEBUG] opening inventory")
 	f, err := os.Open(i.Path)
 	if err != nil {
@@ -242,8 +252,8 @@ func (i *Inventory) Open() error {
 	return nil
 }
 
-// Update updates inventory file (this may overwrite the inventory file)
-func (i *Inventory) Update(files []File) error {
+// update updates inventory file
+func (i *inventory) update(files []File) error {
 	log.Printf("[DEBUG] updating inventory")
 	f, err := os.Create(i.Path)
 	if err != nil {
@@ -255,8 +265,8 @@ func (i *Inventory) Update(files []File) error {
 	return json.NewEncoder(f).Encode(&i)
 }
 
-// Save updates inventory file (this should not overwrite the inventory file)
-func (i *Inventory) Save(files []File) error {
+// save creates new inventory file instead of updating
+func (i *inventory) save(files []File) error {
 	log.Printf("[DEBUG] saving inventory")
 	f, err := os.Create(i.Path)
 	if err != nil {
@@ -268,9 +278,8 @@ func (i *Inventory) Save(files []File) error {
 	return json.NewEncoder(f).Encode(&i)
 }
 
-// Delete deletes a file from the inventory file
-// This should not delete the inventory file itself
-func (i *Inventory) Delete(target File) error {
+// remove removes an item from inventory file
+func (i *inventory) remove(target File) error {
 	log.Printf("[DEBUG] deleting %v from inventory", target)
 	var files []File
 	for _, file := range i.Files {
@@ -279,18 +288,18 @@ func (i *Inventory) Delete(target File) error {
 		}
 		files = append(files, file)
 	}
-	return i.Update(files)
+	return i.update(files)
 }
 
-func (i *Inventory) setVersion() {
+func (i *inventory) setVersion() {
 	if i.Version == 0 {
-		log.Printf("[DEBUG] set inventory version: %d", invVer)
-		i.Version = invVer
+		log.Printf("[DEBUG] set inventory version: %d", inventoryVersion)
+		i.Version = inventoryVersion
 	}
 }
 
 // Filter filters inventory entries based on given function
-func (i *Inventory) Filter(f func(File) bool) {
+func (i *inventory) Filter(f func(File) bool) {
 	files := make([]File, 0)
 	for _, file := range i.Files {
 		if f(file) {
@@ -407,11 +416,11 @@ func head(path string) string {
 // FilePrompt prompts inventory entries, and select one and return it
 func (c CLI) FilePrompt() (File, error) {
 	// Filter out invalid logs
-	c.Inventory.Filter(func(file File) bool {
+	c.inventory.Filter(func(file File) bool {
 		return file.ID != ""
 	})
 
-	files := c.Inventory.Files
+	files := c.inventory.Files
 	if len(files) == 0 {
 		return File{}, errors.New("no deleted files found")
 	}
@@ -469,17 +478,17 @@ type Group struct {
 // and select one group and return it
 func (c CLI) GroupPrompt() (Group, error) {
 	// Filter out invalid logs
-	c.Inventory.Filter(func(file File) bool {
+	c.inventory.Filter(func(file File) bool {
 		return file.ID != ""
 	})
 
-	files := c.Inventory.Files
+	files := c.inventory.Files
 	if len(files) == 0 {
 		return Group{}, errors.New("no deleted files found")
 	}
 
 	m := map[string][]File{}
-	for _, file := range c.Inventory.Files {
+	for _, file := range c.inventory.Files {
 		m[file.GroupID] = append(m[file.GroupID], file)
 	}
 
