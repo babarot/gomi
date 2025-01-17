@@ -1,0 +1,3 @@
+no-update-changelog:
+- changed-files:
+  - any-glob-to-all-files: '!*.go'
