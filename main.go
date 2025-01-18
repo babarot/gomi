@@ -151,8 +151,8 @@ func (c CLI) initModel() model {
 		files = append(files, file)
 	}
 
-	l := list.New(files, FileDelegate{}, defaultWidth, listHeight)
-	// l := list.New(files, NewDefaultDelegate(), defaultWidth, listHeight)
+	// l := list.New(files, FileDelegate{}, defaultWidth, listHeight)
+	l := list.New(files, NewDefaultDelegate(), defaultWidth, listHeight)
 	l.Title = ""
 	// TODO:
 	// l.Paginator.Type = paginator.Arabic

@@ -13,6 +13,7 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/dustin/go-humanize"
 	"github.com/samber/lo"
 )
@@ -113,8 +114,9 @@ func (m model) Init() tea.Cmd {
 
 type (
 	keyMap struct {
-		Quit   key.Binding
-		Select key.Binding
+		Quit     key.Binding
+		Select   key.Binding
+		DeSelect key.Binding
 	}
 	listAdditionalKeyMap struct {
 		Enter key.Binding
@@ -131,8 +133,12 @@ var (
 			key.WithHelp("ctrl+c", "quit"),
 		),
 		Select: key.NewBinding(
-			key.WithKeys("tab", " "),
+			key.WithKeys("tab"),
 			key.WithHelp("tab", "select"),
+		),
+		DeSelect: key.NewBinding(
+			key.WithKeys("shift+tab"),
+			key.WithHelp("s+tab", "de-select"),
 		),
 	}
 	listAdditionalKeys = listAdditionalKeyMap{
@@ -150,8 +156,9 @@ var (
 )
 
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{detailKeys.Back, k.Quit, k.Select}
+	return []key.Binding{k.Quit, k.Select, k.DeSelect}
 }
+
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{k.ShortHelp(), {}}
 }
@@ -178,6 +185,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					selectionManager.Add(item)
 				}
 				m.list.CursorDown()
+			}
+
+		case key.Matches(msg, keys.DeSelect):
+			if m.list.FilterState() != list.Filtering {
+				item, ok := m.list.SelectedItem().(File)
+				if !ok {
+					break
+				}
+				if item.isSelected() {
+					selectionManager.Remove(item)
+				}
+				m.list.CursorUp()
 			}
 
 		case key.Matches(msg, listAdditionalKeys.Enter):
@@ -269,4 +288,146 @@ func (h FileDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 	}
 
 	fmt.Fprint(w, fn(str))
+}
+
+type RestoreStyles struct {
+	NormalTitle   lipgloss.Style
+	NormalDesc    lipgloss.Style
+	CursorTitle   lipgloss.Style
+	CursorDesc    lipgloss.Style
+	SelectedTitle lipgloss.Style
+	SelectedDesc  lipgloss.Style
+}
+type RestoreDelegate struct {
+	Styles  RestoreStyles
+	height  int
+	spacing int
+}
+
+func newRestoreDelegate() RestoreDelegate {
+	const defaultHeight = 2
+	const defaultSpacing = 1
+	return RestoreDelegate{
+		Styles:  newRestoreStyles(),
+		height:  defaultHeight,
+		spacing: defaultSpacing,
+	}
+}
+
+func (d RestoreDelegate) Height() int                               { return 1 }
+func (d RestoreDelegate) Spacing() int                              { return 0 }
+func (d RestoreDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
+
+func (d RestoreDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
+	// file, ok := item.(File)
+	// if !ok {
+	// 	return
+	// }
+	// var str string
+	// if file.isSelected() {
+	// 	str = selectedItemStyle.Render(fmt.Sprintf("%d. %s (%d)", index+1, file.Name, selectionManager.IndexOf(file)+1))
+	// } else {
+	// 	str = fmt.Sprintf("%d. %s", index+1, file.Name)
+	// }
+	//
+	// fn := itemStyle.Render
+	// if index == m.Index() {
+	// 	fn = func(s ...string) string {
+	// 		var str = []string{"> "}
+	// 		return currentItemStyle.Render(append(str, s...)...)
+	// 	}
+	// }
+	//
+	// fmt.Fprint(w, fn(str))
+	var (
+		title, desc string
+		// matchedRunes []int
+		s = &d.Styles
+	)
+
+	if i, ok := item.(DefaultItem); ok {
+		title = i.Title()
+		desc = i.Description()
+	} else {
+		return
+	}
+
+	if m.Width() <= 0 {
+		// short-circuit
+		return
+	}
+
+	// Prevent text from exceeding list width
+	textwidth := m.Width() - s.NormalTitle.GetPaddingLeft() - s.NormalTitle.GetPaddingRight()
+	title = ansi.Truncate(title, textwidth, ellipsis)
+	var lines []string
+	for i, line := range strings.Split(desc, "\n") {
+		if i >= d.height-1 {
+			break
+		}
+		lines = append(lines, ansi.Truncate(line, textwidth, ellipsis))
+	}
+	desc = strings.Join(lines, "\n")
+
+	// Conditions
+	var (
+		isSelected = index == m.Index()
+		// emptyFilter = m.FilterState() == list.Filtering && m.FilterValue() == ""
+		// isFiltered  = m.FilterState() == list.Filtering || m.FilterState() == list.FilterApplied
+	)
+
+	// // if isFiltered && index < len(m.filteredItems) {
+	// if isFiltered {
+	// 	// Get indices of matched characters
+	// 	matchedRunes = m.MatchesForItem(index)
+	// }
+
+	file, ok := item.(File)
+	if !ok {
+		return
+	}
+	if isSelected && m.FilterState() != list.Filtering {
+		// if isFiltered {
+		// 	// Highlight matches
+		// 	unmatched := s.SelectedTitle.Inline(true)
+		// 	matched := unmatched.Inherit(s.FilterMatch)
+		// 	title = lipgloss.StyleRunes(title, matchedRunes, matched, unmatched)
+		// }
+		title = s.CursorTitle.Render(title)
+		desc = s.CursorDesc.Render(desc)
+	} else if file.isSelected() && m.FilterState() != list.Filtering {
+		title = s.SelectedTitle.Render(title)
+		desc = s.SelectedDesc.Render(desc)
+	} else {
+		title = s.NormalTitle.Render(title)
+		desc = s.NormalDesc.Render(desc)
+	}
+
+	fmt.Fprintf(w, "%s\n%s", title, desc) //nolint: errcheck
+}
+
+func newRestoreStyles() RestoreStyles {
+	s := RestoreStyles{}
+	s.NormalTitle = lipgloss.NewStyle().
+		Foreground(lipgloss.AdaptiveColor{Light: "#1a1a1a", Dark: "#dddddd"}).
+		Padding(0, 0, 0, 2) //nolint:mnd
+
+	s.NormalDesc = s.NormalTitle.
+		Foreground(lipgloss.AdaptiveColor{Light: "#A49FA5", Dark: "#777777"})
+
+	s.CursorTitle = lipgloss.NewStyle().
+		Border(lipgloss.NormalBorder(), false, false, false, true).
+		BorderForeground(lipgloss.AdaptiveColor{Light: "#F793FF", Dark: "#AD58B4"}).
+		Foreground(lipgloss.AdaptiveColor{Light: "#EE6FF8", Dark: "#EE6FF8"}).
+		Padding(0, 0, 0, 1)
+	s.CursorDesc = s.SelectedTitle.
+		Foreground(lipgloss.AdaptiveColor{Light: "#F793FF", Dark: "#AD58B4"})
+
+	s.SelectedTitle = lipgloss.NewStyle().
+		Border(lipgloss.NormalBorder(), false, false, false, true).
+		BorderForeground(lipgloss.AdaptiveColor{Light: "#F793FF", Dark: "#AD58B4"}).
+		Foreground(lipgloss.AdaptiveColor{Light: "#1a1a1a", Dark: "#dddddd"}).
+		Padding(0, 0, 0, 1)
+
+	return s
 }
