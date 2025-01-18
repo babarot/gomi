@@ -79,6 +79,8 @@ type File struct {
 	From      string    `json:"from"`     // $PWD/file.go
 	To        string    `json:"to"`       // ~/.gomi/2020/01/16/zoapompji/file.go.asfasfafd
 	Timestamp time.Time `json:"timestamp"`
+
+	selected bool
 }
 
 type CLI struct {
@@ -160,12 +162,13 @@ func (c CLI) Restore() error {
 	if err != nil {
 		return err
 	}
-	file := returnModel.(model).choice
+	files := returnModel.(model).choices
 	if returnModel.(model).quitting {
 		fmt.Println("quit")
 		return nil
 	}
-	pp.Println(file)
+	pp.Println(files)
+	file := files[0]
 	return nil
 	defer c.inventory.remove(file)
 	if _, err := os.Stat(file.From); err == nil {

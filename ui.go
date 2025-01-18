@@ -28,10 +28,11 @@ func errorCmd(err error) tea.Cmd {
 }
 
 type model struct {
-	files    []File
-	cli      *CLI
-	choice   File
-	selected bool
+	files        []File
+	cli          *CLI
+	choices      []File
+	selected     bool
+	currentIndex int
 
 	quitting bool
 	list     list.Model
@@ -109,14 +110,14 @@ func (m model) Init() tea.Cmd {
 
 type (
 	keyMap struct {
-		Quit key.Binding
+		Quit   key.Binding
+		Select key.Binding
 	}
 	listAdditionalKeyMap struct {
 		Enter key.Binding
 	}
 	detailKeyMap struct {
 		Back key.Binding
-		Tab  key.Binding
 	}
 )
 
@@ -125,6 +126,10 @@ var (
 		Quit: key.NewBinding(
 			key.WithKeys("ctrl+c"),
 			key.WithHelp("ctrl+c", "quit"),
+		),
+		Select: key.NewBinding(
+			key.WithKeys("tab", " "),
+			key.WithHelp("tab", "select"),
 		),
 	}
 	listAdditionalKeys = listAdditionalKeyMap{
@@ -138,15 +143,11 @@ var (
 			key.WithKeys("backspace"),
 			key.WithHelp("backspace", "list"),
 		),
-		Tab: key.NewBinding(
-			key.WithKeys("tab"),
-			key.WithHelp("tab", "units"),
-		),
 	}
 )
 
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{detailKeys.Tab, detailKeys.Back, k.Quit}
+	return []key.Binding{detailKeys.Back, k.Quit, k.Select}
 }
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{k.ShortHelp(), {}}
@@ -162,11 +163,43 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.quitting = true
 			return m, tea.Quit
 
+		case key.Matches(msg, keys.Select):
+			switch m.files[m.list.Index()].selected {
+			case true:
+				m.files[m.list.Index()].selected = false
+			case false:
+				m.files[m.list.Index()].selected = true
+			}
+			// switch c.options[c.currentIndex].selected {
+			// case true:
+			// 	c.options[c.currentIndex].selected = false
+			// case false:
+			// 	c.options[c.currentIndex].selected = true
+			// }
+
 		case key.Matches(msg, listAdditionalKeys.Enter):
 			if m.list.FilterState() != list.Filtering {
-				file, ok := m.list.SelectedItem().(File)
-				if ok {
-					m.choice = file
+				files := lo.Filter(m.files, func(file File, index int) bool {
+					return file.selected
+				})
+				if len(files) == 0 {
+					// selectedItem := m.list.SelectedItem()
+					// if selectedItem == nil {
+					// 	return nil
+					// }
+					// w, ok := selectedItem.(ItemWrapper)
+					// if !ok {
+					// 	// this should never happen
+					// 	return nil
+					// }
+					// return &w
+					file, ok := m.list.SelectedItem().(File)
+					if ok {
+						m.choices = append(m.choices, file)
+						m.selected = true
+					}
+				} else {
+					m.choices = files
 					m.selected = true
 				}
 				return m, tea.Quit
@@ -181,6 +214,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err != nil {
 			m.err = msg.err
 			return m, tea.Quit
+		}
+		for _, file := range msg.files {
+			m.files = append(m.files, file.(File))
 		}
 		m.list.SetItems(msg.files)
 
