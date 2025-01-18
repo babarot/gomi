@@ -1,12 +1,11 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"sort"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/dustin/go-humanize"
@@ -25,39 +24,14 @@ func errorCmd(err error) tea.Cmd {
 }
 
 type model struct {
-	files []File
-	cli   *CLI
+	files    []File
+	cli      *CLI
+	choice   File
+	selected bool
 
 	quitting bool
 	list     list.Model
 	err      error
-}
-
-type scrapboxPage struct {
-	Title_ string `json:"title"`
-	ID     string `json:"id"`
-}
-
-// Description implements list.DefaultItem
-func (p scrapboxPage) Description() string {
-	return p.ID
-}
-
-// Title implements list.DefaultItem
-func (p scrapboxPage) Title() string {
-	return p.Title_
-}
-
-// FilterValue implements list.Item
-func (p scrapboxPage) FilterValue() string {
-	return p.Title_
-}
-
-var _ list.DefaultItem = (*scrapboxPage)(nil)
-
-type scrapboxPagesLoadedMsg struct {
-	pages []list.Item
-	err   error
 }
 
 // Description implements list.DefaultItem
@@ -83,9 +57,6 @@ type inventoryLoadedMsg struct {
 }
 
 func (m model) loadInventory() tea.Msg {
-	// if err := m.cli.inventory.open(); err != nil {
-	// 	return errorMsg{errors.New("no deleted files found")}
-	// }
 	files := m.cli.inventory.Files
 	if len(files) == 0 {
 		return errorMsg{errors.New("no deleted files found")}
@@ -100,48 +71,79 @@ func (m model) loadInventory() tea.Msg {
 	return inventoryLoadedMsg{files: items}
 }
 
-func (m model) loadScrapboxPages() tea.Msg {
-	resp, err := http.Get(
-		"https://scrapbox.io/api/pages/help-jp",
-	)
-	if err != nil {
-		return errorMsg{err}
-	}
-
-	defer resp.Body.Close()
-	var pages []scrapboxPage
-	result := struct{ Pages []scrapboxPage }{}
-	err = json.NewDecoder(resp.Body).Decode(&result)
-	if err != nil {
-		return errorMsg{err}
-	}
-
-	pages = result.Pages
-	if len(pages) == 0 {
-		return scrapboxPagesLoadedMsg{pages: []list.Item{}, err: errors.New("page not found")}
-		// return errorMsg{errors.New("page not found")}
-	}
-
-	items := make([]list.Item, len(pages))
-	for i, page := range pages {
-		items[i] = page
-	}
-	return scrapboxPagesLoadedMsg{pages: items}
-}
-
 func (m model) Init() tea.Cmd {
 	return tea.Batch(
-		// m.loadScrapboxPages,
 		m.loadInventory,
 		m.list.StartSpinner(),
 	)
 }
 
+type (
+	keyMap struct {
+		Quit key.Binding
+	}
+	listAdditionalKeyMap struct {
+		Enter key.Binding
+	}
+	detailKeyMap struct {
+		Back key.Binding
+		Tab  key.Binding
+	}
+)
+
+var (
+	keys = keyMap{
+		Quit: key.NewBinding(
+			key.WithKeys("ctrl+c"),
+			key.WithHelp("ctrl+c", "quit"),
+		),
+	}
+	listAdditionalKeys = listAdditionalKeyMap{
+		Enter: key.NewBinding(
+			key.WithKeys("enter"),
+			key.WithHelp("enter", "ok"),
+		),
+	}
+	detailKeys = detailKeyMap{
+		Back: key.NewBinding(
+			key.WithKeys("backspace"),
+			key.WithHelp("backspace", "list"),
+		),
+		Tab: key.NewBinding(
+			key.WithKeys("tab"),
+			key.WithHelp("tab", "units"),
+		),
+	}
+)
+
+func (k keyMap) ShortHelp() []key.Binding {
+	return []key.Binding{detailKeys.Tab, detailKeys.Back, k.Quit}
+}
+func (k keyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{k.ShortHelp(), {}}
+}
+
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
-	m.list, cmd = m.list.Update(msg)
 
 	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch {
+		case key.Matches(msg, keys.Quit):
+			m.quitting = true
+			return m, tea.Quit
+
+		case key.Matches(msg, listAdditionalKeys.Enter):
+			if m.list.FilterState() != list.Filtering {
+				file, ok := m.list.SelectedItem().(File)
+				if ok {
+					m.choice = file
+					m.selected = true
+				}
+				return m, tea.Quit
+			}
+		}
+
 	case tea.WindowSizeMsg:
 		// m.list.SetSize(msg.Width, msg.Height)
 		m.list.SetWidth(msg.Width)
@@ -151,16 +153,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.err = msg.err
 			return m, tea.Quit
 		}
-		m.list.StopSpinner()
 		m.list.SetItems(msg.files)
-
-	case scrapboxPagesLoadedMsg:
-		if msg.err != nil {
-			m.err = msg.err
-			return m, tea.Quit
-		}
-		m.list.StopSpinner()
-		m.list.SetItems(msg.pages)
 
 	case errorMsg:
 		m.quitting = true
@@ -168,6 +161,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	}
 
+	m.list, cmd = m.list.Update(msg)
 	return m, cmd
 }
 
@@ -176,6 +170,9 @@ func (m model) View() string {
 	if m.err != nil {
 		s += fmt.Sprintf("error happen %s", m.err)
 	} else {
+		if m.selected {
+			return s
+		}
 		s += m.list.View()
 	}
 	return s + "\n"

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -11,21 +10,18 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/paginator"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/dustin/go-humanize"
-	"github.com/gabriel-vasile/mimetype"
 	"github.com/hashicorp/logutils"
 	"github.com/jessevdk/go-flags"
-	"github.com/manifoldco/promptui"
+	"github.com/k0kubun/pp"
 	"github.com/rs/xid"
-	"golang.org/x/crypto/ssh/terminal"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -128,21 +124,6 @@ var (
 	titleStyle = lipgloss.NewStyle().MarginLeft(2)
 )
 
-func (c CLI) initModel() model {
-	const defaultWidth = 20
-	l := list.New(nil, list.NewDefaultDelegate(), defaultWidth, listHeight)
-	l.Title = ""
-	l.Paginator.Type = paginator.Arabic
-	l.Styles.Title = titleStyle
-	m := model{
-		cli: &c,
-		// files: files,
-		list: l,
-	}
-	return m
-}
-
-// Run runs gomi main logic
 func (c CLI) Run(args []string) error {
 	c.inventory.open()
 
@@ -151,14 +132,9 @@ func (c CLI) Run(args []string) error {
 		fmt.Fprintf(c.Stdout, "%s %s (%s)\n", appName, Version, Revision)
 		return nil
 	case c.Option.Restore:
-		prog := tea.NewProgram(c.initModel())
-		err := prog.Start()
-		if err != nil {
-			return err
-		}
-		return nil
+		return c.Restore()
 	case c.Option.RestoreGroup:
-		return c.RestoreGroup()
+		return nil
 	default:
 	}
 
@@ -167,13 +143,40 @@ func (c CLI) Run(args []string) error {
 
 // Restore moves deleted file/dir to original place
 func (c CLI) Restore() error {
-	file, err := c.FilePrompt()
+	// file, err := c.FilePrompt()
+	// if err != nil {
+	// 	return err
+	// }
+	const defaultWidth = 20
+	l := list.New(nil, list.NewDefaultDelegate(), defaultWidth, listHeight)
+	l.Title = ""
+	l.Paginator.Type = paginator.Arabic
+	l.Styles.Title = titleStyle
+	l.AdditionalShortHelpKeys = func() []key.Binding {
+		return []key.Binding{listAdditionalKeys.Enter}
+	}
+	l.AdditionalFullHelpKeys = func() []key.Binding {
+		return []key.Binding{listAdditionalKeys.Enter, keys.Quit}
+	}
+	l.DisableQuitKeybindings()
+	m := model{
+		cli:      &c,
+		list:     l,
+		quitting: false,
+	}
+	returnModel, err := tea.NewProgram(m).Run()
 	if err != nil {
 		return err
 	}
+	file := returnModel.(model).choice
+	if returnModel.(model).quitting {
+		fmt.Println("quit")
+		return nil
+	}
+	pp.Println(file)
+	return nil
 	defer c.inventory.remove(file)
-	_, err = os.Stat(file.From)
-	if err == nil {
+	if _, err := os.Stat(file.From); err == nil {
 		// already exists so to prevent to overwrite
 		// add id to the end of filename
 		// TODO: Ask to overwrite?
@@ -182,35 +185,6 @@ func (c CLI) Restore() error {
 	}
 	log.Printf("[DEBUG] restoring %q -> %q", file.To, file.From)
 	return os.Rename(file.To, file.From)
-}
-
-// RestoreGroup moves deleted file(s)/dir(s) which are deleted in one operation to original place
-func (c CLI) RestoreGroup() error {
-	group, err := c.GroupPrompt()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		for _, file := range group.Files {
-			c.inventory.remove(file)
-		}
-	}()
-	var eg errgroup.Group
-	for _, file := range group.Files {
-		file := file
-		_, err = os.Stat(file.From)
-		if err == nil {
-			// already exists so to prevent to overwrite
-			// add id to the end of filename
-			file.From = file.From + "." + file.ID
-		}
-		eg.Go(func() error {
-			log.Printf("[DEBUG] restoring %q -> %q", file.To, file.From)
-			return os.Rename(file.To, file.From)
-		})
-	}
-
-	return eg.Wait()
 }
 
 // Remove moves files to gomi dir
@@ -361,240 +335,6 @@ func (f File) ToJSON(w io.Writer) {
 		return
 	}
 	fmt.Fprint(w, string(out))
-}
-
-func isBinary(path string) bool {
-	detectedMIME, err := mimetype.DetectFile(path)
-	if err != nil {
-		return true
-	}
-	isBinary := true
-	for mime := detectedMIME; mime != nil; mime = mime.Parent() {
-		if mime.Is("text/plain") {
-			isBinary = false
-		}
-	}
-	return isBinary
-}
-
-func head(path string) string {
-	max := 5
-	wrap := func(line string) string {
-		line = strings.ReplaceAll(line, "\t", "  ")
-		id := int(os.Stdout.Fd())
-		width, _, _ := terminal.GetSize(id)
-		if width < 10 {
-			return line
-		}
-		if len(line) < width-10 {
-			return line
-		}
-		return line[:width-10] + "..."
-	}
-	fi, err := os.Stat(path)
-	if err != nil {
-		return "(panic: not found)"
-	}
-	content := func(lines []string) string {
-		if len(lines) == 0 {
-			return "(no content)"
-		}
-		var content string
-		var i int
-		for _, line := range lines {
-			i++
-			content += fmt.Sprintf("  %s\n", wrap(line))
-			if i > max {
-				content += "  ...\n"
-				break
-			}
-		}
-		return content
-	}
-	var lines []string
-	switch {
-	case fi.IsDir():
-		lines = []string{"(directory)"}
-		dirs, _ := ioutil.ReadDir(path)
-		for _, dir := range dirs {
-			lines = append(lines, fmt.Sprintf("%s\t%s", dir.Mode().String(), dir.Name()))
-		}
-	default:
-		if isBinary(path) {
-			return "(binary file)"
-		}
-		lines = []string{""}
-		fp, _ := os.Open(path)
-		defer fp.Close()
-		s := bufio.NewScanner(fp)
-		for s.Scan() {
-			lines = append(lines, s.Text())
-		}
-	}
-	return content(lines)
-}
-
-// FilePrompt prompts inventory entries, and select one and return it
-func (c CLI) FilePrompt() (File, error) {
-	// Filter out invalid logs
-	c.inventory.Filter(func(file File) bool {
-		return file.ID != ""
-	})
-
-	files := c.inventory.Files
-	if len(files) == 0 {
-		return File{}, errors.New("no deleted files found")
-	}
-
-	sort.Slice(files, func(i, j int) bool {
-		return files[i].Timestamp.After(files[j].Timestamp)
-	})
-
-	funcMap := promptui.FuncMap
-	funcMap["time"] = humanize.Time
-	funcMap["head"] = head
-	templates := &promptui.SelectTemplates{
-		Label:    "{{ . }}",
-		Active:   promptui.IconSelect + " {{ .Name | cyan }}",
-		Inactive: "  {{ .Name | faint }}",
-		Selected: promptui.IconGood + " {{ .Name }}",
-		Details: `
-{{ "Name:" | faint }}	{{ .Name }}
-{{ "Path:" | faint }}	{{ .From }}
-{{ "DeletedAt:" | faint }}	{{ .Timestamp | time }}
-{{ "Content:" | faint }}	{{ .To | head }}
-		`,
-		FuncMap: funcMap,
-	}
-
-	searcher := func(input string, index int) bool {
-		file := files[index]
-		name := strings.Replace(strings.ToLower(file.Name), " ", "", -1)
-		input = strings.Replace(strings.ToLower(input), " ", "", -1)
-		return strings.Contains(name, input)
-	}
-
-	prompt := promptui.Select{
-		Label:             "Which to restore?",
-		Items:             files,
-		Templates:         templates,
-		Searcher:          searcher,
-		StartInSearchMode: true,
-		HideSelected:      true,
-	}
-
-	i, _, err := prompt.Run()
-	return files[i], err
-}
-
-// Group represents files ([]File) deleted by one operation
-type Group struct {
-	ID        string
-	Dir       string
-	Timestamp time.Time
-	Files     []File
-}
-
-// GroupPrompt prompts inventory entries which are grouped by one operation
-// and select one group and return it
-func (c CLI) GroupPrompt() (Group, error) {
-	// Filter out invalid logs
-	c.inventory.Filter(func(file File) bool {
-		return file.ID != ""
-	})
-
-	files := c.inventory.Files
-	if len(files) == 0 {
-		return Group{}, errors.New("no deleted files found")
-	}
-
-	m := map[string][]File{}
-	for _, file := range c.inventory.Files {
-		m[file.GroupID] = append(m[file.GroupID], file)
-	}
-
-	hasMultiDirs := func(files []File) bool {
-		if len(files) == 0 {
-			return false
-		}
-		var dirs []string
-		unique := map[string]bool{}
-		for _, file := range files {
-			dir := filepath.Dir(file.From)
-			if !unique[dir] {
-				unique[dir] = true
-				dirs = append(dirs, dir)
-			}
-		}
-		if len(dirs) > 1 {
-			return true
-		}
-		return false
-	}
-
-	var groups []Group
-	for id, files := range m {
-		dir := filepath.Dir(files[0].From)
-		if hasMultiDirs(files) {
-			dir = "(multiple directories)"
-		}
-		groups = append(groups, Group{
-			ID:        id,
-			Dir:       dir,
-			Timestamp: files[0].Timestamp,
-			Files:     files,
-		})
-	}
-
-	sort.Slice(groups, func(i, j int) bool {
-		return groups[i].Timestamp.After(groups[j].Timestamp)
-	})
-
-	funcMap := promptui.FuncMap
-	funcMap["time"] = humanize.Time
-
-	templates := &promptui.SelectTemplates{
-		Label:    "{{ . }}",
-		Active:   promptui.IconSelect + " {{ .Dir | cyan }}",
-		Inactive: "  {{ .Dir | faint }}",
-		Selected: promptui.IconGood + " {{ .Dir }}",
-		Details: `
-{{ "DeletedAt:" | faint }}	{{ .Timestamp | time }}
-{{ "Files:" | faint }}
-    {{- range .Files }}
-    - {{ .From }}
-    {{- end }}
-`,
-		FuncMap: funcMap,
-	}
-
-	searcher := func(input string, index int) bool {
-		files := groups[index].Files
-		contains := func(Files []File, input string) bool {
-			for _, file := range files {
-				// ignorecase
-				from := strings.ToLower(file.From)
-				input = strings.ToLower(input)
-				if strings.Contains(from, input) {
-					return true
-				}
-			}
-			return false
-		}
-		return contains(files, input)
-	}
-
-	prompt := promptui.Select{
-		Label:             "Which to restore?",
-		Items:             groups,
-		Templates:         templates,
-		Searcher:          searcher,
-		StartInSearchMode: true,
-		HideSelected:      true,
-	}
-
-	i, _, err := prompt.Run()
-	return groups[i], err
 }
 
 func logOutput(env string) io.Writer {
