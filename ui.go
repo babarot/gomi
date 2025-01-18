@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -216,7 +215,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.WindowSizeMsg:
-		// m.list.SetSize(msg.Width, msg.Height)
 		m.list.SetWidth(msg.Width)
 
 	case inventoryLoadedMsg:
@@ -259,32 +257,3 @@ var (
 	paginationStyle   = list.DefaultStyles().PaginationStyle.PaddingLeft(4)
 	helpStyle         = list.DefaultStyles().HelpStyle.PaddingLeft(4).PaddingBottom(1)
 )
-
-type FileDelegate struct{}
-
-func (h FileDelegate) Height() int                               { return 1 }
-func (h FileDelegate) Spacing() int                              { return 0 }
-func (h FileDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
-
-func (h FileDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
-	file, ok := listItem.(File)
-	if !ok {
-		return
-	}
-	var str string
-	if file.isSelected() {
-		str = selectedItemStyle.Render(fmt.Sprintf("%d. %s (%d)", index+1, file.Name, selectionManager.IndexOf(file)+1))
-	} else {
-		str = fmt.Sprintf("%d. %s", index+1, file.Name)
-	}
-
-	fn := itemStyle.Render
-	if index == m.Index() {
-		fn = func(s ...string) string {
-			var str = []string{"> "}
-			return currentItemStyle.Render(append(str, s...)...)
-		}
-	}
-
-	fmt.Fprint(w, fn(str))
-}

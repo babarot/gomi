@@ -33,6 +33,7 @@ const (
 	inventoryVersion = 1
 	inventoryFile    = "inventory.json"
 )
+
 const listHeight = 20
 
 // These variables are set in build step
@@ -46,7 +47,6 @@ var (
 	inventoryPath = filepath.Join(gomiPath, inventoryFile)
 )
 
-// Option represents application options
 type Option struct {
 	Restore      bool     `short:"b" long:"restore" description:"Restore deleted file"`
 	RestoreGroup bool     `short:"B" long:"restore-by-group" description:"Restore deleted files based on one operation"`
@@ -72,7 +72,6 @@ type inventory struct {
 	Files   []File `json:"files"`
 }
 
-// File represents the metadata of deleted object itself
 type File struct {
 	Name      string    `json:"name"`     // file.go
 	ID        string    `json:"id"`       // asfasfafd
@@ -84,8 +83,8 @@ type File struct {
 	selected bool
 }
 
-func (h File) isSelected() bool {
-	return selectionManager.Contains(h)
+func (f File) isSelected() bool {
+	return selectionManager.Contains(f)
 }
 
 type CLI struct {
@@ -93,6 +92,13 @@ type CLI struct {
 	inventory inventory
 	Stdout    io.Writer
 	Stderr    io.Writer
+}
+
+func main() {
+	if err := runMain(); err != nil {
+		fmt.Fprintf(os.Stderr, "[ERROR] error occured while processing %s: %v\n", appName, err)
+		os.Exit(1)
+	}
 }
 
 func runMain() error {
@@ -151,16 +157,18 @@ func (c CLI) initModel() model {
 		files = append(files, file)
 	}
 
-	// l := list.New(files, FileDelegate{}, defaultWidth, listHeight)
+	// TODO: configable
+	// l := list.New(files, ClassicDelegate{}, defaultWidth, listHeight)
 	l := list.New(files, NewRestoreDelegate(), defaultWidth, listHeight)
-	l.Title = ""
-	// TODO:
+
+	// TODO: which one?
 	// l.Paginator.Type = paginator.Arabic
+	l.Title = ""
 	l.AdditionalShortHelpKeys = func() []key.Binding {
 		return []key.Binding{listAdditionalKeys.Enter}
 	}
 	l.AdditionalFullHelpKeys = func() []key.Binding {
-		return []key.Binding{listAdditionalKeys.Enter, keys.Quit}
+		return []key.Binding{listAdditionalKeys.Enter, keys.Quit, keys.Select, keys.DeSelect}
 	}
 	l.DisableQuitKeybindings()
 	l.SetShowStatusBar(false)
@@ -173,7 +181,6 @@ func (c CLI) initModel() model {
 	return m
 }
 
-// Restore moves deleted file/dir to original place
 func (c CLI) Restore() error {
 	m := c.initModel()
 	returnModel, err := tea.NewProgram(m).Run()
@@ -186,6 +193,7 @@ func (c CLI) Restore() error {
 		return nil
 	}
 	pp.Println(files)
+
 	file := files[0]
 	return nil
 	defer c.inventory.remove(file)
@@ -200,7 +208,6 @@ func (c CLI) Restore() error {
 	return os.Rename(file.To, file.From)
 }
 
-// Remove moves files to gomi dir
 func (c CLI) Remove(args []string) error {
 	if len(args) == 0 {
 		return errors.New("too few arguments")
@@ -245,7 +252,6 @@ func (c CLI) Remove(args []string) error {
 	return eg.Wait()
 }
 
-// open opens inventory file
 func (i *inventory) open() error {
 	log.Printf("[DEBUG] opening inventory")
 	f, err := os.Open(i.Path)
@@ -260,7 +266,6 @@ func (i *inventory) open() error {
 	return nil
 }
 
-// update updates inventory file
 func (i *inventory) update(files []File) error {
 	log.Printf("[DEBUG] updating inventory")
 	f, err := os.Create(i.Path)
@@ -273,7 +278,6 @@ func (i *inventory) update(files []File) error {
 	return json.NewEncoder(f).Encode(&i)
 }
 
-// save creates new inventory file instead of updating
 func (i *inventory) save(files []File) error {
 	log.Printf("[DEBUG] saving inventory")
 	f, err := os.Create(i.Path)
@@ -286,7 +290,6 @@ func (i *inventory) save(files []File) error {
 	return json.NewEncoder(f).Encode(&i)
 }
 
-// remove removes an item from inventory file
 func (i *inventory) remove(target File) error {
 	log.Printf("[DEBUG] deleting %v from inventory", target)
 	var files []File
@@ -370,11 +373,4 @@ func logOutput(env string) io.Writer {
 	}
 
 	return filter
-}
-
-func main() {
-	if err := runMain(); err != nil {
-		fmt.Fprintf(os.Stderr, "[ERROR] error occured while processing %s: %v\n", appName, err)
-		os.Exit(1)
-	}
 }

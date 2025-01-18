@@ -12,8 +12,6 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-// RestoreItemStyles defines styling for a Restore list item.
-// See RestoreItemView for when these come into play.
 type RestoreItemStyles struct {
 	// The Normal state.
 	NormalTitle lipgloss.Style
@@ -116,14 +114,6 @@ func NewRestoreDelegate() RestoreDelegate {
 	}
 }
 
-// // SetHeight sets delegate's preferred height.
-// func (d *RestoreDelegate) SetHeight(i int) {
-// 	d.height = i
-// }
-
-// Height returns the delegate's preferred height.
-// This has effect only if ShowDescription is true,
-// otherwise height is always 1.
 func (d RestoreDelegate) Height() int {
 	if d.ShowDescription {
 		return d.height
@@ -131,17 +121,10 @@ func (d RestoreDelegate) Height() int {
 	return 1
 }
 
-// // SetSpacing sets the delegate's spacing.
-// func (d *RestoreDelegate) SetSpacing(i int) {
-// 	d.spacing = i
-// }
-
-// Spacing returns the delegate's spacing.
 func (d RestoreDelegate) Spacing() int {
 	return d.spacing
 }
 
-// Update checks whether the delegate's UpdateFunc is set and calls it.
 func (d RestoreDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd {
 	if d.UpdateFunc == nil {
 		return nil
@@ -149,7 +132,6 @@ func (d RestoreDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd {
 	return d.UpdateFunc(msg, m)
 }
 
-// Render prints an item.
 func (d RestoreDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
 	var (
 		title, desc  string
@@ -183,7 +165,6 @@ func (d RestoreDelegate) Render(w io.Writer, m list.Model, index int, item list.
 		desc = strings.Join(lines, "\n")
 	}
 
-	// Conditions
 	var (
 		isSelected  = index == m.Index()
 		emptyFilter = m.FilterState() == list.Filtering && m.FilterValue() == ""
@@ -228,7 +209,6 @@ func (d RestoreDelegate) Render(w io.Writer, m list.Model, index int, item list.
 	fmt.Fprintf(w, "%s", title) //nolint: errcheck
 }
 
-// ShortHelp returns the delegate's short help.
 func (d RestoreDelegate) ShortHelp() []key.Binding {
 	if d.ShortHelpFunc != nil {
 		return d.ShortHelpFunc()
@@ -236,7 +216,6 @@ func (d RestoreDelegate) ShortHelp() []key.Binding {
 	return nil
 }
 
-// FullHelp returns the delegate's full help.
 func (d RestoreDelegate) FullHelp() [][]key.Binding {
 	if d.FullHelpFunc != nil {
 		return d.FullHelpFunc()
