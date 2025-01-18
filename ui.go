@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -11,6 +12,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/dustin/go-humanize"
 	"github.com/samber/lo"
 )
@@ -170,38 +172,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case false:
 				m.files[m.list.Index()].selected = true
 			}
-			// switch c.options[c.currentIndex].selected {
-			// case true:
-			// 	c.options[c.currentIndex].selected = false
-			// case false:
-			// 	c.options[c.currentIndex].selected = true
-			// }
-			// file, ok := m.list.SelectedItem().(File)
-			// if !ok {
-			// 	break
-			// }
-			// if file.isSelected() {
-			// 	selectionManager.Remove(file)
-			// } else {
-			// 	selectionManager.Add(file)
-			// }
+			item, ok := m.list.SelectedItem().(File)
+			if !ok {
+				break
+			}
+			if item.isSelected() {
+				selectionManager.Remove(item)
+			} else {
+				selectionManager.Add(item)
+			}
 
 		case key.Matches(msg, listAdditionalKeys.Enter):
 			if m.list.FilterState() != list.Filtering {
-				files := lo.Filter(m.files, func(file File, index int) bool {
-					return file.selected
-				})
+				files := selectionManager.items
 				if len(files) == 0 {
-					// selectedItem := m.list.SelectedItem()
-					// if selectedItem == nil {
-					// 	return nil
-					// }
-					// w, ok := selectedItem.(ItemWrapper)
-					// if !ok {
-					// 	// this should never happen
-					// 	return nil
-					// }
-					// return &w
 					file, ok := m.list.SelectedItem().(File)
 					if ok {
 						m.choices = append(m.choices, file)
@@ -250,4 +234,41 @@ func (m model) View() string {
 		s += m.list.View()
 	}
 	return s + "\n"
+}
+
+var (
+	itemStyle         = lipgloss.NewStyle().PaddingLeft(4)
+	currentItemStyle  = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170")).Width(150)
+	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("#00ff00"))
+	paginationStyle   = list.DefaultStyles().PaginationStyle.PaddingLeft(4)
+	helpStyle         = list.DefaultStyles().HelpStyle.PaddingLeft(4).PaddingBottom(1)
+)
+
+type HistoryItemDelegate struct{}
+
+func (h HistoryItemDelegate) Height() int                               { return 1 }
+func (h HistoryItemDelegate) Spacing() int                              { return 0 }
+func (h HistoryItemDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
+
+func (h HistoryItemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
+	historyItem, ok := listItem.(File)
+	if !ok {
+		return
+	}
+	var str string
+	if historyItem.isSelected() {
+		str = selectedItemStyle.Render(fmt.Sprintf("%d. %s (%d)", index+1, historyItem.Name, selectionManager.IndexOf(historyItem)+1))
+	} else {
+		str = fmt.Sprintf("%d. %s", index+1, historyItem.Name)
+	}
+
+	fn := itemStyle.Render
+	if index == m.Index() {
+		fn = func(s ...string) string {
+			var str = []string{"> "}
+			return currentItemStyle.Render(append(str, s...)...)
+		}
+	}
+
+	fmt.Fprint(w, fn(str))
 }
