@@ -244,22 +244,22 @@ var (
 	helpStyle         = list.DefaultStyles().HelpStyle.PaddingLeft(4).PaddingBottom(1)
 )
 
-type HistoryItemDelegate struct{}
+type FileDelegate struct{}
 
-func (h HistoryItemDelegate) Height() int                               { return 1 }
-func (h HistoryItemDelegate) Spacing() int                              { return 0 }
-func (h HistoryItemDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
+func (h FileDelegate) Height() int                               { return 1 }
+func (h FileDelegate) Spacing() int                              { return 0 }
+func (h FileDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
 
-func (h HistoryItemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
-	historyItem, ok := listItem.(File)
+func (h FileDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
+	file, ok := listItem.(File)
 	if !ok {
 		return
 	}
 	var str string
-	if historyItem.isSelected() {
-		str = selectedItemStyle.Render(fmt.Sprintf("%d. %s (%d)", index+1, historyItem.Name, selectionManager.IndexOf(historyItem)+1))
+	if file.isSelected() {
+		str = selectedItemStyle.Render(fmt.Sprintf("%d. %s (%d)", index+1, file.Name, selectionManager.IndexOf(file)+1))
 	} else {
-		str = fmt.Sprintf("%d. %s", index+1, historyItem.Name)
+		str = fmt.Sprintf("%d. %s", index+1, file.Name)
 	}
 
 	fn := itemStyle.Render

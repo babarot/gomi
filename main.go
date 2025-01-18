@@ -143,18 +143,17 @@ func (c CLI) Run(args []string) error {
 	return c.Remove(args)
 }
 
-// Restore moves deleted file/dir to original place
-func (c CLI) Restore() error {
+func (c CLI) initModel() model {
 	const defaultWidth = 20
-	// l := list.New(nil, list.NewDefaultDelegate(), defaultWidth, listHeight)
-	var historyItems []list.Item
-	for _, historyItem := range c.inventory.Files {
-		historyItems = append(historyItems, historyItem)
-	}
-	// listComponent := ui.NewHistoryItemListComponent(historyItems)
 
-	l := list.New(historyItems, HistoryItemDelegate{}, defaultWidth, listHeight)
+	var files []list.Item
+	for _, file := range c.inventory.Files {
+		files = append(files, file)
+	}
+
+	l := list.New(files, FileDelegate{}, defaultWidth, listHeight)
 	l.Title = ""
+	// TODO:
 	// l.Paginator.Type = paginator.Arabic
 	l.AdditionalShortHelpKeys = func() []key.Binding {
 		return []key.Binding{listAdditionalKeys.Enter}
@@ -170,7 +169,12 @@ func (c CLI) Restore() error {
 		list:     l,
 		quitting: false,
 	}
+	return m
+}
 
+// Restore moves deleted file/dir to original place
+func (c CLI) Restore() error {
+	m := c.initModel()
 	returnModel, err := tea.NewProgram(m).Run()
 	if err != nil {
 		return err
@@ -373,56 +377,3 @@ func main() {
 		os.Exit(1)
 	}
 }
-
-// var (
-// 	itemStyle         = lipgloss.NewStyle().PaddingLeft(4)
-// 	currentItemStyle  = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170")).Width(150)
-// 	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("#00ff00"))
-// 	paginationStyle   = list.DefaultStyles().PaginationStyle.PaddingLeft(4)
-// 	helpStyle         = list.DefaultStyles().HelpStyle.PaddingLeft(4).PaddingBottom(1)
-// )
-//
-// // type HistoryItem struct {
-// // 	Command string
-// // }
-// //
-// // func NewHistoryItem(historyEntry string) *HistoryItem {
-// // 	return &HistoryItem{Command: historyEntry}
-// // }
-// //
-// // func (h HistoryItem) FilterValue() string {
-// // 	return h.Command
-// // }
-//
-// func (h File) isSelected() bool {
-// 	return h.selected
-// }
-//
-// type HistoryItemDelegate struct{}
-//
-// func (h HistoryItemDelegate) Height() int                               { return 1 }
-// func (h HistoryItemDelegate) Spacing() int                              { return 0 }
-// func (h HistoryItemDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
-//
-// func (h HistoryItemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
-// 	historyItem, ok := listItem.(File)
-// 	if !ok {
-// 		return
-// 	}
-// 	var str string
-// 	if historyItem.isSelected() {
-// 		str = selectedItemStyle.Render(fmt.Sprintf("%d. %s", index+1, historyItem.Name))
-// 	} else {
-// 		str = fmt.Sprintf("%d. %s", index+1, historyItem.Name)
-// 	}
-//
-// 	fn := itemStyle.Render
-// 	if index == m.Index() {
-// 		fn = func(s ...string) string {
-// 			var str = []string{"> "}
-// 			return currentItemStyle.Render(append(str, s...)...)
-// 		}
-// 	}
-//
-// 	fmt.Fprint(w, fn(str))
-// }
