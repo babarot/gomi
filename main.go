@@ -15,6 +15,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/paginator"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/dustin/go-humanize"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/hashicorp/logutils"
@@ -33,6 +37,7 @@ const (
 	inventoryVersion = 1
 	inventoryFile    = "inventory.json"
 )
+const listHeight = 20
 
 // These variables are set in build step
 var (
@@ -88,13 +93,6 @@ type CLI struct {
 	Stderr    io.Writer
 }
 
-func main() {
-	if err := runMain(); err != nil {
-		fmt.Fprintf(os.Stderr, "[ERROR] error occured while processing %s: %v\n", appName, err)
-		os.Exit(1)
-	}
-}
-
 func runMain() error {
 	log.SetOutput(logOutput(envLog))
 	defer log.Printf("[INFO] finish main function")
@@ -126,6 +124,24 @@ func runMain() error {
 	return cli.Run(args)
 }
 
+var (
+	titleStyle = lipgloss.NewStyle().MarginLeft(2)
+)
+
+func (c CLI) initModel() model {
+	const defaultWidth = 20
+	l := list.New(nil, list.NewDefaultDelegate(), defaultWidth, listHeight)
+	l.Title = ""
+	l.Paginator.Type = paginator.Arabic
+	l.Styles.Title = titleStyle
+	m := model{
+		cli: &c,
+		// files: files,
+		list: l,
+	}
+	return m
+}
+
 // Run runs gomi main logic
 func (c CLI) Run(args []string) error {
 	c.inventory.open()
@@ -135,7 +151,12 @@ func (c CLI) Run(args []string) error {
 		fmt.Fprintf(c.Stdout, "%s %s (%s)\n", appName, Version, Revision)
 		return nil
 	case c.Option.Restore:
-		return c.Restore()
+		prog := tea.NewProgram(c.initModel())
+		err := prog.Start()
+		if err != nil {
+			return err
+		}
+		return nil
 	case c.Option.RestoreGroup:
 		return c.RestoreGroup()
 	default:
@@ -596,4 +617,11 @@ func logOutput(env string) io.Writer {
 	}
 
 	return filter
+}
+
+func main() {
+	if err := runMain(); err != nil {
+		fmt.Fprintf(os.Stderr, "[ERROR] error occured while processing %s: %v\n", appName, err)
+		os.Exit(1)
+	}
 }
