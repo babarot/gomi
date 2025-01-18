@@ -12,9 +12,9 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-// DefaultItemStyles defines styling for a default list item.
-// See DefaultItemView for when these come into play.
-type DefaultItemStyles struct {
+// RestoreItemStyles defines styling for a Restore list item.
+// See RestoreItemView for when these come into play.
+type RestoreItemStyles struct {
 	// The Normal state.
 	NormalTitle lipgloss.Style
 	NormalDesc  lipgloss.Style
@@ -34,7 +34,7 @@ type DefaultItemStyles struct {
 	FilterMatch lipgloss.Style
 }
 
-func NewDefaultItemStyles() (s DefaultItemStyles) {
+func NewRestoreItemStyles() (s RestoreItemStyles) {
 	s.NormalTitle = lipgloss.NewStyle().
 		Foreground(lipgloss.AdaptiveColor{Light: "#1a1a1a", Dark: "#dddddd"}).
 		Padding(0, 0, 0, 2) //nolint:mnd
@@ -74,15 +74,15 @@ func NewDefaultItemStyles() (s DefaultItemStyles) {
 	return s
 }
 
-// DefaultItem describes an item designed to work with DefaultDelegate.
-type DefaultItem interface {
+// RestoreItem describes an item designed to work with RestoreDelegate.
+type RestoreItem interface {
 	list.Item
 	Title() string
 	Description() string
 }
 
-// DefaultDelegate is a standard delegate designed to work in lists. It's
-// styled by DefaultItemStyles, which can be customized as you like.
+// RestoreDelegate is a standard delegate designed to work in lists. It's
+// styled by RestoreItemStyles, which can be customized as you like.
 //
 // The description line can be hidden by setting Description to false, which
 // renders the list as single-line-items. The spacing between items can be set
@@ -93,10 +93,10 @@ type DefaultItem interface {
 // invoked.
 //
 // Settings ShortHelpFunc and FullHelpFunc is optional. They can be set to
-// include items in the list's default short and full help menus.
-type DefaultDelegate struct {
+// include items in the list's Restore short and full help menus.
+type RestoreDelegate struct {
 	ShowDescription bool
-	Styles          DefaultItemStyles
+	Styles          RestoreItemStyles
 	UpdateFunc      func(tea.Msg, *list.Model) tea.Cmd
 	ShortHelpFunc   func() []key.Binding
 	FullHelpFunc    func() [][]key.Binding
@@ -104,27 +104,27 @@ type DefaultDelegate struct {
 	spacing         int
 }
 
-// NewDefaultDelegate creates a new delegate with default styles.
-func NewDefaultDelegate() DefaultDelegate {
+// NewRestoreDelegate creates a new delegate with Restore styles.
+func NewRestoreDelegate() RestoreDelegate {
 	const defaultHeight = 2
 	const defaultSpacing = 1
-	return DefaultDelegate{
+	return RestoreDelegate{
 		ShowDescription: true,
-		Styles:          NewDefaultItemStyles(),
+		Styles:          NewRestoreItemStyles(),
 		height:          defaultHeight,
 		spacing:         defaultSpacing,
 	}
 }
 
 // // SetHeight sets delegate's preferred height.
-// func (d *DefaultDelegate) SetHeight(i int) {
+// func (d *RestoreDelegate) SetHeight(i int) {
 // 	d.height = i
 // }
 
 // Height returns the delegate's preferred height.
 // This has effect only if ShowDescription is true,
 // otherwise height is always 1.
-func (d DefaultDelegate) Height() int {
+func (d RestoreDelegate) Height() int {
 	if d.ShowDescription {
 		return d.height
 	}
@@ -132,17 +132,17 @@ func (d DefaultDelegate) Height() int {
 }
 
 // // SetSpacing sets the delegate's spacing.
-// func (d *DefaultDelegate) SetSpacing(i int) {
+// func (d *RestoreDelegate) SetSpacing(i int) {
 // 	d.spacing = i
 // }
 
 // Spacing returns the delegate's spacing.
-func (d DefaultDelegate) Spacing() int {
+func (d RestoreDelegate) Spacing() int {
 	return d.spacing
 }
 
 // Update checks whether the delegate's UpdateFunc is set and calls it.
-func (d DefaultDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd {
+func (d RestoreDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd {
 	if d.UpdateFunc == nil {
 		return nil
 	}
@@ -150,7 +150,7 @@ func (d DefaultDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd {
 }
 
 // Render prints an item.
-func (d DefaultDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
+func (d RestoreDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
 	var (
 		title, desc  string
 		matchedRunes []int
@@ -229,7 +229,7 @@ func (d DefaultDelegate) Render(w io.Writer, m list.Model, index int, item list.
 }
 
 // ShortHelp returns the delegate's short help.
-func (d DefaultDelegate) ShortHelp() []key.Binding {
+func (d RestoreDelegate) ShortHelp() []key.Binding {
 	if d.ShortHelpFunc != nil {
 		return d.ShortHelpFunc()
 	}
@@ -237,7 +237,7 @@ func (d DefaultDelegate) ShortHelp() []key.Binding {
 }
 
 // FullHelp returns the delegate's full help.
-func (d DefaultDelegate) FullHelp() [][]key.Binding {
+func (d RestoreDelegate) FullHelp() [][]key.Binding {
 	if d.FullHelpFunc != nil {
 		return d.FullHelpFunc()
 	}
