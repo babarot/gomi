@@ -138,10 +138,6 @@ func (c CLI) Run(args []string) error {
 
 // Restore moves deleted file/dir to original place
 func (c CLI) Restore() error {
-	// file, err := c.FilePrompt()
-	// if err != nil {
-	// 	return err
-	// }
 	const defaultWidth = 20
 	l := list.New(nil, list.NewDefaultDelegate(), defaultWidth, listHeight)
 	l.Title = ""
@@ -208,7 +204,7 @@ func (c CLI) Remove(args []string) error {
 
 			// For debugging
 			var buf bytes.Buffer
-			file.ToJSON(&buf)
+			file.toJSON(&buf)
 			log.Printf("[DEBUG] generating file metadata: %s", buf.String())
 
 			files[i] = file
@@ -324,8 +320,8 @@ func makeFile(groupID string, arg string) (File, error) {
 	}, nil
 }
 
-// ToJSON writes json objects based on File
-func (f File) ToJSON(w io.Writer) {
+// toJSON writes json objects based on File
+func (f File) toJSON(w io.Writer) {
 	out, err := json.Marshal(&f)
 	if err != nil {
 		return

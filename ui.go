@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -37,6 +38,10 @@ type model struct {
 	err      error
 }
 
+const (
+	bullet = "•"
+)
+
 func (p File) Description() string {
 	var meta []string
 	meta = append(meta, humanize.Time(p.Timestamp))
@@ -45,10 +50,9 @@ func (p File) Description() string {
 	if os.IsNotExist(err) {
 		return "(already might have been deleted)"
 	}
-	meta = append(meta, p.From)
+	meta = append(meta, filepath.Dir(p.From))
 
-	var dot = list.DefaultStyles().DividerDot
-	return strings.Join(meta, dot.String())
+	return strings.Join(meta, " "+bullet+" ")
 }
 
 func (p File) Title() string {
