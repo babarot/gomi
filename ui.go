@@ -42,7 +42,8 @@ type model struct {
 }
 
 const (
-	bullet = "•"
+	bullet   = "•"
+	ellipsis = "…"
 )
 
 func (p File) Description() string {
@@ -166,20 +167,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case key.Matches(msg, keys.Select):
-			switch m.files[m.list.Index()].selected {
-			case true:
-				m.files[m.list.Index()].selected = false
-			case false:
-				m.files[m.list.Index()].selected = true
-			}
-			item, ok := m.list.SelectedItem().(File)
-			if !ok {
-				break
-			}
-			if item.isSelected() {
-				selectionManager.Remove(item)
-			} else {
-				selectionManager.Add(item)
+			if m.list.FilterState() != list.Filtering {
+				item, ok := m.list.SelectedItem().(File)
+				if !ok {
+					break
+				}
+				if item.isSelected() {
+					selectionManager.Remove(item)
+				} else {
+					selectionManager.Add(item)
+				}
+				m.list.CursorDown()
 			}
 
 		case key.Matches(msg, listAdditionalKeys.Enter):

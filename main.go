@@ -152,6 +152,7 @@ func (c CLI) initModel() model {
 	}
 
 	l := list.New(files, FileDelegate{}, defaultWidth, listHeight)
+	// l := list.New(files, NewDefaultDelegate(), defaultWidth, listHeight)
 	l.Title = ""
 	// TODO:
 	// l.Paginator.Type = paginator.Arabic
