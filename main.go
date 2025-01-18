@@ -165,18 +165,18 @@ func (c CLI) initModel() model {
 	// l.Paginator.Type = paginator.Arabic
 	l.Title = ""
 	l.AdditionalShortHelpKeys = func() []key.Binding {
-		return []key.Binding{listAdditionalKeys.Enter}
+		return []key.Binding{listAdditionalKeys.Enter, listAdditionalKeys.Info}
 	}
 	l.AdditionalFullHelpKeys = func() []key.Binding {
-		return []key.Binding{listAdditionalKeys.Enter, keys.Quit, keys.Select, keys.DeSelect}
+		return []key.Binding{listAdditionalKeys.Enter, listAdditionalKeys.Info, keys.Quit, keys.Select, keys.DeSelect}
 	}
 	l.DisableQuitKeybindings()
 	l.SetShowStatusBar(false)
 	l.SetShowTitle(false)
 	m := model{
+		navState: INVENTORY_LIST,
 		cli:      &c,
 		list:     l,
-		quitting: false,
 	}
 	return m
 }
@@ -188,8 +188,8 @@ func (c CLI) Restore() error {
 		return err
 	}
 	files := returnModel.(model).choices
-	if returnModel.(model).quitting {
-		fmt.Println("quit")
+	if returnModel.(model).navState == QUITTING {
+		fmt.Println("bye!")
 		return nil
 	}
 	pp.Println(files)

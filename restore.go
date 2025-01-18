@@ -64,8 +64,6 @@ func NewRestoreItemStyles() (s RestoreItemStyles) {
 		Foreground(lipgloss.AdaptiveColor{Light: "#1a1a1a", Dark: "#dddddd"}).
 		Padding(0, 0, 0, 1)
 
-		// lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("#00ff00"))
-
 	s.SelectedDesc = s.CursorTitle.
 		Foreground(lipgloss.AdaptiveColor{Light: "#A49FA5", Dark: "#777777"})
 
@@ -79,19 +77,6 @@ type RestoreItem interface {
 	Description() string
 }
 
-// RestoreDelegate is a standard delegate designed to work in lists. It's
-// styled by RestoreItemStyles, which can be customized as you like.
-//
-// The description line can be hidden by setting Description to false, which
-// renders the list as single-line-items. The spacing between items can be set
-// with the SetSpacing method.
-//
-// Setting UpdateFunc is optional. If it's set it will be called when the
-// ItemDelegate called, which is called when the list's Update function is
-// invoked.
-//
-// Settings ShortHelpFunc and FullHelpFunc is optional. They can be set to
-// include items in the list's Restore short and full help menus.
 type RestoreDelegate struct {
 	ShowDescription bool
 	Styles          RestoreItemStyles

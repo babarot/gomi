@@ -7,7 +7,9 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 
+	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -15,6 +17,25 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/samber/lo"
 )
+
+type NavState int
+
+const (
+	INVENTORY_LIST NavState = iota
+	// LOADING_INVENTORY_LIST
+
+	INVENTORY_DETAILS
+	// LOADING_INVENTORY_DETAILS
+
+	QUITTING
+)
+
+type DetailsMsg struct {
+	file File
+}
+type GotInventorysMsg struct {
+	files []list.Item
+}
 
 type errorMsg struct {
 	err error
@@ -29,15 +50,18 @@ func errorCmd(err error) tea.Cmd {
 }
 
 type model struct {
+	navState   NavState
+	detailFile File
+
 	files        []File
 	cli          *CLI
 	choices      []File
 	selected     bool
 	currentIndex int
 
-	quitting bool
-	list     list.Model
-	err      error
+	// quitting bool
+	list list.Model
+	err  error
 }
 
 const (
@@ -104,9 +128,9 @@ func (m model) loadInventory() tea.Msg {
 }
 
 func (m model) Init() tea.Cmd {
+	// return getAllInventoryItems
 	return tea.Batch(
 		m.loadInventory,
-		m.list.StartSpinner(),
 	)
 }
 
@@ -118,8 +142,12 @@ type (
 	}
 	listAdditionalKeyMap struct {
 		Enter key.Binding
+		Info  key.Binding
+		Esc   key.Binding
 	}
 	detailKeyMap struct {
+		Up   key.Binding
+		Down key.Binding
 		Back key.Binding
 	}
 )
@@ -144,34 +172,56 @@ var (
 			key.WithKeys("enter"),
 			key.WithHelp("enter", "ok"),
 		),
+		Info: key.NewBinding(
+			key.WithKeys(" "),
+			key.WithHelp("space", "info"),
+		),
+		Esc: key.NewBinding(
+			key.WithKeys("esc"),
+			key.WithHelp("esc", "back"),
+		),
 	}
 	detailKeys = detailKeyMap{
+		// Back: key.NewBinding(
+		// 	key.WithKeys("backspace"),
+		// 	key.WithHelp("backspace", "list"),
+		// ),
+		Up: key.NewBinding(
+			key.WithKeys("up", "k"),
+			key.WithHelp("↑/k", "up"),
+		),
+		Down: key.NewBinding(
+			key.WithKeys("down", "j"),
+			key.WithHelp("↓/j", "down"),
+		),
 		Back: key.NewBinding(
-			key.WithKeys("backspace"),
-			key.WithHelp("backspace", "list"),
+			key.WithKeys(" "),
+			key.WithHelp("space", "back"),
 		),
 	}
 )
 
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Quit, k.Select, k.DeSelect}
+	return []key.Binding{detailKeys.Up, detailKeys.Down, detailKeys.Back}
 }
 
 func (k keyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{k.ShortHelp(), {}}
+	return [][]key.Binding{k.ShortHelp(), {listAdditionalKeys.Esc}}
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-
+	// var cmd tea.Cmd
+	cmds := []tea.Cmd{}
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, keys.Quit):
-			m.quitting = true
+			m.navState = QUITTING
 			return m, tea.Quit
 
 		case key.Matches(msg, keys.Select):
+			// switch m.navState {
+			// case INVENTORY_LIST:
 			if m.list.FilterState() != list.Filtering {
 				item, ok := m.list.SelectedItem().(File)
 				if !ok {
@@ -183,9 +233,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					selectionManager.Add(item)
 				}
 				m.list.CursorDown()
+				if m.navState == INVENTORY_DETAILS {
+					cmds = append(cmds, getInventoryDetails(item))
+				}
 			}
+			// }
 
 		case key.Matches(msg, keys.DeSelect):
+			// switch m.navState {
+			// case INVENTORY_LIST:
 			if m.list.FilterState() != list.Filtering {
 				item, ok := m.list.SelectedItem().(File)
 				if !ok {
@@ -195,22 +251,74 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					selectionManager.Remove(item)
 				}
 				m.list.CursorUp()
+				if m.navState == INVENTORY_DETAILS {
+					cmds = append(cmds, getInventoryDetails(item))
+				}
+			}
+			// }
+
+		case key.Matches(msg, detailKeys.Up):
+			switch m.navState {
+			case INVENTORY_DETAILS:
+				m.list.CursorUp()
+				file, ok := m.list.SelectedItem().(File)
+				if ok {
+					cmds = append(cmds, getInventoryDetails(file))
+				}
+			}
+		case key.Matches(msg, detailKeys.Down):
+			switch m.navState {
+			case INVENTORY_DETAILS:
+				m.list.CursorDown()
+				file, ok := m.list.SelectedItem().(File)
+				if ok {
+					cmds = append(cmds, getInventoryDetails(file))
+				}
+			}
+
+		// case key.Matches(msg, detailKeys.Back):
+		// 	switch m.navState {
+		// 	case INVENTORY_DETAILS:
+		// 		m.navState = INVENTORY_LIST
+		// 	}
+
+		case key.Matches(msg, listAdditionalKeys.Esc):
+			switch m.navState {
+			case INVENTORY_DETAILS:
+				m.navState = INVENTORY_LIST
+			}
+
+		case key.Matches(msg, listAdditionalKeys.Info):
+			switch m.navState {
+			case INVENTORY_LIST:
+				if m.list.FilterState() != list.Filtering {
+					file, ok := m.list.SelectedItem().(File)
+					if ok {
+						cmds = append(cmds, getInventoryDetails(file))
+						// m.navState = INVENTORY_DETAILS
+					}
+				}
+			case INVENTORY_DETAILS:
+				m.navState = INVENTORY_LIST
 			}
 
 		case key.Matches(msg, listAdditionalKeys.Enter):
-			if m.list.FilterState() != list.Filtering {
-				files := selectionManager.items
-				if len(files) == 0 {
-					file, ok := m.list.SelectedItem().(File)
-					if ok {
-						m.choices = append(m.choices, file)
+			switch m.navState {
+			case INVENTORY_LIST:
+				if m.list.FilterState() != list.Filtering {
+					files := selectionManager.items
+					if len(files) == 0 {
+						file, ok := m.list.SelectedItem().(File)
+						if ok {
+							m.choices = append(m.choices, file)
+							m.selected = true
+						}
+					} else {
+						m.choices = files
 						m.selected = true
 					}
-				} else {
-					m.choices = files
-					m.selected = true
+					return m, tea.Quit
 				}
-				return m, tea.Quit
 			}
 		}
 
@@ -227,27 +335,82 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.list.SetItems(msg.files)
 
+	case DetailsMsg:
+		m.detailFile = msg.file
+		m.navState = INVENTORY_DETAILS
+
 	case errorMsg:
-		m.quitting = true
+		// m.quitting = true
+		m.navState = QUITTING
 		m.err = msg
 		return m, tea.Quit
 	}
 
-	m.list, cmd = m.list.Update(msg)
-	return m, cmd
+	var cmd tea.Cmd
+	switch m.navState {
+	case INVENTORY_LIST:
+		m.list, cmd = m.list.Update(msg)
+		cmds = append(cmds, cmd)
+	}
+
+	return m, tea.Batch(cmds...)
+	// m.list, cmd = m.list.Update(msg)
+	// return m, cmd
+}
+
+func renderInventoryDetails(m model) string {
+	// size := ""
+	// fi, err := os.Stat(m.detailFile.To)
+	// if err == nil {
+	// 	size = humanize.Bytes(uint64(fi.Size()))
+	// }
+	size, _ := DirSize(m.detailFile.To)
+	// if err == nil {
+	// 	size = humanize.Bytes(uint64(size))
+	// }
+	s := fmt.Sprintf("name: %s\nfrom: %s\nto: %s\nsize: %s\n",
+		m.detailFile.Name,
+		m.detailFile.From,
+		m.detailFile.To,
+		humanize.Bytes(uint64(size)),
+	)
+	if m.detailFile.isSelected() {
+		return lipgloss.NewStyle().
+			Foreground(lipgloss.AdaptiveColor{Light: "#EE6FF8", Dark: "#EE6FF8"}).
+			Render(s)
+	}
+	return s
 }
 
 func (m model) View() string {
 	s := ""
+
 	if m.err != nil {
 		s += fmt.Sprintf("error happen %s", m.err)
-	} else {
-		if m.selected || m.quitting {
-			return s
-		}
-		s += m.list.View()
+		return s
 	}
-	return s + "\n"
+
+	switch m.navState {
+	// case LOADING_INVENTORY_LIST, QUITTING:
+	case INVENTORY_LIST:
+		// DocStyle := lipgloss.NewStyle().Margin(1).MarginLeft(0)
+		// s += DocStyle.Render(m.list.View())
+		s += m.list.View()
+	case INVENTORY_DETAILS:
+		// s += "\naaa\n"
+		s += renderInventoryDetails(m)
+		s += "\n" + lipgloss.NewStyle().Margin(1, 2).Render(help.New().View(keys))
+	case QUITTING:
+		return s
+	}
+
+	if m.selected {
+		// do not render
+		return ""
+	}
+
+	// s += m.list.View()
+	return s
 }
 
 var (
@@ -257,3 +420,60 @@ var (
 	paginationStyle   = list.DefaultStyles().PaginationStyle.PaddingLeft(4)
 	helpStyle         = list.DefaultStyles().HelpStyle.PaddingLeft(4).PaddingBottom(1)
 )
+
+func getAllInventoryItems(files []File) tea.Msg {
+	result := []list.Item{}
+	for _, file := range files {
+		result = append(result, file)
+	}
+	return GotInventorysMsg{files: result}
+}
+
+func getInventoryDetails(file File) tea.Cmd {
+	return func() tea.Msg {
+		return DetailsMsg{file: file}
+	}
+}
+
+func DirSize(path string) (int64, error) {
+	var size int64
+	var mu sync.Mutex
+
+	// Function to calculate size for a given path
+	var calculateSize func(string) error
+	calculateSize = func(p string) error {
+		fileInfo, err := os.Lstat(p)
+		if err != nil {
+			return err
+		}
+
+		// Skip symbolic links to avoid counting them multiple times
+		if fileInfo.Mode()&os.ModeSymlink != 0 {
+			return nil
+		}
+
+		if fileInfo.IsDir() {
+			entries, err := os.ReadDir(p)
+			if err != nil {
+				return err
+			}
+			for _, entry := range entries {
+				if err := calculateSize(filepath.Join(p, entry.Name())); err != nil {
+					return err
+				}
+			}
+		} else {
+			mu.Lock()
+			size += fileInfo.Size()
+			mu.Unlock()
+		}
+		return nil
+	}
+
+	// Start calculation from the root path
+	if err := calculateSize(path); err != nil {
+		return 0, err
+	}
+
+	return size, nil
+}
