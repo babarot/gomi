@@ -176,6 +176,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// case false:
 			// 	c.options[c.currentIndex].selected = true
 			// }
+			// file, ok := m.list.SelectedItem().(File)
+			// if !ok {
+			// 	break
+			// }
+			// if file.isSelected() {
+			// 	selectionManager.Remove(file)
+			// } else {
+			// 	selectionManager.Add(file)
+			// }
 
 		case key.Matches(msg, listAdditionalKeys.Enter):
 			if m.list.FilterState() != list.Filtering {

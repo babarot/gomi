@@ -17,6 +17,7 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/paginator"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/hashicorp/logutils"
 	"github.com/jessevdk/go-flags"
 	"github.com/k0kubun/pp"
@@ -142,6 +143,7 @@ func (c CLI) Run(args []string) error {
 func (c CLI) Restore() error {
 	const defaultWidth = 20
 	l := list.New(nil, list.NewDefaultDelegate(), defaultWidth, listHeight)
+	// l := list.New(nil, HistoryItemDelegate{}, defaultWidth, listHeight)
 	l.Title = ""
 	l.Paginator.Type = paginator.Arabic
 	l.AdditionalShortHelpKeys = func() []key.Binding {
@@ -359,4 +361,57 @@ func main() {
 		fmt.Fprintf(os.Stderr, "[ERROR] error occured while processing %s: %v\n", appName, err)
 		os.Exit(1)
 	}
+}
+
+var (
+	itemStyle         = lipgloss.NewStyle().PaddingLeft(4)
+	currentItemStyle  = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170")).Width(150)
+	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("#00ff00"))
+	paginationStyle   = list.DefaultStyles().PaginationStyle.PaddingLeft(4)
+	helpStyle         = list.DefaultStyles().HelpStyle.PaddingLeft(4).PaddingBottom(1)
+)
+
+// type HistoryItem struct {
+// 	Command string
+// }
+//
+// func NewHistoryItem(historyEntry string) *HistoryItem {
+// 	return &HistoryItem{Command: historyEntry}
+// }
+//
+// func (h HistoryItem) FilterValue() string {
+// 	return h.Command
+// }
+
+func (h File) isSelected() bool {
+	return h.selected
+}
+
+type HistoryItemDelegate struct{}
+
+func (h HistoryItemDelegate) Height() int                               { return 1 }
+func (h HistoryItemDelegate) Spacing() int                              { return 0 }
+func (h HistoryItemDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
+
+func (h HistoryItemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
+	historyItem, ok := listItem.(File)
+	if !ok {
+		return
+	}
+	var str string
+	if historyItem.isSelected() {
+		str = selectedItemStyle.Render(fmt.Sprintf("%d. %s", index+1, historyItem.Name))
+	} else {
+		str = fmt.Sprintf("%d. %s", index+1, historyItem.Name)
+	}
+
+	fn := itemStyle.Render
+	if index == m.Index() {
+		fn = func(s ...string) string {
+			var str = []string{"> "}
+			return currentItemStyle.Render(append(str, s...)...)
+		}
+	}
+
+	fmt.Fprint(w, fn(str))
 }
