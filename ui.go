@@ -3,12 +3,15 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os"
 	"sort"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/dustin/go-humanize"
+	"github.com/samber/lo"
 )
 
 type errorMsg struct {
@@ -34,17 +37,31 @@ type model struct {
 	err      error
 }
 
-// Description implements list.DefaultItem
 func (p File) Description() string {
-	return humanize.Time(p.Timestamp)
+	var meta []string
+	meta = append(meta, humanize.Time(p.Timestamp))
+
+	_, err := os.Stat(p.To)
+	if os.IsNotExist(err) {
+		return "(already might have been deleted)"
+	}
+	meta = append(meta, p.From)
+
+	var dot = list.DefaultStyles().DividerDot
+	return strings.Join(meta, dot.String())
 }
 
-// Title implements list.DefaultItem
 func (p File) Title() string {
+	fi, err := os.Stat(p.To)
+	if err != nil {
+		return p.Name + "?"
+	}
+	if fi.IsDir() {
+		return p.Name + "/"
+	}
 	return p.Name
 }
 
-// FilterValue implements list.Item
 func (p File) FilterValue() string {
 	return p.Name
 }
@@ -63,6 +80,14 @@ func (m model) loadInventory() tea.Msg {
 	}
 	sort.Slice(files, func(i, j int) bool {
 		return files[i].Timestamp.After(files[j].Timestamp)
+	})
+	files = lo.Filter(files, func(file File, index int) bool {
+		// filter not found inventory out
+		_, err := os.Stat(file.To)
+		if os.IsNotExist(err) {
+			return false
+		}
+		return true
 	})
 	items := make([]list.Item, len(files))
 	for i, file := range files {
@@ -170,7 +195,7 @@ func (m model) View() string {
 	if m.err != nil {
 		s += fmt.Sprintf("error happen %s", m.err)
 	} else {
-		if m.selected {
+		if m.selected || m.quitting {
 			return s
 		}
 		s += m.list.View()

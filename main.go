@@ -17,7 +17,6 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/paginator"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/hashicorp/logutils"
 	"github.com/jessevdk/go-flags"
 	"github.com/k0kubun/pp"
@@ -120,10 +119,6 @@ func runMain() error {
 	return cli.Run(args)
 }
 
-var (
-	titleStyle = lipgloss.NewStyle().MarginLeft(2)
-)
-
 func (c CLI) Run(args []string) error {
 	c.inventory.open()
 
@@ -151,7 +146,6 @@ func (c CLI) Restore() error {
 	l := list.New(nil, list.NewDefaultDelegate(), defaultWidth, listHeight)
 	l.Title = ""
 	l.Paginator.Type = paginator.Arabic
-	l.Styles.Title = titleStyle
 	l.AdditionalShortHelpKeys = func() []key.Binding {
 		return []key.Binding{listAdditionalKeys.Enter}
 	}
@@ -159,6 +153,8 @@ func (c CLI) Restore() error {
 		return []key.Binding{listAdditionalKeys.Enter, keys.Quit}
 	}
 	l.DisableQuitKeybindings()
+	l.SetShowStatusBar(false)
+	l.SetShowTitle(false)
 	m := model{
 		cli:      &c,
 		list:     l,
