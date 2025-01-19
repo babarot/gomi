@@ -38,6 +38,7 @@ const (
 
 const listHeight = 20
 
+// TODO: configurable: yaml
 var excludeItems = []string{
 	".DS_Store",
 	"oil:",
@@ -75,8 +76,9 @@ type RmOption struct {
 // inventory represents the log data of deleted objects
 type inventory struct {
 	Version int    `json:"version"`
-	Path    string `json:"path"`
 	Files   []File `json:"files"`
+
+	path string
 }
 
 type File struct {
@@ -128,7 +130,7 @@ func runMain() error {
 
 	cli := CLI{
 		Option:    opt,
-		inventory: inventory{Path: inventoryPath},
+		inventory: inventory{path: inventoryPath},
 		Stdout:    os.Stdout,
 		Stderr:    os.Stderr,
 	}
@@ -151,7 +153,7 @@ func (c CLI) Run(args []string) error {
 	default:
 	}
 
-	return c.Remove(args)
+	return c.Put(args)
 }
 
 func (c CLI) initModel() model {
@@ -197,10 +199,11 @@ func (c CLI) Restore() error {
 		fmt.Println("bye!")
 		return nil
 	}
-	pp.Println(files)
 
+	pp.Println(files)
 	file := files[0]
 	return nil
+
 	defer c.inventory.remove(file)
 	if _, err := os.Stat(file.From); err == nil {
 		// already exists so to prevent to overwrite
@@ -213,7 +216,7 @@ func (c CLI) Restore() error {
 	return os.Rename(file.To, file.From)
 }
 
-func (c CLI) Remove(args []string) error {
+func (c CLI) Put(args []string) error {
 	if len(args) == 0 {
 		return errors.New("too few arguments")
 	}
@@ -230,7 +233,7 @@ func (c CLI) Remove(args []string) error {
 			if os.IsNotExist(err) {
 				return fmt.Errorf("%s: no such file or directory", arg)
 			}
-			file, err := makeFile(groupID, arg)
+			file, err := getFileMetadata(groupID, arg)
 			if err != nil {
 				return err
 			}
@@ -259,7 +262,7 @@ func (c CLI) Remove(args []string) error {
 
 func (i *inventory) open() error {
 	log.Printf("[DEBUG] opening inventory")
-	f, err := os.Open(i.Path)
+	f, err := os.Open(i.path)
 	if err != nil {
 		return err
 	}
@@ -275,7 +278,7 @@ func (i *inventory) open() error {
 
 func (i *inventory) update(files []File) error {
 	log.Printf("[DEBUG] updating inventory")
-	f, err := os.Create(i.Path)
+	f, err := os.Create(i.path)
 	if err != nil {
 		return err
 	}
@@ -287,7 +290,7 @@ func (i *inventory) update(files []File) error {
 
 func (i *inventory) save(files []File) error {
 	log.Printf("[DEBUG] saving inventory")
-	f, err := os.Create(i.Path)
+	f, err := os.Create(i.path)
 	if err != nil {
 		return err
 	}
@@ -332,7 +335,7 @@ func (i *inventory) filter(f func(File) bool) {
 	i.Files = files
 }
 
-func makeFile(groupID string, arg string) (File, error) {
+func getFileMetadata(groupID string, arg string) (File, error) {
 	id := xid.New().String()
 	name := filepath.Base(arg)
 	from, err := filepath.Abs(arg)
