@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/jessevdk/go-flags"
 	"github.com/k0kubun/pp"
 	"github.com/rs/xid"
+	"github.com/samber/lo"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -35,6 +37,11 @@ const (
 )
 
 const listHeight = 20
+
+var excludeItems = []string{
+	".DS_Store",
+	"oil:",
+}
 
 // These variables are set in build step
 var (
@@ -79,8 +86,6 @@ type File struct {
 	From      string    `json:"from"`     // $PWD/file.go
 	To        string    `json:"to"`       // ~/.gomi/2020/01/16/zoapompji/file.go.asfasfafd
 	Timestamp time.Time `json:"timestamp"`
-
-	selected bool
 }
 
 func (f File) isSelected() bool {
@@ -263,6 +268,8 @@ func (i *inventory) open() error {
 		return err
 	}
 	log.Printf("[DEBUG] get inventory version: %d", i.Version)
+	log.Printf("[DEBUG] filter out: $#v", excludeItems)
+	i.exclude()
 	return nil
 }
 
@@ -290,6 +297,12 @@ func (i *inventory) save(files []File) error {
 	return json.NewEncoder(f).Encode(&i)
 }
 
+func (i *inventory) exclude() {
+	i.Files = lo.Filter(i.Files, func(file File, index int) bool {
+		return !slices.Contains(excludeItems, file.Name)
+	})
+}
+
 func (i *inventory) remove(target File) error {
 	log.Printf("[DEBUG] deleting %v from inventory", target)
 	var files []File
@@ -309,8 +322,7 @@ func (i *inventory) setVersion() {
 	}
 }
 
-// Filter filters inventory entries based on given function
-func (i *inventory) Filter(f func(File) bool) {
+func (i *inventory) filter(f func(File) bool) {
 	files := make([]File, 0)
 	for _, file := range i.Files {
 		if f(file) {

@@ -56,7 +56,6 @@ type model struct {
 	files        []File
 	cli          *CLI
 	choices      []File
-	selected     bool
 	currentIndex int
 
 	// quitting bool
@@ -128,7 +127,6 @@ func (m model) loadInventory() tea.Msg {
 }
 
 func (m model) Init() tea.Cmd {
-	// return getAllInventoryItems
 	return tea.Batch(
 		m.loadInventory,
 	)
@@ -182,10 +180,6 @@ var (
 		),
 	}
 	detailKeys = detailKeyMap{
-		// Back: key.NewBinding(
-		// 	key.WithKeys("backspace"),
-		// 	key.WithHelp("backspace", "list"),
-		// ),
 		Up: key.NewBinding(
 			key.WithKeys("up", "k"),
 			key.WithHelp("↑/k", "up"),
@@ -220,8 +214,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case key.Matches(msg, keys.Select):
-			// switch m.navState {
-			// case INVENTORY_LIST:
 			if m.list.FilterState() != list.Filtering {
 				item, ok := m.list.SelectedItem().(File)
 				if !ok {
@@ -237,11 +229,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					cmds = append(cmds, getInventoryDetails(item))
 				}
 			}
-			// }
 
 		case key.Matches(msg, keys.DeSelect):
-			// switch m.navState {
-			// case INVENTORY_LIST:
 			if m.list.FilterState() != list.Filtering {
 				item, ok := m.list.SelectedItem().(File)
 				if !ok {
@@ -255,7 +244,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					cmds = append(cmds, getInventoryDetails(item))
 				}
 			}
-			// }
 
 		case key.Matches(msg, detailKeys.Up):
 			switch m.navState {
@@ -275,12 +263,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					cmds = append(cmds, getInventoryDetails(file))
 				}
 			}
-
-		// case key.Matches(msg, detailKeys.Back):
-		// 	switch m.navState {
-		// 	case INVENTORY_DETAILS:
-		// 		m.navState = INVENTORY_LIST
-		// 	}
 
 		case key.Matches(msg, listAdditionalKeys.Esc):
 			switch m.navState {
@@ -311,11 +293,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						file, ok := m.list.SelectedItem().(File)
 						if ok {
 							m.choices = append(m.choices, file)
-							m.selected = true
 						}
 					} else {
 						m.choices = files
-						m.selected = true
 					}
 					return m, tea.Quit
 				}
@@ -354,20 +334,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, tea.Batch(cmds...)
-	// m.list, cmd = m.list.Update(msg)
-	// return m, cmd
 }
 
 func renderInventoryDetails(m model) string {
-	// size := ""
-	// fi, err := os.Stat(m.detailFile.To)
-	// if err == nil {
-	// 	size = humanize.Bytes(uint64(fi.Size()))
-	// }
 	size, _ := DirSize(m.detailFile.To)
-	// if err == nil {
-	// 	size = humanize.Bytes(uint64(size))
-	// }
 	s := fmt.Sprintf("name: %s\nfrom: %s\nto: %s\nsize: %s\n",
 		m.detailFile.Name,
 		m.detailFile.From,
@@ -391,25 +361,20 @@ func (m model) View() string {
 	}
 
 	switch m.navState {
-	// case LOADING_INVENTORY_LIST, QUITTING:
 	case INVENTORY_LIST:
-		// DocStyle := lipgloss.NewStyle().Margin(1).MarginLeft(0)
-		// s += DocStyle.Render(m.list.View())
 		s += m.list.View()
 	case INVENTORY_DETAILS:
-		// s += "\naaa\n"
 		s += renderInventoryDetails(m)
 		s += "\n" + lipgloss.NewStyle().Margin(1, 2).Render(help.New().View(keys))
 	case QUITTING:
 		return s
 	}
 
-	if m.selected {
-		// do not render
+	if len(m.choices) > 0 {
+		// do not render when selected one or more
 		return ""
 	}
 
-	// s += m.list.View()
 	return s
 }
 
