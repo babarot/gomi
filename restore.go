@@ -78,29 +78,34 @@ type RestoreItem interface {
 }
 
 type RestoreDelegate struct {
-	ShowDescription bool
-	Styles          RestoreItemStyles
-	UpdateFunc      func(tea.Msg, *list.Model) tea.Cmd
-	ShortHelpFunc   func() []key.Binding
-	FullHelpFunc    func() [][]key.Binding
+	Styles        RestoreItemStyles
+	UpdateFunc    func(tea.Msg, *list.Model) tea.Cmd
+	ShortHelpFunc func() []key.Binding
+	FullHelpFunc  func() [][]key.Binding
+
+	showDescription bool
 	height          int
 	spacing         int
 }
 
 // NewRestoreDelegate creates a new delegate with Restore styles.
-func NewRestoreDelegate() RestoreDelegate {
-	const defaultHeight = 2
-	const defaultSpacing = 1
+func NewRestoreDelegate(showDescription bool) RestoreDelegate {
+	var height = 2
+	var spacing = 1
+	if !showDescription {
+		height = 1
+		spacing = 0
+	}
 	return RestoreDelegate{
-		ShowDescription: true,
+		showDescription: showDescription,
 		Styles:          NewRestoreItemStyles(),
-		height:          defaultHeight,
-		spacing:         defaultSpacing,
+		height:          height,
+		spacing:         spacing,
 	}
 }
 
 func (d RestoreDelegate) Height() int {
-	if d.ShowDescription {
+	if d.showDescription {
 		return d.height
 	}
 	return 1
@@ -139,7 +144,7 @@ func (d RestoreDelegate) Render(w io.Writer, m list.Model, index int, item list.
 	// Prevent text from exceeding list width
 	textwidth := m.Width() - s.NormalTitle.GetPaddingLeft() - s.NormalTitle.GetPaddingRight()
 	title = ansi.Truncate(title, textwidth, ellipsis)
-	if d.ShowDescription {
+	if d.showDescription {
 		var lines []string
 		for i, line := range strings.Split(desc, "\n") {
 			if i >= d.height-1 {
@@ -187,7 +192,7 @@ func (d RestoreDelegate) Render(w io.Writer, m list.Model, index int, item list.
 		desc = s.NormalDesc.Render(desc)
 	}
 
-	if d.ShowDescription {
+	if d.showDescription {
 		fmt.Fprintf(w, "%s\n%s", title, desc) //nolint: errcheck
 		return
 	}

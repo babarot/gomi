@@ -28,21 +28,15 @@ import (
 )
 
 const (
-	appName = "gomi"
-	gomiDir = ".gomi"
-	envLog  = "GOMI_LOG"
+	appName    = "gomi"
+	gomiDir    = ".gomi"
+	envGomiLog = "GOMI_LOG"
 
 	inventoryVersion = 1
 	inventoryFile    = "inventory.json"
 )
 
 const listHeight = 20
-
-// TODO: configurable: yaml
-var excludeItems = []string{
-	".DS_Store",
-	"oil:",
-}
 
 // These variables are set in build step
 var (
@@ -60,6 +54,7 @@ type Option struct {
 	RestoreGroup bool     `short:"B" long:"restore-by-group" description:"Restore deleted files based on one operation"`
 	Version      bool     `long:"version" description:"Show version"`
 	RmOption     RmOption `group:"Dummy Options (compatible with rm)"`
+	Config       string   `long:"config" default:""`
 }
 
 // This should be not conflicts with app option
@@ -78,7 +73,8 @@ type inventory struct {
 	Version int    `json:"version"`
 	Files   []File `json:"files"`
 
-	path string
+	excludeItems []string
+	path         string
 }
 
 type File struct {
@@ -95,6 +91,7 @@ func (f File) isSelected() bool {
 }
 
 type CLI struct {
+	Config    Config
 	Option    Option
 	inventory inventory
 	Stdout    io.Writer
@@ -109,7 +106,7 @@ func main() {
 }
 
 func runMain() error {
-	log.SetOutput(logOutput(envLog))
+	log.SetOutput(logOutput(envGomiLog))
 	defer log.Printf("[INFO] finish main function")
 
 	log.Printf("[INFO] Version: %s (%s)", Version, Revision)
@@ -128,9 +125,15 @@ func runMain() error {
 		return err
 	}
 
+	cfg, err := parseConfig(opt.Config)
+	if err != nil {
+		return err
+	}
+
 	cli := CLI{
+		Config:    cfg,
 		Option:    opt,
-		inventory: inventory{path: inventoryPath},
+		inventory: inventory{path: inventoryPath, excludeItems: cfg.ExcludeItems},
 		Stdout:    os.Stdout,
 		Stderr:    os.Stderr,
 	}
@@ -166,7 +169,7 @@ func (c CLI) initModel() model {
 
 	// TODO: configable
 	// l := list.New(files, ClassicDelegate{}, defaultWidth, listHeight)
-	l := list.New(files, NewRestoreDelegate(), defaultWidth, listHeight)
+	l := list.New(files, NewRestoreDelegate(c.Config.ShowDescription), defaultWidth, listHeight)
 
 	// TODO: which one?
 	// l.Paginator.Type = paginator.Arabic
@@ -271,7 +274,7 @@ func (i *inventory) open() error {
 		return err
 	}
 	log.Printf("[DEBUG] get inventory version: %d", i.Version)
-	log.Printf("[DEBUG] filter out: $#v", excludeItems)
+	log.Printf("[DEBUG] filter out: %#v", i.excludeItems)
 	i.exclude()
 	return nil
 }
@@ -302,7 +305,7 @@ func (i *inventory) save(files []File) error {
 
 func (i *inventory) exclude() {
 	i.Files = lo.Filter(i.Files, func(file File, index int) bool {
-		return !slices.Contains(excludeItems, file.Name)
+		return !slices.Contains(i.excludeItems, file.Name)
 	})
 }
 
