@@ -37,6 +37,11 @@ const (
 	inventoryFile    = "inventory.json"
 )
 
+const (
+	datefmtRel = "relative"
+	datefmtAbs = "absolute"
+)
+
 const listHeight = 20
 
 // These variables are set in build step
@@ -174,18 +179,20 @@ func (c CLI) initModel() model {
 
 	// TODO: which one?
 	// l.Paginator.Type = paginator.Arabic
+
 	l.Title = ""
 	l.AdditionalShortHelpKeys = func() []key.Binding {
-		return []key.Binding{listAdditionalKeys.Enter, listAdditionalKeys.Info}
+		return []key.Binding{listAdditionalKeys.Enter, listAdditionalKeys.Space}
 	}
 	l.AdditionalFullHelpKeys = func() []key.Binding {
-		return []key.Binding{listAdditionalKeys.Enter, listAdditionalKeys.Info, keys.Quit, keys.Select, keys.DeSelect}
+		return []key.Binding{listAdditionalKeys.Enter, listAdditionalKeys.Space, keys.Quit, keys.Select, keys.DeSelect}
 	}
 	l.DisableQuitKeybindings()
 	l.SetShowStatusBar(false)
 	l.SetShowTitle(false)
 	m := model{
 		navState: INVENTORY_LIST,
+		datefmt:  datefmtRel,
 		cli:      &c,
 		list:     l,
 	}

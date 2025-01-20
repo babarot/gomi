@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -50,6 +51,7 @@ func errorCmd(err error) tea.Cmd {
 type model struct {
 	navState   NavState
 	detailFile File
+	datefmt    string
 
 	files   []File
 	cli     *CLI
@@ -136,13 +138,13 @@ type (
 	}
 	listAdditionalKeyMap struct {
 		Enter key.Binding
-		Info  key.Binding
-		Esc   key.Binding
+		Space key.Binding
 	}
 	detailKeyMap struct {
-		Up   key.Binding
-		Down key.Binding
-		Back key.Binding
+		Up     key.Binding
+		Down   key.Binding
+		Esc    key.Binding
+		AtSign key.Binding
 	}
 )
 
@@ -166,13 +168,9 @@ var (
 			key.WithKeys("enter"),
 			key.WithHelp("enter", "ok"),
 		),
-		Info: key.NewBinding(
+		Space: key.NewBinding(
 			key.WithKeys(" "),
 			key.WithHelp("space", "info"),
-		),
-		Esc: key.NewBinding(
-			key.WithKeys("esc"),
-			key.WithHelp("esc", "back"),
 		),
 	}
 	detailKeys = detailKeyMap{
@@ -184,19 +182,23 @@ var (
 			key.WithKeys("down", "j"),
 			key.WithHelp("↓/j", "down"),
 		),
-		Back: key.NewBinding(
-			key.WithKeys(" "),
-			key.WithHelp("space", "back"),
+		Esc: key.NewBinding(
+			key.WithKeys("esc"), // space itself should be already defined another part
+			key.WithHelp("space/esc", "back"),
+		),
+		AtSign: key.NewBinding(
+			key.WithKeys("@"), // space itself should be already defined another part
+			key.WithHelp("@", "datefmt"),
 		),
 	}
 )
 
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{detailKeys.Up, detailKeys.Down, detailKeys.Back}
+	return []key.Binding{detailKeys.Up, detailKeys.Down, detailKeys.Esc, detailKeys.AtSign}
 }
 
 func (k keyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{k.ShortHelp(), {listAdditionalKeys.Esc}}
+	return [][]key.Binding{k.ShortHelp(), {}}
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -240,6 +242,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 
+		case key.Matches(msg, detailKeys.AtSign):
+			switch m.navState {
+			case INVENTORY_DETAILS:
+				switch m.datefmt {
+				case datefmtRel:
+					m.datefmt = datefmtAbs
+				case datefmtAbs:
+					m.datefmt = datefmtRel
+				}
+			}
+
 		case key.Matches(msg, detailKeys.Up):
 			switch m.navState {
 			case INVENTORY_DETAILS:
@@ -259,13 +272,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 
-		case key.Matches(msg, listAdditionalKeys.Esc):
+		case key.Matches(msg, detailKeys.Esc):
 			switch m.navState {
+			// case INVENTORY_LIST:
+			// 	m.navState = INVENTORY_DETAILS
 			case INVENTORY_DETAILS:
 				m.navState = INVENTORY_LIST
 			}
 
-		case key.Matches(msg, listAdditionalKeys.Info):
+		case key.Matches(msg, listAdditionalKeys.Space):
 			switch m.navState {
 			case INVENTORY_LIST:
 				if m.list.FilterState() != list.Filtering {
@@ -330,7 +345,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 var (
-	AccentColor             = lipgloss.ANSIColor(termenv.ANSIYellow)
+	AccentColor             = lipgloss.ANSIColor(termenv.ANSIBlack)
 	stylesSectionStyle      = lipgloss.NewStyle().BorderStyle(lipgloss.HiddenBorder()).BorderForeground(AccentColor).Padding(0, 1)
 	stylesSectionTitleStyle = lipgloss.NewStyle().Padding(0, 1).MarginBottom(1).Background(AccentColor).Foreground(lipgloss.Color("15")).Bold(true).Transform(strings.ToUpper)
 )
@@ -341,7 +356,7 @@ func renderInventoryDetails(m model) string {
 	content := lipgloss.JoinVertical(lipgloss.Left,
 		header,
 		renderDeletedWhere(m.detailFile),
-		renderDeletedAt(m.detailFile),
+		renderDeletedAt(m.detailFile, m.datefmt),
 		renderMetadata(m.detailFile),
 		strings.Repeat("─", lipgloss.Width(header)),
 	)
@@ -352,7 +367,11 @@ func renderInventoryDetails(m model) string {
 func renderHeader(file File) string {
 	name := file.Name
 	if file.isSelected() {
-		name = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#EE6FF8", Dark: "#EE6FF8"}).Render(file.Name)
+		// name = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#EE6FF8", Dark: "#EE6FF8"}).Render(file.Name)
+		name = lipgloss.NewStyle().
+			Foreground(lipgloss.AdaptiveColor{Light: "#000000", Dark: "#000000"}).
+			Background(lipgloss.AdaptiveColor{Light: "#EE6FF8", Dark: "#EE6FF8"}).
+			Render(file.Name)
 	}
 	title := lipgloss.NewStyle().
 		BorderStyle(func() lipgloss.Border {
@@ -368,11 +387,19 @@ func renderHeader(file File) string {
 	return lipgloss.JoinHorizontal(lipgloss.Center, title, line)
 }
 
-func renderDeletedAt(f File) string {
-	ts := humanize.Time(f.Timestamp)
-	return stylesSectionStyle.Render(lipgloss.JoinVertical(lipgloss.Left,
-		stylesSectionTitleStyle.MarginBottom(1).Render("Deleted At"),
-		lipgloss.NewStyle().Italic(true).Render(ts)),
+func renderDeletedAt(f File, datefmt string) string {
+	var ts string
+	switch datefmt {
+	case "absolute":
+		ts = f.Timestamp.Format(time.RFC3339)
+	default:
+		ts = humanize.Time(f.Timestamp)
+	}
+	return stylesSectionStyle.Render(
+		lipgloss.JoinHorizontal(
+			lipgloss.Left,
+			stylesSectionTitleStyle.MarginRight(3).Render("Deleted At"),
+			lipgloss.NewStyle().Render(ts)),
 	)
 }
 
@@ -383,9 +410,11 @@ func renderDeletedWhere(f File) string {
 	w.KeepNewlines = false
 	_, _ = w.Write([]byte(s))
 	_ = w.Close()
-	return stylesSectionStyle.Render(lipgloss.JoinVertical(lipgloss.Left,
-		stylesSectionTitleStyle.MarginBottom(1).Render("Where it was"),
-		lipgloss.NewStyle().Italic(true).Render(w.String())),
+	return stylesSectionStyle.Render(
+		lipgloss.JoinVertical(
+			lipgloss.Left,
+			stylesSectionTitleStyle.MarginBottom(1).Render("Where it was"),
+			lipgloss.NewStyle().Render(w.String())),
 	)
 }
 
