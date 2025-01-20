@@ -8,99 +8,118 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/go-playground/validator"
 	"gopkg.in/yaml.v2"
 )
 
 const gomiConfigDir = "gomi"
 const gomiConfigFilename = "config.yaml"
+const envGomiConfigPath = "GOMI_CONFIG_PATH"
+
 const DEFAULT_XDG_CONFIG_DIRNAME = ".config"
 
 var validate *validator.Validate
 
 type Config struct {
-	ShowDescription bool     `yaml:"show_description"`
-	ExcludeItems    []string `yaml:"exclude_items"`
+	UI        ConfigUI        `yaml:"ui"`
+	Inventory ConfigInventory `yaml:"inventory"`
+}
+
+type ConfigInventory struct {
+	Exclude ConfigExclude `yaml:"exclude"`
+}
+
+type ConfigExclude struct {
+	Files     []string `yaml:"files"`
+	Patterns  []string `yaml:"patterns"`
+	Globs     []string `yaml:"globs"`
+	SizeAbove []string `yaml:"size_above"` // over
+	SizeBelow []string `yaml:"size_below"` // under
+}
+
+type ConfigUI struct {
+	ShowDescription bool `yaml:"show_description"`
 }
 
 type configError struct {
 	configDir string
-	parser    ConfigParser
+	parser    parser
 	err       error
 }
 
-type ConfigParser struct{}
+type parser struct{}
 
-func (parser ConfigParser) getDefaultConfig() Config {
+func (p parser) getDefaultConfig() Config {
 	return Config{
-		ShowDescription: true,
-		ExcludeItems: []string{
-			// In macOS, .DS_Store is a file that stores custom attributes of its
-			// containing folder, such as folder view options, icon positions,
-			// and other visual information
-			".DS_Store",
+		UI: ConfigUI{
+			ShowDescription: true,
+		},
+		Inventory: ConfigInventory{
+			Exclude: ConfigExclude{
+				Files: []string{
+					// In macOS, .DS_Store is a file that stores custom attributes of its
+					// containing folder, such as folder view options, icon positions,
+					// and other visual information
+					".DS_Store",
+				},
+				Patterns:  []string{},
+				Globs:     []string{},
+				SizeAbove: []string{"10GB"},
+				SizeBelow: []string{"0KB"},
+			},
 		},
 	}
 }
 
-func (parser ConfigParser) getDefaultConfigYamlContents() string {
-	defaultConfig := parser.getDefaultConfig()
+func (p parser) getDefaultConfigYamlContents() string {
+	defaultConfig := p.getDefaultConfig()
 	content, _ := yaml.Marshal(defaultConfig)
 	return string(content)
 }
 
 func (e configError) Error() string {
-	return fmt.Sprintf(
-		`Couldn't find a config.yml or a config.yaml configuration file.
-Create one under: %s
+	return heredoc.Docf(`
+		Couldn't find a "config.yaml" config file.
+		Create one under: %s
+		Example of a config.yaml file:
 
-Example of a config.yml file:
-%s
+		%s
 
-Original error: %v`,
+		The detail error is: %v`,
 		path.Join(e.configDir, gomiConfigDir, gomiConfigFilename),
 		string(e.parser.getDefaultConfigYamlContents()),
 		e.err,
 	)
 }
 
-func (parser ConfigParser) writeDefaultConfigContents(
-	newConfigFile *os.File,
-) error {
-	_, err := newConfigFile.WriteString(parser.getDefaultConfigYamlContents())
-
+func (p parser) writeDefaultConfigContents(newConfigFile *os.File) error {
+	_, err := newConfigFile.WriteString(p.getDefaultConfigYamlContents())
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
-func (parser ConfigParser) createConfigFileIfMissing(
-	configFilePath string,
-) error {
+func (p parser) createConfigFileIfMissing(configFilePath string) error {
 	if _, err := os.Stat(configFilePath); os.IsNotExist(err) {
-		newConfigFile, err := os.OpenFile(
-			configFilePath,
-			os.O_RDWR|os.O_CREATE|os.O_EXCL,
-			0666,
-		)
+		newConfigFile, err := os.OpenFile(configFilePath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
 		if err != nil {
 			return err
 		}
 
 		defer newConfigFile.Close()
-		return parser.writeDefaultConfigContents(newConfigFile)
+		return p.writeDefaultConfigContents(newConfigFile)
 	}
 
 	return nil
 }
 
-func (parser ConfigParser) getDefaultConfigFileOrCreateIfMissing() (string, error) {
+func (p parser) getDefaultConfigFileOrCreateIfMissing() (string, error) {
 	var configFilePath string
-	gomiConfigPath := os.Getenv("GOMI_CONFIG_PATH")
+	gomiConfigPath := os.Getenv(envGomiConfigPath)
 
-	// First try GOMI_CONFIG_PATH
+	// First try env
 	if gomiConfigPath != "" {
 		configFilePath = gomiConfigPath
 	}
@@ -124,15 +143,18 @@ func (parser ConfigParser) getDefaultConfigFileOrCreateIfMissing() (string, erro
 	if _, err := os.Stat(configDir); os.IsNotExist(err) {
 		if err = os.MkdirAll(configDir, os.ModePerm); err != nil {
 			return "", configError{
-				parser:    parser,
+				parser:    p,
 				configDir: configDir,
 				err:       err,
 			}
 		}
 	}
-
-	if err := parser.createConfigFileIfMissing(configFilePath); err != nil {
-		return "", configError{parser: parser, configDir: configDir, err: err}
+	if err := p.createConfigFileIfMissing(configFilePath); err != nil {
+		return "", configError{
+			parser:    p,
+			configDir: configDir,
+			err:       err,
+		}
 	}
 
 	return configFilePath, nil
@@ -143,14 +165,14 @@ type parsingError struct {
 }
 
 func (e parsingError) Error() string {
-	return fmt.Sprintf("failed parsing config.yml: %v", e.err)
+	return fmt.Sprintf("failed parsing config.yaml: %v", e.err)
 }
 
-func (parser ConfigParser) readConfigFile(path string) (Config, error) {
-	config := parser.getDefaultConfig()
+func (p parser) readConfigFile(path string) (Config, error) {
+	config := p.getDefaultConfig()
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return config, configError{parser: parser, configDir: path, err: err}
+		return config, configError{parser: p, configDir: path, err: err}
 	}
 
 	err = yaml.Unmarshal([]byte(data), &config)
@@ -162,7 +184,7 @@ func (parser ConfigParser) readConfigFile(path string) (Config, error) {
 	return config, err
 }
 
-func initParser() ConfigParser {
+func initParser() parser {
 	validate = validator.New()
 
 	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
@@ -173,7 +195,7 @@ func initParser() ConfigParser {
 		return name
 	})
 
-	return ConfigParser{}
+	return parser{}
 }
 
 func parseConfig(path string) (Config, error) {

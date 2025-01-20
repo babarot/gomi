@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"sync"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -15,6 +14,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/dustin/go-humanize"
+	"github.com/gabriel-vasile/mimetype"
+	"github.com/muesli/reflow/wordwrap"
+	"github.com/muesli/termenv"
 	"github.com/samber/lo"
 )
 
@@ -22,11 +24,7 @@ type NavState int
 
 const (
 	INVENTORY_LIST NavState = iota
-	// LOADING_INVENTORY_LIST
-
 	INVENTORY_DETAILS
-	// LOADING_INVENTORY_DETAILS
-
 	QUITTING
 )
 
@@ -53,12 +51,10 @@ type model struct {
 	navState   NavState
 	detailFile File
 
-	files        []File
-	cli          *CLI
-	choices      []File
-	currentIndex int
+	files   []File
+	cli     *CLI
+	choices []File
 
-	// quitting bool
 	list list.Model
 	err  error
 }
@@ -68,32 +64,32 @@ const (
 	ellipsis = "…"
 )
 
-func (p File) Description() string {
+func (f File) Description() string {
 	var meta []string
-	meta = append(meta, humanize.Time(p.Timestamp))
+	meta = append(meta, humanize.Time(f.Timestamp))
 
-	_, err := os.Stat(p.To)
+	_, err := os.Stat(f.To)
 	if os.IsNotExist(err) {
 		return "(already might have been deleted)"
 	}
-	meta = append(meta, filepath.Dir(p.From))
+	meta = append(meta, filepath.Dir(f.From))
 
 	return strings.Join(meta, " "+bullet+" ")
 }
 
-func (p File) Title() string {
-	fi, err := os.Stat(p.To)
+func (f File) Title() string {
+	fi, err := os.Stat(f.To)
 	if err != nil {
-		return p.Name + "?"
+		return f.Name + "?"
 	}
 	if fi.IsDir() {
-		return p.Name + "/"
+		return f.Name + "/"
 	}
-	return p.Name
+	return f.Name
 }
 
-func (p File) FilterValue() string {
-	return p.Name
+func (f File) FilterValue() string {
+	return f.Name
 }
 
 var _ list.DefaultItem = (*File)(nil)
@@ -204,7 +200,6 @@ func (k keyMap) FullHelp() [][]key.Binding {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// var cmd tea.Cmd
 	cmds := []tea.Cmd{}
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -277,7 +272,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					file, ok := m.list.SelectedItem().(File)
 					if ok {
 						cmds = append(cmds, getInventoryDetails(file))
-						// m.navState = INVENTORY_DETAILS
 					}
 				}
 			case INVENTORY_DETAILS:
@@ -320,7 +314,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.navState = INVENTORY_DETAILS
 
 	case errorMsg:
-		// m.quitting = true
 		m.navState = QUITTING
 		m.err = msg
 		return m, tea.Quit
@@ -336,20 +329,113 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
+var (
+	AccentColor             = lipgloss.ANSIColor(termenv.ANSIYellow)
+	stylesSectionStyle      = lipgloss.NewStyle().BorderStyle(lipgloss.HiddenBorder()).BorderForeground(AccentColor).Padding(0, 1)
+	stylesSectionTitleStyle = lipgloss.NewStyle().Padding(0, 1).MarginBottom(1).Background(AccentColor).Foreground(lipgloss.Color("15")).Bold(true).Transform(strings.ToUpper)
+)
+
 func renderInventoryDetails(m model) string {
-	size, _ := DirSize(m.detailFile.To)
-	s := fmt.Sprintf("name: %s\nfrom: %s\nto: %s\nsize: %s\n",
-		m.detailFile.Name,
-		m.detailFile.From,
-		m.detailFile.To,
-		humanize.Bytes(uint64(size)),
+	header := renderHeader(m.detailFile)
+
+	content := lipgloss.JoinVertical(lipgloss.Left,
+		header,
+		renderDeletedWhere(m.detailFile),
+		renderDeletedAt(m.detailFile),
+		renderMetadata(m.detailFile),
+		strings.Repeat("─", lipgloss.Width(header)),
 	)
-	if m.detailFile.isSelected() {
-		return lipgloss.NewStyle().
-			Foreground(lipgloss.AdaptiveColor{Light: "#EE6FF8", Dark: "#EE6FF8"}).
-			Render(s)
+
+	return content
+}
+
+func renderHeader(file File) string {
+	name := file.Name
+	if file.isSelected() {
+		name = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#EE6FF8", Dark: "#EE6FF8"}).Render(file.Name)
 	}
-	return s
+	title := lipgloss.NewStyle().
+		BorderStyle(func() lipgloss.Border {
+			b := lipgloss.RoundedBorder()
+			b.Right = "├"
+			return b
+		}()).
+		Padding(0, 1).
+		Bold(true).
+		Render(name)
+
+	line := strings.Repeat("─", max(0, 56-lipgloss.Width(title)))
+	return lipgloss.JoinHorizontal(lipgloss.Center, title, line)
+}
+
+func renderDeletedAt(f File) string {
+	ts := humanize.Time(f.Timestamp)
+	return stylesSectionStyle.Render(lipgloss.JoinVertical(lipgloss.Left,
+		stylesSectionTitleStyle.MarginBottom(1).Render("Deleted At"),
+		lipgloss.NewStyle().Italic(true).Render(ts)),
+	)
+}
+
+func renderDeletedWhere(f File) string {
+	s := filepath.Dir(f.From)
+	w := wordwrap.NewWriter(46)
+	w.Breakpoints = []rune{'/', '.'}
+	w.KeepNewlines = false
+	_, _ = w.Write([]byte(s))
+	_ = w.Close()
+	return stylesSectionStyle.Render(lipgloss.JoinVertical(lipgloss.Left,
+		stylesSectionTitleStyle.MarginBottom(1).Render("Where it was"),
+		lipgloss.NewStyle().Italic(true).Render(w.String())),
+	)
+}
+
+func renderMetadata(f File) string {
+	return lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		stylesSectionStyle.Render(
+			lipgloss.JoinVertical(lipgloss.Left, stylesSectionTitleStyle.MarginBottom(1).Render("Size"), renderFileSize(f))),
+		stylesSectionStyle.Render(
+			lipgloss.JoinVertical(lipgloss.Left, stylesSectionTitleStyle.MarginBottom(1).Render("Type"), renderFileType(f))),
+	)
+}
+
+func renderFileSize(f File) string {
+	var sizeStr string
+	size, err := DirSize(f.To)
+	if err != nil {
+		sizeStr = "(Cannot be calculated)"
+	} else {
+		sizeStr = humanize.Bytes(uint64(size))
+	}
+	return sizeStr
+}
+
+func renderFileType(f File) string {
+	var result string
+	fi, err := os.Stat(f.To)
+	if err != nil {
+		switch {
+		case os.IsNotExist(err):
+			result = "file has been totally removed"
+		default:
+			result = err.Error()
+		}
+	} else {
+		if fi.IsDir() {
+			result = "(directory)"
+		}
+	}
+
+	if result == "" {
+		mtype, err := mimetype.DetectFile(f.To)
+		if err != nil {
+			result = err.Error()
+		} else {
+			result = mtype.String()
+		}
+	}
+
+	return result
 }
 
 func (m model) View() string {
@@ -378,6 +464,7 @@ func (m model) View() string {
 	return s
 }
 
+// TODO: remove?
 var (
 	itemStyle         = lipgloss.NewStyle().PaddingLeft(4)
 	currentItemStyle  = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170")).Width(150)
@@ -386,6 +473,7 @@ var (
 	helpStyle         = list.DefaultStyles().HelpStyle.PaddingLeft(4).PaddingBottom(1)
 )
 
+// TODO: remove?
 func getAllInventoryItems(files []File) tea.Msg {
 	result := []list.Item{}
 	for _, file := range files {
@@ -398,47 +486,4 @@ func getInventoryDetails(file File) tea.Cmd {
 	return func() tea.Msg {
 		return DetailsMsg{file: file}
 	}
-}
-
-func DirSize(path string) (int64, error) {
-	var size int64
-	var mu sync.Mutex
-
-	// Function to calculate size for a given path
-	var calculateSize func(string) error
-	calculateSize = func(p string) error {
-		fileInfo, err := os.Lstat(p)
-		if err != nil {
-			return err
-		}
-
-		// Skip symbolic links to avoid counting them multiple times
-		if fileInfo.Mode()&os.ModeSymlink != 0 {
-			return nil
-		}
-
-		if fileInfo.IsDir() {
-			entries, err := os.ReadDir(p)
-			if err != nil {
-				return err
-			}
-			for _, entry := range entries {
-				if err := calculateSize(filepath.Join(p, entry.Name())); err != nil {
-					return err
-				}
-			}
-		} else {
-			mu.Lock()
-			size += fileInfo.Size()
-			mu.Unlock()
-		}
-		return nil
-	}
-
-	// Start calculation from the root path
-	if err := calculateSize(path); err != nil {
-		return 0, err
-	}
-
-	return size, nil
 }

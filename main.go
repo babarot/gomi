@@ -10,15 +10,16 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
 
-	// "github.com/babarot/gomi/ui"
-	// "github.com/barthr/redo/ui"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/docker/go-units"
+	"github.com/gobwas/glob"
 	"github.com/hashicorp/logutils"
 	"github.com/jessevdk/go-flags"
 	"github.com/k0kubun/pp"
@@ -29,7 +30,7 @@ import (
 
 const (
 	appName    = "gomi"
-	gomiDir    = ".gomi"
+	gomiDotDir = ".gomi"
 	envGomiLog = "GOMI_LOG"
 
 	inventoryVersion = 1
@@ -45,7 +46,7 @@ var (
 )
 
 var (
-	gomiPath      = filepath.Join(os.Getenv("HOME"), gomiDir)
+	gomiPath      = filepath.Join(os.Getenv("HOME"), gomiDotDir)
 	inventoryPath = filepath.Join(gomiPath, inventoryFile)
 )
 
@@ -73,8 +74,8 @@ type inventory struct {
 	Version int    `json:"version"`
 	Files   []File `json:"files"`
 
-	excludeItems []string
-	path         string
+	excludes ConfigExclude
+	path     string
 }
 
 type File struct {
@@ -100,7 +101,7 @@ type CLI struct {
 
 func main() {
 	if err := runMain(); err != nil {
-		fmt.Fprintf(os.Stderr, "[ERROR] error occured while processing %s: %v\n", appName, err)
+		fmt.Fprintf(os.Stderr, "[ERROR] %s: %v\n", appName, err)
 		os.Exit(1)
 	}
 }
@@ -109,7 +110,7 @@ func runMain() error {
 	log.SetOutput(logOutput(envGomiLog))
 	defer log.Printf("[INFO] finish main function")
 
-	log.Printf("[INFO] Version: %s (%s)", Version, Revision)
+	log.Printf("[INFO] version: %s (%s)", Version, Revision)
 	log.Printf("[INFO] gomiPath: %s", gomiPath)
 	log.Printf("[INFO] inventoryPath: %s", inventoryPath)
 
@@ -133,7 +134,7 @@ func runMain() error {
 	cli := CLI{
 		Config:    cfg,
 		Option:    opt,
-		inventory: inventory{path: inventoryPath, excludeItems: cfg.ExcludeItems},
+		inventory: inventory{path: inventoryPath, excludes: cfg.Inventory.Exclude},
 		Stdout:    os.Stdout,
 		Stderr:    os.Stderr,
 	}
@@ -169,7 +170,7 @@ func (c CLI) initModel() model {
 
 	// TODO: configable
 	// l := list.New(files, ClassicDelegate{}, defaultWidth, listHeight)
-	l := list.New(files, NewRestoreDelegate(c.Config.ShowDescription), defaultWidth, listHeight)
+	l := list.New(files, NewRestoreDelegate(c.Config), defaultWidth, listHeight)
 
 	// TODO: which one?
 	// l.Paginator.Type = paginator.Arabic
@@ -274,7 +275,6 @@ func (i *inventory) open() error {
 		return err
 	}
 	log.Printf("[DEBUG] get inventory version: %d", i.Version)
-	log.Printf("[DEBUG] filter out: %#v", i.excludeItems)
 	i.exclude()
 	return nil
 }
@@ -304,8 +304,47 @@ func (i *inventory) save(files []File) error {
 }
 
 func (i *inventory) exclude() {
-	i.Files = lo.Filter(i.Files, func(file File, index int) bool {
-		return !slices.Contains(i.excludeItems, file.Name)
+	i.Files = lo.Reject(i.Files, func(file File, index int) bool {
+		return slices.Contains(i.excludes.Files, file.Name)
+	})
+	i.Files = lo.Reject(i.Files, func(file File, index int) bool {
+		for _, pat := range i.excludes.Patterns {
+			if regexp.MustCompile(pat).MatchString(file.Name) {
+				return true
+			}
+		}
+		for _, g := range i.excludes.Globs {
+			if glob.MustCompile(g).Match(file.Name) {
+				return true
+			}
+		}
+		return false
+	})
+	i.Files = lo.Reject(i.Files, func(file File, index int) bool {
+		size, err := DirSize(file.To)
+		if err != nil {
+			return false // false positive
+		}
+		// fmt.Println()
+		for _, s := range i.excludes.SizeBelow {
+			below, err := units.FromHumanSize(s)
+			if err != nil {
+				continue
+			}
+			if size <= below {
+				return true
+			}
+		}
+		for _, s := range i.excludes.SizeAbove {
+			above, err := units.FromHumanSize(s)
+			if err != nil {
+				continue
+			}
+			if above <= size {
+				return true
+			}
+		}
+		return false
 	})
 }
 

@@ -89,15 +89,15 @@ type RestoreDelegate struct {
 }
 
 // NewRestoreDelegate creates a new delegate with Restore styles.
-func NewRestoreDelegate(showDescription bool) RestoreDelegate {
+func NewRestoreDelegate(cfg Config) RestoreDelegate {
 	var height = 2
 	var spacing = 1
-	if !showDescription {
+	if !cfg.UI.ShowDescription {
 		height = 1
 		spacing = 0
 	}
 	return RestoreDelegate{
-		showDescription: showDescription,
+		showDescription: cfg.UI.ShowDescription,
 		Styles:          NewRestoreItemStyles(),
 		height:          height,
 		spacing:         spacing,
