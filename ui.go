@@ -102,7 +102,8 @@ type inventoryLoadedMsg struct {
 }
 
 func (m model) loadInventory() tea.Msg {
-	files := m.cli.inventory.Files
+	// files := m.cli.inventory.Files
+	files := m.files
 	if len(files) == 0 {
 		return errorMsg{errors.New("no deleted files found")}
 	}

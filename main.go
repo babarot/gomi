@@ -149,7 +149,9 @@ func runMain() error {
 }
 
 func (c CLI) Run(args []string) error {
-	c.inventory.open()
+	if err := c.inventory.open(); err != nil {
+		return err
+	}
 
 	switch {
 	case c.Option.Version:
@@ -168,8 +170,9 @@ func (c CLI) Run(args []string) error {
 func (c CLI) initModel() model {
 	const defaultWidth = 20
 
+	excludedFiles := c.inventory.exclude()
 	var files []list.Item
-	for _, file := range c.inventory.Files {
+	for _, file := range excludedFiles {
 		files = append(files, file)
 	}
 
@@ -193,6 +196,7 @@ func (c CLI) initModel() model {
 	m := model{
 		navState: INVENTORY_LIST,
 		datefmt:  datefmtRel,
+		files:    excludedFiles,
 		cli:      &c,
 		list:     l,
 	}
@@ -255,7 +259,7 @@ func (c CLI) Put(args []string) error {
 			log.Printf("[DEBUG] generating file metadata: %s", buf.String())
 
 			files[i] = file
-			os.MkdirAll(filepath.Dir(file.To), 0777)
+			_ = os.MkdirAll(filepath.Dir(file.To), 0777)
 			log.Printf("[DEBUG] moving %q -> %q", file.From, file.To)
 			return os.Rename(file.From, file.To)
 		})
@@ -282,7 +286,7 @@ func (i *inventory) open() error {
 		return err
 	}
 	log.Printf("[DEBUG] get inventory version: %d", i.Version)
-	i.exclude()
+	// i.exclude()
 	return nil
 }
 
@@ -310,11 +314,15 @@ func (i *inventory) save(files []File) error {
 	return json.NewEncoder(f).Encode(&i)
 }
 
-func (i *inventory) exclude() {
-	i.Files = lo.Reject(i.Files, func(file File, index int) bool {
+func (i *inventory) exclude() []File {
+	// do not overwrite original slices
+	// because remove them from history file actually
+	// when updating history
+	files := i.Files
+	files = lo.Reject(files, func(file File, index int) bool {
 		return slices.Contains(i.excludes.Files, file.Name)
 	})
-	i.Files = lo.Reject(i.Files, func(file File, index int) bool {
+	files = lo.Reject(files, func(file File, index int) bool {
 		for _, pat := range i.excludes.Patterns {
 			if regexp.MustCompile(pat).MatchString(file.Name) {
 				return true
@@ -327,12 +335,11 @@ func (i *inventory) exclude() {
 		}
 		return false
 	})
-	i.Files = lo.Reject(i.Files, func(file File, index int) bool {
+	files = lo.Reject(files, func(file File, index int) bool {
 		size, err := DirSize(file.To)
 		if err != nil {
 			return false // false positive
 		}
-		// fmt.Println()
 		for _, s := range i.excludes.SizeBelow {
 			below, err := units.FromHumanSize(s)
 			if err != nil {
@@ -353,7 +360,53 @@ func (i *inventory) exclude() {
 		}
 		return false
 	})
+	return files
 }
+
+// func (i *inventory) exclude() {
+// 	i.Files = lo.Reject(i.Files, func(file File, index int) bool {
+// 		return slices.Contains(i.excludes.Files, file.Name)
+// 	})
+// 	i.Files = lo.Reject(i.Files, func(file File, index int) bool {
+// 		for _, pat := range i.excludes.Patterns {
+// 			if regexp.MustCompile(pat).MatchString(file.Name) {
+// 				return true
+// 			}
+// 		}
+// 		for _, g := range i.excludes.Globs {
+// 			if glob.MustCompile(g).Match(file.Name) {
+// 				return true
+// 			}
+// 		}
+// 		return false
+// 	})
+// 	i.Files = lo.Reject(i.Files, func(file File, index int) bool {
+// 		size, err := DirSize(file.To)
+// 		if err != nil {
+// 			return false // false positive
+// 		}
+// 		// fmt.Println()
+// 		for _, s := range i.excludes.SizeBelow {
+// 			below, err := units.FromHumanSize(s)
+// 			if err != nil {
+// 				continue
+// 			}
+// 			if size <= below {
+// 				return true
+// 			}
+// 		}
+// 		for _, s := range i.excludes.SizeAbove {
+// 			above, err := units.FromHumanSize(s)
+// 			if err != nil {
+// 				continue
+// 			}
+// 			if above <= size {
+// 				return true
+// 			}
+// 		}
+// 		return false
+// 	})
+// }
 
 func (i *inventory) remove(target File) error {
 	log.Printf("[DEBUG] deleting %v from inventory", target)
