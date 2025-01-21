@@ -392,7 +392,7 @@ func renderDeletedAt(f File, datefmt string) string {
 	var ts string
 	switch datefmt {
 	case "absolute":
-		ts = f.Timestamp.Format(time.RFC3339)
+		ts = f.Timestamp.Format(time.DateTime)
 	default:
 		ts = humanize.Time(f.Timestamp)
 	}

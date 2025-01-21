@@ -4,6 +4,7 @@ go 1.23
 
 require (
 	github.com/MakeNowJust/heredoc/v2 v2.0.1
+	github.com/adrg/xdg v0.5.3
 	github.com/charmbracelet/bubbles v0.20.0
 	github.com/charmbracelet/bubbletea v1.2.4
 	github.com/charmbracelet/lipgloss v1.0.0
@@ -13,6 +14,7 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.8
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/gobwas/glob v0.2.3
+	github.com/google/uuid v1.6.0
 	github.com/hashicorp/logutils v1.0.0
 	github.com/jessevdk/go-flags v1.6.1
 	github.com/k0kubun/pp v3.0.1+incompatible
@@ -45,7 +47,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sahilm/fuzzy v0.1.1 // indirect
-	github.com/stretchr/testify v1.9.0 // indirect
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect

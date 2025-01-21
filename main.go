@@ -8,18 +8,22 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/adrg/xdg"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/docker/go-units"
 	"github.com/gobwas/glob"
+	"github.com/google/uuid"
 	"github.com/hashicorp/logutils"
 	"github.com/jessevdk/go-flags"
 	"github.com/k0kubun/pp"
@@ -56,12 +60,18 @@ var (
 )
 
 type Option struct {
-	Restore      bool     `short:"b" long:"restore" description:"Restore deleted file"`
-	RestoreGroup bool     `short:"B" long:"restore-by-group" description:"Restore deleted files based on one operation"`
-	Version      bool     `long:"version" description:"Show version"`
-	RmOption     RmOption `group:"Dummy Options (compatible with rm)"`
-	Config       string   `long:"config" default:""`
+	Restore  bool     `short:"b" long:"restore" description:"Restore deleted file"`
+	Version  bool     `long:"version" description:"Show version"`
+	Config   string   `long:"config" description:"Path to config file" default:""`
+	RmOption RmOption `group:"Dummy Options (compatible with rm)"`
 }
+
+// use this configuration file
+// (default lookup:
+//   1. a .gh-dash.yml file if inside a git repo
+//   2. $GH_DASH_CONFIG env var
+//   3. $XDG_CONFIG_HOME/gh-dash/config.yml
+// )
 
 // This should be not conflicts with app option
 // https://man7.org/linux/man-pages/man1/rm.1.html
@@ -84,11 +94,11 @@ type inventory struct {
 }
 
 type File struct {
-	Name      string    `json:"name"`     // file.go
-	ID        string    `json:"id"`       // asfasfafd
-	GroupID   string    `json:"group_id"` // zoapompji
-	From      string    `json:"from"`     // $PWD/file.go
-	To        string    `json:"to"`       // ~/.gomi/2020/01/16/zoapompji/file.go.asfasfafd
+	Name      string    `json:"name"`         // file.go
+	ID        string    `json:"id"`           // asfasfafd
+	RunID     string    `json:"operation_id"` // zoapompji
+	From      string    `json:"from"`         // $PWD/file.go
+	To        string    `json:"to"`           // ~/.gomi/2020/01/16/zoapompji/file.go.asfasfafd
 	Timestamp time.Time `json:"timestamp"`
 }
 
@@ -99,25 +109,69 @@ func (f File) isSelected() bool {
 type CLI struct {
 	Config    Config
 	Option    Option
-	inventory inventory
 	Stdout    io.Writer
 	Stderr    io.Writer
+	inventory inventory
+	// logger    *slog.Logger
+	runID string
 }
 
 func main() {
 	if err := runMain(); err != nil {
 		fmt.Fprintf(os.Stderr, "[ERROR] %s: %v\n", appName, err)
+		slog.Error(err.Error())
 		os.Exit(1)
+	}
+}
+
+var runID = sync.OnceValue(func() string {
+	id := xid.New().String()
+	return id
+})
+
+func init() {
+	var errs []error
+	fp, ok := os.LookupEnv("LOGS_DIRECTORY")
+	if !ok {
+		var err error
+		fp, err = xdg.StateFile("gomi/log")
+		if err != nil {
+			errs = append(errs, err)
+			fp = "gitfetcher.log"
+		}
+	}
+
+	var writer io.Writer
+	if file, err := os.OpenFile(fp, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err == nil {
+		writer = file
+	} else {
+		errs = append(errs, err)
+		writer = os.Stdout
+	}
+
+	// uuidV1, err := uuid.NewUUID()
+	// if err != nil {
+	// }
+
+	handler := slog.NewJSONHandler(writer, &slog.HandlerOptions{Level: slog.LevelDebug})
+	slog.SetDefault(
+		slog.New(handler).With("id", runID()),
+	)
+	if len(errs) > 0 {
+		slog.Error("Log setup failed.", LogErrAttr(errors.Join(errs...)))
 	}
 }
 
 func runMain() error {
 	log.SetOutput(logOutput(envGomiLog))
 	defer log.Printf("[INFO] finish main function")
+	defer slog.Debug("finished")
 
 	log.Printf("[INFO] version: %s (%s)", Version, Revision)
 	log.Printf("[INFO] gomiPath: %s", gomiPath)
 	log.Printf("[INFO] inventoryPath: %s", inventoryPath)
+
+	slog.Debug("version", slog.String("version", Version), slog.String("revision", Revision))
 
 	var opt Option
 	parser := flags.NewParser(&opt, flags.Default)
@@ -139,12 +193,14 @@ func runMain() error {
 	cli := CLI{
 		Config:    cfg,
 		Option:    opt,
-		inventory: inventory{path: inventoryPath, excludes: cfg.Inventory.Exclude},
 		Stdout:    os.Stdout,
 		Stderr:    os.Stderr,
+		inventory: inventory{path: inventoryPath, excludes: cfg.Inventory.Exclude},
+		runID:     runID(),
 	}
 
 	log.Printf("[INFO] Args: %#v", args)
+	slog.Debug("CLI", "args", args, "opt", opt)
 	return cli.Run(args)
 }
 
@@ -158,9 +214,8 @@ func (c CLI) Run(args []string) error {
 		fmt.Fprintf(c.Stdout, "%s %s (%s)\n", appName, Version, Revision)
 		return nil
 	case c.Option.Restore:
+		slog.Debug("open restore view")
 		return c.Restore()
-	case c.Option.RestoreGroup:
-		return nil
 	default:
 	}
 
@@ -237,7 +292,6 @@ func (c CLI) Put(args []string) error {
 	}
 
 	files := make([]File, len(args))
-	groupID := xid.New().String()
 
 	var eg errgroup.Group
 
@@ -248,7 +302,7 @@ func (c CLI) Put(args []string) error {
 			if os.IsNotExist(err) {
 				return fmt.Errorf("%s: no such file or directory", arg)
 			}
-			file, err := getFileMetadata(groupID, arg)
+			file, err := getFileMetadata(c.runID, arg)
 			if err != nil {
 				return err
 			}
@@ -286,7 +340,6 @@ func (i *inventory) open() error {
 		return err
 	}
 	log.Printf("[DEBUG] get inventory version: %d", i.Version)
-	// i.exclude()
 	return nil
 }
 
@@ -314,10 +367,10 @@ func (i *inventory) save(files []File) error {
 	return json.NewEncoder(f).Encode(&i)
 }
 
-func (i *inventory) exclude() []File {
+func (i inventory) exclude() []File {
 	// do not overwrite original slices
-	// because remove them from history file actually
-	// when updating history
+	// because remove them from inventory file actually
+	// when updating inventory
 	files := i.Files
 	files = lo.Reject(files, func(file File, index int) bool {
 		return slices.Contains(i.excludes.Files, file.Name)
@@ -363,51 +416,6 @@ func (i *inventory) exclude() []File {
 	return files
 }
 
-// func (i *inventory) exclude() {
-// 	i.Files = lo.Reject(i.Files, func(file File, index int) bool {
-// 		return slices.Contains(i.excludes.Files, file.Name)
-// 	})
-// 	i.Files = lo.Reject(i.Files, func(file File, index int) bool {
-// 		for _, pat := range i.excludes.Patterns {
-// 			if regexp.MustCompile(pat).MatchString(file.Name) {
-// 				return true
-// 			}
-// 		}
-// 		for _, g := range i.excludes.Globs {
-// 			if glob.MustCompile(g).Match(file.Name) {
-// 				return true
-// 			}
-// 		}
-// 		return false
-// 	})
-// 	i.Files = lo.Reject(i.Files, func(file File, index int) bool {
-// 		size, err := DirSize(file.To)
-// 		if err != nil {
-// 			return false // false positive
-// 		}
-// 		// fmt.Println()
-// 		for _, s := range i.excludes.SizeBelow {
-// 			below, err := units.FromHumanSize(s)
-// 			if err != nil {
-// 				continue
-// 			}
-// 			if size <= below {
-// 				return true
-// 			}
-// 		}
-// 		for _, s := range i.excludes.SizeAbove {
-// 			above, err := units.FromHumanSize(s)
-// 			if err != nil {
-// 				continue
-// 			}
-// 			if above <= size {
-// 				return true
-// 			}
-// 		}
-// 		return false
-// 	})
-// }
-
 func (i *inventory) remove(target File) error {
 	log.Printf("[DEBUG] deleting %v from inventory", target)
 	var files []File
@@ -437,25 +445,26 @@ func (i *inventory) filter(f func(File) bool) {
 	i.Files = files
 }
 
-func getFileMetadata(groupID string, arg string) (File, error) {
-	id := xid.New().String()
+func getFileMetadata(runID string, arg string) (File, error) {
 	name := filepath.Base(arg)
 	from, err := filepath.Abs(arg)
 	if err != nil {
 		return File{}, err
 	}
+	id := xid.New().String()
 	now := time.Now()
 	return File{
-		Name:    name,
-		ID:      id,
-		GroupID: groupID,
-		From:    from,
+		Name:  name,
+		ID:    id,
+		RunID: runID,
+		From:  from,
 		To: filepath.Join(
 			gomiPath,
 			fmt.Sprintf("%04d", now.Year()),
 			fmt.Sprintf("%02d", now.Month()),
 			fmt.Sprintf("%02d", now.Day()),
-			groupID, fmt.Sprintf("%s.%s", name, id),
+			runID,
+			fmt.Sprintf("%s.%s", name, id),
 		),
 		Timestamp: now,
 	}, nil
@@ -491,3 +500,41 @@ func logOutput(env string) io.Writer {
 
 	return filter
 }
+
+// func (c *CLI) configureLog() {
+// 	writers := []io.Writer{logFile}
+// 	if c.Bool("print-logs") || flag.SST_PRINT_LOGS {
+// 		writers = append(writers, os.Stderr)
+// 	}
+// 	writer := io.MultiWriter(writers...)
+// 	slog.SetDefault(
+// 		slog.New(slog.NewTextHandler(writer, &slog.HandlerOptions{
+// 			Level: slog.LevelInfo,
+// 		})),
+// 	)
+// 	debug.SetCrashOutput(logFile, debug.CrashOptions{})
+// }
+
+var debugLogger = sync.OnceValue(func() *slog.Logger {
+	var w io.Writer = os.Stderr
+	cached, err := os.UserCacheDir()
+	if err == nil {
+		logf := filepath.Join(cached, "blogsync", "tracedump.log")
+		if err := os.MkdirAll(filepath.Dir(logf), 0755); err == nil {
+			if f, err := os.OpenFile(logf, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644); err == nil {
+				log.Printf("trace dumps are output to %s\n", logf)
+				w = f
+			}
+		}
+	}
+	uuidV1, _ := uuid.NewUUID()
+	// if err != nil {
+	// 	return err
+	// }
+	// logger := slog.New(slog.NewJSONHandler(os.Stderr, logOption)).With("id", uuidV1)
+	// slog.SetDefault(logger)
+	slog.Debug("version", slog.String("version", Version))
+	return slog.New(slog.NewJSONHandler(w, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	})).With("id", uuidV1)
+})
