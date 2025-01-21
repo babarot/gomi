@@ -14,14 +14,14 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.8
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/gobwas/glob v0.2.3
-	github.com/google/uuid v1.6.0
-	github.com/hashicorp/logutils v1.0.0
 	github.com/jessevdk/go-flags v1.6.1
 	github.com/k0kubun/pp v3.0.1+incompatible
+	github.com/lmittmann/tint v1.0.6
 	github.com/muesli/reflow v0.3.0
 	github.com/muesli/termenv v0.15.2
 	github.com/rs/xid v1.2.1
 	github.com/samber/lo v1.47.0
+	github.com/samber/slog-multi v1.3.3
 	golang.org/x/sync v0.10.0
 	gopkg.in/yaml.v2 v2.4.0
 )

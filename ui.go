@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sort"
@@ -102,21 +103,17 @@ type inventoryLoadedMsg struct {
 }
 
 func (m model) loadInventory() tea.Msg {
-	// files := m.cli.inventory.Files
 	files := m.files
+	slog.Debug("loadInventory starts")
 	if len(files) == 0 {
 		return errorMsg{errors.New("no deleted files found")}
 	}
 	sort.Slice(files, func(i, j int) bool {
 		return files[i].Timestamp.After(files[j].Timestamp)
 	})
-	files = lo.Filter(files, func(file File, index int) bool {
-		// filter not found inventory out
+	files = lo.Reject(files, func(file File, index int) bool {
 		_, err := os.Stat(file.To)
-		if os.IsNotExist(err) {
-			return false
-		}
-		return true
+		return os.IsNotExist(err)
 	})
 	items := make([]list.Item, len(files))
 	for i, file := range files {

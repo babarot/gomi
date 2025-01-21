@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path"
 	"path/filepath"
@@ -103,11 +104,11 @@ func (p parser) writeDefaultConfigContents(newConfigFile *os.File) error {
 
 func (p parser) createConfigFileIfMissing(configFilePath string) error {
 	if _, err := os.Stat(configFilePath); os.IsNotExist(err) {
+		slog.Warn(fmt.Sprintf("config file %s does not exist. creating...", configFilePath))
 		newConfigFile, err := os.OpenFile(configFilePath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
 		if err != nil {
 			return err
 		}
-
 		defer newConfigFile.Close()
 		return p.writeDefaultConfigContents(newConfigFile)
 	}
@@ -125,6 +126,7 @@ func (p parser) getDefaultConfigFileOrCreateIfMissing() (string, error) {
 	}
 
 	// Then fallback to global config
+	// TODO: consider to use https://github.com/adrg/xdg
 	if configFilePath == "" {
 		configDir := os.Getenv("XDG_CONFIG_HOME")
 		if configDir == "" {
@@ -141,6 +143,7 @@ func (p parser) getDefaultConfigFileOrCreateIfMissing() (string, error) {
 	// Ensure directory exists before attempting to create file
 	configDir := filepath.Dir(configFilePath)
 	if _, err := os.Stat(configDir); os.IsNotExist(err) {
+		slog.Warn(fmt.Sprintf("configDir %s does not exist. creating...", configDir))
 		if err = os.MkdirAll(configDir, os.ModePerm); err != nil {
 			return "", configError{
 				parser:    p,
@@ -213,6 +216,7 @@ func parseConfig(path string) (Config, error) {
 	} else {
 		configFilePath = path
 	}
+	slog.Debug(fmt.Sprintf("config found: %s. parsing", configFilePath))
 
 	config, err = parser.readConfigFile(configFilePath)
 	if err != nil {

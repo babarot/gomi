@@ -7,13 +7,11 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
 	"slices"
-	"strings"
 	"sync"
 	"time"
 
@@ -23,12 +21,12 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/docker/go-units"
 	"github.com/gobwas/glob"
-	"github.com/google/uuid"
-	"github.com/hashicorp/logutils"
 	"github.com/jessevdk/go-flags"
 	"github.com/k0kubun/pp"
+	"github.com/lmittmann/tint"
 	"github.com/rs/xid"
 	"github.com/samber/lo"
+	slogmulti "github.com/samber/slog-multi"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -68,8 +66,8 @@ type Option struct {
 
 // use this configuration file
 // (default lookup:
-//   1. a .gh-dash.yml file if inside a git repo
-//   2. $GH_DASH_CONFIG env var
+//   1. a .gomi.yaml file if inside a git repo
+//   2. $GOMI_ENV_CONFIG env var
 //   3. $XDG_CONFIG_HOME/gh-dash/config.yml
 // )
 
@@ -94,11 +92,11 @@ type inventory struct {
 }
 
 type File struct {
-	Name      string    `json:"name"`         // file.go
-	ID        string    `json:"id"`           // asfasfafd
-	RunID     string    `json:"operation_id"` // zoapompji
-	From      string    `json:"from"`         // $PWD/file.go
-	To        string    `json:"to"`           // ~/.gomi/2020/01/16/zoapompji/file.go.asfasfafd
+	Name      string    `json:"name"`
+	ID        string    `json:"id"`
+	RunID     string    `json:"group_id"` // to keep backward compatible
+	From      string    `json:"from"`
+	To        string    `json:"to"`
 	Timestamp time.Time `json:"timestamp"`
 }
 
@@ -107,19 +105,16 @@ func (f File) isSelected() bool {
 }
 
 type CLI struct {
-	Config    Config
+	config    Config
 	Option    Option
-	Stdout    io.Writer
-	Stderr    io.Writer
 	inventory inventory
-	// logger    *slog.Logger
-	runID string
+	runID     string
 }
 
 func main() {
 	if err := runMain(); err != nil {
-		fmt.Fprintf(os.Stderr, "[ERROR] %s: %v\n", appName, err)
-		slog.Error(err.Error())
+		fmt.Fprintf(os.Stderr, "%s: %v\n", appName, err)
+		slog.Error("failed to run cli", "error", err)
 		os.Exit(1)
 	}
 }
@@ -137,41 +132,57 @@ func init() {
 		fp, err = xdg.StateFile("gomi/log")
 		if err != nil {
 			errs = append(errs, err)
-			fp = "gitfetcher.log"
+			fp = "gomi.log"
 		}
 	}
 
-	var writer io.Writer
+	var fw, cw io.Writer
 	if file, err := os.OpenFile(fp, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err == nil {
-		writer = file
+		fw = file
 	} else {
 		errs = append(errs, err)
-		writer = os.Stdout
+		fw = ioutil.Discard
 	}
 
-	// uuidV1, err := uuid.NewUUID()
-	// if err != nil {
-	// }
+	if os.Getenv("DEBUG") == "" {
+		cw = ioutil.Discard
+	} else {
+		cw = os.Stderr
+	}
 
-	handler := slog.NewJSONHandler(writer, &slog.HandlerOptions{Level: slog.LevelDebug})
-	slog.SetDefault(
-		slog.New(handler).With("id", runID()),
+	handler := NewWrapHandler(
+		slog.NewJSONHandler(fw, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		func() []slog.Attr {
+			return []slog.Attr{
+				slog.String("run_id", runID()),
+			}
+		})
+
+	logger := slog.New(
+		slogmulti.Fanout(
+			handler,
+			tint.NewHandler(cw, &tint.Options{
+				Level:      slog.LevelDebug,
+				TimeFormat: time.Kitchen,
+			}),
+		),
 	)
+	slog.SetDefault(logger)
+
 	if len(errs) > 0 {
 		slog.Error("Log setup failed.", LogErrAttr(errors.Join(errs...)))
 	}
 }
 
 func runMain() error {
-	log.SetOutput(logOutput(envGomiLog))
-	defer log.Printf("[INFO] finish main function")
-	defer slog.Debug("finished")
-
-	log.Printf("[INFO] version: %s (%s)", Version, Revision)
-	log.Printf("[INFO] gomiPath: %s", gomiPath)
-	log.Printf("[INFO] inventoryPath: %s", inventoryPath)
-
-	slog.Debug("version", slog.String("version", Version), slog.String("revision", Revision))
+	defer slog.Debug("finished main function")
+	slog.Debug("runMain running successfully",
+		slog.Group(
+			"metadata",
+			slog.String("version", Version),
+			slog.String("revision", Revision),
+		),
+	)
 
 	var opt Option
 	parser := flags.NewParser(&opt, flags.Default)
@@ -191,27 +202,23 @@ func runMain() error {
 	}
 
 	cli := CLI{
-		Config:    cfg,
+		config:    cfg,
 		Option:    opt,
-		Stdout:    os.Stdout,
-		Stderr:    os.Stderr,
 		inventory: inventory{path: inventoryPath, excludes: cfg.Inventory.Exclude},
 		runID:     runID(),
 	}
-
-	log.Printf("[INFO] Args: %#v", args)
-	slog.Debug("CLI", "args", args, "opt", opt)
 	return cli.Run(args)
 }
 
 func (c CLI) Run(args []string) error {
+	slog.Debug("cli.Run starts")
 	if err := c.inventory.open(); err != nil {
 		return err
 	}
 
 	switch {
 	case c.Option.Version:
-		fmt.Fprintf(c.Stdout, "%s %s (%s)\n", appName, Version, Revision)
+		fmt.Fprintf(os.Stdout, "%s %s (%s)\n", appName, Version, Revision)
 		return nil
 	case c.Option.Restore:
 		slog.Debug("open restore view")
@@ -223,6 +230,7 @@ func (c CLI) Run(args []string) error {
 }
 
 func (c CLI) initModel() model {
+	slog.Debug("initModel starts")
 	const defaultWidth = 20
 
 	excludedFiles := c.inventory.exclude()
@@ -233,7 +241,7 @@ func (c CLI) initModel() model {
 
 	// TODO: configable
 	// l := list.New(files, ClassicDelegate{}, defaultWidth, listHeight)
-	l := list.New(files, NewRestoreDelegate(c.Config), defaultWidth, listHeight)
+	l := list.New(files, NewRestoreDelegate(c.config), defaultWidth, listHeight)
 
 	// TODO: which one?
 	// l.Paginator.Type = paginator.Arabic
@@ -282,7 +290,6 @@ func (c CLI) Restore() error {
 		// e.g. using github.com/AlecAivazis/survey
 		file.From = file.From + "." + file.ID
 	}
-	log.Printf("[DEBUG] restoring %q -> %q", file.To, file.From)
 	return os.Rename(file.To, file.From)
 }
 
@@ -310,11 +317,11 @@ func (c CLI) Put(args []string) error {
 			// For debugging
 			var buf bytes.Buffer
 			file.toJSON(&buf)
-			log.Printf("[DEBUG] generating file metadata: %s", buf.String())
+			slog.Debug(fmt.Sprintf("generating file metadata: %s", buf.String()))
 
 			files[i] = file
 			_ = os.MkdirAll(filepath.Dir(file.To), 0777)
-			log.Printf("[DEBUG] moving %q -> %q", file.From, file.To)
+			slog.Debug(fmt.Sprintf("moving %q -> %q", file.From, file.To))
 			return os.Rename(file.From, file.To)
 		})
 	}
@@ -330,7 +337,7 @@ func (c CLI) Put(args []string) error {
 }
 
 func (i *inventory) open() error {
-	log.Printf("[DEBUG] opening inventory")
+	slog.Debug(fmt.Sprintf("open inventory file: %s", i.path))
 	f, err := os.Open(i.path)
 	if err != nil {
 		return err
@@ -339,12 +346,12 @@ func (i *inventory) open() error {
 	if err := json.NewDecoder(f).Decode(&i); err != nil {
 		return err
 	}
-	log.Printf("[DEBUG] get inventory version: %d", i.Version)
+	slog.Debug(fmt.Sprintf("inventory version: %d", i.Version))
 	return nil
 }
 
 func (i *inventory) update(files []File) error {
-	log.Printf("[DEBUG] updating inventory")
+	slog.Debug("updating inventory")
 	f, err := os.Create(i.path)
 	if err != nil {
 		return err
@@ -356,7 +363,7 @@ func (i *inventory) update(files []File) error {
 }
 
 func (i *inventory) save(files []File) error {
-	log.Printf("[DEBUG] saving inventory")
+	slog.Debug("saving inventory")
 	f, err := os.Create(i.path)
 	if err != nil {
 		return err
@@ -417,7 +424,7 @@ func (i inventory) exclude() []File {
 }
 
 func (i *inventory) remove(target File) error {
-	log.Printf("[DEBUG] deleting %v from inventory", target)
+	slog.Debug("deleting from inventory")
 	var files []File
 	for _, file := range i.Files {
 		if file.ID == target.ID {
@@ -430,19 +437,8 @@ func (i *inventory) remove(target File) error {
 
 func (i *inventory) setVersion() {
 	if i.Version == 0 {
-		log.Printf("[DEBUG] set inventory version: %d", inventoryVersion)
 		i.Version = inventoryVersion
 	}
-}
-
-func (i *inventory) filter(f func(File) bool) {
-	files := make([]File, 0)
-	for _, file := range i.Files {
-		if f(file) {
-			files = append(files, file)
-		}
-	}
-	i.Files = files
 }
 
 func getFileMetadata(runID string, arg string) (File, error) {
@@ -478,63 +474,3 @@ func (f File) toJSON(w io.Writer) {
 	}
 	fmt.Fprint(w, string(out))
 }
-
-func logOutput(env string) io.Writer {
-	levels := []logutils.LogLevel{"TRACE", "DEBUG", "INFO", "WARN", "ERROR"}
-	minLevel := os.Getenv(env)
-	if len(minLevel) == 0 {
-		minLevel = "ERROR" // default log level
-	}
-
-	// default log writer is null
-	writer := ioutil.Discard
-	if minLevel != "" {
-		writer = os.Stderr
-	}
-
-	filter := &logutils.LevelFilter{
-		Levels:   levels,
-		MinLevel: logutils.LogLevel(strings.ToUpper(minLevel)),
-		Writer:   writer,
-	}
-
-	return filter
-}
-
-// func (c *CLI) configureLog() {
-// 	writers := []io.Writer{logFile}
-// 	if c.Bool("print-logs") || flag.SST_PRINT_LOGS {
-// 		writers = append(writers, os.Stderr)
-// 	}
-// 	writer := io.MultiWriter(writers...)
-// 	slog.SetDefault(
-// 		slog.New(slog.NewTextHandler(writer, &slog.HandlerOptions{
-// 			Level: slog.LevelInfo,
-// 		})),
-// 	)
-// 	debug.SetCrashOutput(logFile, debug.CrashOptions{})
-// }
-
-var debugLogger = sync.OnceValue(func() *slog.Logger {
-	var w io.Writer = os.Stderr
-	cached, err := os.UserCacheDir()
-	if err == nil {
-		logf := filepath.Join(cached, "blogsync", "tracedump.log")
-		if err := os.MkdirAll(filepath.Dir(logf), 0755); err == nil {
-			if f, err := os.OpenFile(logf, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644); err == nil {
-				log.Printf("trace dumps are output to %s\n", logf)
-				w = f
-			}
-		}
-	}
-	uuidV1, _ := uuid.NewUUID()
-	// if err != nil {
-	// 	return err
-	// }
-	// logger := slog.New(slog.NewJSONHandler(os.Stderr, logOption)).With("id", uuidV1)
-	// slog.SetDefault(logger)
-	slog.Debug("version", slog.String("version", Version))
-	return slog.New(slog.NewJSONHandler(w, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
-	})).With("id", uuidV1)
-})
