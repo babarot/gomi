@@ -18,6 +18,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/dustin/go-humanize"
+	"github.com/fatih/color"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/muesli/reflow/wordwrap"
 	"github.com/muesli/termenv"
@@ -43,6 +44,10 @@ type errorMsg struct {
 	err error
 }
 
+var (
+	errCannotPreview = errors.New("cannot preview")
+)
+
 func (e errorMsg) Error() string { return e.err.Error() }
 
 func errorCmd(err error) tea.Cmd {
@@ -52,9 +57,10 @@ func errorCmd(err error) tea.Cmd {
 }
 
 type model struct {
-	navState   NavState
-	detailFile File
-	datefmt    string
+	navState      NavState
+	detailFile    File
+	datefmt       string
+	cannotPreview bool
 
 	files   []File
 	cli     *CLI
@@ -277,7 +283,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 
-		case key.Matches(msg, detailKeys.PreviewUp, detailKeys.PreviewDown, detailKeys.HalfPageUp, detailKeys.HalfPageDown):
+		case key.Matches(
+			msg, detailKeys.PreviewUp, detailKeys.PreviewDown,
+			detailKeys.HalfPageUp, detailKeys.HalfPageDown,
+		):
 			switch m.navState {
 			case INVENTORY_DETAILS:
 				var cmd tea.Cmd
@@ -291,6 +300,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case INVENTORY_DETAILS:
 				m.viewport.GotoTop()
 			}
+
 		case key.Matches(msg, detailKeys.GotoBottom):
 			switch m.navState {
 			case INVENTORY_DETAILS:
@@ -306,6 +316,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					cmds = append(cmds, getInventoryDetails(file))
 				}
 			}
+
 		case key.Matches(msg, detailKeys.Down):
 			switch m.navState {
 			case INVENTORY_DETAILS:
@@ -318,8 +329,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, detailKeys.Esc):
 			switch m.navState {
-			// case INVENTORY_LIST:
-			// 	m.navState = INVENTORY_DETAILS
 			case INVENTORY_DETAILS:
 				m.navState = INVENTORY_LIST
 			}
@@ -350,6 +359,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					} else {
 						m.choices = files
 					}
+					slog.Debug("key input: enter", slog.Any("selected_files", files))
 					return m, tea.Quit
 				}
 			}
@@ -373,7 +383,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.detailFile = msg.file
 		headerHeight := lipgloss.Height(m.headerView())
 		verticalMarginHeight := headerHeight
-		viewportModel, err := newViewportModel(msg.file, 56, 15-verticalMarginHeight,
+		viewportModel, err := m.newViewportModel(msg.file, 56, 15-verticalMarginHeight,
 			m.cli.config.UI.Preview.Directory,
 			m.cli.config.UI.Preview.Highlight,
 			m.cli.config.UI.Preview.Colorscheme,
@@ -383,7 +393,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 		m.viewport = viewportModel
-		// viewportModel.Update()
 
 	case errorMsg:
 		m.navState = QUITTING
@@ -404,7 +413,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 var (
 	AccentColor             = lipgloss.ANSIColor(termenv.ANSIBlack)
 	stylesSectionStyle      = lipgloss.NewStyle().BorderStyle(lipgloss.HiddenBorder()).BorderForeground(AccentColor).Padding(0, 1)
-	stylesSectionTitleStyle = lipgloss.NewStyle().Padding(0, 1).MarginBottom(1).Background(AccentColor).Foreground(lipgloss.Color("15")).Bold(true).Transform(strings.ToUpper)
+	stylesSectionTitleStyle = lipgloss.NewStyle().Padding(0, 1).Background(AccentColor).Foreground(lipgloss.Color("15")).Bold(true).Transform(strings.ToUpper)
 )
 
 func renderInventoryDetails(m model) string {
@@ -414,9 +423,8 @@ func renderInventoryDetails(m model) string {
 		header,
 		renderDeletedWhere(m.detailFile),
 		renderDeletedAt(m.detailFile, m.datefmt),
-		renderMetadata(m.detailFile),
-		fmt.Sprintf("%s\n%s", m.headerView(), m.viewport.View()),
-		strings.Repeat("─", lipgloss.Width(header)),
+		// renderMetadata(m.detailFile),
+		fmt.Sprintf("%s\n%s\n%s", m.headerView(), m.viewport.View(), m.footerView()),
 	)
 
 	return content
@@ -526,6 +534,7 @@ func renderFileType(f File) string {
 }
 
 func (m model) View() string {
+	defer color.Unset()
 	s := ""
 
 	if m.err != nil {
@@ -575,10 +584,27 @@ func getInventoryDetails(file File) tea.Cmd {
 	}
 }
 
-func (m model) headerView() string {
-	info := infoStyle.Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
+func (m model) footerView() string {
+	// info := infoStyle.Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
+	if m.cannotPreview {
+		header := renderHeader(m.detailFile)
+		return strings.Repeat("─", lipgloss.Width(header))
+	}
+	var headerStyle = lipgloss.NewStyle().Padding(0, 1, 0, 1).Background(AccentColor).Foreground(lipgloss.Color("15")).Bold(true)
+	info := headerStyle.Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
 	line := strings.Repeat("─", max(0, m.viewport.Width-lipgloss.Width(info)))
 	return lipgloss.JoinHorizontal(lipgloss.Center, line, info)
+}
+
+func (m model) headerView() string {
+	// info := infoStyle.Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
+	// header := renderHeader(m.detailFile)
+	// return strings.Repeat("─", lipgloss.Width(header))
+	var headerStyle = lipgloss.NewStyle().Padding(0, 1, 0, 1).Background(AccentColor).Foreground(lipgloss.Color("15")).Bold(true)
+	size := headerStyle.Render(renderFileSize(m.detailFile))
+	// head := strings.Repeat("─", 2) + headerStyle.Render("PREVIEW")
+	line := strings.Repeat("─", max(0, m.viewport.Width-lipgloss.Width(size)))
+	return lipgloss.JoinHorizontal(lipgloss.Center, line, size)
 }
 
 var (
@@ -601,7 +627,7 @@ type previewModel struct {
 	err      error
 }
 
-func newViewportModel(file File, width, height int, cmd string, hl bool, cs string) (viewport.Model, error) {
+func (m *model) newViewportModel(file File, width, height int, cmd string, hl bool, cs string) (viewport.Model, error) {
 	getFileContent := func(path string) string {
 		content := "cannot preview"
 		fi, err := os.Stat(path)
@@ -662,7 +688,13 @@ func newViewportModel(file File, width, height int, cmd string, hl bool, cs stri
 	}
 
 	content := getFileContent(file.To)
-	if hl {
+	if content == "cannot preview" {
+		m.cannotPreview = true
+	} else {
+		m.cannotPreview = false
+	}
+	if hl && !m.cannotPreview {
+		defer color.Unset()
 		content, _ = highlight(content, file.Name, cs)
 	}
 	viewportModel := viewport.New(width, height)
@@ -671,6 +703,17 @@ func newViewportModel(file File, width, height int, cmd string, hl bool, cs stri
 		Down:         key.NewBinding(key.WithKeys("j", "down")),
 		HalfPageUp:   key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "½ page up")),
 		HalfPageDown: key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "½ page down")),
+	}
+	if m.cannotPreview {
+		mtype, _ := mimetype.DetectFile(file.To)
+		headerHeight := lipgloss.Height(m.headerView())
+		verticalMarginHeight := headerHeight
+		content = lipgloss.Place(56, 15-verticalMarginHeight,
+			lipgloss.Center, lipgloss.Center,
+			lipgloss.NewStyle().Bold(true).Transform(strings.ToUpper).Render("cannot preview")+"\n\n\n"+
+				lipgloss.NewStyle().Render("("+mtype.String()+")"),
+			lipgloss.WithWhitespaceChars("`"),
+			lipgloss.WithWhitespaceForeground(lipgloss.ANSIColor(termenv.ANSIBrightBlack)))
 	}
 	viewportModel.SetContent(content)
 	return viewportModel, nil

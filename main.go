@@ -267,6 +267,7 @@ func (c CLI) initModel() model {
 		// models
 		list:     l,
 		viewport: viewport.Model{},
+		// preview: previewModel{},
 	}
 	return m
 }
