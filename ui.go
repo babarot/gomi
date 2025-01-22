@@ -595,15 +595,42 @@ var (
 	}()
 )
 
+type previewModel struct {
+	viewport viewport.Model
+	file     string
+	err      error
+}
+
 func newViewportModel(file File, width, height int, cmd string, hl bool, cs string) (viewport.Model, error) {
 	getFileContent := func(path string) string {
 		content := "cannot preview"
 		fi, err := os.Stat(path)
 		if err != nil {
+			slog.Debug(fmt.Sprintf("no such file %s", path))
 			return content
 		}
 		if fi.IsDir() {
 			input := cmd
+			if input == "" {
+				slog.Debug("preview list_dir command is not set, fallback to builtin list_dir func")
+				lines := []string{}
+				dirs, _ := os.ReadDir(path)
+				for _, dir := range dirs {
+					info, _ := dir.Info()
+					name := dir.Name()
+					if info.IsDir() {
+						name += "/"
+					}
+					lines = append(lines,
+						fmt.Sprintf("%s %7s  %s",
+							info.Mode().String(),
+							humanize.Bytes(uint64(info.Size())),
+							name,
+						),
+					)
+				}
+				return strings.Join(lines, "\n")
+			}
 			out, _, err := runBash(input)
 			if err != nil {
 				slog.Error(fmt.Sprintf("command failed: %s", input), "error", err)
@@ -615,6 +642,7 @@ func newViewportModel(file File, width, height int, cmd string, hl bool, cs stri
 			return content
 		}
 		if !strings.Contains(mtype.String(), "text/plain") {
+			slog.Debug(fmt.Sprintf("mimetype %s not supported to preview", mtype.String()))
 			return content
 		}
 		f, err := os.Open(file.To)
@@ -622,7 +650,6 @@ func newViewportModel(file File, width, height int, cmd string, hl bool, cs stri
 			return content
 		}
 		defer f.Close()
-
 		var fileContent strings.Builder
 		scanner := bufio.NewScanner(f)
 		for scanner.Scan() {
