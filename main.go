@@ -527,8 +527,6 @@ func viewLogs(file string) error {
 	if err != nil {
 		return err
 	}
-
-	// Print the text of each received line
 	for line := range t.Lines {
 		fmt.Println(line.Text)
 	}

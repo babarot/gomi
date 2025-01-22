@@ -90,14 +90,14 @@ func highlight(content, filename, colorscheme string) (string, error) {
 	style := styles.Get(colorscheme)
 	switch {
 	case style == nil:
-		slog.Warn("theme %s for lighlight not found. fallback to monokai")
+		// slog.Warn("theme %s for lighlight not found. fallback to monokai")
 		style = styles.Get("monokai")
 	case style.Name == "swapoff":
-		slog.Warn("theme %s for lighlight not found. defaults to be fallbacked")
+		// slog.Warn("theme %s for lighlight not found. defaults to be fallbacked")
 		style = styles.Get("monokai")
 	}
 	var buf bytes.Buffer
-	slog.Debug("highlight", "lexer", l.Config().Name, "colorscheme", style.Name)
+	// slog.Debug("highlight", "lexer", l.Config().Name, "colorscheme", style.Name)
 	if err := quick.Highlight(&buf, content, l.Config().Name, "terminal16m", style.Name); err != nil {
 		return "", err
 	}
