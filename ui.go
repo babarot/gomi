@@ -588,23 +588,29 @@ func (m model) footerView() string {
 	// info := infoStyle.Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
 	if m.cannotPreview {
 		header := renderHeader(m.detailFile)
-		return strings.Repeat("─", lipgloss.Width(header))
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#EEEEDD")).Render(strings.Repeat("─", lipgloss.Width(header)))
 	}
-	var headerStyle = lipgloss.NewStyle().Padding(0, 1, 0, 1).Background(AccentColor).Foreground(lipgloss.Color("15")).Bold(true)
+	// var headerStyle = lipgloss.NewStyle().Padding(0, 1, 0, 1).Background(AccentColor).Foreground(lipgloss.Color("15")).Bold(true)
+	var headerStyle = lipgloss.NewStyle().Padding(0, 1, 0, 1).
+		Foreground(lipgloss.Color("#3C3C3C")).
+		Background(lipgloss.Color("#EEEEDD"))
 	info := headerStyle.Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
 	line := strings.Repeat("─", max(0, m.viewport.Width-lipgloss.Width(info)))
-	return lipgloss.JoinHorizontal(lipgloss.Center, line, info)
+	return lipgloss.NewStyle().Foreground(lipgloss.Color("#EEEEDD")).Render(lipgloss.JoinHorizontal(lipgloss.Center, line, info))
 }
 
 func (m model) headerView() string {
 	// info := infoStyle.Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
 	// header := renderHeader(m.detailFile)
 	// return strings.Repeat("─", lipgloss.Width(header))
-	var headerStyle = lipgloss.NewStyle().Padding(0, 1, 0, 1).Background(AccentColor).Foreground(lipgloss.Color("15")).Bold(true)
+	// var headerStyle = lipgloss.NewStyle().Padding(0, 1, 0, 1).Background(AccentColor).Foreground(lipgloss.Color("15")).Bold(true)
+	var headerStyle = lipgloss.NewStyle().Padding(0, 1, 0, 1).
+		Foreground(lipgloss.Color("#3C3C3C")).
+		Background(lipgloss.Color("#EEEEDD"))
 	size := headerStyle.Render(renderFileSize(m.detailFile))
 	// head := strings.Repeat("─", 2) + headerStyle.Render("PREVIEW")
 	line := strings.Repeat("─", max(0, m.viewport.Width-lipgloss.Width(size)))
-	return lipgloss.JoinHorizontal(lipgloss.Center, line, size)
+	return lipgloss.NewStyle().Foreground(lipgloss.Color("#EEEEDD")).Render(lipgloss.JoinHorizontal(lipgloss.Center, line, size))
 }
 
 var (
@@ -694,7 +700,6 @@ func (m *model) newViewportModel(file File, width, height int, cmd string, hl bo
 		m.cannotPreview = false
 	}
 	if hl && !m.cannotPreview {
-		defer color.Unset()
 		content, _ = highlight(content, file.Name, cs)
 	}
 	viewportModel := viewport.New(width, height)

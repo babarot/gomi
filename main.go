@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -22,9 +23,9 @@ import (
 	"github.com/docker/go-units"
 	"github.com/gobwas/glob"
 	"github.com/jessevdk/go-flags"
-	"github.com/k0kubun/pp"
 	"github.com/k1LoW/duration"
 	"github.com/lmittmann/tint"
+	"github.com/nxadm/tail"
 	"github.com/rs/xid"
 	"github.com/samber/lo"
 	slogmulti "github.com/samber/slog-multi"
@@ -59,8 +60,9 @@ var (
 )
 
 type Option struct {
-	Restore  bool     `short:"b" long:"restore" description:"Restore deleted file"`
 	Version  bool     `long:"version" description:"Show version"`
+	Restore  bool     `short:"b" long:"restore" description:"Restore deleted file"`
+	ViewLogs bool     `long:"logs" description:"View logs"`
 	Config   string   `long:"config" description:"Path to config file" default:""`
 	RmOption RmOption `group:"Dummy Options (compatible with rm)"`
 }
@@ -110,6 +112,7 @@ type CLI struct {
 	option    Option
 	inventory inventory
 	runID     string
+	logFile   string
 }
 
 func main() {
@@ -125,6 +128,8 @@ var runID = sync.OnceValue(func() string {
 	return id
 })
 
+var logFilePath string
+
 func init() {
 	var errs []error
 	fp, ok := os.LookupEnv("LOGS_DIRECTORY")
@@ -135,6 +140,7 @@ func init() {
 			errs = append(errs, err)
 			fp = "gomi.log"
 		}
+		logFilePath = fp
 		slog.Debug("xdg cache", "dir", fp)
 	}
 
@@ -208,6 +214,7 @@ func runMain() error {
 		option:    opt,
 		inventory: inventory{path: inventoryPath, config: cfg.Inventory},
 		runID:     runID(),
+		logFile:   logFilePath,
 	}
 	return cli.Run(args)
 }
@@ -225,6 +232,8 @@ func (c CLI) Run(args []string) error {
 	case c.option.Restore:
 		slog.Debug("open restore view")
 		return c.Restore()
+	case c.option.ViewLogs:
+		return viewLogs(c.logFile)
 	default:
 	}
 
@@ -267,7 +276,6 @@ func (c CLI) initModel() model {
 		// models
 		list:     l,
 		viewport: viewport.Model{},
-		// preview: previewModel{},
 	}
 	return m
 }
@@ -286,19 +294,39 @@ func (c CLI) Restore() error {
 		return nil
 	}
 
-	pp.Println(files)
-	file := files[0]
-	return nil
-
-	defer c.inventory.remove(file)
-	if _, err := os.Stat(file.From); err == nil {
-		// already exists so to prevent to overwrite
-		// add id to the end of filename
-		// TODO: Ask to overwrite?
-		// e.g. using github.com/AlecAivazis/survey
-		file.From = file.From + "." + file.ID
+	var errs []error
+	for _, file := range files {
+		defer func() {
+			err := c.inventory.remove(file)
+			if err != nil {
+				slog.Error(fmt.Sprintf("removing from inventory failed: %s", file.Name), "error", err)
+			}
+		}()
+		if _, err := os.Stat(file.From); err == nil {
+			// already exists so to prevent to overwrite
+			// add id to the end of filename
+			// TODO: Ask to overwrite?
+			// e.g. using github.com/AlecAivazis/survey
+			file.From = file.From + "." + file.ID
+		}
+		err := os.Rename(file.To, file.From)
+		if err != nil {
+			errs = append(errs, err)
+			slog.Error(fmt.Sprintf("removing from inventory failed: %s", file.Name), "error", err)
+		}
+		// result = multierror.Append(result, err)
 	}
-	return os.Rename(file.To, file.From)
+
+	// respect https://github.com/hashicorp/go-multierror
+	if len(errs) > 0 {
+		lines := []string{fmt.Sprintf("%d errors occurred:", len(errs))}
+		for _, err := range errs {
+			lines = append(lines, fmt.Sprintf("\t* %s", err))
+		}
+		lines = append(lines, "\n")
+		return errors.New(strings.Join(lines, "\n"))
+	}
+	return nil
 }
 
 func (c CLI) Put(args []string) error {
@@ -492,4 +520,17 @@ func (f File) toJSON(w io.Writer) {
 		return
 	}
 	fmt.Fprint(w, string(out))
+}
+
+func viewLogs(file string) error {
+	t, err := tail.TailFile(file, tail.Config{Follow: true, ReOpen: true})
+	if err != nil {
+		return err
+	}
+
+	// Print the text of each received line
+	for line := range t.Lines {
+		fmt.Println(line.Text)
+	}
+	return nil
 }
