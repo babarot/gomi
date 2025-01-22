@@ -27,8 +27,18 @@ type Config struct {
 	Inventory ConfigInventory `yaml:"inventory"`
 }
 
+type ConfigUI struct {
+	ShowDescription bool          `yaml:"show_description"`
+	Preview         ConfigPreview `yaml:"preview"`
+}
+
 type ConfigInventory struct {
+	Include IncludeConfig `yaml:"include"`
 	Exclude ConfigExclude `yaml:"exclude"`
+}
+
+type IncludeConfig struct {
+	Durations []string `yaml:"durations"`
 }
 
 type ConfigExclude struct {
@@ -39,8 +49,10 @@ type ConfigExclude struct {
 	SizeBelow []string `yaml:"size_below"` // under
 }
 
-type ConfigUI struct {
-	ShowDescription bool `yaml:"show_description"`
+type ConfigPreview struct {
+	Directory   string `yaml:"directory"`
+	Highlight   bool   `yaml:"enable_syntax_highlight"`
+	Colorscheme string `yaml:"colorscheme"`
 }
 
 type configError struct {
@@ -55,8 +67,15 @@ func (p parser) getDefaultConfig() Config {
 	return Config{
 		UI: ConfigUI{
 			ShowDescription: true,
+			Preview: ConfigPreview{
+				Highlight: true,
+				Directory: "ls -F --color=always",
+			},
 		},
 		Inventory: ConfigInventory{
+			Include: IncludeConfig{
+				Durations: []string{"365 days"},
+			},
 			Exclude: ConfigExclude{
 				Files: []string{
 					// In macOS, .DS_Store is a file that stores custom attributes of its

@@ -5,17 +5,21 @@ go 1.23
 require (
 	github.com/MakeNowJust/heredoc/v2 v2.0.1
 	github.com/adrg/xdg v0.5.3
+	github.com/alecthomas/chroma v0.10.0
+	github.com/alecthomas/chroma/v2 v2.15.0
 	github.com/charmbracelet/bubbles v0.20.0
 	github.com/charmbracelet/bubbletea v1.2.4
 	github.com/charmbracelet/lipgloss v1.0.0
 	github.com/charmbracelet/x/ansi v0.4.5
 	github.com/docker/go-units v0.5.0
 	github.com/dustin/go-humanize v1.0.1
+	github.com/fatih/color v1.18.0
 	github.com/gabriel-vasile/mimetype v1.4.8
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/gobwas/glob v0.2.3
 	github.com/jessevdk/go-flags v1.6.1
 	github.com/k0kubun/pp v3.0.1+incompatible
+	github.com/k1LoW/duration v1.2.0
 	github.com/lmittmann/tint v1.0.6
 	github.com/muesli/reflow v0.3.0
 	github.com/muesli/termenv v0.15.2
@@ -31,6 +35,7 @@ require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
+	github.com/dlclark/regexp2 v1.11.4 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect

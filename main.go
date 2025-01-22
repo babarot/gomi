@@ -1,28 +1,32 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/adrg/xdg"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/docker/go-units"
+	"github.com/gabriel-vasile/mimetype"
 	"github.com/gobwas/glob"
 	"github.com/jessevdk/go-flags"
 	"github.com/k0kubun/pp"
+	"github.com/k1LoW/duration"
 	"github.com/lmittmann/tint"
 	"github.com/rs/xid"
 	"github.com/samber/lo"
@@ -87,8 +91,8 @@ type inventory struct {
 	Version int    `json:"version"`
 	Files   []File `json:"files"`
 
-	excludes ConfigExclude
-	path     string
+	config ConfigInventory
+	path   string
 }
 
 type File struct {
@@ -141,11 +145,11 @@ func init() {
 		fw = file
 	} else {
 		errs = append(errs, err)
-		fw = ioutil.Discard
+		fw = io.Discard
 	}
 
 	if os.Getenv("DEBUG") == "" {
-		cw = ioutil.Discard
+		cw = io.Discard
 	} else {
 		cw = os.Stderr
 	}
@@ -204,7 +208,7 @@ func runMain() error {
 	cli := CLI{
 		config:    cfg,
 		Option:    opt,
-		inventory: inventory{path: inventoryPath, excludes: cfg.Inventory.Exclude},
+		inventory: inventory{path: inventoryPath, config: cfg.Inventory},
 		runID:     runID(),
 	}
 	return cli.Run(args)
@@ -229,13 +233,71 @@ func (c CLI) Run(args []string) error {
 	return c.Put(args)
 }
 
+func newViewportModel(file File, width, height int, cmd string, hl bool, cs string) (viewport.Model, error) {
+	getFileContent := func(path string) string {
+		content := "cannot preview"
+		fi, err := os.Stat(path)
+		if err != nil {
+			return content
+		}
+		if fi.IsDir() {
+			input := cmd
+			out, _, err := runBash(input)
+			if err != nil {
+				slog.Error(fmt.Sprintf("command failed: %s", input), "error", err)
+			}
+			return out
+		}
+		mtype, err := mimetype.DetectFile(path)
+		if err != nil {
+			return content
+		}
+		if !strings.Contains(mtype.String(), "text/plain") {
+			return content
+		}
+		f, err := os.Open(file.To)
+		if err != nil {
+			return content
+		}
+		defer f.Close()
+
+		var fileContent strings.Builder
+		scanner := bufio.NewScanner(f)
+		for scanner.Scan() {
+			fileContent.WriteString(scanner.Text() + "\n")
+		}
+		if err := scanner.Err(); err != nil {
+			return content
+		}
+		return fileContent.String()
+	}
+
+	content := getFileContent(file.To)
+	if hl {
+		content, _ = highlight(content, file.Name, cs)
+	}
+	viewportModel := viewport.New(width, height)
+	viewportModel.KeyMap = viewport.KeyMap{
+		Up: key.NewBinding(
+			key.WithKeys("ctrl+p", "ctrl+k"), // second keymap is undocumented
+			key.WithHelp("ctrl+p", "up"),
+		),
+		Down: key.NewBinding(
+			key.WithKeys("ctrl+n", "ctrl+j"), // second keymap is undocumented
+			key.WithHelp("ctrl+n", "down"),
+		),
+	}
+	viewportModel.SetContent(content)
+	return viewportModel, nil
+}
+
 func (c CLI) initModel() model {
 	slog.Debug("initModel starts")
 	const defaultWidth = 20
 
-	excludedFiles := c.inventory.exclude()
+	filteredFiles := c.inventory.filter()
 	var files []list.Item
-	for _, file := range excludedFiles {
+	for _, file := range filteredFiles {
 		files = append(files, file)
 	}
 
@@ -256,12 +318,15 @@ func (c CLI) initModel() model {
 	l.DisableQuitKeybindings()
 	l.SetShowStatusBar(false)
 	l.SetShowTitle(false)
+
 	m := model{
 		navState: INVENTORY_LIST,
 		datefmt:  datefmtRel,
-		files:    excludedFiles,
+		files:    filteredFiles,
 		cli:      &c,
+		// models
 		list:     l,
+		viewport: viewport.Model{},
 	}
 	return m
 }
@@ -374,21 +439,21 @@ func (i *inventory) save(files []File) error {
 	return json.NewEncoder(f).Encode(&i)
 }
 
-func (i inventory) exclude() []File {
+func (i inventory) filter() []File {
 	// do not overwrite original slices
 	// because remove them from inventory file actually
 	// when updating inventory
 	files := i.Files
 	files = lo.Reject(files, func(file File, index int) bool {
-		return slices.Contains(i.excludes.Files, file.Name)
+		return slices.Contains(i.config.Exclude.Files, file.Name)
 	})
 	files = lo.Reject(files, func(file File, index int) bool {
-		for _, pat := range i.excludes.Patterns {
+		for _, pat := range i.config.Exclude.Patterns {
 			if regexp.MustCompile(pat).MatchString(file.Name) {
 				return true
 			}
 		}
-		for _, g := range i.excludes.Globs {
+		for _, g := range i.config.Exclude.Globs {
 			if glob.MustCompile(g).Match(file.Name) {
 				return true
 			}
@@ -400,7 +465,7 @@ func (i inventory) exclude() []File {
 		if err != nil {
 			return false // false positive
 		}
-		for _, s := range i.excludes.SizeBelow {
+		for _, s := range i.config.Exclude.SizeBelow {
 			below, err := units.FromHumanSize(s)
 			if err != nil {
 				continue
@@ -409,7 +474,7 @@ func (i inventory) exclude() []File {
 				return true
 			}
 		}
-		for _, s := range i.excludes.SizeAbove {
+		for _, s := range i.config.Exclude.SizeAbove {
 			above, err := units.FromHumanSize(s)
 			if err != nil {
 				continue
@@ -417,6 +482,17 @@ func (i inventory) exclude() []File {
 			if above <= size {
 				return true
 			}
+		}
+		return false
+	})
+	files = lo.Filter(files, func(file File, index int) bool {
+		for _, input := range i.config.Include.Durations {
+			d, err := duration.Parse(input)
+			if err != nil {
+				slog.Error("duration.Parse failed", "input", input, "error", err)
+				return false
+			}
+			return time.Since(file.Timestamp) < d
 		}
 		return false
 	})

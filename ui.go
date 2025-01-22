@@ -13,6 +13,7 @@ import (
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/dustin/go-humanize"
@@ -58,8 +59,9 @@ type model struct {
 	cli     *CLI
 	choices []File
 
-	list list.Model
-	err  error
+	list     list.Model
+	viewport viewport.Model
+	err      error
 }
 
 const (
@@ -139,10 +141,12 @@ type (
 		Space key.Binding
 	}
 	detailKeyMap struct {
-		Up     key.Binding
-		Down   key.Binding
-		Esc    key.Binding
-		AtSign key.Binding
+		Up          key.Binding
+		Down        key.Binding
+		PreviewUp   key.Binding
+		PreviewDown key.Binding
+		Esc         key.Binding
+		AtSign      key.Binding
 	}
 )
 
@@ -180,6 +184,14 @@ var (
 			key.WithKeys("down", "j"),
 			key.WithHelp("↓/j", "down"),
 		),
+		PreviewUp: key.NewBinding(
+			key.WithKeys("ctrl+p", "ctrl+k"),
+			key.WithHelp("ctrl+p", "preview up"),
+		),
+		PreviewDown: key.NewBinding(
+			key.WithKeys("ctrl+n", "ctrl+j"),
+			key.WithHelp("ctrl+n", "preview down"),
+		),
 		Esc: key.NewBinding(
 			key.WithKeys("esc"), // space itself should be already defined another part
 			key.WithHelp("space/esc", "back"),
@@ -192,7 +204,12 @@ var (
 )
 
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{detailKeys.Up, detailKeys.Down, detailKeys.Esc, detailKeys.AtSign}
+	return []key.Binding{
+		detailKeys.Up, detailKeys.Down,
+		detailKeys.PreviewUp, detailKeys.PreviewDown,
+		detailKeys.AtSign,
+		detailKeys.Esc,
+	}
 }
 
 func (k keyMap) FullHelp() [][]key.Binding {
@@ -249,6 +266,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				case datefmtAbs:
 					m.datefmt = datefmtRel
 				}
+			}
+
+		case key.Matches(msg, detailKeys.PreviewUp), key.Matches(msg, detailKeys.PreviewDown):
+			switch m.navState {
+			case INVENTORY_DETAILS:
+				var cmd tea.Cmd
+				m.viewport, cmd = m.viewport.Update(msg)
+				cmds = append(cmds, cmd)
 			}
 
 		case key.Matches(msg, detailKeys.Up):
@@ -323,8 +348,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.list.SetItems(msg.files)
 
 	case DetailsMsg:
-		m.detailFile = msg.file
 		m.navState = INVENTORY_DETAILS
+		m.detailFile = msg.file
+		headerHeight := lipgloss.Height(m.headerView())
+		verticalMarginHeight := headerHeight
+		viewportModel, err := newViewportModel(msg.file, 56, 15-verticalMarginHeight,
+			m.cli.config.UI.Preview.Directory,
+			m.cli.config.UI.Preview.Highlight,
+			m.cli.config.UI.Preview.Colorscheme,
+		)
+		if err != nil {
+			fmt.Println("Error reading file:", err)
+			return m, tea.Quit
+		}
+		m.viewport = viewportModel
+		// viewportModel.Update()
 
 	case errorMsg:
 		m.navState = QUITTING
@@ -356,6 +394,7 @@ func renderInventoryDetails(m model) string {
 		renderDeletedWhere(m.detailFile),
 		renderDeletedAt(m.detailFile, m.datefmt),
 		renderMetadata(m.detailFile),
+		fmt.Sprintf("%s\n%s", m.headerView(), m.viewport.View()),
 		strings.Repeat("─", lipgloss.Width(header)),
 	)
 
@@ -465,6 +504,13 @@ func renderFileType(f File) string {
 	return result
 }
 
+// func renderFileContentsPreview(m model) string {
+// 	info := infoStyle.Render(fmt.Sprintf("%3.f%%", m.list.ScrollPercent()*100))
+// 	line := strings.Repeat("─", max(0, m.viewport.Width-lipgloss.Width(info)))
+// 	return lipgloss.JoinHorizontal(lipgloss.Center, line, info)
+// 	return ""
+// }
+
 func (m model) View() string {
 	s := ""
 
@@ -514,3 +560,23 @@ func getInventoryDetails(file File) tea.Cmd {
 		return DetailsMsg{file: file}
 	}
 }
+
+func (m model) headerView() string {
+	info := infoStyle.Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
+	line := strings.Repeat("─", max(0, m.viewport.Width-lipgloss.Width(info)))
+	return lipgloss.JoinHorizontal(lipgloss.Center, line, info)
+}
+
+var (
+	titleStyle = func() lipgloss.Style {
+		b := lipgloss.RoundedBorder()
+		b.Right = "├"
+		return lipgloss.NewStyle().BorderStyle(b).Padding(0, 1)
+	}()
+
+	infoStyle = func() lipgloss.Style {
+		b := lipgloss.RoundedBorder()
+		b.Left = "┤"
+		return titleStyle.BorderStyle(b)
+	}()
+)
