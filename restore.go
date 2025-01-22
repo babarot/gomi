@@ -92,12 +92,19 @@ type RestoreDelegate struct {
 func NewRestoreDelegate(cfg Config) RestoreDelegate {
 	var height = 2
 	var spacing = 1
-	if !cfg.UI.ShowDescription {
+	var showDescription bool
+	switch cfg.UI.Style {
+	case "simple":
+		showDescription = false
+	case "detailed":
+		showDescription = true
+	}
+	if !showDescription {
 		height = 1
 		spacing = 0
 	}
 	return RestoreDelegate{
-		showDescription: cfg.UI.ShowDescription,
+		showDescription: showDescription,
 		Styles:          NewRestoreItemStyles(),
 		height:          height,
 		spacing:         spacing,

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -141,12 +142,16 @@ type (
 		Space key.Binding
 	}
 	detailKeyMap struct {
-		Up          key.Binding
-		Down        key.Binding
-		PreviewUp   key.Binding
-		PreviewDown key.Binding
-		Esc         key.Binding
-		AtSign      key.Binding
+		Up           key.Binding
+		Down         key.Binding
+		PreviewUp    key.Binding
+		PreviewDown  key.Binding
+		Esc          key.Binding
+		AtSign       key.Binding
+		GotoTop      key.Binding
+		GotoBottom   key.Binding
+		HalfPageUp   key.Binding
+		HalfPageDown key.Binding
 	}
 )
 
@@ -176,30 +181,34 @@ var (
 		),
 	}
 	detailKeys = detailKeyMap{
-		Up: key.NewBinding(
-			key.WithKeys("up", "k"),
-			key.WithHelp("↑/k", "up"),
-		),
-		Down: key.NewBinding(
-			key.WithKeys("down", "j"),
-			key.WithHelp("↓/j", "down"),
-		),
 		PreviewUp: key.NewBinding(
-			key.WithKeys("ctrl+p", "ctrl+k"),
-			key.WithHelp("ctrl+p", "preview up"),
+			key.WithKeys("up", "k"),
+			key.WithHelp("↑/k", "preview up"),
 		),
 		PreviewDown: key.NewBinding(
-			key.WithKeys("ctrl+n", "ctrl+j"),
-			key.WithHelp("ctrl+n", "preview down"),
+			key.WithKeys("down", "j"),
+			key.WithHelp("↓/j", "preview down"),
+		),
+		Up: key.NewBinding(
+			key.WithKeys("p"),
+			key.WithHelp("p", "prev"),
+		),
+		Down: key.NewBinding(
+			key.WithKeys("n"),
+			key.WithHelp("n", "next"),
 		),
 		Esc: key.NewBinding(
 			key.WithKeys("esc"), // space itself should be already defined another part
 			key.WithHelp("space/esc", "back"),
 		),
 		AtSign: key.NewBinding(
-			key.WithKeys("@"), // space itself should be already defined another part
+			key.WithKeys("@"),
 			key.WithHelp("@", "datefmt"),
 		),
+		GotoTop:      key.NewBinding(key.WithKeys("g"), key.WithHelp("g", "go to start")),
+		GotoBottom:   key.NewBinding(key.WithKeys("G"), key.WithHelp("G", "go to end")),
+		HalfPageUp:   key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "½ page up")),
+		HalfPageDown: key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "½ page down")),
 	}
 )
 
@@ -268,12 +277,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 
-		case key.Matches(msg, detailKeys.PreviewUp), key.Matches(msg, detailKeys.PreviewDown):
+		case key.Matches(msg, detailKeys.PreviewUp, detailKeys.PreviewDown, detailKeys.HalfPageUp, detailKeys.HalfPageDown):
 			switch m.navState {
 			case INVENTORY_DETAILS:
 				var cmd tea.Cmd
 				m.viewport, cmd = m.viewport.Update(msg)
 				cmds = append(cmds, cmd)
+
+			}
+
+		case key.Matches(msg, detailKeys.GotoTop):
+			switch m.navState {
+			case INVENTORY_DETAILS:
+				m.viewport.GotoTop()
+			}
+		case key.Matches(msg, detailKeys.GotoBottom):
+			switch m.navState {
+			case INVENTORY_DETAILS:
+				m.viewport.GotoBottom()
 			}
 
 		case key.Matches(msg, detailKeys.Up):
@@ -504,13 +525,6 @@ func renderFileType(f File) string {
 	return result
 }
 
-// func renderFileContentsPreview(m model) string {
-// 	info := infoStyle.Render(fmt.Sprintf("%3.f%%", m.list.ScrollPercent()*100))
-// 	line := strings.Repeat("─", max(0, m.viewport.Width-lipgloss.Width(info)))
-// 	return lipgloss.JoinHorizontal(lipgloss.Center, line, info)
-// 	return ""
-// }
-
 func (m model) View() string {
 	s := ""
 
@@ -530,7 +544,7 @@ func (m model) View() string {
 	}
 
 	if len(m.choices) > 0 {
-		// do not render when selected one or more
+		// do not render when nothing is selected
 		return ""
 	}
 
@@ -580,3 +594,57 @@ var (
 		return titleStyle.BorderStyle(b)
 	}()
 )
+
+func newViewportModel(file File, width, height int, cmd string, hl bool, cs string) (viewport.Model, error) {
+	getFileContent := func(path string) string {
+		content := "cannot preview"
+		fi, err := os.Stat(path)
+		if err != nil {
+			return content
+		}
+		if fi.IsDir() {
+			input := cmd
+			out, _, err := runBash(input)
+			if err != nil {
+				slog.Error(fmt.Sprintf("command failed: %s", input), "error", err)
+			}
+			return out
+		}
+		mtype, err := mimetype.DetectFile(path)
+		if err != nil {
+			return content
+		}
+		if !strings.Contains(mtype.String(), "text/plain") {
+			return content
+		}
+		f, err := os.Open(file.To)
+		if err != nil {
+			return content
+		}
+		defer f.Close()
+
+		var fileContent strings.Builder
+		scanner := bufio.NewScanner(f)
+		for scanner.Scan() {
+			fileContent.WriteString(scanner.Text() + "\n")
+		}
+		if err := scanner.Err(); err != nil {
+			return content
+		}
+		return fileContent.String()
+	}
+
+	content := getFileContent(file.To)
+	if hl {
+		content, _ = highlight(content, file.Name, cs)
+	}
+	viewportModel := viewport.New(width, height)
+	viewportModel.KeyMap = viewport.KeyMap{
+		Up:           key.NewBinding(key.WithKeys("k", "up")),
+		Down:         key.NewBinding(key.WithKeys("j", "down")),
+		HalfPageUp:   key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "½ page up")),
+		HalfPageDown: key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "½ page down")),
+	}
+	viewportModel.SetContent(content)
+	return viewportModel, nil
+}

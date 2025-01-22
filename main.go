@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -12,7 +11,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
-	"strings"
 	"sync"
 	"time"
 
@@ -22,7 +20,6 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/docker/go-units"
-	"github.com/gabriel-vasile/mimetype"
 	"github.com/gobwas/glob"
 	"github.com/jessevdk/go-flags"
 	"github.com/k0kubun/pp"
@@ -110,7 +107,7 @@ func (f File) isSelected() bool {
 
 type CLI struct {
 	config    Config
-	Option    Option
+	option    Option
 	inventory inventory
 	runID     string
 }
@@ -133,11 +130,12 @@ func init() {
 	fp, ok := os.LookupEnv("LOGS_DIRECTORY")
 	if !ok {
 		var err error
-		fp, err = xdg.StateFile("gomi/log")
+		fp, err = xdg.CacheFile("gomi/log")
 		if err != nil {
 			errs = append(errs, err)
 			fp = "gomi.log"
 		}
+		slog.Debug("xdg cache", "dir", fp)
 	}
 
 	var fw, cw io.Writer
@@ -180,9 +178,9 @@ func init() {
 
 func runMain() error {
 	defer slog.Debug("finished main function")
-	slog.Debug("runMain running successfully",
+	slog.Debug("runMain starts",
 		slog.Group(
-			"metadata",
+			"attributes",
 			slog.String("version", Version),
 			slog.String("revision", Revision),
 		),
@@ -207,7 +205,7 @@ func runMain() error {
 
 	cli := CLI{
 		config:    cfg,
-		Option:    opt,
+		option:    opt,
 		inventory: inventory{path: inventoryPath, config: cfg.Inventory},
 		runID:     runID(),
 	}
@@ -221,74 +219,16 @@ func (c CLI) Run(args []string) error {
 	}
 
 	switch {
-	case c.Option.Version:
+	case c.option.Version:
 		fmt.Fprintf(os.Stdout, "%s %s (%s)\n", appName, Version, Revision)
 		return nil
-	case c.Option.Restore:
+	case c.option.Restore:
 		slog.Debug("open restore view")
 		return c.Restore()
 	default:
 	}
 
 	return c.Put(args)
-}
-
-func newViewportModel(file File, width, height int, cmd string, hl bool, cs string) (viewport.Model, error) {
-	getFileContent := func(path string) string {
-		content := "cannot preview"
-		fi, err := os.Stat(path)
-		if err != nil {
-			return content
-		}
-		if fi.IsDir() {
-			input := cmd
-			out, _, err := runBash(input)
-			if err != nil {
-				slog.Error(fmt.Sprintf("command failed: %s", input), "error", err)
-			}
-			return out
-		}
-		mtype, err := mimetype.DetectFile(path)
-		if err != nil {
-			return content
-		}
-		if !strings.Contains(mtype.String(), "text/plain") {
-			return content
-		}
-		f, err := os.Open(file.To)
-		if err != nil {
-			return content
-		}
-		defer f.Close()
-
-		var fileContent strings.Builder
-		scanner := bufio.NewScanner(f)
-		for scanner.Scan() {
-			fileContent.WriteString(scanner.Text() + "\n")
-		}
-		if err := scanner.Err(); err != nil {
-			return content
-		}
-		return fileContent.String()
-	}
-
-	content := getFileContent(file.To)
-	if hl {
-		content, _ = highlight(content, file.Name, cs)
-	}
-	viewportModel := viewport.New(width, height)
-	viewportModel.KeyMap = viewport.KeyMap{
-		Up: key.NewBinding(
-			key.WithKeys("ctrl+p", "ctrl+k"), // second keymap is undocumented
-			key.WithHelp("ctrl+p", "up"),
-		),
-		Down: key.NewBinding(
-			key.WithKeys("ctrl+n", "ctrl+j"), // second keymap is undocumented
-			key.WithHelp("ctrl+n", "down"),
-		),
-	}
-	viewportModel.SetContent(content)
-	return viewportModel, nil
 }
 
 func (c CLI) initModel() model {
@@ -339,7 +279,9 @@ func (c CLI) Restore() error {
 	}
 	files := returnModel.(model).choices
 	if returnModel.(model).navState == QUITTING {
-		fmt.Println("bye!")
+		if msg := c.config.UI.ByeMessage; msg != "" {
+			fmt.Println(msg)
+		}
 		return nil
 	}
 
@@ -393,7 +335,7 @@ func (c CLI) Put(args []string) error {
 	defer c.inventory.save(files)
 
 	defer eg.Wait()
-	if c.Option.RmOption.Force {
+	if c.option.RmOption.Force {
 		// ignore errors when given rm -f option
 		return nil
 	}

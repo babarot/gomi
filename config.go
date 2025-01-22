@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc/v2"
-	"github.com/go-playground/validator"
+	"github.com/go-playground/validator/v10"
 	"gopkg.in/yaml.v2"
 )
 
@@ -28,8 +28,9 @@ type Config struct {
 }
 
 type ConfigUI struct {
-	ShowDescription bool          `yaml:"show_description"`
-	Preview         ConfigPreview `yaml:"preview"`
+	Style      string        `yaml:"style"`
+	ByeMessage string        `yaml:"bye_message"`
+	Preview    ConfigPreview `yaml:"preview"`
 }
 
 type ConfigInventory struct {
@@ -66,7 +67,8 @@ type parser struct{}
 func (p parser) getDefaultConfig() Config {
 	return Config{
 		UI: ConfigUI{
-			ShowDescription: true,
+			Style:      "detailed",
+			ByeMessage: "bye!",
 			Preview: ConfigPreview{
 				Highlight: true,
 				Directory: "ls -F --color=always",
