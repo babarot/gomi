@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/adrg/xdg"
+	"github.com/babarot/gomi/config"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/paginator"
@@ -91,7 +92,7 @@ type inventory struct {
 	Version int    `json:"version"`
 	Files   []File `json:"files"`
 
-	config ConfigInventory
+	config config.Inventory
 	path   string
 }
 
@@ -109,7 +110,7 @@ func (f File) isSelected() bool {
 }
 
 type CLI struct {
-	config    Config
+	config    config.Config
 	option    Option
 	inventory inventory
 	runID     string
@@ -205,7 +206,7 @@ func runMain() error {
 		return err
 	}
 
-	cfg, err := parseConfig(opt.Config)
+	cfg, err := config.Parse(opt.Config)
 	if err != nil {
 		return err
 	}

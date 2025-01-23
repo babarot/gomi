@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"fmt"
@@ -14,37 +14,37 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+var validate *validator.Validate
+
 const gomiConfigDir = "gomi"
 const gomiConfigFilename = "config.yaml"
 const envGomiConfigPath = "GOMI_CONFIG_PATH"
 
-const DEFAULT_XDG_CONFIG_DIRNAME = ".config"
-
-var validate *validator.Validate
+const defaultXDGConfigDirname = ".config"
 
 type Config struct {
-	UI        ConfigUI        `yaml:"ui"`
-	Inventory ConfigInventory `yaml:"inventory"`
+	UI        uiConfig  `yaml:"ui"`
+	Inventory Inventory `yaml:"inventory"`
 }
 
-type ConfigUI struct {
-	Color      ConfigColor   `yaml:"color"`
+type uiConfig struct {
+	Color      colorConfig   `yaml:"color"`
 	Style      string        `yaml:"style"`
 	ByeMessage string        `yaml:"bye_message"`
-	Preview    ConfigPreview `yaml:"preview"`
+	Preview    previewConfig `yaml:"preview"`
 	Paginator  string        `yaml:"paginator_style"`
 }
 
-type ConfigInventory struct {
-	Include ConfigInclude `yaml:"include"`
-	Exclude ConfigExclude `yaml:"exclude"`
+type Inventory struct {
+	Include includeConfig `yaml:"include"`
+	Exclude excludeConfig `yaml:"exclude"`
 }
 
-type ConfigInclude struct {
+type includeConfig struct {
 	Durations []string `yaml:"durations"`
 }
 
-type ConfigExclude struct {
+type excludeConfig struct {
 	Files     []string `yaml:"files"`
 	Patterns  []string `yaml:"patterns"`
 	Globs     []string `yaml:"globs"`
@@ -52,17 +52,17 @@ type ConfigExclude struct {
 	SizeBelow []string `yaml:"size_below"` // under
 }
 
-type ConfigPreview struct {
+type previewConfig struct {
 	Directory   string `yaml:"directory"`
 	Highlight   bool   `yaml:"enable_syntax_highlight"`
 	Colorscheme string `yaml:"colorscheme"`
 }
 
-type ConfigColor struct {
-	PreviewBoarder Color `yaml:"preview_boarder"`
+type colorConfig struct {
+	PreviewBoarder color `yaml:"preview_boarder"`
 }
 
-type Color struct {
+type color struct {
 	Foreground string `yaml:"fg"`
 	Background string `yaml:"bg"`
 }
@@ -77,26 +77,26 @@ type parser struct{}
 
 func (p parser) getDefaultConfig() Config {
 	return Config{
-		UI: ConfigUI{
+		UI: uiConfig{
 			Style:      "simple | detailed",
 			ByeMessage: "bye!",
-			Preview: ConfigPreview{
+			Preview: previewConfig{
 				Highlight: true,
 				Directory: "ls -F --color=always",
 			},
 			Paginator: "dots | arabic",
-			Color: ConfigColor{
-				PreviewBoarder: Color{
+			Color: colorConfig{
+				PreviewBoarder: color{
 					Foreground: "#3C3C3C",
 					Background: "#EEEEDD",
 				},
 			},
 		},
-		Inventory: ConfigInventory{
-			Include: ConfigInclude{
+		Inventory: Inventory{
+			Include: includeConfig{
 				Durations: []string{"365 days"},
 			},
-			Exclude: ConfigExclude{
+			Exclude: excludeConfig{
 				Files: []string{
 					// In macOS, .DS_Store is a file that stores custom attributes of its
 					// containing folder, such as folder view options, icon positions,
@@ -173,9 +173,8 @@ func (p parser) getDefaultConfigFileOrCreateIfMissing() (string, error) {
 			if err != nil {
 				return "", err
 			}
-			configDir = filepath.Join(homeDir, DEFAULT_XDG_CONFIG_DIRNAME)
+			configDir = filepath.Join(homeDir, defaultXDGConfigDirname)
 		}
-
 		configFilePath = filepath.Join(configDir, gomiConfigDir, gomiConfigFilename)
 	}
 
@@ -240,7 +239,7 @@ func initParser() parser {
 	return parser{}
 }
 
-func parseConfig(path string) (Config, error) {
+func Parse(path string) (Config, error) {
 	parser := initParser()
 
 	var config Config

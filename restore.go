@@ -5,6 +5,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/babarot/gomi/config"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -89,7 +90,7 @@ type RestoreDelegate struct {
 }
 
 // NewRestoreDelegate creates a new delegate with Restore styles.
-func NewRestoreDelegate(cfg Config) RestoreDelegate {
+func NewRestoreDelegate(cfg config.Config) RestoreDelegate {
 	var height = 2
 	var spacing = 1
 	var showDescription bool

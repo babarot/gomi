@@ -73,7 +73,7 @@ Content:            (directory)
   ...
 ```
 
-## Installation
+## Install
 
 1. Download a command directly from [GitHub Releases][release] and drop it in your `$PATH`.
 2. Using [afx](https://github.com/babarot/afx) (CLI package manager).
@@ -98,7 +98,7 @@ Content:            (directory)
     ```
 3. (For Linux users) Using [AUR](https://aur.archlinux.org/packages/gomi/).
 
-## Similar projects
+## Related
 
 - [andreafrancia/trash-cli](https://github.com/andreafrancia/trash-cli)
 - [sindresorhus/trash](https://github.com/sindresorhus/trash)
