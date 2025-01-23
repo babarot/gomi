@@ -41,7 +41,7 @@ type Inventory struct {
 }
 
 type includeConfig struct {
-	Durations []string `yaml:"deleted_within_days"`
+	Period int `yaml:"within_days"`
 }
 
 type excludeConfig struct {
@@ -94,7 +94,7 @@ func (p parser) getDefaultConfig() Config {
 		},
 		Inventory: Inventory{
 			Include: includeConfig{
-				Durations: []string{"365 days"},
+				Period: 365,
 			},
 			Exclude: excludeConfig{
 				Files: []string{

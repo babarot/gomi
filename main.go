@@ -18,6 +18,7 @@ import (
 	"github.com/babarot/gomi/ui"
 	"github.com/jessevdk/go-flags"
 	"github.com/lmittmann/tint"
+	"github.com/mattn/go-isatty"
 	"github.com/nxadm/tail"
 	"github.com/rs/xid"
 	slogmulti "github.com/samber/slog-multi"
@@ -191,14 +192,19 @@ func (c CLI) Restore() error {
 		return err
 	}
 
+	var deletedFiles []inventory.File
 	var errs []error
-	for _, file := range files {
-		defer func() {
-			err := c.inventory.Remove(file.File)
+
+	defer func() {
+		for _, file := range deletedFiles {
+			err := c.inventory.Remove(file)
 			if err != nil {
 				slog.Error(fmt.Sprintf("removing from inventory failed: %s", file.Name), "error", err)
 			}
-		}()
+		}
+	}()
+
+	for _, file := range files {
 		if _, err := os.Stat(file.From); err == nil {
 			// already exists so to prevent to overwrite
 			// add id to the end of filename
@@ -209,8 +215,10 @@ func (c CLI) Restore() error {
 		err := os.Rename(file.To, file.From)
 		if err != nil {
 			errs = append(errs, err)
-			slog.Error(fmt.Sprintf("removing from inventory failed: %s", file.Name), "error", err)
+			slog.Error("failed to restore! file would not be deleted from inventory file", "error", err)
+			continue
 		}
+		deletedFiles = append(deletedFiles, file.File)
 	}
 
 	// respect https://github.com/hashicorp/go-multierror
@@ -259,7 +267,8 @@ func (c CLI) Put(args []string) error {
 }
 
 func viewLogs(file string) error {
-	t, err := tail.TailFile(file, tail.Config{Follow: true, ReOpen: true})
+	shouldFollow := isatty.IsTerminal(os.Stdout.Fd())
+	t, err := tail.TailFile(file, tail.Config{Follow: shouldFollow, ReOpen: shouldFollow})
 	if err != nil {
 		return err
 	}

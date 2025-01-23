@@ -137,10 +137,10 @@ func (i Inventory) Filter() []File {
 		return false
 	})
 	files = lo.Filter(files, func(file File, index int) bool {
-		for _, input := range i.config.Include.Durations {
-			d, err := duration.Parse(input)
+		if period := i.config.Include.Period; period > 0 {
+			d, err := duration.Parse(fmt.Sprintf("%d days", period))
 			if err != nil {
-				slog.Error("parsing duration failed", "input", input, "error", err)
+				slog.Error("parsing duration failed", "error", err)
 				return false
 			}
 			if time.Since(file.Timestamp) < d {
@@ -153,7 +153,7 @@ func (i Inventory) Filter() []File {
 }
 
 func (i *Inventory) Remove(target File) error {
-	slog.Debug("deleting from inventory")
+	slog.Debug("deleting from inventory", "file", target)
 	var files []File
 	for _, file := range i.Files {
 		if file.ID == target.ID {
