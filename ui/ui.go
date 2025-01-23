@@ -2,7 +2,6 @@ package ui
 
 import (
 	"bufio"
-	"bytes"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -12,13 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alecthomas/chroma"
-	"github.com/alecthomas/chroma/lexers"
-	"github.com/alecthomas/chroma/quick"
-	"github.com/alecthomas/chroma/styles"
 	"github.com/babarot/gomi/config"
 	"github.com/babarot/gomi/inventory"
 	"github.com/babarot/gomi/utils"
+
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
@@ -39,7 +35,10 @@ const (
 	datefmtAbs = "absolute"
 )
 
-const listHeight = 20
+const (
+	defaultWidth  = 56
+	defaultHeight = 20
+)
 
 type NavState int
 
@@ -84,9 +83,6 @@ type Model struct {
 	viewport viewport.Model
 
 	err error
-}
-
-type InfoView struct {
 }
 
 const (
@@ -373,11 +369,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.detailFile = msg.file
 		headerHeight := lipgloss.Height(m.headerView())
 		verticalMarginHeight := headerHeight
-		viewportModel, err := m.newViewportModel(msg.file, 56, 15-verticalMarginHeight,
-			m.config.Preview.Directory,
-			m.config.Preview.Highlight,
-			m.config.Preview.Colorscheme,
-		)
+		viewportModel, err := m.newViewportModel(msg.file, defaultWidth, 15-verticalMarginHeight)
 		if err != nil {
 			fmt.Println("Error reading file:", err)
 			return m, tea.Quit
@@ -437,7 +429,7 @@ func (m Model) renderHeader(file File) string {
 		Bold(true).
 		Render(name)
 
-	line := strings.Repeat("─", max(0, 56-lipgloss.Width(title)))
+	line := strings.Repeat("─", max(0, defaultWidth-lipgloss.Width(title)))
 	return lipgloss.JoinHorizontal(lipgloss.Center, title, line)
 }
 
@@ -572,53 +564,34 @@ func getInventoryDetails(file File) tea.Cmd {
 	}
 }
 
+var headerStyle = func(cfg config.UI) lipgloss.Style {
+	fgAsBg := cfg.Color.PreviewBoarder.Foreground
+	bgAsFg := cfg.Color.PreviewBoarder.Background
+	return lipgloss.NewStyle().Padding(0, 1, 0, 1).
+		Foreground(lipgloss.Color(bgAsFg)).
+		Background(lipgloss.Color(fgAsBg))
+}
+
 func (m Model) footerView() string {
 	fg := m.config.Color.PreviewBoarder.Foreground
-	bg := m.config.Color.PreviewBoarder.Background
 	if m.cannotPreview {
 		header := m.renderHeader(m.detailFile)
 		return lipgloss.NewStyle().Foreground(lipgloss.Color(fg)).Render(strings.Repeat("─", lipgloss.Width(header)))
 	}
-	var headerStyle = lipgloss.NewStyle().Padding(0, 1, 0, 1).
-		Foreground(lipgloss.Color(bg)).
-		Background(lipgloss.Color(fg))
-	info := headerStyle.Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
+	info := headerStyle(m.config).Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
 	line := strings.Repeat("─", max(0, m.viewport.Width-lipgloss.Width(info)))
 	return lipgloss.NewStyle().Foreground(lipgloss.Color(fg)).Render(lipgloss.JoinHorizontal(lipgloss.Center, line, info))
 }
 
 func (m Model) headerView() string {
 	fg := m.config.Color.PreviewBoarder.Foreground
-	bg := m.config.Color.PreviewBoarder.Background
-	var headerStyle = lipgloss.NewStyle().Padding(0, 1, 0, 1).
-		Foreground(lipgloss.Color(fg)).
-		Background(lipgloss.Color(bg))
-	size := headerStyle.Render(renderFileSize(m.detailFile))
+	size := headerStyle(m.config).Render(renderFileSize(m.detailFile))
 	line := strings.Repeat("─", max(0, m.viewport.Width-lipgloss.Width(size)))
 	return lipgloss.NewStyle().Foreground(lipgloss.Color(fg)).Render(lipgloss.JoinHorizontal(lipgloss.Center, line, size))
 }
 
-var (
-	titleStyle = func() lipgloss.Style {
-		b := lipgloss.RoundedBorder()
-		b.Right = "├"
-		return lipgloss.NewStyle().BorderStyle(b).Padding(0, 1)
-	}()
-
-	infoStyle = func() lipgloss.Style {
-		b := lipgloss.RoundedBorder()
-		b.Left = "┤"
-		return titleStyle.BorderStyle(b)
-	}()
-)
-
-type previewModel struct {
-	viewport viewport.Model
-	file     string
-	err      error
-}
-
-func (m *Model) newViewportModel(file File, width, height int, cmd string, hl bool, cs string) (viewport.Model, error) {
+func (m *Model) newViewportModel(file File, width, height int) (viewport.Model, error) {
+	cfg := m.config.Preview
 	getFileContent := func(path string) string {
 		content := "cannot preview"
 		fi, err := os.Stat(path)
@@ -627,7 +600,7 @@ func (m *Model) newViewportModel(file File, width, height int, cmd string, hl bo
 			return content
 		}
 		if fi.IsDir() {
-			input := cmd
+			input := cfg.Directory
 			if input == "" {
 				slog.Debug("preview list_dir command is not set, fallback to builtin list_dir func")
 				lines := []string{}
@@ -677,15 +650,15 @@ func (m *Model) newViewportModel(file File, width, height int, cmd string, hl bo
 		}
 		return fileContent.String()
 	}
-
 	content := getFileContent(file.To)
 	if content == "cannot preview" {
 		m.cannotPreview = true
 	} else {
 		m.cannotPreview = false
 	}
-	if hl && !m.cannotPreview {
-		content, _ = highlight(content, file.Name, cs)
+	shouldColor := cfg.Highlight
+	if shouldColor && !m.cannotPreview {
+		content, _ = highlight(content, file.Name, cfg.Colorscheme)
 	}
 	viewportModel := viewport.New(width, height)
 	viewportModel.KeyMap = viewport.KeyMap{
@@ -698,7 +671,7 @@ func (m *Model) newViewportModel(file File, width, height int, cmd string, hl bo
 		mtype, _ := mimetype.DetectFile(file.To)
 		headerHeight := lipgloss.Height(m.headerView())
 		verticalMarginHeight := headerHeight
-		content = lipgloss.Place(56, 15-verticalMarginHeight,
+		content = lipgloss.Place(defaultWidth, 15-verticalMarginHeight,
 			lipgloss.Center, lipgloss.Center,
 			lipgloss.NewStyle().Bold(true).Transform(strings.ToUpper).Render("cannot preview")+"\n\n\n"+
 				lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(termenv.ANSIBrightBlack)).Render("("+mtype.String()+")"),
@@ -711,7 +684,7 @@ func (m *Model) newViewportModel(file File, width, height int, cmd string, hl bo
 
 func initModel(filteredFiles []inventory.File, cfg config.UI) Model {
 	slog.Debug("initModel starts")
-	const defaultWidth = 20
+	width := 20
 
 	var items []list.Item
 	var files []File
@@ -722,9 +695,9 @@ func initModel(filteredFiles []inventory.File, cfg config.UI) Model {
 		pfiles = append(pfiles, &File{File: file})
 	}
 
-	// TODO: configable
-	// l := list.New(items, ClassicDelegate{}, defaultWidth, listHeight)
-	l := list.New(items, NewRestoreDelegate(cfg, pfiles), defaultWidth, listHeight)
+	// TODO: configable?
+	// l := list.New(items, ClassicDelegate{}, width, defaultHeight)
+	l := list.New(items, NewRestoreDelegate(cfg, pfiles), width, defaultHeight)
 
 	switch cfg.Paginator {
 	case "arabic":
@@ -774,64 +747,4 @@ func Run(filteredFiles []inventory.File, cfg config.UI) ([]File, error) {
 		return []File{}, nil
 	}
 	return files, nil
-}
-
-func highlight(content, filename, colorscheme string) (string, error) {
-	defer color.Unset()
-	var l chroma.Lexer
-	l = lexers.Get(filename)
-	if l == nil {
-		l = lexers.Analyse(content)
-	}
-	if l == nil {
-		l = lexers.Fallback
-	}
-	style := styles.Get(colorscheme)
-	switch {
-	case style == nil:
-		style = styles.Get("monokai")
-	case style.Name == "swapoff":
-		style = styles.Get("monokai")
-	}
-	var buf bytes.Buffer
-	if err := quick.Highlight(&buf, content, l.Config().Name, "terminal16m", style.Name); err != nil {
-		return "", err
-	}
-	return buf.String(), nil
-}
-
-type File struct {
-	inventory.File
-}
-
-func (f File) isSelected() bool {
-	return selectionManager.Contains(f)
-}
-
-func (f File) Description() string {
-	var meta []string
-	meta = append(meta, humanize.Time(f.File.Timestamp))
-
-	_, err := os.Stat(f.File.To)
-	if os.IsNotExist(err) {
-		return "(already might have been deleted)"
-	}
-	meta = append(meta, filepath.Dir(f.File.From))
-
-	return strings.Join(meta, " "+bullet+" ")
-}
-
-func (f File) Title() string {
-	fi, err := os.Stat(f.File.To)
-	if err != nil {
-		return f.File.Name + "?"
-	}
-	if fi.IsDir() {
-		return f.File.Name + "/"
-	}
-	return f.File.Name
-}
-
-func (f File) FilterValue() string {
-	return f.File.Name
 }

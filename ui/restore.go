@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/babarot/gomi/config"
+
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -14,22 +15,18 @@ import (
 )
 
 type RestoreItemStyles struct {
-	// The Normal state.
 	NormalTitle lipgloss.Style
 	NormalDesc  lipgloss.Style
 
-	// The selected item state.
 	CursorTitle lipgloss.Style
 	CursorDesc  lipgloss.Style
 
 	SelectedTitle lipgloss.Style
 	SelectedDesc  lipgloss.Style
 
-	// The dimmed state, for when the filter input is initially activated.
 	DimmedTitle lipgloss.Style
 	DimmedDesc  lipgloss.Style
 
-	// Characters matching the current filter, if any.
 	FilterMatch lipgloss.Style
 }
 

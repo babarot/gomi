@@ -8,9 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-type ClassicDelegate struct {
-	selectionManager *SelectionManager
-}
+type ClassicDelegate struct{}
 
 func (h ClassicDelegate) Height() int                               { return 1 }
 func (h ClassicDelegate) Spacing() int                              { return 0 }
