@@ -586,17 +586,19 @@ func getInventoryDetails(file File) tea.Cmd {
 
 func (m model) footerView() string {
 	// info := infoStyle.Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
+	fg := m.cli.config.UI.Color.PreviewBoarder.Foreground
+	bg := m.cli.config.UI.Color.PreviewBoarder.Background
 	if m.cannotPreview {
 		header := renderHeader(m.detailFile)
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("#3C3C3C")).Render(strings.Repeat("─", lipgloss.Width(header)))
+		return lipgloss.NewStyle().Foreground(lipgloss.Color(fg)).Render(strings.Repeat("─", lipgloss.Width(header)))
 	}
 	// var headerStyle = lipgloss.NewStyle().Padding(0, 1, 0, 1).Background(AccentColor).Foreground(lipgloss.Color("15")).Bold(true)
 	var headerStyle = lipgloss.NewStyle().Padding(0, 1, 0, 1).
-		Foreground(lipgloss.Color("#EEEEDD")).
-		Background(lipgloss.Color("#3C3C3C"))
+		Foreground(lipgloss.Color(bg)).
+		Background(lipgloss.Color(fg))
 	info := headerStyle.Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
 	line := strings.Repeat("─", max(0, m.viewport.Width-lipgloss.Width(info)))
-	return lipgloss.NewStyle().Foreground(lipgloss.Color("#3C3C3C")).Render(lipgloss.JoinHorizontal(lipgloss.Center, line, info))
+	return lipgloss.NewStyle().Foreground(lipgloss.Color(fg)).Render(lipgloss.JoinHorizontal(lipgloss.Center, line, info))
 }
 
 func (m model) headerView() string {
@@ -604,13 +606,15 @@ func (m model) headerView() string {
 	// header := renderHeader(m.detailFile)
 	// return strings.Repeat("─", lipgloss.Width(header))
 	// var headerStyle = lipgloss.NewStyle().Padding(0, 1, 0, 1).Background(AccentColor).Foreground(lipgloss.Color("15")).Bold(true)
+	fg := m.cli.config.UI.Color.PreviewBoarder.Foreground
+	bg := m.cli.config.UI.Color.PreviewBoarder.Background
 	var headerStyle = lipgloss.NewStyle().Padding(0, 1, 0, 1).
-		Foreground(lipgloss.Color("#EEEEDD")).
-		Background(lipgloss.Color("#3C3C3C"))
+		Foreground(lipgloss.Color(fg)).
+		Background(lipgloss.Color(bg))
 	size := headerStyle.Render(renderFileSize(m.detailFile))
 	// head := strings.Repeat("─", 2) + headerStyle.Render("PREVIEW")
 	line := strings.Repeat("─", max(0, m.viewport.Width-lipgloss.Width(size)))
-	return lipgloss.NewStyle().Foreground(lipgloss.Color("#3C3C3C")).Render(lipgloss.JoinHorizontal(lipgloss.Center, line, size))
+	return lipgloss.NewStyle().Foreground(lipgloss.Color(fg)).Render(lipgloss.JoinHorizontal(lipgloss.Center, line, size))
 }
 
 var (
@@ -716,7 +720,7 @@ func (m *model) newViewportModel(file File, width, height int, cmd string, hl bo
 		content = lipgloss.Place(56, 15-verticalMarginHeight,
 			lipgloss.Center, lipgloss.Center,
 			lipgloss.NewStyle().Bold(true).Transform(strings.ToUpper).Render("cannot preview")+"\n\n\n"+
-				lipgloss.NewStyle().Render("("+mtype.String()+")"),
+				lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(termenv.ANSIBrightBlack)).Render("("+mtype.String()+")"),
 			lipgloss.WithWhitespaceChars("`"),
 			lipgloss.WithWhitespaceForeground(lipgloss.ANSIColor(termenv.ANSIBrightBlack)))
 	}

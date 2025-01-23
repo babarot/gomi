@@ -28,17 +28,19 @@ type Config struct {
 }
 
 type ConfigUI struct {
+	Color      ConfigColor   `yaml:"color"`
 	Style      string        `yaml:"style"`
 	ByeMessage string        `yaml:"bye_message"`
 	Preview    ConfigPreview `yaml:"preview"`
+	Paginator  string        `yaml:"paginator_style"`
 }
 
 type ConfigInventory struct {
-	Include IncludeConfig `yaml:"include"`
+	Include ConfigInclude `yaml:"include"`
 	Exclude ConfigExclude `yaml:"exclude"`
 }
 
-type IncludeConfig struct {
+type ConfigInclude struct {
 	Durations []string `yaml:"durations"`
 }
 
@@ -56,6 +58,15 @@ type ConfigPreview struct {
 	Colorscheme string `yaml:"colorscheme"`
 }
 
+type ConfigColor struct {
+	PreviewBoarder Color `yaml:"preview_boarder"`
+}
+
+type Color struct {
+	Foreground string `yaml:"fg"`
+	Background string `yaml:"bg"`
+}
+
 type configError struct {
 	configDir string
 	parser    parser
@@ -67,15 +78,22 @@ type parser struct{}
 func (p parser) getDefaultConfig() Config {
 	return Config{
 		UI: ConfigUI{
-			Style:      "detailed",
+			Style:      "simple | detailed",
 			ByeMessage: "bye!",
 			Preview: ConfigPreview{
 				Highlight: true,
 				Directory: "ls -F --color=always",
 			},
+			Paginator: "dots | arabic",
+			Color: ConfigColor{
+				PreviewBoarder: Color{
+					Foreground: "#3C3C3C",
+					Background: "#EEEEDD",
+				},
+			},
 		},
 		Inventory: ConfigInventory{
-			Include: IncludeConfig{
+			Include: ConfigInclude{
 				Durations: []string{"365 days"},
 			},
 			Exclude: ConfigExclude{

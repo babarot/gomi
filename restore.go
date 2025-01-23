@@ -98,6 +98,8 @@ func NewRestoreDelegate(cfg Config) RestoreDelegate {
 		showDescription = false
 	case "detailed":
 		showDescription = true
+	default:
+		showDescription = true
 	}
 	if !showDescription {
 		height = 1

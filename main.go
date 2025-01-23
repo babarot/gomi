@@ -18,6 +18,7 @@ import (
 	"github.com/adrg/xdg"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/paginator"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/docker/go-units"
@@ -254,8 +255,14 @@ func (c CLI) initModel() model {
 	// l := list.New(files, ClassicDelegate{}, defaultWidth, listHeight)
 	l := list.New(files, NewRestoreDelegate(c.config), defaultWidth, listHeight)
 
-	// TODO: which one?
-	// l.Paginator.Type = paginator.Arabic
+	switch c.config.UI.Paginator {
+	case "arabic":
+		l.Paginator.Type = paginator.Arabic
+	case "dots":
+		l.Paginator.Type = paginator.Dots
+	default:
+		l.Paginator.Type = paginator.Dots
+	}
 
 	l.Title = ""
 	l.AdditionalShortHelpKeys = func() []key.Binding {
