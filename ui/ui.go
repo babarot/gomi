@@ -12,7 +12,6 @@ import (
 	"github.com/babarot/gomi/config"
 	"github.com/babarot/gomi/inventory"
 	"github.com/babarot/gomi/utils"
-	"github.com/k0kubun/pp"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -430,7 +429,7 @@ func getInventoryDetails(file File) tea.Cmd {
 }
 
 func (m *Model) newViewportModel(file File) (viewport.Model, error) {
-	width, height := defaultWidth, 15-lipgloss.Height(m.headerView())
+	width, height := defaultWidth, 15-lipgloss.Height(m.previewHeader())
 	cfg := m.config.Preview
 	getFileContent := func(path string) string {
 		content := "cannot preview"
@@ -509,7 +508,7 @@ func (m *Model) newViewportModel(file File) (viewport.Model, error) {
 	}
 	if m.cannotPreview {
 		mtype, _ := mimetype.DetectFile(file.To)
-		headerHeight := lipgloss.Height(m.headerView())
+		headerHeight := lipgloss.Height(m.previewHeader())
 		verticalMarginHeight := headerHeight
 		content = lipgloss.Place(defaultWidth, 15-verticalMarginHeight,
 			lipgloss.Center, lipgloss.Center,
@@ -580,7 +579,6 @@ func Run(filteredFiles []inventory.File, cfg config.UI) ([]inventory.File, error
 
 	invFiles := make([]inventory.File, len(choices))
 	for i, file := range choices {
-		pp.Println(file)
 		invFiles[i] = file.File
 	}
 	return invFiles, nil

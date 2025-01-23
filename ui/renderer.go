@@ -2,7 +2,6 @@ package ui
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -13,52 +12,61 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/dustin/go-humanize"
-	"github.com/gabriel-vasile/mimetype"
 	"github.com/muesli/reflow/wordwrap"
 )
 
 func renderDetailed(m Model) string {
-	header := m.renderHeader(m.detailFile)
+	fg := m.config.Color.PreviewBoarder.Foreground
+	bg := m.config.Color.PreviewBoarder.Background
+
+	header := renderHeader(m.detailFile, fg, bg)
 
 	content := lipgloss.JoinVertical(lipgloss.Left,
 		header,
-		renderFilepath(m.detailFile),
-		renderTimestamp(m.detailFile, m.datefmt),
-		fmt.Sprintf("%s\n%s\n%s", m.headerView(), m.viewport.View(), m.footerView()),
+		m.renderFilepath(),
+		m.renderTimestamp(),
+		m.renderPreview(),
 	)
 
 	return content
 }
 
-func (m Model) renderHeader(file File) string {
-	name := file.Name
-	if file.isSelected() {
+func renderHeader(f File, fg, bg string) string {
+	name := f.Name
+
+	if f.isSelected() {
 		name = lipgloss.NewStyle().
 			Foreground(lipgloss.AdaptiveColor{Light: "#000000", Dark: "#000000"}).
 			Background(lipgloss.AdaptiveColor{Light: "#EE6FF8", Dark: "#EE6FF8"}).
-			Render(file.Name)
+			Render(name)
 	}
+
 	title := lipgloss.NewStyle().
 		BorderStyle(func() lipgloss.Border {
 			b := lipgloss.RoundedBorder()
 			b.Right = "├"
 			return b
 		}()).
+		BorderForeground(lipgloss.Color(fg)).
 		Padding(0, 1).
 		Bold(true).
 		Render(name)
 
-	line := strings.Repeat("─", max(0, defaultWidth-lipgloss.Width(title)))
+	line := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(fg)).
+		Render(strings.Repeat("─", max(0, defaultWidth-lipgloss.Width(title))))
+
 	return lipgloss.JoinHorizontal(lipgloss.Center, title, line)
 }
 
-func renderTimestamp(f File, datefmt string) string {
+func (m Model) renderTimestamp() string {
+	file := m.detailFile
 	var ts string
-	switch datefmt {
-	case "absolute":
-		ts = f.Timestamp.Format(time.DateTime)
+	switch m.datefmt {
+	case datefmtAbs:
+		ts = file.Timestamp.Format(time.DateTime)
 	default:
-		ts = humanize.Time(f.Timestamp)
+		ts = humanize.Time(file.Timestamp)
 	}
 	return styles.SectionStyle.Render(
 		lipgloss.JoinHorizontal(
@@ -68,28 +76,19 @@ func renderTimestamp(f File, datefmt string) string {
 	)
 }
 
-func renderFilepath(f File) string {
-	s := filepath.Dir(f.From)
+func (m Model) renderFilepath() string {
+	file := m.detailFile
+	text := filepath.Dir(file.From)
 	w := wordwrap.NewWriter(46)
 	w.Breakpoints = []rune{'/', '.'}
 	w.KeepNewlines = false
-	_, _ = w.Write([]byte(s))
+	_, _ = w.Write([]byte(text))
 	_ = w.Close()
 	return styles.SectionStyle.Render(
 		lipgloss.JoinVertical(
 			lipgloss.Left,
 			styles.SectionTitleStyle.MarginBottom(1).Render("Where it was"),
 			lipgloss.NewStyle().Render(w.String())),
-	)
-}
-
-func renderMetadata(f File) string {
-	return lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		styles.SectionStyle.Render(
-			lipgloss.JoinVertical(lipgloss.Left, styles.SectionTitleStyle.MarginBottom(1).Render("Size"), renderFileSize(f))),
-		styles.SectionStyle.Render(
-			lipgloss.JoinVertical(lipgloss.Left, styles.SectionTitleStyle.MarginBottom(1).Render("Type"), renderFileType(f))),
 	)
 }
 
@@ -104,38 +103,11 @@ func renderFileSize(f File) string {
 	return sizeStr
 }
 
-func renderFileType(f File) string {
-	var result string
-	fi, err := os.Stat(f.To)
-	if err != nil {
-		switch {
-		case os.IsNotExist(err):
-			result = "file has been totally removed"
-		default:
-			result = err.Error()
-		}
-	} else {
-		if fi.IsDir() {
-			result = "(directory)"
-		}
-	}
-
-	if result == "" {
-		mtype, err := mimetype.DetectFile(f.File.To)
-		if err != nil {
-			result = err.Error()
-		} else {
-			result = mtype.String()
-		}
-	}
-
-	return result
-}
-
-func (m Model) footerView() string {
+func (m Model) previewFooter() string {
 	fg := m.config.Color.PreviewBoarder.Foreground
+	bg := m.config.Color.PreviewBoarder.Background
 	if m.cannotPreview {
-		header := m.renderHeader(m.detailFile)
+		header := renderHeader(m.detailFile, fg, bg)
 		return lipgloss.NewStyle().Foreground(lipgloss.Color(fg)).Render(strings.Repeat("─", lipgloss.Width(header)))
 	}
 	info := headerStyle(m.config).Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
@@ -143,7 +115,7 @@ func (m Model) footerView() string {
 	return lipgloss.NewStyle().Foreground(lipgloss.Color(fg)).Render(lipgloss.JoinHorizontal(lipgloss.Center, line, info))
 }
 
-func (m Model) headerView() string {
+func (m Model) previewHeader() string {
 	fg := m.config.Color.PreviewBoarder.Foreground
 	size := headerStyle(m.config).Render(renderFileSize(m.detailFile))
 	line := strings.Repeat("─", max(0, m.viewport.Width-lipgloss.Width(size)))
@@ -156,4 +128,12 @@ var headerStyle = func(cfg config.UI) lipgloss.Style {
 	return lipgloss.NewStyle().Padding(0, 1, 0, 1).
 		Foreground(lipgloss.Color(bgAsFg)).
 		Background(lipgloss.Color(fgAsBg))
+}
+
+func (m Model) renderPreview() string {
+	return fmt.Sprintf("%s\n%s\n%s",
+		m.previewHeader(),
+		m.viewport.View(),
+		m.previewFooter(),
+	)
 }
