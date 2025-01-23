@@ -3,30 +3,24 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
 
-	"github.com/adrg/xdg"
 	"github.com/babarot/gomi/config"
 	"github.com/babarot/gomi/inventory"
 	"github.com/babarot/gomi/log"
 	"github.com/babarot/gomi/ui"
 	"github.com/jessevdk/go-flags"
-	"github.com/lmittmann/tint"
-	"github.com/mattn/go-isatty"
-	"github.com/nxadm/tail"
 	"github.com/rs/xid"
-	slogmulti "github.com/samber/slog-multi"
 	"golang.org/x/sync/errgroup"
 )
 
 const (
-	appName = "gomi"
+	appName    = "gomi"
+	envGomiLog = "GOMI_LOG"
 )
 
 // These variables are set in build step
@@ -59,7 +53,6 @@ type CLI struct {
 	option    Option
 	inventory inventory.Inventory
 	runID     string
-	logFile   string
 }
 
 func main() {
@@ -75,70 +68,12 @@ var runID = sync.OnceValue(func() string {
 	return id
 })
 
-var logFilePath string
-
 func init() {
-	var errs []error
-	fp, ok := os.LookupEnv("LOGS_DIRECTORY")
-	if !ok {
-		var err error
-		fp, err = xdg.CacheFile("gomi/log")
-		if err != nil {
-			errs = append(errs, err)
-			fp = "gomi.log"
-		}
-		logFilePath = fp
-		slog.Debug("xdg cache", "dir", fp)
-	}
-
-	var fw, cw io.Writer
-	if file, err := os.OpenFile(fp, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err == nil {
-		fw = file
-	} else {
-		errs = append(errs, err)
-		fw = io.Discard
-	}
-
-	if os.Getenv("DEBUG") == "" {
-		cw = io.Discard
-	} else {
-		cw = os.Stderr
-	}
-
-	handler := log.NewWrapHandler(
-		slog.NewJSONHandler(fw, &slog.HandlerOptions{Level: slog.LevelDebug}),
-		func() []slog.Attr {
-			return []slog.Attr{
-				slog.String("run_id", runID()),
-			}
-		})
-
-	logger := slog.New(
-		slogmulti.Fanout(
-			handler,
-			tint.NewHandler(cw, &tint.Options{
-				Level:      slog.LevelDebug,
-				TimeFormat: time.Kitchen,
-			}),
-		),
-	)
-	slog.SetDefault(logger)
-
-	if len(errs) > 0 {
-		slog.Error("Log setup failed.", log.LogErrAttr(errors.Join(errs...)))
-	}
+	log.AppName = appName
+	log.EnvLogPath = envGomiLog
 }
 
 func runMain() error {
-	defer slog.Debug("finished main function")
-	slog.Debug("runMain starts",
-		slog.Group(
-			"attributes",
-			slog.String("version", Version),
-			slog.String("revision", Revision),
-		),
-	)
-
 	var opt Option
 	parser := flags.NewParser(&opt, flags.Default)
 	parser.Name = appName
@@ -161,13 +96,24 @@ func runMain() error {
 		option:    opt,
 		inventory: inventory.New(cfg.Inventory),
 		runID:     runID(),
-		logFile:   logFilePath,
 	}
 	return cli.Run(args)
 }
 
 func (c CLI) Run(args []string) error {
-	slog.Debug("cli.Run starts")
+	defer slog.Debug("finished main function")
+	log.New(
+		slog.String("context", "main"),
+		slog.String("run_id", runID()),
+	).Debug(
+		"cli.Run starts",
+		slog.Group(
+			"attributes",
+			slog.String("version", Version),
+			slog.String("revision", Revision),
+		),
+	)
+
 	if err := c.inventory.Open(); err != nil {
 		return err
 	}
@@ -177,9 +123,15 @@ func (c CLI) Run(args []string) error {
 		fmt.Fprintf(os.Stdout, "%s %s (%s)\n", appName, Version, Revision)
 		return nil
 	case c.option.Restore:
+		slog.SetDefault(
+			log.New(
+				slog.String("context", "restore"),
+				slog.String("run_id", runID()),
+			),
+		)
 		return c.Restore()
 	case c.option.ViewLogs:
-		return viewLogs(c.logFile)
+		return log.Follow(os.Stdout)
 	default:
 	}
 
@@ -264,16 +216,4 @@ func (c CLI) Put(args []string) error {
 	defer eg.Wait()
 
 	return eg.Wait()
-}
-
-func viewLogs(file string) error {
-	shouldFollow := isatty.IsTerminal(os.Stdout.Fd())
-	t, err := tail.TailFile(file, tail.Config{Follow: shouldFollow, ReOpen: shouldFollow})
-	if err != nil {
-		return err
-	}
-	for line := range t.Lines {
-		fmt.Println(line.Text)
-	}
-	return nil
 }

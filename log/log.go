@@ -1,59 +1,62 @@
 package log
 
 import (
-	"context"
 	"fmt"
+	"io"
 	"log/slog"
+	"os"
+
+	"github.com/adrg/xdg"
+	"github.com/mattn/go-isatty"
+	"github.com/nxadm/tail"
 )
 
-type WrapHandler struct {
-	handler slog.Handler
-	fn      WrapFunc
-}
+var (
+	AppName    string
+	EnvLogPath string
+)
 
-type WrapFunc func() []slog.Attr
+func New(attrs ...slog.Attr) *slog.Logger {
+	fp := getLogPath(EnvLogPath)
 
-func NewWrapHandler(h slog.Handler, fn WrapFunc) *WrapHandler {
-	if lh, ok := h.(*WrapHandler); ok {
-		h = lh.Handler()
+	var w io.Writer
+	if file, err := os.OpenFile(fp, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err == nil {
+		w = file
+	} else {
+		w = os.Stderr
 	}
-	return &WrapHandler{handler: h, fn: fn}
+
+	handler := NewWrapHandler(
+		slog.NewJSONHandler(w, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		func() []slog.Attr {
+			return attrs
+		})
+
+	return slog.New(handler)
 }
 
-func (h *WrapHandler) Enabled(ctx context.Context, level slog.Level) bool {
-	return h.handler.Enabled(ctx, level)
-}
+func Follow(w io.Writer) error {
+	fp := getLogPath(EnvLogPath)
 
-func (h *WrapHandler) Handle(ctx context.Context, r slog.Record) error {
-	r.AddAttrs(h.fn()...)
-	return h.handler.Handle(ctx, r)
-}
-
-func (h *WrapHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return NewWrapHandler(h.handler.WithAttrs(attrs), h.fn)
-}
-
-func (h *WrapHandler) WithGroup(name string) slog.Handler {
-	return NewWrapHandler(h.handler.WithGroup(name), h.fn)
-}
-
-func (h *WrapHandler) Handler() slog.Handler {
-	return h.handler
-}
-
-// Must panics if the input predicate is false.
-func Must(pred bool, msg string, args ...any) {
-	if !pred {
-		panic(fmt.Sprintf(msg, args...))
+	shouldFollow := isatty.IsTerminal(os.Stdout.Fd())
+	t, err := tail.TailFile(fp, tail.Config{Follow: shouldFollow, ReOpen: shouldFollow})
+	if err != nil {
+		return err
 	}
+	for line := range t.Lines {
+		fmt.Fprintln(w, line.Text)
+	}
+	return nil
 }
 
-const logErrKey = "err"
-
-// LogErrAttr wraps an error into a loggable attribute.
-func LogErrAttr(err error) slog.Attr {
-	if err == nil {
-		return slog.Group(logErrKey)
+func getLogPath(env string) string {
+	fp, ok := os.LookupEnv(env)
+	if !ok {
+		var err error
+		fp, err = xdg.CacheFile(fmt.Sprintf("%s/log", AppName))
+		if err != nil {
+			fp = fmt.Sprintf("%s.log", AppName)
+		}
 	}
-	return slog.String(logErrKey, err.Error())
+	return fp
 }
