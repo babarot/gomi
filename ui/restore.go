@@ -1,4 +1,4 @@
-package main
+package ui
 
 import (
 	"fmt"
@@ -90,11 +90,11 @@ type RestoreDelegate struct {
 }
 
 // NewRestoreDelegate creates a new delegate with Restore styles.
-func NewRestoreDelegate(cfg config.Config) RestoreDelegate {
+func NewRestoreDelegate(cfg config.UI, files []*File) RestoreDelegate {
 	var height = 2
 	var spacing = 1
 	var showDescription bool
-	switch cfg.UI.Style {
+	switch cfg.Style {
 	case "simple":
 		showDescription = false
 	case "detailed":

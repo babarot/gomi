@@ -1,4 +1,4 @@
-package main
+package ui
 
 var (
 	selectionManager = &SelectionManager{items: []File{}}

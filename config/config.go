@@ -23,11 +23,11 @@ const envGomiConfigPath = "GOMI_CONFIG_PATH"
 const defaultXDGConfigDirname = ".config"
 
 type Config struct {
-	UI        uiConfig  `yaml:"ui"`
+	UI        UI        `yaml:"ui"`
 	Inventory Inventory `yaml:"inventory"`
 }
 
-type uiConfig struct {
+type UI struct {
 	Color      colorConfig   `yaml:"color"`
 	Style      string        `yaml:"style"`
 	ByeMessage string        `yaml:"bye_message"`
@@ -41,7 +41,7 @@ type Inventory struct {
 }
 
 type includeConfig struct {
-	Durations []string `yaml:"durations"`
+	Durations []string `yaml:"deleted_within_days"`
 }
 
 type excludeConfig struct {
@@ -77,7 +77,7 @@ type parser struct{}
 
 func (p parser) getDefaultConfig() Config {
 	return Config{
-		UI: uiConfig{
+		UI: UI{
 			Style:      "simple | detailed",
 			ByeMessage: "bye!",
 			Preview: previewConfig{

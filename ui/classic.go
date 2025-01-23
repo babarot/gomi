@@ -1,4 +1,4 @@
-package main
+package ui
 
 import (
 	"fmt"
@@ -8,7 +8,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-type ClassicDelegate struct{}
+type ClassicDelegate struct {
+	selectionManager *SelectionManager
+}
 
 func (h ClassicDelegate) Height() int                               { return 1 }
 func (h ClassicDelegate) Spacing() int                              { return 0 }

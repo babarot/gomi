@@ -1,7 +1,8 @@
-package main
+package log
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 )
 
@@ -38,4 +39,21 @@ func (h *WrapHandler) WithGroup(name string) slog.Handler {
 
 func (h *WrapHandler) Handler() slog.Handler {
 	return h.handler
+}
+
+// Must panics if the input predicate is false.
+func Must(pred bool, msg string, args ...any) {
+	if !pred {
+		panic(fmt.Sprintf(msg, args...))
+	}
+}
+
+const logErrKey = "err"
+
+// LogErrAttr wraps an error into a loggable attribute.
+func LogErrAttr(err error) slog.Attr {
+	if err == nil {
+		return slog.Group(logErrKey)
+	}
+	return slog.String(logErrKey, err.Error())
 }

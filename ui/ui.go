@@ -1,7 +1,8 @@
-package main
+package ui
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -11,9 +12,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alecthomas/chroma"
+	"github.com/alecthomas/chroma/lexers"
+	"github.com/alecthomas/chroma/quick"
+	"github.com/alecthomas/chroma/styles"
+	"github.com/babarot/gomi/config"
+	"github.com/babarot/gomi/inventory"
+	"github.com/babarot/gomi/utils"
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/paginator"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -24,6 +33,13 @@ import (
 	"github.com/muesli/termenv"
 	"github.com/samber/lo"
 )
+
+const (
+	datefmtRel = "relative"
+	datefmtAbs = "absolute"
+)
+
+const listHeight = 20
 
 type NavState int
 
@@ -36,6 +52,7 @@ const (
 type DetailsMsg struct {
 	file File
 }
+
 type GotInventorysMsg struct {
 	files []list.Item
 }
@@ -43,10 +60,6 @@ type GotInventorysMsg struct {
 type errorMsg struct {
 	err error
 }
-
-var (
-	errCannotPreview = errors.New("cannot preview")
-)
 
 func (e errorMsg) Error() string { return e.err.Error() }
 
@@ -56,53 +69,30 @@ func errorCmd(err error) tea.Cmd {
 	}
 }
 
-type model struct {
+type Model struct {
+	selector      *SelectionManager
 	navState      NavState
 	detailFile    File
 	datefmt       string
 	cannotPreview bool
 
 	files   []File
-	cli     *CLI
+	config  config.UI
 	choices []File
 
 	list     list.Model
 	viewport viewport.Model
-	err      error
+
+	err error
+}
+
+type InfoView struct {
 }
 
 const (
 	bullet   = "•"
 	ellipsis = "…"
 )
-
-func (f File) Description() string {
-	var meta []string
-	meta = append(meta, humanize.Time(f.Timestamp))
-
-	_, err := os.Stat(f.To)
-	if os.IsNotExist(err) {
-		return "(already might have been deleted)"
-	}
-	meta = append(meta, filepath.Dir(f.From))
-
-	return strings.Join(meta, " "+bullet+" ")
-}
-
-func (f File) Title() string {
-	fi, err := os.Stat(f.To)
-	if err != nil {
-		return f.Name + "?"
-	}
-	if fi.IsDir() {
-		return f.Name + "/"
-	}
-	return f.Name
-}
-
-func (f File) FilterValue() string {
-	return f.Name
-}
 
 var _ list.DefaultItem = (*File)(nil)
 
@@ -111,17 +101,17 @@ type inventoryLoadedMsg struct {
 	err   error
 }
 
-func (m model) loadInventory() tea.Msg {
+func (m Model) loadInventory() tea.Msg {
 	files := m.files
 	slog.Debug("loadInventory starts")
 	if len(files) == 0 {
 		return errorMsg{errors.New("no deleted files found")}
 	}
 	sort.Slice(files, func(i, j int) bool {
-		return files[i].Timestamp.After(files[j].Timestamp)
+		return files[i].File.Timestamp.After(files[j].File.Timestamp)
 	})
-	files = lo.Reject(files, func(file File, index int) bool {
-		_, err := os.Stat(file.To)
+	files = lo.Reject(files, func(f File, index int) bool {
+		_, err := os.Stat(f.File.To)
 		return os.IsNotExist(err)
 	})
 	items := make([]list.Item, len(files))
@@ -131,7 +121,7 @@ func (m model) loadInventory() tea.Msg {
 	return inventoryLoadedMsg{files: items}
 }
 
-func (m model) Init() tea.Cmd {
+func (m Model) Init() tea.Cmd {
 	return tea.Batch(
 		m.loadInventory,
 	)
@@ -231,7 +221,7 @@ func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{k.ShortHelp(), {}}
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmds := []tea.Cmd{}
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -384,9 +374,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		headerHeight := lipgloss.Height(m.headerView())
 		verticalMarginHeight := headerHeight
 		viewportModel, err := m.newViewportModel(msg.file, 56, 15-verticalMarginHeight,
-			m.cli.config.UI.Preview.Directory,
-			m.cli.config.UI.Preview.Highlight,
-			m.cli.config.UI.Preview.Colorscheme,
+			m.config.Preview.Directory,
+			m.config.Preview.Highlight,
+			m.config.Preview.Colorscheme,
 		)
 		if err != nil {
 			fmt.Println("Error reading file:", err)
@@ -416,24 +406,22 @@ var (
 	stylesSectionTitleStyle = lipgloss.NewStyle().Padding(0, 1).Background(AccentColor).Foreground(lipgloss.Color("15")).Bold(true).Transform(strings.ToUpper)
 )
 
-func renderInventoryDetails(m model) string {
-	header := renderHeader(m.detailFile)
+func renderInventoryDetails(m Model) string {
+	header := m.renderHeader(m.detailFile)
 
 	content := lipgloss.JoinVertical(lipgloss.Left,
 		header,
 		renderDeletedWhere(m.detailFile),
 		renderDeletedAt(m.detailFile, m.datefmt),
-		// renderMetadata(m.detailFile),
 		fmt.Sprintf("%s\n%s\n%s", m.headerView(), m.viewport.View(), m.footerView()),
 	)
 
 	return content
 }
 
-func renderHeader(file File) string {
+func (m Model) renderHeader(file File) string {
 	name := file.Name
 	if file.isSelected() {
-		// name = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#EE6FF8", Dark: "#EE6FF8"}).Render(file.Name)
 		name = lipgloss.NewStyle().
 			Foreground(lipgloss.AdaptiveColor{Light: "#000000", Dark: "#000000"}).
 			Background(lipgloss.AdaptiveColor{Light: "#EE6FF8", Dark: "#EE6FF8"}).
@@ -496,7 +484,7 @@ func renderMetadata(f File) string {
 
 func renderFileSize(f File) string {
 	var sizeStr string
-	size, err := DirSize(f.To)
+	size, err := utils.DirSize(f.To)
 	if err != nil {
 		sizeStr = "(Cannot be calculated)"
 	} else {
@@ -522,7 +510,7 @@ func renderFileType(f File) string {
 	}
 
 	if result == "" {
-		mtype, err := mimetype.DetectFile(f.To)
+		mtype, err := mimetype.DetectFile(f.File.To)
 		if err != nil {
 			result = err.Error()
 		} else {
@@ -533,7 +521,7 @@ func renderFileType(f File) string {
 	return result
 }
 
-func (m model) View() string {
+func (m Model) View() string {
 	defer color.Unset()
 	s := ""
 
@@ -584,15 +572,13 @@ func getInventoryDetails(file File) tea.Cmd {
 	}
 }
 
-func (m model) footerView() string {
-	// info := infoStyle.Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
-	fg := m.cli.config.UI.Color.PreviewBoarder.Foreground
-	bg := m.cli.config.UI.Color.PreviewBoarder.Background
+func (m Model) footerView() string {
+	fg := m.config.Color.PreviewBoarder.Foreground
+	bg := m.config.Color.PreviewBoarder.Background
 	if m.cannotPreview {
-		header := renderHeader(m.detailFile)
+		header := m.renderHeader(m.detailFile)
 		return lipgloss.NewStyle().Foreground(lipgloss.Color(fg)).Render(strings.Repeat("─", lipgloss.Width(header)))
 	}
-	// var headerStyle = lipgloss.NewStyle().Padding(0, 1, 0, 1).Background(AccentColor).Foreground(lipgloss.Color("15")).Bold(true)
 	var headerStyle = lipgloss.NewStyle().Padding(0, 1, 0, 1).
 		Foreground(lipgloss.Color(bg)).
 		Background(lipgloss.Color(fg))
@@ -601,18 +587,13 @@ func (m model) footerView() string {
 	return lipgloss.NewStyle().Foreground(lipgloss.Color(fg)).Render(lipgloss.JoinHorizontal(lipgloss.Center, line, info))
 }
 
-func (m model) headerView() string {
-	// info := infoStyle.Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
-	// header := renderHeader(m.detailFile)
-	// return strings.Repeat("─", lipgloss.Width(header))
-	// var headerStyle = lipgloss.NewStyle().Padding(0, 1, 0, 1).Background(AccentColor).Foreground(lipgloss.Color("15")).Bold(true)
-	fg := m.cli.config.UI.Color.PreviewBoarder.Foreground
-	bg := m.cli.config.UI.Color.PreviewBoarder.Background
+func (m Model) headerView() string {
+	fg := m.config.Color.PreviewBoarder.Foreground
+	bg := m.config.Color.PreviewBoarder.Background
 	var headerStyle = lipgloss.NewStyle().Padding(0, 1, 0, 1).
 		Foreground(lipgloss.Color(fg)).
 		Background(lipgloss.Color(bg))
 	size := headerStyle.Render(renderFileSize(m.detailFile))
-	// head := strings.Repeat("─", 2) + headerStyle.Render("PREVIEW")
 	line := strings.Repeat("─", max(0, m.viewport.Width-lipgloss.Width(size)))
 	return lipgloss.NewStyle().Foreground(lipgloss.Color(fg)).Render(lipgloss.JoinHorizontal(lipgloss.Center, line, size))
 }
@@ -637,7 +618,7 @@ type previewModel struct {
 	err      error
 }
 
-func (m *model) newViewportModel(file File, width, height int, cmd string, hl bool, cs string) (viewport.Model, error) {
+func (m *Model) newViewportModel(file File, width, height int, cmd string, hl bool, cs string) (viewport.Model, error) {
 	getFileContent := func(path string) string {
 		content := "cannot preview"
 		fi, err := os.Stat(path)
@@ -667,7 +648,7 @@ func (m *model) newViewportModel(file File, width, height int, cmd string, hl bo
 				}
 				return strings.Join(lines, "\n")
 			}
-			out, _, err := runBash(input)
+			out, _, err := utils.RunShell(input)
 			if err != nil {
 				slog.Error(fmt.Sprintf("command failed: %s", input), "error", err)
 			}
@@ -726,4 +707,131 @@ func (m *model) newViewportModel(file File, width, height int, cmd string, hl bo
 	}
 	viewportModel.SetContent(content)
 	return viewportModel, nil
+}
+
+func initModel(filteredFiles []inventory.File, cfg config.UI) Model {
+	slog.Debug("initModel starts")
+	const defaultWidth = 20
+
+	var items []list.Item
+	var files []File
+	var pfiles []*File
+	for _, file := range filteredFiles {
+		items = append(items, File{File: file})
+		files = append(files, File{File: file})
+		pfiles = append(pfiles, &File{File: file})
+	}
+
+	// TODO: configable
+	// l := list.New(items, ClassicDelegate{}, defaultWidth, listHeight)
+	l := list.New(items, NewRestoreDelegate(cfg, pfiles), defaultWidth, listHeight)
+
+	switch cfg.Paginator {
+	case "arabic":
+		l.Paginator.Type = paginator.Arabic
+	case "dots":
+		l.Paginator.Type = paginator.Dots
+	default:
+		l.Paginator.Type = paginator.Dots
+	}
+
+	l.Title = ""
+	l.AdditionalShortHelpKeys = func() []key.Binding {
+		return []key.Binding{listAdditionalKeys.Enter, listAdditionalKeys.Space}
+	}
+	l.AdditionalFullHelpKeys = func() []key.Binding {
+		return []key.Binding{listAdditionalKeys.Enter, listAdditionalKeys.Space, keys.Quit, keys.Select, keys.DeSelect}
+	}
+	l.DisableQuitKeybindings()
+	l.SetShowStatusBar(false)
+	l.SetShowTitle(false)
+
+	m := Model{
+		selector: &SelectionManager{},
+		navState: INVENTORY_LIST,
+		datefmt:  datefmtRel,
+		// files:     files,
+		files:  files,
+		config: cfg,
+		// models
+		list:     l,
+		viewport: viewport.Model{},
+	}
+	return m
+}
+
+func Run(filteredFiles []inventory.File, cfg config.UI) ([]File, error) {
+	m := initModel(filteredFiles, cfg)
+	returnModel, err := tea.NewProgram(m).Run()
+	if err != nil {
+		return []File{}, err
+	}
+	files := returnModel.(Model).choices
+	if returnModel.(Model).navState == QUITTING {
+		if msg := cfg.ByeMessage; msg != "" {
+			fmt.Println(msg)
+		}
+		return []File{}, nil
+	}
+	return files, nil
+}
+
+func highlight(content, filename, colorscheme string) (string, error) {
+	defer color.Unset()
+	var l chroma.Lexer
+	l = lexers.Get(filename)
+	if l == nil {
+		l = lexers.Analyse(content)
+	}
+	if l == nil {
+		l = lexers.Fallback
+	}
+	style := styles.Get(colorscheme)
+	switch {
+	case style == nil:
+		style = styles.Get("monokai")
+	case style.Name == "swapoff":
+		style = styles.Get("monokai")
+	}
+	var buf bytes.Buffer
+	if err := quick.Highlight(&buf, content, l.Config().Name, "terminal16m", style.Name); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+type File struct {
+	inventory.File
+}
+
+func (f File) isSelected() bool {
+	return selectionManager.Contains(f)
+}
+
+func (f File) Description() string {
+	var meta []string
+	meta = append(meta, humanize.Time(f.File.Timestamp))
+
+	_, err := os.Stat(f.File.To)
+	if os.IsNotExist(err) {
+		return "(already might have been deleted)"
+	}
+	meta = append(meta, filepath.Dir(f.File.From))
+
+	return strings.Join(meta, " "+bullet+" ")
+}
+
+func (f File) Title() string {
+	fi, err := os.Stat(f.File.To)
+	if err != nil {
+		return f.File.Name + "?"
+	}
+	if fi.IsDir() {
+		return f.File.Name + "/"
+	}
+	return f.File.Name
+}
+
+func (f File) FilterValue() string {
+	return f.File.Name
 }

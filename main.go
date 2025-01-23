@@ -1,64 +1,37 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
-	"regexp"
-	"slices"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/adrg/xdg"
 	"github.com/babarot/gomi/config"
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/paginator"
-	"github.com/charmbracelet/bubbles/viewport"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/docker/go-units"
-	"github.com/gobwas/glob"
+	"github.com/babarot/gomi/inventory"
+	"github.com/babarot/gomi/log"
+	"github.com/babarot/gomi/ui"
 	"github.com/jessevdk/go-flags"
-	"github.com/k1LoW/duration"
 	"github.com/lmittmann/tint"
 	"github.com/nxadm/tail"
 	"github.com/rs/xid"
-	"github.com/samber/lo"
 	slogmulti "github.com/samber/slog-multi"
 	"golang.org/x/sync/errgroup"
 )
 
 const (
-	appName    = "gomi"
-	gomiDotDir = ".gomi"
-	envGomiLog = "GOMI_LOG"
-
-	inventoryVersion = 1
-	inventoryFile    = "inventory.json"
+	appName = "gomi"
 )
-
-const (
-	datefmtRel = "relative"
-	datefmtAbs = "absolute"
-)
-
-const listHeight = 20
 
 // These variables are set in build step
 var (
 	Version  = "unset"
 	Revision = "unset"
-)
-
-var (
-	gomiPath      = filepath.Join(os.Getenv("HOME"), gomiDotDir)
-	inventoryPath = filepath.Join(gomiPath, inventoryFile)
 )
 
 type Option struct {
@@ -68,13 +41,6 @@ type Option struct {
 	Config   string   `long:"config" description:"Path to config file" default:""`
 	RmOption RmOption `group:"Dummy Options (compatible with rm)"`
 }
-
-// use this configuration file
-// (default lookup:
-//   1. a .gomi.yaml file if inside a git repo
-//   2. $GOMI_ENV_CONFIG env var
-//   3. $XDG_CONFIG_HOME/gh-dash/config.yml
-// )
 
 // This should be not conflicts with app option
 // https://man7.org/linux/man-pages/man1/rm.1.html
@@ -87,32 +53,10 @@ type RmOption struct {
 	OneFileSystem bool `long:"one-file-system" description:"(dummy) when removing a hierarchy recursively, skip any directory\n....... that is on a file system different from that of the\n....... corresponding command line argument"`
 }
 
-// inventory represents the log data of deleted objects
-type inventory struct {
-	Version int    `json:"version"`
-	Files   []File `json:"files"`
-
-	config config.Inventory
-	path   string
-}
-
-type File struct {
-	Name      string    `json:"name"`
-	ID        string    `json:"id"`
-	RunID     string    `json:"group_id"` // to keep backward compatible
-	From      string    `json:"from"`
-	To        string    `json:"to"`
-	Timestamp time.Time `json:"timestamp"`
-}
-
-func (f File) isSelected() bool {
-	return selectionManager.Contains(f)
-}
-
 type CLI struct {
 	config    config.Config
 	option    Option
-	inventory inventory
+	inventory inventory.Inventory
 	runID     string
 	logFile   string
 }
@@ -160,7 +104,7 @@ func init() {
 		cw = os.Stderr
 	}
 
-	handler := NewWrapHandler(
+	handler := log.NewWrapHandler(
 		slog.NewJSONHandler(fw, &slog.HandlerOptions{Level: slog.LevelDebug}),
 		func() []slog.Attr {
 			return []slog.Attr{
@@ -180,7 +124,7 @@ func init() {
 	slog.SetDefault(logger)
 
 	if len(errs) > 0 {
-		slog.Error("Log setup failed.", LogErrAttr(errors.Join(errs...)))
+		slog.Error("Log setup failed.", log.LogErrAttr(errors.Join(errs...)))
 	}
 }
 
@@ -214,7 +158,7 @@ func runMain() error {
 	cli := CLI{
 		config:    cfg,
 		option:    opt,
-		inventory: inventory{path: inventoryPath, config: cfg.Inventory},
+		inventory: inventory.New(cfg.Inventory),
 		runID:     runID(),
 		logFile:   logFilePath,
 	}
@@ -223,7 +167,7 @@ func runMain() error {
 
 func (c CLI) Run(args []string) error {
 	slog.Debug("cli.Run starts")
-	if err := c.inventory.open(); err != nil {
+	if err := c.inventory.Open(); err != nil {
 		return err
 	}
 
@@ -232,7 +176,6 @@ func (c CLI) Run(args []string) error {
 		fmt.Fprintf(os.Stdout, "%s %s (%s)\n", appName, Version, Revision)
 		return nil
 	case c.option.Restore:
-		slog.Debug("open restore view")
 		return c.Restore()
 	case c.option.ViewLogs:
 		return viewLogs(c.logFile)
@@ -242,70 +185,16 @@ func (c CLI) Run(args []string) error {
 	return c.Put(args)
 }
 
-func (c CLI) initModel() model {
-	slog.Debug("initModel starts")
-	const defaultWidth = 20
-
-	filteredFiles := c.inventory.filter()
-	var files []list.Item
-	for _, file := range filteredFiles {
-		files = append(files, file)
-	}
-
-	// TODO: configable
-	// l := list.New(files, ClassicDelegate{}, defaultWidth, listHeight)
-	l := list.New(files, NewRestoreDelegate(c.config), defaultWidth, listHeight)
-
-	switch c.config.UI.Paginator {
-	case "arabic":
-		l.Paginator.Type = paginator.Arabic
-	case "dots":
-		l.Paginator.Type = paginator.Dots
-	default:
-		l.Paginator.Type = paginator.Dots
-	}
-
-	l.Title = ""
-	l.AdditionalShortHelpKeys = func() []key.Binding {
-		return []key.Binding{listAdditionalKeys.Enter, listAdditionalKeys.Space}
-	}
-	l.AdditionalFullHelpKeys = func() []key.Binding {
-		return []key.Binding{listAdditionalKeys.Enter, listAdditionalKeys.Space, keys.Quit, keys.Select, keys.DeSelect}
-	}
-	l.DisableQuitKeybindings()
-	l.SetShowStatusBar(false)
-	l.SetShowTitle(false)
-
-	m := model{
-		navState: INVENTORY_LIST,
-		datefmt:  datefmtRel,
-		files:    filteredFiles,
-		cli:      &c,
-		// models
-		list:     l,
-		viewport: viewport.Model{},
-	}
-	return m
-}
-
 func (c CLI) Restore() error {
-	m := c.initModel()
-	returnModel, err := tea.NewProgram(m).Run()
+	files, err := ui.Run(c.inventory.Filter(), c.config.UI)
 	if err != nil {
 		return err
-	}
-	files := returnModel.(model).choices
-	if returnModel.(model).navState == QUITTING {
-		if msg := c.config.UI.ByeMessage; msg != "" {
-			fmt.Println(msg)
-		}
-		return nil
 	}
 
 	var errs []error
 	for _, file := range files {
 		defer func() {
-			err := c.inventory.remove(file)
+			err := c.inventory.Remove(file.File)
 			if err != nil {
 				slog.Error(fmt.Sprintf("removing from inventory failed: %s", file.Name), "error", err)
 			}
@@ -322,7 +211,6 @@ func (c CLI) Restore() error {
 			errs = append(errs, err)
 			slog.Error(fmt.Sprintf("removing from inventory failed: %s", file.Name), "error", err)
 		}
-		// result = multierror.Append(result, err)
 	}
 
 	// respect https://github.com/hashicorp/go-multierror
@@ -342,7 +230,7 @@ func (c CLI) Put(args []string) error {
 		return errors.New("too few arguments")
 	}
 
-	files := make([]File, len(args))
+	files := make([]inventory.File, len(args))
 
 	var eg errgroup.Group
 
@@ -353,15 +241,10 @@ func (c CLI) Put(args []string) error {
 			if os.IsNotExist(err) {
 				return fmt.Errorf("%s: no such file or directory", arg)
 			}
-			file, err := getFileMetadata(c.runID, arg)
+			file, err := inventory.FileInfo(c.runID, arg)
 			if err != nil {
 				return err
 			}
-
-			// For debugging
-			var buf bytes.Buffer
-			file.toJSON(&buf)
-			slog.Debug(fmt.Sprintf("generating file metadata: %s", buf.String()))
 
 			files[i] = file
 			_ = os.MkdirAll(filepath.Dir(file.To), 0777)
@@ -369,165 +252,10 @@ func (c CLI) Put(args []string) error {
 			return os.Rename(file.From, file.To)
 		})
 	}
-	defer c.inventory.save(files)
-
+	defer c.inventory.Save(files)
 	defer eg.Wait()
-	if c.option.RmOption.Force {
-		// ignore errors when given rm -f option
-		return nil
-	}
 
 	return eg.Wait()
-}
-
-func (i *inventory) open() error {
-	slog.Debug(fmt.Sprintf("open inventory file: %s", i.path))
-	f, err := os.Open(i.path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	if err := json.NewDecoder(f).Decode(&i); err != nil {
-		return err
-	}
-	slog.Debug(fmt.Sprintf("inventory version: %d", i.Version))
-	return nil
-}
-
-func (i *inventory) update(files []File) error {
-	slog.Debug("updating inventory")
-	f, err := os.Create(i.path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	i.Files = files
-	i.setVersion()
-	return json.NewEncoder(f).Encode(&i)
-}
-
-func (i *inventory) save(files []File) error {
-	slog.Debug("saving inventory")
-	f, err := os.Create(i.path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	i.Files = append(i.Files, files...)
-	i.setVersion()
-	return json.NewEncoder(f).Encode(&i)
-}
-
-func (i inventory) filter() []File {
-	// do not overwrite original slices
-	// because remove them from inventory file actually
-	// when updating inventory
-	files := i.Files
-	files = lo.Reject(files, func(file File, index int) bool {
-		return slices.Contains(i.config.Exclude.Files, file.Name)
-	})
-	files = lo.Reject(files, func(file File, index int) bool {
-		for _, pat := range i.config.Exclude.Patterns {
-			if regexp.MustCompile(pat).MatchString(file.Name) {
-				return true
-			}
-		}
-		for _, g := range i.config.Exclude.Globs {
-			if glob.MustCompile(g).Match(file.Name) {
-				return true
-			}
-		}
-		return false
-	})
-	files = lo.Reject(files, func(file File, index int) bool {
-		size, err := DirSize(file.To)
-		if err != nil {
-			return false // false positive
-		}
-		for _, s := range i.config.Exclude.SizeBelow {
-			below, err := units.FromHumanSize(s)
-			if err != nil {
-				continue
-			}
-			if size <= below {
-				return true
-			}
-		}
-		for _, s := range i.config.Exclude.SizeAbove {
-			above, err := units.FromHumanSize(s)
-			if err != nil {
-				continue
-			}
-			if above <= size {
-				return true
-			}
-		}
-		return false
-	})
-	files = lo.Filter(files, func(file File, index int) bool {
-		for _, input := range i.config.Include.Durations {
-			d, err := duration.Parse(input)
-			if err != nil {
-				slog.Error("duration.Parse failed", "input", input, "error", err)
-				return false
-			}
-			return time.Since(file.Timestamp) < d
-		}
-		return false
-	})
-	return files
-}
-
-func (i *inventory) remove(target File) error {
-	slog.Debug("deleting from inventory")
-	var files []File
-	for _, file := range i.Files {
-		if file.ID == target.ID {
-			continue
-		}
-		files = append(files, file)
-	}
-	return i.update(files)
-}
-
-func (i *inventory) setVersion() {
-	if i.Version == 0 {
-		i.Version = inventoryVersion
-	}
-}
-
-func getFileMetadata(runID string, arg string) (File, error) {
-	name := filepath.Base(arg)
-	from, err := filepath.Abs(arg)
-	if err != nil {
-		return File{}, err
-	}
-	id := xid.New().String()
-	now := time.Now()
-	return File{
-		Name:  name,
-		ID:    id,
-		RunID: runID,
-		From:  from,
-		To: filepath.Join(
-			gomiPath,
-			fmt.Sprintf("%04d", now.Year()),
-			fmt.Sprintf("%02d", now.Month()),
-			fmt.Sprintf("%02d", now.Day()),
-			runID,
-			fmt.Sprintf("%s.%s", name, id),
-		),
-		Timestamp: now,
-	}, nil
-}
-
-// toJSON writes json objects based on File
-func (f File) toJSON(w io.Writer) {
-	out, err := json.Marshal(&f)
-	if err != nil {
-		return
-	}
-	fmt.Fprint(w, string(out))
 }
 
 func viewLogs(file string) error {
