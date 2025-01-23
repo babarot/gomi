@@ -170,7 +170,7 @@ func (c CLI) Restore() error {
 			slog.Error("failed to restore! file would not be deleted from inventory file", "error", err)
 			continue
 		}
-		deletedFiles = append(deletedFiles, file.File)
+		deletedFiles = append(deletedFiles, file)
 	}
 
 	// respect https://github.com/hashicorp/go-multierror

@@ -6,14 +6,13 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/babarot/gomi/config"
 	"github.com/babarot/gomi/inventory"
 	"github.com/babarot/gomi/utils"
+	"github.com/k0kubun/pp"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -25,7 +24,6 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/fatih/color"
 	"github.com/gabriel-vasile/mimetype"
-	"github.com/muesli/reflow/wordwrap"
 	"github.com/muesli/termenv"
 	"github.com/samber/lo"
 )
@@ -69,7 +67,6 @@ func errorCmd(err error) tea.Cmd {
 }
 
 type Model struct {
-	selector      *SelectionManager
 	navState      NavState
 	detailFile    File
 	datefmt       string
@@ -367,9 +364,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case DetailsMsg:
 		m.navState = INVENTORY_DETAILS
 		m.detailFile = msg.file
-		headerHeight := lipgloss.Height(m.headerView())
-		verticalMarginHeight := headerHeight
-		viewportModel, err := m.newViewportModel(msg.file, defaultWidth, 15-verticalMarginHeight)
+		viewportModel, err := m.newViewportModel(msg.file)
 		if err != nil {
 			fmt.Println("Error reading file:", err)
 			return m, tea.Quit
@@ -392,127 +387,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-var (
-	AccentColor             = lipgloss.ANSIColor(termenv.ANSIBlack)
-	stylesSectionStyle      = lipgloss.NewStyle().BorderStyle(lipgloss.HiddenBorder()).BorderForeground(AccentColor).Padding(0, 1)
-	stylesSectionTitleStyle = lipgloss.NewStyle().Padding(0, 1).Background(AccentColor).Foreground(lipgloss.Color("15")).Bold(true).Transform(strings.ToUpper)
-)
-
-func renderInventoryDetails(m Model) string {
-	header := m.renderHeader(m.detailFile)
-
-	content := lipgloss.JoinVertical(lipgloss.Left,
-		header,
-		renderDeletedWhere(m.detailFile),
-		renderDeletedAt(m.detailFile, m.datefmt),
-		fmt.Sprintf("%s\n%s\n%s", m.headerView(), m.viewport.View(), m.footerView()),
-	)
-
-	return content
-}
-
-func (m Model) renderHeader(file File) string {
-	name := file.Name
-	if file.isSelected() {
-		name = lipgloss.NewStyle().
-			Foreground(lipgloss.AdaptiveColor{Light: "#000000", Dark: "#000000"}).
-			Background(lipgloss.AdaptiveColor{Light: "#EE6FF8", Dark: "#EE6FF8"}).
-			Render(file.Name)
-	}
-	title := lipgloss.NewStyle().
-		BorderStyle(func() lipgloss.Border {
-			b := lipgloss.RoundedBorder()
-			b.Right = "├"
-			return b
-		}()).
-		Padding(0, 1).
-		Bold(true).
-		Render(name)
-
-	line := strings.Repeat("─", max(0, defaultWidth-lipgloss.Width(title)))
-	return lipgloss.JoinHorizontal(lipgloss.Center, title, line)
-}
-
-func renderDeletedAt(f File, datefmt string) string {
-	var ts string
-	switch datefmt {
-	case "absolute":
-		ts = f.Timestamp.Format(time.DateTime)
-	default:
-		ts = humanize.Time(f.Timestamp)
-	}
-	return stylesSectionStyle.Render(
-		lipgloss.JoinHorizontal(
-			lipgloss.Left,
-			stylesSectionTitleStyle.MarginRight(3).Render("Deleted At"),
-			lipgloss.NewStyle().Render(ts)),
-	)
-}
-
-func renderDeletedWhere(f File) string {
-	s := filepath.Dir(f.From)
-	w := wordwrap.NewWriter(46)
-	w.Breakpoints = []rune{'/', '.'}
-	w.KeepNewlines = false
-	_, _ = w.Write([]byte(s))
-	_ = w.Close()
-	return stylesSectionStyle.Render(
-		lipgloss.JoinVertical(
-			lipgloss.Left,
-			stylesSectionTitleStyle.MarginBottom(1).Render("Where it was"),
-			lipgloss.NewStyle().Render(w.String())),
-	)
-}
-
-func renderMetadata(f File) string {
-	return lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		stylesSectionStyle.Render(
-			lipgloss.JoinVertical(lipgloss.Left, stylesSectionTitleStyle.MarginBottom(1).Render("Size"), renderFileSize(f))),
-		stylesSectionStyle.Render(
-			lipgloss.JoinVertical(lipgloss.Left, stylesSectionTitleStyle.MarginBottom(1).Render("Type"), renderFileType(f))),
-	)
-}
-
-func renderFileSize(f File) string {
-	var sizeStr string
-	size, err := utils.DirSize(f.To)
-	if err != nil {
-		sizeStr = "(Cannot be calculated)"
-	} else {
-		sizeStr = humanize.Bytes(uint64(size))
-	}
-	return sizeStr
-}
-
-func renderFileType(f File) string {
-	var result string
-	fi, err := os.Stat(f.To)
-	if err != nil {
-		switch {
-		case os.IsNotExist(err):
-			result = "file has been totally removed"
-		default:
-			result = err.Error()
-		}
-	} else {
-		if fi.IsDir() {
-			result = "(directory)"
-		}
-	}
-
-	if result == "" {
-		mtype, err := mimetype.DetectFile(f.File.To)
-		if err != nil {
-			result = err.Error()
-		} else {
-			result = mtype.String()
-		}
-	}
-
-	return result
-}
-
 func (m Model) View() string {
 	defer color.Unset()
 	s := ""
@@ -526,7 +400,7 @@ func (m Model) View() string {
 	case INVENTORY_LIST:
 		s += m.list.View()
 	case INVENTORY_DETAILS:
-		s += renderInventoryDetails(m)
+		s += renderDetailed(m)
 		s += "\n" + lipgloss.NewStyle().Margin(1, 2).Render(help.New().View(keys))
 	case QUITTING:
 		return s
@@ -539,15 +413,6 @@ func (m Model) View() string {
 
 	return s
 }
-
-// TODO: remove?
-var (
-	itemStyle         = lipgloss.NewStyle().PaddingLeft(4)
-	currentItemStyle  = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170")).Width(150)
-	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("#00ff00"))
-	paginationStyle   = list.DefaultStyles().PaginationStyle.PaddingLeft(4)
-	helpStyle         = list.DefaultStyles().HelpStyle.PaddingLeft(4).PaddingBottom(1)
-)
 
 // TODO: remove?
 func getAllInventoryItems(files []File) tea.Msg {
@@ -564,33 +429,8 @@ func getInventoryDetails(file File) tea.Cmd {
 	}
 }
 
-var headerStyle = func(cfg config.UI) lipgloss.Style {
-	fgAsBg := cfg.Color.PreviewBoarder.Foreground
-	bgAsFg := cfg.Color.PreviewBoarder.Background
-	return lipgloss.NewStyle().Padding(0, 1, 0, 1).
-		Foreground(lipgloss.Color(bgAsFg)).
-		Background(lipgloss.Color(fgAsBg))
-}
-
-func (m Model) footerView() string {
-	fg := m.config.Color.PreviewBoarder.Foreground
-	if m.cannotPreview {
-		header := m.renderHeader(m.detailFile)
-		return lipgloss.NewStyle().Foreground(lipgloss.Color(fg)).Render(strings.Repeat("─", lipgloss.Width(header)))
-	}
-	info := headerStyle(m.config).Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
-	line := strings.Repeat("─", max(0, m.viewport.Width-lipgloss.Width(info)))
-	return lipgloss.NewStyle().Foreground(lipgloss.Color(fg)).Render(lipgloss.JoinHorizontal(lipgloss.Center, line, info))
-}
-
-func (m Model) headerView() string {
-	fg := m.config.Color.PreviewBoarder.Foreground
-	size := headerStyle(m.config).Render(renderFileSize(m.detailFile))
-	line := strings.Repeat("─", max(0, m.viewport.Width-lipgloss.Width(size)))
-	return lipgloss.NewStyle().Foreground(lipgloss.Color(fg)).Render(lipgloss.JoinHorizontal(lipgloss.Center, line, size))
-}
-
-func (m *Model) newViewportModel(file File, width, height int) (viewport.Model, error) {
+func (m *Model) newViewportModel(file File) (viewport.Model, error) {
+	width, height := defaultWidth, 15-lipgloss.Height(m.headerView())
 	cfg := m.config.Preview
 	getFileContent := func(path string) string {
 		content := "cannot preview"
@@ -682,22 +522,19 @@ func (m *Model) newViewportModel(file File, width, height int) (viewport.Model, 
 	return viewportModel, nil
 }
 
-func initModel(filteredFiles []inventory.File, cfg config.UI) Model {
-	slog.Debug("initModel starts")
+func Run(filteredFiles []inventory.File, cfg config.UI) ([]inventory.File, error) {
 	width := 20
 
 	var items []list.Item
 	var files []File
-	var pfiles []*File
 	for _, file := range filteredFiles {
 		items = append(items, File{File: file})
 		files = append(files, File{File: file})
-		pfiles = append(pfiles, &File{File: file})
 	}
 
 	// TODO: configable?
 	// l := list.New(items, ClassicDelegate{}, width, defaultHeight)
-	l := list.New(items, NewRestoreDelegate(cfg, pfiles), width, defaultHeight)
+	l := list.New(items, NewRestoreDelegate(cfg, files), width, defaultHeight)
 
 	switch cfg.Paginator {
 	case "arabic":
@@ -720,31 +557,31 @@ func initModel(filteredFiles []inventory.File, cfg config.UI) Model {
 	l.SetShowTitle(false)
 
 	m := Model{
-		selector: &SelectionManager{},
 		navState: INVENTORY_LIST,
 		datefmt:  datefmtRel,
-		// files:     files,
-		files:  files,
-		config: cfg,
-		// models
+		files:    files,
+		config:   cfg,
 		list:     l,
 		viewport: viewport.Model{},
 	}
-	return m
-}
 
-func Run(filteredFiles []inventory.File, cfg config.UI) ([]File, error) {
-	m := initModel(filteredFiles, cfg)
 	returnModel, err := tea.NewProgram(m).Run()
 	if err != nil {
-		return []File{}, err
+		return []inventory.File{}, err
 	}
-	files := returnModel.(Model).choices
+
+	choices := returnModel.(Model).choices
 	if returnModel.(Model).navState == QUITTING {
 		if msg := cfg.ByeMessage; msg != "" {
 			fmt.Println(msg)
 		}
-		return []File{}, nil
+		return []inventory.File{}, nil
 	}
-	return files, nil
+
+	invFiles := make([]inventory.File, len(choices))
+	for i, file := range choices {
+		pp.Println(file)
+		invFiles[i] = file.File
+	}
+	return invFiles, nil
 }

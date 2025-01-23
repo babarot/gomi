@@ -87,7 +87,7 @@ type RestoreDelegate struct {
 }
 
 // NewRestoreDelegate creates a new delegate with Restore styles.
-func NewRestoreDelegate(cfg config.UI, files []*File) RestoreDelegate {
+func NewRestoreDelegate(cfg config.UI, files []File) RestoreDelegate {
 	var height = 2
 	var spacing = 1
 	var showDescription bool
