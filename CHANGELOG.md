@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.1.9](https://github.com/babarot/gomi/compare/v1.1.8...v1.1.9) - 2025-01-23
+### New Features
+- Support fuzzy search by @babarot in https://github.com/babarot/gomi/pull/42
+
 ## [v1.1.8](https://github.com/babarot/gomi/compare/v1.1.7...v1.1.8) - 2025-01-17
 ### Others
 - Refactor by @babarot in https://github.com/babarot/gomi/pull/39
