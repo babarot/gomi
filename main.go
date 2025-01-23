@@ -13,6 +13,7 @@ import (
 	"github.com/babarot/gomi/inventory"
 	"github.com/babarot/gomi/log"
 	"github.com/babarot/gomi/ui"
+
 	"github.com/jessevdk/go-flags"
 	"github.com/rs/xid"
 	"golang.org/x/sync/errgroup"

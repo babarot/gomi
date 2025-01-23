@@ -28,3 +28,11 @@
 - name: kind/breaking-change
   description: Denotes a PR that introduces potentially breaking changes that require user action.
   color: 425df5
+
+# release/ - which version to be released
+- name: release/major
+  description: Indicates major version to bump up next when creating release PR.
+  color: 1dd1a1
+- name: release/minor
+  description: Indicates minor version to bump up next when creating release PR.
+  color: 1dd1a1
