@@ -28,8 +28,8 @@ type Config struct {
 }
 
 type UI struct {
-	Color      colorConfig   `yaml:"color"`
-	Style      string        `yaml:"style"`
+	Density    string        `yaml:"density"`
+	Style      styleConfig   `yaml:"style"`
 	ByeMessage string        `yaml:"bye_message"`
 	Preview    previewConfig `yaml:"preview"`
 	Paginator  string        `yaml:"paginator_style"`
@@ -53,13 +53,24 @@ type excludeConfig struct {
 }
 
 type previewConfig struct {
-	Directory   string `yaml:"directory"`
-	Highlight   bool   `yaml:"enable_syntax_highlight"`
-	Colorscheme string `yaml:"colorscheme"`
+	SyntaxHighlight  bool   `yaml:"syntax_highlight"`
+	Colorscheme      string `yaml:"colorscheme"`
+	DirectoryCommand string `yaml:"directory_command"`
 }
 
-type colorConfig struct {
-	PreviewBoarder color `yaml:"preview_boarder"`
+type styleConfig struct {
+	Window      window      `yaml:"window"`
+	PreviewPane previewPane `yaml:"preview_pane"`
+}
+type window struct {
+	Border  string `yaml:"border"`
+	Section color  `yaml:"section"`
+}
+
+type previewPane struct {
+	Border string `yaml:"border"`
+	Size   color  `yaml:"size"`
+	Scroll color  `yaml:"scroll"`
 }
 
 type color struct {
@@ -78,17 +89,32 @@ type parser struct{}
 func (p parser) getDefaultConfig() Config {
 	return Config{
 		UI: UI{
-			Style:      "simple | detailed",
+			Density:    "compact | spacious",
 			ByeMessage: "bye!",
 			Preview: previewConfig{
-				Highlight: true,
-				Directory: "ls -F --color=always",
+				SyntaxHighlight:  true,
+				Colorscheme:      "nord",
+				DirectoryCommand: "ls -GF -1 -A --color=always",
 			},
 			Paginator: "dots | arabic",
-			Color: colorConfig{
-				PreviewBoarder: color{
-					Foreground: "#3C3C3C",
-					Background: "#EEEEDD",
+			Style: styleConfig{
+				Window: window{
+					Border: "#EEEEDD",
+					Section: color{
+						Foreground: "#EEEEEE",
+						Background: "#1C1C1C",
+					},
+				},
+				PreviewPane: previewPane{
+					Border: "#3C3C3C",
+					Size: color{
+						Foreground: "#EEEEDD",
+						Background: "#3C3C3C",
+					},
+					Scroll: color{
+						Foreground: "#EEEEDD",
+						Background: "#3C3C3C",
+					},
 				},
 			},
 		},

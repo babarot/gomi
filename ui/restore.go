@@ -91,10 +91,10 @@ func NewRestoreDelegate(cfg config.UI, files []File) RestoreDelegate {
 	var height = 2
 	var spacing = 1
 	var showDescription bool
-	switch cfg.Style {
-	case "simple":
+	switch cfg.Density {
+	case CompactDensityVal:
 		showDescription = false
-	case "detailed":
+	case SpaciousDensityVal:
 		showDescription = true
 	default:
 		showDescription = true

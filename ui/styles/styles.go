@@ -3,13 +3,41 @@ package styles
 import (
 	"strings"
 
+	"github.com/babarot/gomi/config"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/muesli/termenv"
 )
 
-var (
-	AccentColor = lipgloss.ANSIColor(termenv.ANSIBlack)
+var Section = func(cfg config.UI) lipgloss.Style {
+	fg := cfg.Style.Window.Section.Foreground
+	return lipgloss.NewStyle().
+		BorderStyle(lipgloss.HiddenBorder()).
+		BorderForeground(lipgloss.Color(fg)).Padding(0, 1).
+		Padding(0, 1)
 
-	SectionStyle      = lipgloss.NewStyle().BorderStyle(lipgloss.HiddenBorder()).BorderForeground(AccentColor).Padding(0, 1)
-	SectionTitleStyle = lipgloss.NewStyle().Padding(0, 1).Background(AccentColor).Foreground(lipgloss.Color("15")).Bold(true).Transform(strings.ToUpper)
-)
+}
+
+var SectionTitle = func(cfg config.UI) lipgloss.Style {
+	bg := cfg.Style.Window.Section.Background
+	fg := cfg.Style.Window.Section.Foreground
+	return lipgloss.NewStyle().Padding(0, 1).
+		Background(lipgloss.Color(bg)).
+		Foreground(lipgloss.Color(fg)).
+		Bold(true).
+		Transform(strings.ToUpper)
+}
+
+var Scroll = func(cfg config.UI) lipgloss.Style {
+	bg := cfg.Style.PreviewPane.Scroll.Background
+	fg := cfg.Style.PreviewPane.Scroll.Foreground
+	return lipgloss.NewStyle().Padding(0, 1, 0, 1).
+		Foreground(lipgloss.Color(fg)).
+		Background(lipgloss.Color(bg))
+}
+
+var Size = func(cfg config.UI) lipgloss.Style {
+	bg := cfg.Style.PreviewPane.Size.Background
+	fg := cfg.Style.PreviewPane.Size.Foreground
+	return lipgloss.NewStyle().Padding(0, 1, 0, 1).
+		Foreground(lipgloss.Color(fg)).
+		Background(lipgloss.Color(bg))
+}

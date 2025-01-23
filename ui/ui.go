@@ -27,6 +27,18 @@ import (
 	"github.com/samber/lo"
 )
 
+type ListDensityType uint8
+
+const (
+	Compact ListDensityType = iota
+	Spacious
+)
+
+const (
+	CompactDensityVal  = "compact"
+	SpaciousDensityVal = "spacious"
+)
+
 const (
 	datefmtRel = "relative"
 	datefmtAbs = "absolute"
@@ -439,7 +451,7 @@ func (m *Model) newViewportModel(file File) (viewport.Model, error) {
 			return content
 		}
 		if fi.IsDir() {
-			input := cfg.Directory
+			input := fmt.Sprintf("cd %s; %s", path, cfg.DirectoryCommand)
 			if input == "" {
 				slog.Debug("preview list_dir command is not set, fallback to builtin list_dir func")
 				lines := []string{}
@@ -495,7 +507,7 @@ func (m *Model) newViewportModel(file File) (viewport.Model, error) {
 	} else {
 		m.cannotPreview = false
 	}
-	shouldColor := cfg.Highlight
+	shouldColor := cfg.SyntaxHighlight
 	if shouldColor && !m.cannotPreview {
 		content, _ = highlight(content, file.Name, cfg.Colorscheme)
 	}
