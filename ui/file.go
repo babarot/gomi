@@ -3,7 +3,6 @@ package ui
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -20,10 +19,6 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/fatih/color"
 	"github.com/gabriel-vasile/mimetype"
-)
-
-var (
-	errCannotPreview = errors.New("cannot preview")
 )
 
 type File struct {

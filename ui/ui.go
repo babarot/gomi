@@ -52,6 +52,12 @@ const (
 	defaultHeight = 20
 )
 
+var (
+	errCannotPreview = errors.New("cannot preview")
+
+	ErrInputCanceled = errors.New("input is canceled")
+)
+
 type DetailsMsg struct {
 	file File
 }

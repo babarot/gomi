@@ -161,26 +161,21 @@ func (c CLI) Restore() error {
 	}()
 
 	for _, file := range files {
-		from, to := file.From, file.To
-		if _, err := os.Stat(from); err == nil {
-			// already exists so to prevent to overwrite
-			// add id to the end of filename
-			// TODO: Ask to overwrite?
-			// e.g. using github.com/AlecAivazis/survey
-			filename, err := ui.Input(
-				fmt.Sprintf("Enter another new name!\nThere is already a file with the same file name on \n%s", filepath.Dir(from)),
-				file.Name)
+		if _, err := os.Stat(file.From); err == nil {
+			newName, err := ui.InputFilename(file)
 			if err != nil {
-				slog.Error("ui.input failed. skip", "error", err)
+				if errors.Is(err, ui.ErrInputCanceled) {
+					if c.config.Restore.Verbose {
+						fmt.Printf("you're inputting %q but it's canceled!\n", newName)
+					}
+					continue
+				}
+				errs = append(errs, err)
 				continue
 			}
-			if filename == "" {
-				slog.Warn("imput is empty. skip")
-				continue
-			}
-			from = filepath.Join(filepath.Dir(from), filename)
+			file.From = filepath.Join(filepath.Dir(file.From), newName)
 		}
-		err := os.Rename(to, from)
+		err := os.Rename(file.To, file.From)
 		if err != nil {
 			errs = append(errs, err)
 			slog.Error("failed to restore! file would not be deleted from inventory file", "error", err)
