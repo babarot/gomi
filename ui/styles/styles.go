@@ -7,13 +7,14 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// Color chart: https://github.com/muesli/termenv
+
 var Section = func(cfg config.UI) lipgloss.Style {
 	fg := cfg.Style.Window.Section.Foreground
 	return lipgloss.NewStyle().
 		BorderStyle(lipgloss.HiddenBorder()).
 		BorderForeground(lipgloss.Color(fg)).Padding(0, 1).
 		Padding(0, 1)
-
 }
 
 var SectionTitle = func(cfg config.UI) lipgloss.Style {

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/babarot/gomi/ui/styles"
-	"github.com/babarot/gomi/utils"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/dustin/go-humanize"
@@ -15,26 +14,20 @@ import (
 )
 
 func renderDetailed(m Model) string {
-	color := m.config.Style.Window.Border
-
-	header := renderHeader(m.detailFile, color)
-	footer := renderFooter(m.detailFile, color)
-
-	content := lipgloss.JoinVertical(lipgloss.Left,
-		header,
+	return lipgloss.JoinVertical(lipgloss.Left,
+		m.renderHeader(),
 		m.renderFilepath(),
 		m.renderTimestamp(),
 		m.renderPreview(),
-		footer,
+		m.renderFooter(),
 	)
-
-	return content
 }
 
-func renderHeader(f File, color string) string {
-	name := f.Title()
-
-	if f.isSelected() {
+func (m Model) renderHeader() string {
+	borderForeground := m.config.Style.Window.Border
+	file := m.detailFile
+	name := file.Title()
+	if file.isSelected() {
 		name = lipgloss.NewStyle().
 			Foreground(lipgloss.AdaptiveColor{Light: "#000000", Dark: "#000000"}).
 			Background(lipgloss.AdaptiveColor{Light: "#EE6FF8", Dark: "#EE6FF8"}).
@@ -47,21 +40,22 @@ func renderHeader(f File, color string) string {
 			b.Right = "├"
 			return b
 		}()).
-		BorderForeground(lipgloss.Color(color)).
+		BorderForeground(lipgloss.Color(borderForeground)).
 		Padding(0, 1).
 		Bold(true).
 		Render(name)
 
 	line := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(color)).
+		Foreground(lipgloss.Color(borderForeground)).
 		Render(strings.Repeat("─", max(0, defaultWidth-lipgloss.Width(title))))
 
 	return lipgloss.JoinHorizontal(lipgloss.Center, title, line)
 }
 
-func renderFooter(f File, color string) string {
+func (m Model) renderFooter() string {
+	foreground := m.config.Style.Window.Border
 	line := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(color)).
+		Foreground(lipgloss.Color(foreground)).
 		Render(strings.Repeat("─", defaultWidth))
 	return lipgloss.JoinHorizontal(lipgloss.Center, line)
 }
@@ -101,20 +95,9 @@ func (m Model) renderTimestamp() string {
 		)
 }
 
-func calcSize(f File) string {
-	var sizeStr string
-	size, err := utils.DirSize(f.To)
-	if err != nil {
-		sizeStr = "(Cannot be calculated)"
-	} else {
-		sizeStr = humanize.Bytes(uint64(size))
-	}
-	return sizeStr
-}
-
 func (m Model) previewHeader() string {
 	color := m.config.Style.PreviewPane.Border
-	size := styles.Size(m.config).Render(calcSize(m.detailFile))
+	size := styles.Size(m.config).Render(m.detailFile.Size())
 	line := strings.Repeat("─", max(0, m.viewport.Width-lipgloss.Width(size)))
 	return lipgloss.NewStyle().Foreground(lipgloss.Color(color)).Render(lipgloss.JoinHorizontal(lipgloss.Center, line, size))
 }

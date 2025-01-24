@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -11,7 +10,6 @@ import (
 
 	"github.com/babarot/gomi/config"
 	"github.com/babarot/gomi/inventory"
-	"github.com/babarot/gomi/utils"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -20,11 +18,18 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/dustin/go-humanize"
 	"github.com/fatih/color"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/muesli/termenv"
 	"github.com/samber/lo"
+)
+
+type NavState uint8
+
+const (
+	INVENTORY_LIST NavState = iota
+	INVENTORY_DETAILS
+	QUITTING
 )
 
 type ListDensityType uint8
@@ -40,21 +45,14 @@ const (
 )
 
 const (
+	bullet   = "•"
+	ellipsis = "…"
+
 	datefmtRel = "relative"
 	datefmtAbs = "absolute"
-)
 
-const (
 	defaultWidth  = 56
 	defaultHeight = 20
-)
-
-type NavState int
-
-const (
-	INVENTORY_LIST NavState = iota
-	INVENTORY_DETAILS
-	QUITTING
 )
 
 type DetailsMsg struct {
@@ -92,11 +90,6 @@ type Model struct {
 
 	err error
 }
-
-const (
-	bullet   = "•"
-	ellipsis = "…"
-)
 
 var _ list.DefaultItem = (*File)(nil)
 
@@ -375,12 +368,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case DetailsMsg:
 		m.navState = INVENTORY_DETAILS
 		m.detailFile = msg.file
-		viewportModel, err := m.newViewportModel(msg.file)
-		if err != nil {
-			fmt.Println("Error reading file:", err)
-			return m, tea.Quit
-		}
-		m.viewport = viewportModel
+		m.viewport = m.newViewportModel(msg.file)
 
 	case errorMsg:
 		m.navState = QUITTING
@@ -440,97 +428,27 @@ func getInventoryDetails(file File) tea.Cmd {
 	}
 }
 
-func (m *Model) newViewportModel(file File) (viewport.Model, error) {
-	width, height := defaultWidth, 15-lipgloss.Height(m.previewHeader())
-	cfg := m.config.Preview
-	getFileContent := func(path string) string {
-		content := "cannot preview"
-		fi, err := os.Stat(path)
-		if err != nil {
-			slog.Debug(fmt.Sprintf("no such file %s", path))
-			return content
-		}
-		if fi.IsDir() {
-			input := fmt.Sprintf("cd %s; %s", path, cfg.DirectoryCommand)
-			if input == "" {
-				slog.Debug("preview list_dir command is not set, fallback to builtin list_dir func")
-				lines := []string{}
-				dirs, _ := os.ReadDir(path)
-				for _, dir := range dirs {
-					info, _ := dir.Info()
-					name := dir.Name()
-					if info.IsDir() {
-						name += "/"
-					}
-					lines = append(lines,
-						fmt.Sprintf("%s %7s  %s",
-							info.Mode().String(),
-							humanize.Bytes(uint64(info.Size())),
-							name,
-						),
-					)
-				}
-				return strings.Join(lines, "\n")
-			}
-			out, _, err := utils.RunShell(input)
-			if err != nil {
-				slog.Error(fmt.Sprintf("command failed: %s", input), "error", err)
-			}
-			return out
-		}
-		mtype, err := mimetype.DetectFile(path)
-		if err != nil {
-			return content
-		}
-		if !strings.Contains(mtype.String(), "text/plain") {
-			slog.Debug(fmt.Sprintf("mimetype %s not supported to preview", mtype.String()))
-			return content
-		}
-		f, err := os.Open(file.To)
-		if err != nil {
-			return content
-		}
-		defer f.Close()
-		var fileContent strings.Builder
-		scanner := bufio.NewScanner(f)
-		for scanner.Scan() {
-			fileContent.WriteString(scanner.Text() + "\n")
-		}
-		if err := scanner.Err(); err != nil {
-			return content
-		}
-		return fileContent.String()
-	}
-	content := getFileContent(file.To)
-	if content == "cannot preview" {
-		m.cannotPreview = true
-	} else {
-		m.cannotPreview = false
-	}
-	shouldColor := cfg.SyntaxHighlight
-	if shouldColor && !m.cannotPreview {
-		content, _ = highlight(content, file.Name, cfg.Colorscheme)
-	}
-	viewportModel := viewport.New(width, height)
+func (m *Model) newViewportModel(file File) viewport.Model {
+	viewportModel := viewport.New(defaultWidth, 15-lipgloss.Height(m.previewHeader()))
 	viewportModel.KeyMap = viewport.KeyMap{
 		Up:           key.NewBinding(key.WithKeys("k", "up")),
 		Down:         key.NewBinding(key.WithKeys("j", "down")),
 		HalfPageUp:   key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "½ page up")),
 		HalfPageDown: key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "½ page down")),
 	}
-	if m.cannotPreview {
+	content, err := file.Browse()
+	if err != nil {
 		mtype, _ := mimetype.DetectFile(file.To)
-		headerHeight := lipgloss.Height(m.previewHeader())
-		verticalMarginHeight := headerHeight
+		verticalMarginHeight := lipgloss.Height(m.previewHeader())
 		content = lipgloss.Place(defaultWidth, 15-verticalMarginHeight,
 			lipgloss.Center, lipgloss.Center,
-			lipgloss.NewStyle().Bold(true).Transform(strings.ToUpper).Render("cannot preview")+"\n\n\n"+
+			lipgloss.NewStyle().Bold(true).Transform(strings.ToUpper).Render(errCannotPreview.Error())+"\n\n\n"+
 				lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(termenv.ANSIBrightBlack)).Render("("+mtype.String()+")"),
 			lipgloss.WithWhitespaceChars("`"),
 			lipgloss.WithWhitespaceForeground(lipgloss.ANSIColor(termenv.ANSIBrightBlack)))
 	}
 	viewportModel.SetContent(content)
-	return viewportModel, nil
+	return viewportModel
 }
 
 func Run(filteredFiles []inventory.File, cfg config.UI) ([]inventory.File, error) {
@@ -540,7 +458,12 @@ func Run(filteredFiles []inventory.File, cfg config.UI) ([]inventory.File, error
 	var files []File
 	for _, file := range filteredFiles {
 		items = append(items, File{File: file})
-		files = append(files, File{File: file})
+		files = append(files, File{
+			File:            file,
+			dirListCommand:  cfg.Preview.DirectoryCommand,
+			syntaxHighlight: cfg.Preview.SyntaxHighlight,
+			colorscheme:     cfg.Preview.Colorscheme,
+		})
 	}
 
 	// TODO: configable?
