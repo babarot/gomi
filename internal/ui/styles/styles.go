@@ -3,7 +3,7 @@ package styles
 import (
 	"strings"
 
-	"github.com/babarot/gomi/config"
+	"github.com/babarot/gomi/internal/config"
 	"github.com/charmbracelet/lipgloss"
 )
 

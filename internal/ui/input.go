@@ -6,8 +6,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/babarot/gomi/inventory"
-	"github.com/babarot/gomi/ui/input"
+	"github.com/babarot/gomi/internal/inventory"
+	"github.com/babarot/gomi/internal/ui/input"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jimschubert/answer/validate"
 )

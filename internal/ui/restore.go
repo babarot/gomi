@@ -5,8 +5,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/babarot/gomi/config"
-
+	"github.com/babarot/gomi/internal/config"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"

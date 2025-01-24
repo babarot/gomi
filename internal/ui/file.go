@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/babarot/gomi/inventory"
-	"github.com/babarot/gomi/utils"
+	"github.com/babarot/gomi/internal/inventory"
+	"github.com/babarot/gomi/internal/utils"
 
 	"github.com/alecthomas/chroma"
 	"github.com/alecthomas/chroma/lexers"

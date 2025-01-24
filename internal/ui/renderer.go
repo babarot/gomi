@@ -6,12 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/babarot/gomi/ui/styles"
-	"github.com/gabriel-vasile/mimetype"
-
+	"github.com/babarot/gomi/internal/ui/styles"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/dustin/go-humanize"
+	"github.com/gabriel-vasile/mimetype"
 	"github.com/muesli/reflow/wordwrap"
 	"github.com/muesli/termenv"
 )

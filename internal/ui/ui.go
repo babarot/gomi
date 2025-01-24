@@ -7,8 +7,8 @@ import (
 	"os"
 	"sort"
 
-	"github.com/babarot/gomi/config"
-	"github.com/babarot/gomi/inventory"
+	"github.com/babarot/gomi/internal/config"
+	"github.com/babarot/gomi/internal/inventory"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"

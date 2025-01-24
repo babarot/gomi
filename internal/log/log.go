@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/babarot/gomi/env"
+	"github.com/babarot/gomi/internal/env"
 	"github.com/mattn/go-isatty"
 	"github.com/nxadm/tail"
 )

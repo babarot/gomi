@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc/v2"
-	"github.com/babarot/gomi/env"
+	"github.com/babarot/gomi/internal/env"
 	"github.com/go-playground/validator/v10"
 	"gopkg.in/yaml.v2"
 )

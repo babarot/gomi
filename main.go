@@ -9,10 +9,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/babarot/gomi/config"
-	"github.com/babarot/gomi/inventory"
-	"github.com/babarot/gomi/log"
-	"github.com/babarot/gomi/ui"
+	"github.com/babarot/gomi/internal/config"
+	"github.com/babarot/gomi/internal/inventory"
+	"github.com/babarot/gomi/internal/log"
+	"github.com/babarot/gomi/internal/ui"
 
 	"github.com/jessevdk/go-flags"
 	"github.com/rs/xid"

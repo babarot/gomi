@@ -10,8 +10,8 @@ import (
 	"slices"
 	"time"
 
-	"github.com/babarot/gomi/config"
-	"github.com/babarot/gomi/utils"
+	"github.com/babarot/gomi/internal/config"
+	"github.com/babarot/gomi/internal/utils"
 	"github.com/docker/go-units"
 	"github.com/gobwas/glob"
 	"github.com/k1LoW/duration"
