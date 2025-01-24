@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"os"
 	"sort"
-	"strings"
 
 	"github.com/babarot/gomi/config"
 	"github.com/babarot/gomi/inventory"
@@ -19,8 +18,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/fatih/color"
-	"github.com/gabriel-vasile/mimetype"
-	"github.com/muesli/termenv"
 	"github.com/samber/lo"
 )
 
@@ -438,22 +435,13 @@ func (m *Model) newViewportModel(file File) viewport.Model {
 	}
 	content, err := file.Browse()
 	if err != nil {
-		mtype, _ := mimetype.DetectFile(file.To)
-		verticalMarginHeight := lipgloss.Height(m.previewHeader())
-		content = lipgloss.Place(defaultWidth, 15-verticalMarginHeight,
-			lipgloss.Center, lipgloss.Center,
-			lipgloss.NewStyle().Bold(true).Transform(strings.ToUpper).Render(errCannotPreview.Error())+"\n\n\n"+
-				lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(termenv.ANSIBrightBlack)).Render("("+mtype.String()+")"),
-			lipgloss.WithWhitespaceChars("`"),
-			lipgloss.WithWhitespaceForeground(lipgloss.ANSIColor(termenv.ANSIBrightBlack)))
+		m.cannotPreview = true
 	}
 	viewportModel.SetContent(content)
 	return viewportModel
 }
 
 func Run(filteredFiles []inventory.File, cfg config.UI) ([]inventory.File, error) {
-	width := 20
-
 	var items []list.Item
 	var files []File
 	for _, file := range filteredFiles {
@@ -467,8 +455,8 @@ func Run(filteredFiles []inventory.File, cfg config.UI) ([]inventory.File, error
 	}
 
 	// TODO: configable?
-	// l := list.New(items, ClassicDelegate{}, width, defaultHeight)
-	l := list.New(items, NewRestoreDelegate(cfg, files), width, defaultHeight)
+	// l := list.New(items, ClassicDelegate{}, defaultWidth, defaultHeight)
+	l := list.New(items, NewRestoreDelegate(cfg, files), defaultWidth, defaultHeight)
 
 	switch cfg.Paginator {
 	case "arabic":

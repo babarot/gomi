@@ -25,6 +25,7 @@ const defaultXDGConfigDirname = ".config"
 type Config struct {
 	UI        UI        `yaml:"ui"`
 	Inventory Inventory `yaml:"inventory"`
+	Restore   Restore   `yaml:"restore"`
 }
 
 type UI struct {
@@ -38,6 +39,11 @@ type UI struct {
 type Inventory struct {
 	Include includeConfig `yaml:"include"`
 	Exclude excludeConfig `yaml:"exclude"`
+}
+
+type Restore struct {
+	Verbose bool `yaml:"verbose"`
+	Confirm bool `yaml:"confirm"`
 }
 
 type includeConfig struct {
@@ -134,6 +140,10 @@ func (p parser) getDefaultConfig() Config {
 				SizeAbove: []string{"10GB"},
 				SizeBelow: []string{"0KB"},
 			},
+		},
+		Restore: Restore{
+			Verbose: true,
+			Confirm: true,
 		},
 	}
 }

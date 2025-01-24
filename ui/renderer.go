@@ -7,10 +7,13 @@ import (
 	"time"
 
 	"github.com/babarot/gomi/ui/styles"
+	"github.com/gabriel-vasile/mimetype"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/dustin/go-humanize"
 	"github.com/muesli/reflow/wordwrap"
+	"github.com/muesli/termenv"
 )
 
 func renderDetailed(m Model) string {
@@ -26,7 +29,8 @@ func renderDetailed(m Model) string {
 func (m Model) renderHeader() string {
 	borderForeground := m.config.Style.Window.Border
 	file := m.detailFile
-	name := file.Title()
+	name := ansi.Truncate(file.Title(), defaultWidth-len(ellipsis), ellipsis)
+
 	if file.isSelected() {
 		name = lipgloss.NewStyle().
 			Foreground(lipgloss.AdaptiveColor{Light: "#000000", Dark: "#000000"}).
@@ -37,7 +41,9 @@ func (m Model) renderHeader() string {
 	title := lipgloss.NewStyle().
 		BorderStyle(func() lipgloss.Border {
 			b := lipgloss.RoundedBorder()
-			b.Right = "├"
+			if len(file.Title()) < defaultWidth {
+				b.Right = "├"
+			}
 			return b
 		}()).
 		BorderForeground(lipgloss.Color(borderForeground)).
@@ -72,7 +78,7 @@ func (m Model) renderFilepath() string {
 		Render(
 			lipgloss.JoinVertical(
 				lipgloss.Left,
-				styles.SectionTitle(m.config).MarginBottom(1).Render("Where it was"),
+				styles.SectionTitle(m.config).MarginBottom(1).Render("Deleted From"),
 				lipgloss.NewStyle().Render(w.String())),
 		)
 }
@@ -113,9 +119,20 @@ func (m Model) previewFooter() string {
 }
 
 func (m Model) renderPreview() string {
+	content := m.viewport.View()
+	if m.cannotPreview {
+		mtype, _ := mimetype.DetectFile(m.detailFile.To)
+		verticalMarginHeight := lipgloss.Height(m.previewHeader())
+		content = lipgloss.Place(defaultWidth, 15-verticalMarginHeight,
+			lipgloss.Center, lipgloss.Center,
+			lipgloss.NewStyle().Bold(true).Transform(strings.ToUpper).Render(errCannotPreview.Error())+"\n\n\n"+
+				lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(termenv.ANSIBrightBlack)).Render("("+mtype.String()+")"),
+			lipgloss.WithWhitespaceChars("`"),
+			lipgloss.WithWhitespaceForeground(lipgloss.ANSIColor(termenv.ANSIBrightBlack)))
+	}
 	return fmt.Sprintf("%s\n%s\n%s",
 		m.previewHeader(),
-		m.viewport.View(),
+		content,
 		m.previewFooter(),
 	)
 }

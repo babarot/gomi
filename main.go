@@ -154,7 +154,9 @@ func (c CLI) Restore() error {
 			if err != nil {
 				slog.Error(fmt.Sprintf("removing from inventory failed: %s", file.Name), "error", err)
 			}
-			fmt.Println("restored", file.Name)
+			if c.config.Restore.Verbose {
+				fmt.Printf("restored %s to %s\n", file.Name, file.From)
+			}
 		}
 	}()
 
