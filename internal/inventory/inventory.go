@@ -116,19 +116,19 @@ func (i Inventory) Filter() []File {
 		if err != nil {
 			return false // false positive
 		}
-		for _, s := range i.config.Exclude.SizeBelow {
+		if s := i.config.Exclude.SizeBelow; s != "" {
 			below, err := units.FromHumanSize(s)
 			if err != nil {
-				continue
+				return false
 			}
 			if size <= below {
 				return true
 			}
 		}
-		for _, s := range i.config.Exclude.SizeAbove {
+		if s := i.config.Exclude.SizeAbove; s != "" {
 			above, err := units.FromHumanSize(s)
 			if err != nil {
-				continue
+				return false
 			}
 			if above <= size {
 				return true

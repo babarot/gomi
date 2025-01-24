@@ -17,9 +17,13 @@ import (
 var validate *validator.Validate
 
 type Config struct {
+	Core      Core      `yaml:"core"`
 	UI        UI        `yaml:"ui"`
 	Inventory Inventory `yaml:"inventory"`
-	Restore   Restore   `yaml:"restore"`
+}
+
+type Core struct {
+	Restore Restore `yaml:"restore"`
 }
 
 type UI struct {
@@ -27,7 +31,7 @@ type UI struct {
 	Style      styleConfig   `yaml:"style"`
 	ByeMessage string        `yaml:"bye_message"`
 	Preview    previewConfig `yaml:"preview"`
-	Paginator  string        `yaml:"paginator_style"`
+	Paginator  string        `yaml:"paginator"`
 }
 
 type Inventory struct {
@@ -48,8 +52,8 @@ type excludeConfig struct {
 	Files     []string `yaml:"files"`
 	Patterns  []string `yaml:"patterns"`
 	Globs     []string `yaml:"globs"`
-	SizeAbove []string `yaml:"size_above"` // over
-	SizeBelow []string `yaml:"size_below"` // under
+	SizeAbove string   `yaml:"size_above"` // over
+	SizeBelow string   `yaml:"size_below"` // under
 }
 
 type previewConfig struct {
@@ -88,6 +92,12 @@ type parser struct{}
 
 func (p parser) getDefaultConfig() Config {
 	return Config{
+		Core: Core{
+			Restore: Restore{
+				Verbose: true,
+				Confirm: true,
+			},
+		},
 		UI: UI{
 			Density:    "compact | spacious",
 			ByeMessage: "bye!",
@@ -131,13 +141,9 @@ func (p parser) getDefaultConfig() Config {
 				},
 				Patterns:  []string{},
 				Globs:     []string{},
-				SizeAbove: []string{"10GB"},
-				SizeBelow: []string{"0KB"},
+				SizeAbove: "10GB",
+				SizeBelow: "0KB",
 			},
-		},
-		Restore: Restore{
-			Verbose: true,
-			Confirm: true,
 		},
 	}
 }
@@ -153,11 +159,11 @@ func (e configError) Error() string {
 		Couldn't find a "config.yaml" config file.
 		Create one under: %s
 		Example of a config.yaml file:
-
+		---
 		%s
-
+		---
 		The detail error is: %v`,
-		"path.Join(e.configDir, gomiConfigDir, gomiConfigFilename)",
+		env.GOMI_CONFIG_PATH,
 		string(e.parser.getDefaultConfigYamlContents()),
 		e.err,
 	)

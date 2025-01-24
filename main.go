@@ -147,7 +147,7 @@ func (c CLI) Restore() error {
 			if err != nil {
 				slog.Error(fmt.Sprintf("removing from inventory failed: %s", file.Name), "error", err)
 			}
-			if c.config.Restore.Verbose {
+			if c.config.Core.Restore.Verbose {
 				fmt.Printf("restored %s to %s\n", file.Name, file.From)
 			}
 		}
@@ -158,7 +158,7 @@ func (c CLI) Restore() error {
 			newName, err := ui.InputFilename(file)
 			if err != nil {
 				if errors.Is(err, ui.ErrInputCanceled) {
-					if c.config.Restore.Verbose {
+					if c.config.Core.Restore.Verbose {
 						if newName == "" {
 							fmt.Printf("canceled!\n")
 						} else {
@@ -173,10 +173,10 @@ func (c CLI) Restore() error {
 			// Update with new name
 			file.From = filepath.Join(filepath.Dir(file.From), newName)
 		}
-		if c.config.Restore.Confirm {
+		if c.config.Core.Restore.Confirm {
 			yes := ui.Confirm(fmt.Sprintf("Ok to put back? %s", filepath.Base(file.From)))
 			if !yes {
-				if c.config.Restore.Verbose {
+				if c.config.Core.Restore.Verbose {
 					fmt.Printf("Replied no, canceled!\n")
 				}
 				continue
@@ -209,7 +209,7 @@ func (c CLI) Put(args []string) error {
 	}
 
 	files := make([]inventory.File, len(args))
-
+	var mu sync.Mutex // Mutex to synchronize writes to files
 	var eg errgroup.Group
 
 	for i, arg := range args {
@@ -224,14 +224,29 @@ func (c CLI) Put(args []string) error {
 				return err
 			}
 
+			// Lock before modifying the shared 'files' slice
+			mu.Lock()
 			files[i] = file
+			mu.Unlock()
+
+			// Ensure the directory exists before renaming the file
 			_ = os.MkdirAll(filepath.Dir(file.To), 0777)
+
+			// Log the file move
 			slog.Debug(fmt.Sprintf("moving %q -> %q", file.From, file.To))
 			return os.Rename(file.From, file.To)
 		})
 	}
-	defer c.inventory.Save(files)
-	defer eg.Wait()
 
-	return eg.Wait()
+	// Save the files after all tasks are done
+	defer func() {
+		_ = c.inventory.Save(files)
+	}()
+
+	// Wait for all goroutines to complete
+	if err := eg.Wait(); err != nil {
+		return err
+	}
+
+	return nil
 }
