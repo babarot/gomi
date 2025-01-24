@@ -371,6 +371,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case DetailsMsg:
 		m.navState = INVENTORY_DETAILS
 		m.detailFile = msg.file
+		m.cannotPreview = false
 		m.viewport = m.newViewportModel(msg.file)
 
 	case errorMsg:

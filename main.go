@@ -166,13 +166,18 @@ func (c CLI) Restore() error {
 			if err != nil {
 				if errors.Is(err, ui.ErrInputCanceled) {
 					if c.config.Restore.Verbose {
-						fmt.Printf("you're inputting %q but it's canceled!\n", newName)
+						if newName == "" {
+							fmt.Printf("canceled!\n")
+						} else {
+							fmt.Printf("you're inputting %q but it's canceled!\n", newName)
+						}
 					}
 					continue
 				}
 				errs = append(errs, err)
 				continue
 			}
+			// Update with new name
 			file.From = filepath.Join(filepath.Dir(file.From), newName)
 		}
 		err := os.Rename(file.To, file.From)

@@ -30,17 +30,15 @@ func InputFilename(file inventory.File) (string, error) {
 			}
 			matched, err := regexp.MatchString(`^[a-zA-Z0-9._-]*$`, input)
 			if err != nil {
-				return fmt.Errorf("regexp failde: %w", err)
+				return fmt.Errorf("regexp failed: %w", err)
 			}
 			if !matched {
 				return errors.New("not valid chars are included")
 			}
-			for _, char := range input {
-				if char != '.' && char != '_' && char != '-' {
-					return nil
-				}
+			if onlySpecialChars(input) {
+				return errors.New("using only special characters is not allowed")
 			}
-			return errors.New("using only special characters is not allowed")
+			return nil
 		}).
 		Build()
 
@@ -54,4 +52,13 @@ func InputFilename(file inventory.File) (string, error) {
 		return m.Value(), ErrInputCanceled
 	}
 	return m.Value(), nil
+}
+
+func onlySpecialChars(input string) bool {
+	for _, char := range input {
+		if char != '.' && char != '_' && char != '-' {
+			return false
+		}
+	}
+	return true
 }
