@@ -90,19 +90,20 @@ type RestoreDelegate struct {
 func NewRestoreDelegate(cfg config.UI, files []File) RestoreDelegate {
 	var height = 2
 	var spacing = 1
-	var showDescription bool
+
+	showDescription := true
 	switch cfg.Density {
 	case CompactDensityVal:
 		showDescription = false
 	case SpaciousDensityVal:
 		showDescription = true
-	default:
-		showDescription = true
 	}
+
 	if !showDescription {
 		height = 1
 		spacing = 0
 	}
+
 	return RestoreDelegate{
 		showDescription: showDescription,
 		Styles:          NewRestoreItemStyles(),

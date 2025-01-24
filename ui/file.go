@@ -112,7 +112,12 @@ func (f File) Browse() (string, error) {
 	if err != nil {
 		return content, err
 	}
-	if !strings.Contains(mtype.String(), "text/plain") {
+	switch {
+	case
+		mtype.Is("text/plain"),
+		mtype.Parent().Is("text/plain"):
+		// can preview
+	default:
 		slog.Debug(fmt.Sprintf("mimetype %s not supported to preview", mtype.String()))
 		return content, errCannotPreview
 	}

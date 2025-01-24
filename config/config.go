@@ -4,23 +4,17 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"path"
 	"path/filepath"
 	"reflect"
 	"strings"
 
 	"github.com/MakeNowJust/heredoc/v2"
+	"github.com/babarot/gomi/env"
 	"github.com/go-playground/validator/v10"
 	"gopkg.in/yaml.v2"
 )
 
 var validate *validator.Validate
-
-const gomiConfigDir = "gomi"
-const gomiConfigFilename = "config.yaml"
-const envGomiConfigPath = "GOMI_CONFIG_PATH"
-
-const defaultXDGConfigDirname = ".config"
 
 type Config struct {
 	UI        UI        `yaml:"ui"`
@@ -163,7 +157,7 @@ func (e configError) Error() string {
 		%s
 
 		The detail error is: %v`,
-		path.Join(e.configDir, gomiConfigDir, gomiConfigFilename),
+		"path.Join(e.configDir, gomiConfigDir, gomiConfigFilename)",
 		string(e.parser.getDefaultConfigYamlContents()),
 		e.err,
 	)
@@ -192,30 +186,10 @@ func (p parser) createConfigFileIfMissing(configFilePath string) error {
 }
 
 func (p parser) getDefaultConfigFileOrCreateIfMissing() (string, error) {
-	var configFilePath string
-	gomiConfigPath := os.Getenv(envGomiConfigPath)
-
-	// First try env
-	if gomiConfigPath != "" {
-		configFilePath = gomiConfigPath
-	}
-
-	// Then fallback to global config
-	// TODO: consider to use https://github.com/adrg/xdg
-	if configFilePath == "" {
-		configDir := os.Getenv("XDG_CONFIG_HOME")
-		if configDir == "" {
-			homeDir, err := os.UserHomeDir()
-			if err != nil {
-				return "", err
-			}
-			configDir = filepath.Join(homeDir, defaultXDGConfigDirname)
-		}
-		configFilePath = filepath.Join(configDir, gomiConfigDir, gomiConfigFilename)
-	}
+	path := env.GOMI_CONFIG_PATH
 
 	// Ensure directory exists before attempting to create file
-	configDir := filepath.Dir(configFilePath)
+	configDir := filepath.Dir(path)
 	if _, err := os.Stat(configDir); os.IsNotExist(err) {
 		slog.Warn(fmt.Sprintf("configDir %s does not exist. creating...", configDir))
 		if err = os.MkdirAll(configDir, os.ModePerm); err != nil {
@@ -226,15 +200,15 @@ func (p parser) getDefaultConfigFileOrCreateIfMissing() (string, error) {
 			}
 		}
 	}
-	if err := p.createConfigFileIfMissing(configFilePath); err != nil {
+
+	if err := p.createConfigFileIfMissing(path); err != nil {
 		return "", configError{
 			parser:    p,
 			configDir: configDir,
 			err:       err,
 		}
 	}
-
-	return configFilePath, nil
+	return path, nil
 }
 
 type parsingError struct {

@@ -6,21 +6,14 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/adrg/xdg"
+	"github.com/babarot/gomi/env"
 	"github.com/mattn/go-isatty"
 	"github.com/nxadm/tail"
 )
 
-var (
-	AppName    string
-	EnvLogPath string
-)
-
 func New(attrs ...slog.Attr) *slog.Logger {
-	fp := getLogPath(EnvLogPath)
-
 	var w io.Writer
-	if file, err := os.OpenFile(fp, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err == nil {
+	if file, err := os.OpenFile(env.GOMI_LOG_PATH, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err == nil {
 		w = file
 	} else {
 		w = os.Stderr
@@ -36,10 +29,8 @@ func New(attrs ...slog.Attr) *slog.Logger {
 }
 
 func Follow(w io.Writer) error {
-	fp := getLogPath(EnvLogPath)
-
 	shouldFollow := isatty.IsTerminal(os.Stdout.Fd())
-	t, err := tail.TailFile(fp, tail.Config{Follow: shouldFollow, ReOpen: shouldFollow})
+	t, err := tail.TailFile(env.GOMI_LOG_PATH, tail.Config{Follow: shouldFollow, ReOpen: shouldFollow})
 	if err != nil {
 		return err
 	}
@@ -47,16 +38,4 @@ func Follow(w io.Writer) error {
 		fmt.Fprintln(w, line.Text)
 	}
 	return nil
-}
-
-func getLogPath(env string) string {
-	fp, ok := os.LookupEnv(env)
-	if !ok {
-		var err error
-		fp, err = xdg.CacheFile(fmt.Sprintf("%s/log", AppName))
-		if err != nil {
-			fp = fmt.Sprintf("%s.log", AppName)
-		}
-	}
-	return fp
 }

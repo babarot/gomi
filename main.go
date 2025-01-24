@@ -20,8 +20,7 @@ import (
 )
 
 const (
-	appName    = "gomi"
-	envGomiLog = "GOMI_LOG"
+	appName = "gomi"
 )
 
 // These variables are set in build step
@@ -59,7 +58,6 @@ type CLI struct {
 func main() {
 	if err := runMain(); err != nil {
 		fmt.Fprintf(os.Stderr, "%s: %v\n", appName, err)
-		slog.Error("failed to run cli", "error", err)
 		os.Exit(1)
 	}
 }
@@ -68,11 +66,6 @@ var runID = sync.OnceValue(func() string {
 	id := xid.New().String()
 	return id
 })
-
-func init() {
-	log.AppName = appName
-	log.EnvLogPath = envGomiLog
-}
 
 func runMain() error {
 	var opt Option
