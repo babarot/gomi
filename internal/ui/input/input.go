@@ -163,8 +163,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.err = m.Validate(m.input.Value())
 	}
 
+	// Originally, validation runs after the text is entered,
+	// but with this change,
+	// validation will be executed even when no text has been entered.
+	// (added by @babarot)
 	if m.initialized {
-		// Run validation immediately without any inputs
 		m.err = m.Validate(m.input.Value())
 	}
 

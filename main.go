@@ -173,6 +173,15 @@ func (c CLI) Restore() error {
 			// Update with new name
 			file.From = filepath.Join(filepath.Dir(file.From), newName)
 		}
+		if c.config.Restore.Confirm {
+			yes := ui.Confirm(fmt.Sprintf("Ok to put back? %s", filepath.Base(file.From)))
+			if !yes {
+				if c.config.Restore.Verbose {
+					fmt.Printf("Replied no, canceled!\n")
+				}
+				continue
+			}
+		}
 		err := os.Rename(file.To, file.From)
 		if err != nil {
 			errs = append(errs, err)
