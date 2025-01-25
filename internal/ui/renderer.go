@@ -18,15 +18,15 @@ import (
 func renderDetailed(m Model) string {
 	return lipgloss.JoinVertical(lipgloss.Left,
 		m.renderHeader(),
-		m.renderFilepath(),
-		m.renderTimestamp(),
+		m.renderDeletedFrom(),
+		m.renderDeletedAt(),
 		m.renderPreview(),
 		m.renderFooter(),
 	)
 }
 
 func (m Model) renderHeader() string {
-	borderForeground := m.config.Style.InfoPane.Border
+	borderForeground := m.config.Style.DetailView.Border
 	file := m.detailFile
 	name := ansi.Truncate(file.Title(), defaultWidth-len(ellipsis), ellipsis)
 
@@ -58,14 +58,14 @@ func (m Model) renderHeader() string {
 }
 
 func (m Model) renderFooter() string {
-	foreground := m.config.Style.InfoPane.Border
+	foreground := m.config.Style.DetailView.Border
 	line := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(foreground)).
 		Render(strings.Repeat("─", defaultWidth))
 	return lipgloss.JoinHorizontal(lipgloss.Center, line)
 }
 
-func (m Model) renderFilepath() string {
+func (m Model) renderDeletedFrom() string {
 	file := m.detailFile
 	text := filepath.Dir(file.From)
 	w := wordwrap.NewWriter(46)
@@ -73,16 +73,15 @@ func (m Model) renderFilepath() string {
 	w.KeepNewlines = false
 	_, _ = w.Write([]byte(text))
 	_ = w.Close()
-	return styles.Section(m.config).
-		Render(
-			lipgloss.JoinVertical(
-				lipgloss.Left,
-				styles.SectionTitle(m.config).MarginBottom(1).Render("Deleted From"),
-				lipgloss.NewStyle().Render(w.String())),
-		)
+	return styles.DeletedFromSection(m.config).Render(
+		lipgloss.JoinVertical(
+			lipgloss.Left,
+			styles.DeletedFromTitle(m.config).MarginBottom(1).Render("Deleted From"),
+			lipgloss.NewStyle().Render(w.String())),
+	)
 }
 
-func (m Model) renderTimestamp() string {
+func (m Model) renderDeletedAt() string {
 	file := m.detailFile
 	var ts string
 	switch m.datefmt {
@@ -91,24 +90,23 @@ func (m Model) renderTimestamp() string {
 	default:
 		ts = humanize.Time(file.Timestamp)
 	}
-	return styles.Section(m.config).
-		Render(
-			lipgloss.JoinHorizontal(
-				lipgloss.Left,
-				styles.SectionTitle(m.config).MarginRight(3).Render("Deleted At"),
-				lipgloss.NewStyle().Render(ts)),
-		)
+	return styles.DeletedAtSection(m.config).Render(
+		lipgloss.JoinHorizontal(
+			lipgloss.Left,
+			styles.DeletedAtTitle(m.config).MarginRight(3).Render("Deleted At"),
+			lipgloss.NewStyle().Render(ts)),
+	)
 }
 
 func (m Model) previewHeader() string {
-	color := m.config.Style.PreviewPane.Border
+	color := m.config.Style.DetailView.PreviewPane.Border
 	size := styles.Size(m.config).Render(m.detailFile.Size())
 	line := strings.Repeat("─", max(0, m.viewport.Width-lipgloss.Width(size)))
 	return lipgloss.NewStyle().Foreground(lipgloss.Color(color)).Render(lipgloss.JoinHorizontal(lipgloss.Center, line, size))
 }
 
 func (m Model) previewFooter() string {
-	color := m.config.Style.PreviewPane.Border
+	color := m.config.Style.DetailView.PreviewPane.Border
 	if m.cannotPreview {
 		return lipgloss.NewStyle().Foreground(lipgloss.Color(color)).Render(strings.Repeat("─", defaultWidth))
 	}

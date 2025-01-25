@@ -31,8 +31,8 @@ type RestoreItemStyles struct {
 
 func NewRestoreItemStyles() (s RestoreItemStyles) {
 	s.NormalTitle = lipgloss.NewStyle().
-		Foreground(lipgloss.AdaptiveColor{Light: "#1a1a1a", Dark: "#dddddd"}).
-		Padding(0, 0, 0, 2) //nolint:mnd
+		// Foreground(lipgloss.AdaptiveColor{Light: "#1A1A1A", Dark: "#DDDDDD"}).
+		Padding(0, 0, 0, 2)
 
 	s.NormalDesc = s.NormalTitle.
 		Foreground(lipgloss.AdaptiveColor{Light: "#A49FA5", Dark: "#777777"})
@@ -48,7 +48,7 @@ func NewRestoreItemStyles() (s RestoreItemStyles) {
 
 	s.DimmedTitle = lipgloss.NewStyle().
 		Foreground(lipgloss.AdaptiveColor{Light: "#A49FA5", Dark: "#777777"}).
-		Padding(0, 0, 0, 2) //nolint:mnd
+		Padding(0, 0, 0, 2)
 
 	s.DimmedDesc = s.DimmedTitle.
 		Foreground(lipgloss.AdaptiveColor{Light: "#C2B8C2", Dark: "#4D4D4D"})
@@ -200,10 +200,10 @@ func (d RestoreDelegate) Render(w io.Writer, m list.Model, index int, item list.
 	}
 
 	if d.showDescription {
-		fmt.Fprintf(w, "%s\n%s", title, desc) //nolint: errcheck
+		fmt.Fprintf(w, "%s\n%s", title, desc)
 		return
 	}
-	fmt.Fprintf(w, "%s", title) //nolint: errcheck
+	fmt.Fprintf(w, "%s", title)
 }
 
 func (d RestoreDelegate) ShortHelp() []key.Binding {

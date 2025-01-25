@@ -72,18 +72,36 @@ type previewConfig struct {
 }
 
 type styleConfig struct {
+	ListView   ListView   `yaml:"list_view"`
+	DetailView DetailView `yaml:"detail_view"`
+}
+
+type ListView struct {
+}
+
+type DetailView struct {
+	Border      string      `yaml:"border"`
 	InfoPane    infoPane    `yaml:"info_pane"`
 	PreviewPane previewPane `yaml:"preview_pane"`
 }
+
 type infoPane struct {
-	Border  string `yaml:"border"`
-	Section color  `yaml:"section"`
+	DeletedFrom color `yaml:"deleted_from"`
+	DeletedAt   color `yaml:"deleted_at"`
 }
 
 type previewPane struct {
 	Border string `yaml:"border"`
 	Size   color  `yaml:"size"`
 	Scroll color  `yaml:"scroll"`
+}
+
+type header struct {
+	Border string `yaml:"border"`
+}
+
+type footer struct {
+	Border string `yaml:"border"`
 }
 
 type color struct {
@@ -120,22 +138,29 @@ func (p parser) getDefaultConfig() Config {
 			},
 			Paginator: "dots | arabic",
 			Style: styleConfig{
-				InfoPane: infoPane{
+				ListView: ListView{},
+				DetailView: DetailView{
 					Border: "#EEEEDD",
-					Section: color{
-						Foreground: "#EEEEEE",
-						Background: "#1C1C1C",
+					InfoPane: infoPane{
+						DeletedFrom: color{
+							Foreground: "#EEEEEE",
+							Background: "#1C1C1C",
+						},
+						DeletedAt: color{
+							Foreground: "#EEEEEE",
+							Background: "#1C1C1C",
+						},
 					},
-				},
-				PreviewPane: previewPane{
-					Border: "#3C3C3C",
-					Size: color{
-						Foreground: "#EEEEDD",
-						Background: "#3C3C3C",
-					},
-					Scroll: color{
-						Foreground: "#EEEEDD",
-						Background: "#3C3C3C",
+					PreviewPane: previewPane{
+						Border: "#3C3C3C",
+						Size: color{
+							Foreground: "#EEEEDD",
+							Background: "#3C3C3C",
+						},
+						Scroll: color{
+							Foreground: "#EEEEDD",
+							Background: "#3C3C3C",
+						},
 					},
 				},
 			},
