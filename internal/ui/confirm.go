@@ -12,10 +12,12 @@ func Confirm(prompt string) bool {
 	m.Prompt = prompt
 	m.DefaultValue = confirm.Denied
 	m.Immediately = true
+
 	p := tea.NewProgram(&m)
 	if _, err := p.Run(); err != nil {
 		slog.Error("confirm failed", "error", err)
 		return false
 	}
+
 	return m.Selected().IsAccepted()
 }

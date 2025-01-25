@@ -220,7 +220,8 @@ func (i *inputRenderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return !unicode.IsLetter(r)
 		})
 	}
-	done := func() {
+
+	makeDone := func() {
 		switch k := strings.ToLower(i.text.Value()); {
 		case strings.HasPrefix(k, strings.ToLower(i.m.AcceptedDecisionText)):
 			i.m.SetDecision(Accepted)
@@ -234,11 +235,14 @@ func (i *inputRenderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case msg.Type == tea.KeyEnter:
-			done()
+			makeDone()
 			return i, tea.Quit
-		case isLetter(msg.Type.String()): // (added by @babarot)
+		case isLetter(msg.Type.String()):
+			// check if one input is Yes/No immediately
+			// after inputting something letter.
+			// (added by @babarot)
 			if i.m.Immediately {
-				done()
+				makeDone()
 				return i, tea.Quit
 			}
 		}

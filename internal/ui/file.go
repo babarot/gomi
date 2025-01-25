@@ -149,6 +149,7 @@ func (f File) colorize(content string) (string, error) {
 		l = lexers.Analyse(content)
 	}
 	if l == nil {
+		slog.Debug("highlight: fallback to default lexer")
 		l = lexers.Fallback
 	}
 	style := styles.Get(f.colorscheme)

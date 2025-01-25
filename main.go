@@ -173,14 +173,33 @@ func (c CLI) Restore() error {
 			// Update with new name
 			file.From = filepath.Join(filepath.Dir(file.From), newName)
 		}
-		if c.config.Core.Restore.Confirm {
-			yes := ui.Confirm(fmt.Sprintf("Ok to put back? %s", filepath.Base(file.From)))
-			if !yes {
+		allowed := func() bool {
+			if _, err := os.Stat(file.From); !os.IsNotExist(err) {
+				yes := ui.Confirm(
+					fmt.Sprintf("Causion! The same name already exists. Even so okay to restore? %s",
+						filepath.Base(file.From)))
+				if yes {
+					return true
+				}
 				if c.config.Core.Restore.Verbose {
 					fmt.Printf("Replied no, canceled!\n")
 				}
-				continue
+				return false
 			}
+			if c.config.Core.Restore.Confirm {
+				yes := ui.Confirm(fmt.Sprintf("OK to put back? %s", filepath.Base(file.From)))
+				if yes {
+					return true
+				}
+				if c.config.Core.Restore.Verbose {
+					fmt.Printf("Replied no, canceled!\n")
+				}
+				return false
+			}
+			return true
+		}
+		if !allowed() {
+			continue
 		}
 		err := os.Rename(file.To, file.From)
 		if err != nil {
@@ -209,8 +228,8 @@ func (c CLI) Put(args []string) error {
 	}
 
 	files := make([]inventory.File, len(args))
-	var mu sync.Mutex // Mutex to synchronize writes to files
 	var eg errgroup.Group
+	var mu sync.Mutex // Mutex to synchronize writes to files
 
 	for i, arg := range args {
 		i, arg := i, arg // https://golang.org/doc/faq#closures_and_goroutines
@@ -240,7 +259,10 @@ func (c CLI) Put(args []string) error {
 
 	// Save the files after all tasks are done
 	defer func() {
-		_ = c.inventory.Save(files)
+		err := c.inventory.Save(files)
+		if err != nil {
+			slog.Error("failed to update inventory")
+		}
 	}()
 
 	// Wait for all goroutines to complete

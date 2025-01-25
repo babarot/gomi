@@ -121,6 +121,7 @@ type Model struct {
 
 	// ShowHelp determines whether to show help where possible (e.g. HorizontalSelection or VerticalSelection rendering)
 	ShowHelp bool
+
 	selected Decision
 	renderer rendering
 	done     bool
