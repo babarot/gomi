@@ -24,6 +24,7 @@ type Config struct {
 
 type Core struct {
 	Restore Restore `yaml:"restore"`
+	Log     Log     `yaml:"log"`
 }
 
 type UI struct {
@@ -42,6 +43,10 @@ type Inventory struct {
 type Restore struct {
 	Verbose bool `yaml:"verbose"`
 	Confirm bool `yaml:"confirm"`
+}
+
+type Log struct {
+	Type string `yaml:"type"`
 }
 
 type includeConfig struct {
@@ -100,6 +105,9 @@ func (p parser) getDefaultConfig() Config {
 			Restore: Restore{
 				Verbose: true,
 				Confirm: true,
+			},
+			Log: Log{
+				Type: "default",
 			},
 		},
 		UI: UI{

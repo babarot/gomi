@@ -17,7 +17,9 @@ require (
 	github.com/go-playground/validator/v10 v10.24.0
 	github.com/gobwas/glob v0.2.3
 	github.com/jessevdk/go-flags v1.6.1
+	github.com/jimschubert/answer v0.1.5
 	github.com/k1LoW/duration v1.2.0
+	github.com/lmittmann/tint v1.0.6
 	github.com/mattn/go-isatty v0.0.20
 	github.com/muesli/reflow v0.3.0
 	github.com/muesli/termenv v0.15.2
@@ -32,14 +34,11 @@ require (
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
-	github.com/cqroot/multichoose v0.1.1 // indirect
-	github.com/cqroot/prompt v0.9.4 // indirect
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/jimschubert/answer v0.1.5 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect

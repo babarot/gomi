@@ -97,6 +97,7 @@ func runMain() error {
 func (c CLI) Run(args []string) error {
 	defer slog.Debug("finished main function")
 	log.New(
+		c.config.Core.Log.Type,
 		slog.String("context", "main"),
 		slog.String("run_id", runID()),
 	).Debug(
@@ -119,6 +120,7 @@ func (c CLI) Run(args []string) error {
 	case c.option.Restore:
 		slog.SetDefault(
 			log.New(
+				c.config.Core.Log.Type,
 				slog.String("context", "restore"),
 				slog.String("run_id", runID()),
 			),

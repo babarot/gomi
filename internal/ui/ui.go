@@ -225,6 +225,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmds := []tea.Cmd{}
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		slog.Debug("Key pressed", "key", msg.String())
 		switch {
 		case key.Matches(msg, keys.Quit):
 			m.navState = QUITTING

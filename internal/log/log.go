@@ -5,13 +5,15 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/babarot/gomi/internal/env"
+	"github.com/lmittmann/tint"
 	"github.com/mattn/go-isatty"
 	"github.com/nxadm/tail"
 )
 
-func New(attrs ...slog.Attr) *slog.Logger {
+func New(ty string, attrs ...slog.Attr) *slog.Logger {
 	var w io.Writer
 	if file, err := os.OpenFile(env.GOMI_LOG_PATH, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err == nil {
 		w = file
@@ -19,13 +21,23 @@ func New(attrs ...slog.Attr) *slog.Logger {
 		w = os.Stderr
 	}
 
-	handler := NewWrapHandler(
-		slog.NewJSONHandler(w, &slog.HandlerOptions{Level: slog.LevelDebug}),
+	handler := tint.NewHandler(w, &tint.Options{
+		Level:      slog.LevelDebug,
+		TimeFormat: time.Kitchen,
+	})
+	switch ty {
+	case "default":
+		// use tint as default
+	case "json":
+		handler = slog.NewJSONHandler(w, &slog.HandlerOptions{Level: slog.LevelDebug})
+	}
+
+	return slog.New(NewWrapHandler(
+		handler,
 		func() []slog.Attr {
 			return attrs
-		})
-
-	return slog.New(handler)
+		}),
+	)
 }
 
 func Follow(w io.Writer) error {
