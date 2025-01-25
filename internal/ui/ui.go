@@ -501,7 +501,7 @@ func Run(filteredFiles []inventory.File, cfg config.UI) ([]inventory.File, error
 
 	choices := returnModel.(Model).choices
 	if returnModel.(Model).navState == QUITTING {
-		if msg := cfg.ByeMessage; msg != "" {
+		if msg := cfg.ExitMessage; msg != "" {
 			fmt.Println(msg)
 		}
 		return []inventory.File{}, nil

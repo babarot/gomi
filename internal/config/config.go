@@ -27,11 +27,11 @@ type Core struct {
 }
 
 type UI struct {
-	Density    string        `yaml:"density"`
-	Style      styleConfig   `yaml:"style"`
-	ByeMessage string        `yaml:"bye_message"`
-	Preview    previewConfig `yaml:"preview"`
-	Paginator  string        `yaml:"paginator"`
+	Density     string        `yaml:"density"`
+	Style       styleConfig   `yaml:"style"`
+	ExitMessage string        `yaml:"exit_message"`
+	Preview     previewConfig `yaml:"preview"`
+	Paginator   string        `yaml:"paginator_type"`
 }
 
 type Inventory struct {
@@ -49,11 +49,15 @@ type includeConfig struct {
 }
 
 type excludeConfig struct {
-	Files     []string `yaml:"files"`
-	Patterns  []string `yaml:"patterns"`
-	Globs     []string `yaml:"globs"`
-	SizeAbove string   `yaml:"size_above"` // over
-	SizeBelow string   `yaml:"size_below"` // under
+	Files    []string `yaml:"files"`
+	Patterns []string `yaml:"patterns"`
+	Globs    []string `yaml:"globs"`
+	Size     size     `yaml:"size"`
+}
+
+type size struct {
+	Min string `yaml:"min"`
+	Max string `yaml:"max"`
 }
 
 type previewConfig struct {
@@ -63,10 +67,10 @@ type previewConfig struct {
 }
 
 type styleConfig struct {
-	Window      window      `yaml:"window"`
+	InfoPane    infoPane    `yaml:"info_pane"`
 	PreviewPane previewPane `yaml:"preview_pane"`
 }
-type window struct {
+type infoPane struct {
 	Border  string `yaml:"border"`
 	Section color  `yaml:"section"`
 }
@@ -99,8 +103,8 @@ func (p parser) getDefaultConfig() Config {
 			},
 		},
 		UI: UI{
-			Density:    "compact | spacious",
-			ByeMessage: "bye!",
+			Density:     "compact | spacious",
+			ExitMessage: "bye!",
 			Preview: previewConfig{
 				SyntaxHighlight:  true,
 				Colorscheme:      "nord",
@@ -108,7 +112,7 @@ func (p parser) getDefaultConfig() Config {
 			},
 			Paginator: "dots | arabic",
 			Style: styleConfig{
-				Window: window{
+				InfoPane: infoPane{
 					Border: "#EEEEDD",
 					Section: color{
 						Foreground: "#EEEEEE",
@@ -139,10 +143,12 @@ func (p parser) getDefaultConfig() Config {
 					// and other visual information
 					".DS_Store",
 				},
-				Patterns:  []string{},
-				Globs:     []string{},
-				SizeAbove: "10GB",
-				SizeBelow: "0KB",
+				Patterns: []string{},
+				Globs:    []string{},
+				Size: size{
+					Min: "0KB",
+					Max: "10GB",
+				},
 			},
 		},
 	}
@@ -226,7 +232,8 @@ func (e parsingError) Error() string {
 }
 
 func (p parser) readConfigFile(path string) (Config, error) {
-	config := p.getDefaultConfig()
+	// config := p.getDefaultConfig()
+	var config Config
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return config, configError{parser: p, configDir: path, err: err}

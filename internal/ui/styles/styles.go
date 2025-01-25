@@ -10,7 +10,7 @@ import (
 // Color chart: https://github.com/muesli/termenv
 
 var Section = func(cfg config.UI) lipgloss.Style {
-	fg := cfg.Style.Window.Section.Foreground
+	fg := cfg.Style.InfoPane.Section.Foreground
 	return lipgloss.NewStyle().
 		BorderStyle(lipgloss.HiddenBorder()).
 		BorderForeground(lipgloss.Color(fg)).Padding(0, 1).
@@ -18,8 +18,8 @@ var Section = func(cfg config.UI) lipgloss.Style {
 }
 
 var SectionTitle = func(cfg config.UI) lipgloss.Style {
-	bg := cfg.Style.Window.Section.Background
-	fg := cfg.Style.Window.Section.Foreground
+	bg := cfg.Style.InfoPane.Section.Background
+	fg := cfg.Style.InfoPane.Section.Foreground
 	return lipgloss.NewStyle().Padding(0, 1).
 		Background(lipgloss.Color(bg)).
 		Foreground(lipgloss.Color(fg)).

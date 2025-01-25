@@ -26,7 +26,7 @@ func renderDetailed(m Model) string {
 }
 
 func (m Model) renderHeader() string {
-	borderForeground := m.config.Style.Window.Border
+	borderForeground := m.config.Style.InfoPane.Border
 	file := m.detailFile
 	name := ansi.Truncate(file.Title(), defaultWidth-len(ellipsis), ellipsis)
 
@@ -58,7 +58,7 @@ func (m Model) renderHeader() string {
 }
 
 func (m Model) renderFooter() string {
-	foreground := m.config.Style.Window.Border
+	foreground := m.config.Style.InfoPane.Border
 	line := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(foreground)).
 		Render(strings.Repeat("─", defaultWidth))

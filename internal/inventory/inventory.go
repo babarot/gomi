@@ -116,21 +116,21 @@ func (i Inventory) Filter() []File {
 		if err != nil {
 			return false // false positive
 		}
-		if s := i.config.Exclude.SizeBelow; s != "" {
-			below, err := units.FromHumanSize(s)
+		if s := i.config.Exclude.Size.Min; s != "" {
+			min, err := units.FromHumanSize(s)
 			if err != nil {
 				return false
 			}
-			if size <= below {
+			if size <= min {
 				return true
 			}
 		}
-		if s := i.config.Exclude.SizeAbove; s != "" {
-			above, err := units.FromHumanSize(s)
+		if s := i.config.Exclude.Size.Max; s != "" {
+			max, err := units.FromHumanSize(s)
 			if err != nil {
 				return false
 			}
-			if above <= size {
+			if max <= size {
 				return true
 			}
 		}
