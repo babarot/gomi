@@ -43,8 +43,8 @@ type RmOption struct {
 
 type CLI struct {
 	version   Version
-	config    config.Config
 	option    Option
+	config    config.Config
 	inventory inventory.Inventory
 	runID     string
 }
@@ -100,8 +100,8 @@ func Run(v Version) error {
 
 	cli := CLI{
 		version:   v,
-		config:    cfg,
 		option:    opt,
+		config:    cfg,
 		inventory: inventory.New(cfg.Inventory),
 		runID:     runID(),
 	}
@@ -139,7 +139,8 @@ func (c CLI) Restore() error {
 	slog.Debug("cil.restore started")
 	defer slog.Debug("cil.restore finished")
 
-	files, err := ui.Run(c.inventory.Filter(), c.config.UI)
+	files := c.inventory.Filter()
+	files, err := ui.RenderList(files, c.config.UI)
 	if err != nil {
 		return err
 	}

@@ -9,6 +9,9 @@ import (
 
 	"github.com/babarot/gomi/internal/config"
 	"github.com/babarot/gomi/internal/inventory"
+	"github.com/babarot/gomi/internal/ui/keys"
+
+	// "github.com/babarot/gomi/internal/ui/state"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -21,11 +24,11 @@ import (
 	"github.com/samber/lo"
 )
 
-type NavState uint8
+type ViewType uint8
 
 const (
-	INVENTORY_LIST NavState = iota
-	INVENTORY_DETAILS
+	LIST_VIEW ViewType = iota
+	DETAIL_VIEW
 	QUITTING
 )
 
@@ -79,7 +82,10 @@ func errorCmd(err error) tea.Cmd {
 }
 
 type Model struct {
-	navState      NavState
+	listKeys   *keys.ListKeyMap
+	detailKeys *keys.DetailKeyMap
+
+	viewType      ViewType
 	detailFile    File
 	datefmt       string
 	cannotPreview bool
@@ -88,6 +94,7 @@ type Model struct {
 	config  config.UI
 	choices []File
 
+	help     help.Model
 	list     list.Model
 	viewport viewport.Model
 
@@ -127,111 +134,17 @@ func (m Model) Init() tea.Cmd {
 	)
 }
 
-type (
-	keyMap struct {
-		Quit     key.Binding
-		Select   key.Binding
-		DeSelect key.Binding
-	}
-	listAdditionalKeyMap struct {
-		Enter key.Binding
-		Space key.Binding
-	}
-	detailKeyMap struct {
-		Up           key.Binding
-		Down         key.Binding
-		PreviewUp    key.Binding
-		PreviewDown  key.Binding
-		Esc          key.Binding
-		AtSign       key.Binding
-		GotoTop      key.Binding
-		GotoBottom   key.Binding
-		HalfPageUp   key.Binding
-		HalfPageDown key.Binding
-	}
-)
-
-var (
-	keys = keyMap{
-		Quit: key.NewBinding(
-			key.WithKeys("ctrl+c"),
-			key.WithHelp("ctrl+c", "quit"),
-		),
-		Select: key.NewBinding(
-			key.WithKeys("tab"),
-			key.WithHelp("tab", "select"),
-		),
-		DeSelect: key.NewBinding(
-			key.WithKeys("shift+tab"),
-			key.WithHelp("s+tab", "de-select"),
-		),
-	}
-	listAdditionalKeys = listAdditionalKeyMap{
-		Enter: key.NewBinding(
-			key.WithKeys("enter"),
-			key.WithHelp("enter", "ok"),
-		),
-		Space: key.NewBinding(
-			key.WithKeys(" "),
-			key.WithHelp("space", "info"),
-		),
-	}
-	detailKeys = detailKeyMap{
-		PreviewUp: key.NewBinding(
-			key.WithKeys("up", "k"),
-			key.WithHelp("↑/k", "preview up"),
-		),
-		PreviewDown: key.NewBinding(
-			key.WithKeys("down", "j"),
-			key.WithHelp("↓/j", "preview down"),
-		),
-		Up: key.NewBinding(
-			key.WithKeys("p"),
-			key.WithHelp("p", "prev"),
-		),
-		Down: key.NewBinding(
-			key.WithKeys("n"),
-			key.WithHelp("n", "next"),
-		),
-		Esc: key.NewBinding(
-			key.WithKeys("esc"), // space itself should be already defined another part
-			key.WithHelp("space/esc", "back"),
-		),
-		AtSign: key.NewBinding(
-			key.WithKeys("@"),
-			key.WithHelp("@", "datefmt"),
-		),
-		GotoTop:      key.NewBinding(key.WithKeys("g"), key.WithHelp("g", "go to start")),
-		GotoBottom:   key.NewBinding(key.WithKeys("G"), key.WithHelp("G", "go to end")),
-		HalfPageUp:   key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "½ page up")),
-		HalfPageDown: key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "½ page down")),
-	}
-)
-
-func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{
-		detailKeys.Up, detailKeys.Down,
-		detailKeys.PreviewUp, detailKeys.PreviewDown,
-		detailKeys.AtSign,
-		detailKeys.Esc,
-	}
-}
-
-func (k keyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{k.ShortHelp(), {}}
-}
-
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmds := []tea.Cmd{}
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		slog.Debug("Key pressed", "key", msg.String())
 		switch {
-		case key.Matches(msg, keys.Quit):
-			m.navState = QUITTING
+		case key.Matches(msg, m.listKeys.Quit):
+			m.viewType = QUITTING
 			return m, tea.Quit
 
-		case key.Matches(msg, keys.Select):
+		case key.Matches(msg, m.listKeys.Select):
 			if m.list.FilterState() != list.Filtering {
 				item, ok := m.list.SelectedItem().(File)
 				if !ok {
@@ -243,12 +156,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					selectionManager.Add(item)
 				}
 				m.list.CursorDown()
-				if m.navState == INVENTORY_DETAILS {
+				if m.viewType == DETAIL_VIEW {
 					cmds = append(cmds, getInventoryDetails(item))
 				}
 			}
 
-		case key.Matches(msg, keys.DeSelect):
+		case key.Matches(msg, m.listKeys.DeSelect):
 			if m.list.FilterState() != list.Filtering {
 				item, ok := m.list.SelectedItem().(File)
 				if !ok {
@@ -258,14 +171,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					selectionManager.Remove(item)
 				}
 				m.list.CursorUp()
-				if m.navState == INVENTORY_DETAILS {
+				if m.viewType == DETAIL_VIEW {
 					cmds = append(cmds, getInventoryDetails(item))
 				}
 			}
 
-		case key.Matches(msg, detailKeys.AtSign):
-			switch m.navState {
-			case INVENTORY_DETAILS:
+		case key.Matches(msg, m.detailKeys.AtSign):
+			switch m.viewType {
+			case DETAIL_VIEW:
 				switch m.datefmt {
 				case datefmtRel:
 					m.datefmt = datefmtAbs
@@ -275,32 +188,31 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case key.Matches(
-			msg, detailKeys.PreviewUp, detailKeys.PreviewDown,
-			detailKeys.HalfPageUp, detailKeys.HalfPageDown,
+			msg, m.detailKeys.PreviewUp, m.detailKeys.PreviewDown,
+			m.detailKeys.HalfPageUp, m.detailKeys.HalfPageDown,
 		):
-			switch m.navState {
-			case INVENTORY_DETAILS:
+			switch m.viewType {
+			case DETAIL_VIEW:
 				var cmd tea.Cmd
 				m.viewport, cmd = m.viewport.Update(msg)
 				cmds = append(cmds, cmd)
-
 			}
 
-		case key.Matches(msg, detailKeys.GotoTop):
-			switch m.navState {
-			case INVENTORY_DETAILS:
+		case key.Matches(msg, m.detailKeys.GotoTop):
+			switch m.viewType {
+			case DETAIL_VIEW:
 				m.viewport.GotoTop()
 			}
 
-		case key.Matches(msg, detailKeys.GotoBottom):
-			switch m.navState {
-			case INVENTORY_DETAILS:
+		case key.Matches(msg, m.detailKeys.GotoBottom):
+			switch m.viewType {
+			case DETAIL_VIEW:
 				m.viewport.GotoBottom()
 			}
 
-		case key.Matches(msg, detailKeys.Up):
-			switch m.navState {
-			case INVENTORY_DETAILS:
+		case key.Matches(msg, m.detailKeys.Prev):
+			switch m.viewType {
+			case DETAIL_VIEW:
 				m.list.CursorUp()
 				file, ok := m.list.SelectedItem().(File)
 				if ok {
@@ -308,9 +220,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 
-		case key.Matches(msg, detailKeys.Down):
-			switch m.navState {
-			case INVENTORY_DETAILS:
+		case key.Matches(msg, m.detailKeys.Next):
+			switch m.viewType {
+			case DETAIL_VIEW:
 				m.list.CursorDown()
 				file, ok := m.list.SelectedItem().(File)
 				if ok {
@@ -318,28 +230,28 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 
-		case key.Matches(msg, detailKeys.Esc):
-			switch m.navState {
-			case INVENTORY_DETAILS:
-				m.navState = INVENTORY_LIST
+		case key.Matches(msg, m.detailKeys.Esc):
+			switch m.viewType {
+			case DETAIL_VIEW:
+				m.viewType = LIST_VIEW
 			}
 
-		case key.Matches(msg, listAdditionalKeys.Space):
-			switch m.navState {
-			case INVENTORY_LIST:
+		case key.Matches(msg, m.listKeys.Space):
+			switch m.viewType {
+			case LIST_VIEW:
 				if m.list.FilterState() != list.Filtering {
 					file, ok := m.list.SelectedItem().(File)
 					if ok {
 						cmds = append(cmds, getInventoryDetails(file))
 					}
 				}
-			case INVENTORY_DETAILS:
-				m.navState = INVENTORY_LIST
+			case DETAIL_VIEW:
+				m.viewType = LIST_VIEW
 			}
 
-		case key.Matches(msg, listAdditionalKeys.Enter):
-			switch m.navState {
-			case INVENTORY_LIST:
+		case key.Matches(msg, m.listKeys.Enter):
+			switch m.viewType {
+			case LIST_VIEW:
 				if m.list.FilterState() != list.Filtering {
 					files := selectionManager.items
 					if len(files) == 0 {
@@ -354,6 +266,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, tea.Quit
 				}
 			}
+
+		case key.Matches(msg, m.detailKeys.Help):
+			m.help.ShowAll = !m.help.ShowAll
 		}
 
 	case tea.WindowSizeMsg:
@@ -370,24 +285,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.list.SetItems(msg.files)
 
 	case DetailsMsg:
-		m.navState = INVENTORY_DETAILS
+		m.viewType = DETAIL_VIEW
 		m.detailFile = msg.file
 		m.cannotPreview = false
 		m.viewport = m.newViewportModel(msg.file)
 
 	case errorMsg:
-		m.navState = QUITTING
+		m.viewType = QUITTING
 		m.err = msg
 		return m, tea.Quit
 	}
 
 	var cmd tea.Cmd
-	switch m.navState {
-	case INVENTORY_LIST:
+	switch m.viewType {
+	case LIST_VIEW:
 		m.list, cmd = m.list.Update(msg)
 		cmds = append(cmds, cmd)
 	}
-
 	return m, tea.Batch(cmds...)
 }
 
@@ -400,12 +314,12 @@ func (m Model) View() string {
 		return s
 	}
 
-	switch m.navState {
-	case INVENTORY_LIST:
+	switch m.viewType {
+	case LIST_VIEW:
 		s += m.list.View()
-	case INVENTORY_DETAILS:
+	case DETAIL_VIEW:
 		s += renderDetailed(m)
-		s += "\n" + lipgloss.NewStyle().Margin(1, 2).Render(help.New().View(keys))
+		s += "\n" + lipgloss.NewStyle().Margin(1, 2).Render(m.help.View(m.detailKeys))
 	case QUITTING:
 		return s
 	}
@@ -435,12 +349,7 @@ func getInventoryDetails(file File) tea.Cmd {
 
 func (m *Model) newViewportModel(file File) viewport.Model {
 	viewportModel := viewport.New(defaultWidth, 15-lipgloss.Height(m.previewHeader()))
-	viewportModel.KeyMap = viewport.KeyMap{
-		Up:           key.NewBinding(key.WithKeys("k", "up")),
-		Down:         key.NewBinding(key.WithKeys("j", "down")),
-		HalfPageUp:   key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "½ page up")),
-		HalfPageDown: key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "½ page down")),
-	}
+	viewportModel.KeyMap = keys.PreviewKeys
 	content, err := file.Browse()
 	if err != nil {
 		m.cannotPreview = true
@@ -449,7 +358,7 @@ func (m *Model) newViewportModel(file File) viewport.Model {
 	return viewportModel
 }
 
-func Run(filteredFiles []inventory.File, cfg config.UI) ([]inventory.File, error) {
+func RenderList(filteredFiles []inventory.File, cfg config.UI) ([]inventory.File, error) {
 	var items []list.Item
 	var files []File
 	for _, file := range filteredFiles {
@@ -463,7 +372,6 @@ func Run(filteredFiles []inventory.File, cfg config.UI) ([]inventory.File, error
 	}
 
 	l := list.New(items, NewRestoreDelegate(cfg, files), defaultWidth, defaultHeight)
-
 	switch cfg.Paginator {
 	case "arabic":
 		l.Paginator.Type = paginator.Arabic
@@ -474,23 +382,22 @@ func Run(filteredFiles []inventory.File, cfg config.UI) ([]inventory.File, error
 	}
 
 	l.Title = ""
-	l.AdditionalShortHelpKeys = func() []key.Binding {
-		return []key.Binding{listAdditionalKeys.Enter, listAdditionalKeys.Space}
-	}
-	l.AdditionalFullHelpKeys = func() []key.Binding {
-		return []key.Binding{listAdditionalKeys.Enter, listAdditionalKeys.Space, keys.Quit, keys.Select, keys.DeSelect}
-	}
 	l.DisableQuitKeybindings()
 	l.SetShowStatusBar(false)
 	l.SetShowTitle(false)
+	l.AdditionalShortHelpKeys = keys.ListKeys.ShortHelp
+	l.AdditionalFullHelpKeys = keys.ListKeys.FullHelp
 
 	m := Model{
-		navState: INVENTORY_LIST,
-		datefmt:  datefmtRel,
-		files:    files,
-		config:   cfg,
-		list:     l,
-		viewport: viewport.Model{},
+		listKeys:   keys.ListKeys,
+		detailKeys: keys.DetailKeys,
+		viewType:   LIST_VIEW,
+		datefmt:    datefmtRel,
+		files:      files,
+		config:     cfg,
+		list:       l,
+		viewport:   viewport.Model{},
+		help:       help.New(),
 	}
 
 	returnModel, err := tea.NewProgram(m).Run()
@@ -499,7 +406,7 @@ func Run(filteredFiles []inventory.File, cfg config.UI) ([]inventory.File, error
 	}
 
 	choices := returnModel.(Model).choices
-	if returnModel.(Model).navState == QUITTING {
+	if returnModel.(Model).viewType == QUITTING {
 		if msg := cfg.ExitMessage; msg != "" {
 			fmt.Println(msg)
 		}
