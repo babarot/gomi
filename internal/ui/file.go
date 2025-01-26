@@ -118,7 +118,7 @@ func (f File) Browse() (string, error) {
 		mtype.Parent().Is("text/plain"):
 		// can preview
 	default:
-		slog.Debug("cannot preview since no support mimetype", "mimetype", mtype.String())
+		slog.Debug("cannot preview", "mimetype", mtype.String())
 		return content, errCannotPreview
 	}
 	fp, err := os.Open(f.To)
