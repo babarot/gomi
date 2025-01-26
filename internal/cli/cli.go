@@ -67,6 +67,14 @@ func Run(v Version) error {
 		return err
 	}
 
+	logDir := filepath.Dir(env.GOMI_LOG_PATH)
+	if _, err := os.Stat(logDir); os.IsNotExist(err) {
+		err := os.MkdirAll(logDir, 0755)
+		if err != nil {
+			return err
+		}
+	}
+
 	var w io.Writer
 	if file, err := os.OpenFile(env.GOMI_LOG_PATH, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err == nil {
 		w = file

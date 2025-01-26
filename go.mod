@@ -4,7 +4,6 @@ go 1.23
 
 require (
 	github.com/MakeNowJust/heredoc/v2 v2.0.1
-	github.com/adrg/xdg v0.5.3
 	github.com/alecthomas/chroma v0.10.0
 	github.com/charmbracelet/bubbles v0.20.0
 	github.com/charmbracelet/bubbletea v1.2.4
@@ -27,7 +26,6 @@ require (
 	github.com/nxadm/tail v1.4.11
 	github.com/rs/xid v1.6.0
 	github.com/samber/lo v1.47.0
-	github.com/yardbirdsax/bubblewrap v0.1.0
 	golang.org/x/sync v0.10.0
 	gopkg.in/yaml.v2 v2.4.0
 )
