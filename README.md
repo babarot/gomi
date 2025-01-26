@@ -130,7 +130,7 @@ https://aur.archlinux.org/packages/gomi/
 
 ## Configuration
 
-In `gomi` you can customize the behavior and styles of `gomi` with YAML. Initially the default config such as below will be generated to `~/.config/gomi/config.yaml` when running at first time.
+In `gomi`, you can customize its behavior and appearance using a YAML configuration file. When you run `gomi` for the first time, a default config (like the one below) will be automatically generated at `~/.config/gomi/config.yaml`.
 
 ```yaml
 core:
