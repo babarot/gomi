@@ -10,6 +10,7 @@ type DetailKeyMap struct {
 	Next   key.Binding
 	Prev   key.Binding
 	Esc    key.Binding
+	Quit   key.Binding
 	AtSign key.Binding
 
 	// Preview
@@ -35,14 +36,9 @@ func (k DetailKeyMap) ShortHelp() []key.Binding {
 
 func (k DetailKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{
-			k.Next,
-			k.Prev,
-			k.Space, k.Esc,
-			k.AtSign,
-		},
+		{k.Next, k.Prev, k.Space, k.Esc, k.AtSign},
 		{k.PreviewUp, k.PreviewDown, k.HalfPageUp, k.HalfPageDown, k.GotoTop, k.GotoBottom},
-		{k.HelpClose},
+		{k.HelpClose, k.Quit},
 	}
 }
 
@@ -78,6 +74,10 @@ var DetailKeys = &DetailKeyMap{
 	Esc: key.NewBinding(
 		key.WithKeys("esc"),
 		key.WithHelp("esc", "back"),
+	),
+	Quit: key.NewBinding(
+		key.WithKeys("ctrl+c"),
+		key.WithHelp("ctrl+c", "quit"),
 	),
 	AtSign: key.NewBinding(
 		key.WithKeys("@"),
