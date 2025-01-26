@@ -56,6 +56,7 @@ In CLI, there is no "trash" folder like in graphical file managers. So if you ac
 - Behaves like `rm` command but not deletes actually (just moves to trash folder)
 - Easy to restore with nice UI, it's super intuitive!
 - Compatible with almost all flags of `rm` command
+- Easy to search with fuzzy words from the history of deleted files
 - Allows you to customize `gomi` behaviors/styles with YAML config file
   - specify what to show the list (regexp patterns, file globs, file size, ...)
   - specify whether colorizing the file contents or not
@@ -78,7 +79,7 @@ Moves files to trash.
 rm files
 ```
 
-Put back the files to where it was.
+Restore the file to its original location. The `--restore` option is a bit long, so you can use the shorter version:
 
 ```bash
 rm -b
@@ -142,7 +143,7 @@ ui:
   preview:
     syntax_highlight: true
     colorscheme: nord  # available themes are here: https://xyproto.github.io/splash/docs/index.html
-    directory_command: exa -T --color=always --icons
+    directory_command: ls -F -A --color=always
   style:
     list_view:
       cursor: "#AD58B4"   # purple
