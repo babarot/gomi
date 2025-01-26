@@ -8,7 +8,6 @@ type ListKeyMap struct {
 	Space    key.Binding
 	Select   key.Binding
 	DeSelect key.Binding
-	Help     key.Binding
 }
 
 func (k ListKeyMap) ShortHelp() []key.Binding {
@@ -16,16 +15,18 @@ func (k ListKeyMap) ShortHelp() []key.Binding {
 		k.Enter,
 		k.Space,
 		k.Select,
-		k.Help,
 	}
 }
 
-func (k ListKeyMap) FullHelp() []key.Binding {
-	return append(
+func (k ListKeyMap) FullHelp() [][]key.Binding {
+	keys := append(
 		k.ShortHelp(),
 		k.DeSelect,
 		k.Quit,
 	)
+	return [][]key.Binding{
+		keys,
+	}
 }
 
 var ListKeys = &ListKeyMap{

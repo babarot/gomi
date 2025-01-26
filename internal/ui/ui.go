@@ -371,7 +371,10 @@ func RenderList(filteredFiles []inventory.File, cfg config.UI) ([]inventory.File
 		})
 	}
 
-	l := list.New(items, NewRestoreDelegate(cfg, files), defaultWidth, defaultHeight)
+	d := NewRestoreDelegate(cfg, files)
+	d.ShortHelpFunc = keys.ListKeys.ShortHelp
+	d.FullHelpFunc = keys.ListKeys.FullHelp
+	l := list.New(items, d, defaultWidth, defaultHeight)
 	switch cfg.Paginator {
 	case "arabic":
 		l.Paginator.Type = paginator.Arabic
@@ -385,8 +388,8 @@ func RenderList(filteredFiles []inventory.File, cfg config.UI) ([]inventory.File
 	l.DisableQuitKeybindings()
 	l.SetShowStatusBar(false)
 	l.SetShowTitle(false)
-	l.AdditionalShortHelpKeys = keys.ListKeys.ShortHelp
-	l.AdditionalFullHelpKeys = keys.ListKeys.FullHelp
+	// l.AdditionalShortHelpKeys = keys.ListKeys.ShortHelp
+	// l.AdditionalFullHelpKeys = keys.ListKeys.FullHelp
 
 	m := Model{
 		listKeys:   keys.ListKeys,

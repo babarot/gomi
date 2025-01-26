@@ -13,6 +13,10 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
+var (
+	currentItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170")).Width(150)
+)
+
 type RestoreItemStyles struct {
 	NormalTitle lipgloss.Style
 	NormalDesc  lipgloss.Style
