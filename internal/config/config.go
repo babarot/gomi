@@ -77,6 +77,9 @@ type styleConfig struct {
 }
 
 type ListView struct {
+	IndentOnSelect bool   `yaml:"indent_on_select"`
+	Cursor         string `yaml:"cursor"`
+	Selected       string `yaml:"selected"`
 }
 
 type DetailView struct {
@@ -138,7 +141,11 @@ func (p parser) getDefaultConfig() Config {
 			},
 			Paginator: "dots | arabic",
 			Style: styleConfig{
-				ListView: ListView{},
+				ListView: ListView{
+					IndentOnSelect: true,
+					Cursor:         "#AD58B4", // Purple
+					Selected:       "#5FB458", // Green
+				},
 				DetailView: DetailView{
 					Border: "#EEEEDD",
 					InfoPane: infoPane{

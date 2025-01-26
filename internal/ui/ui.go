@@ -462,8 +462,6 @@ func Run(filteredFiles []inventory.File, cfg config.UI) ([]inventory.File, error
 		})
 	}
 
-	// TODO: configable?
-	// l := list.New(items, ClassicDelegate{}, defaultWidth, defaultHeight)
 	l := list.New(items, NewRestoreDelegate(cfg, files), defaultWidth, defaultHeight)
 
 	switch cfg.Paginator {

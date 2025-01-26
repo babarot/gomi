@@ -23,15 +23,26 @@ type RestoreItemStyles struct {
 	SelectedTitle lipgloss.Style
 	SelectedDesc  lipgloss.Style
 
+	SelectedCursorTitle lipgloss.Style
+	SelectedCursorDesc  lipgloss.Style
+
 	DimmedTitle lipgloss.Style
 	DimmedDesc  lipgloss.Style
 
 	FilterMatch lipgloss.Style
 }
 
-func NewRestoreItemStyles() (s RestoreItemStyles) {
+func NewRestoreItemStyles(cfg config.UI) (s RestoreItemStyles) {
+	indentOnSelect := 0
+	if cfg.Style.ListView.IndentOnSelect {
+		indentOnSelect = 1
+	}
+
+	// TODO: support adaptive?
+	cursor := cfg.Style.ListView.Cursor
+	selected := cfg.Style.ListView.Selected
+
 	s.NormalTitle = lipgloss.NewStyle().
-		// Foreground(lipgloss.AdaptiveColor{Light: "#1A1A1A", Dark: "#DDDDDD"}).
 		Padding(0, 0, 0, 2)
 
 	s.NormalDesc = s.NormalTitle.
@@ -39,12 +50,12 @@ func NewRestoreItemStyles() (s RestoreItemStyles) {
 
 	s.CursorTitle = lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder(), false, false, false, true).
-		BorderForeground(lipgloss.AdaptiveColor{Light: "#F793FF", Dark: "#AD58B4"}).
-		Foreground(lipgloss.AdaptiveColor{Light: "#EE6FF8", Dark: "#EE6FF8"}).
+		BorderForeground(lipgloss.AdaptiveColor{Light: cursor, Dark: cursor}).
+		Foreground(lipgloss.AdaptiveColor{Light: currentItemStyle.String(), Dark: cursor}).
 		Padding(0, 0, 0, 1)
 
 	s.CursorDesc = s.CursorTitle.
-		Foreground(lipgloss.AdaptiveColor{Light: "#F793FF", Dark: "#AD58B4"})
+		Foreground(lipgloss.AdaptiveColor{Light: cursor, Dark: cursor})
 
 	s.DimmedTitle = lipgloss.NewStyle().
 		Foreground(lipgloss.AdaptiveColor{Light: "#A49FA5", Dark: "#777777"}).
@@ -56,13 +67,20 @@ func NewRestoreItemStyles() (s RestoreItemStyles) {
 	s.FilterMatch = lipgloss.NewStyle().Underline(true)
 
 	s.SelectedTitle = lipgloss.NewStyle().
+		Foreground(lipgloss.AdaptiveColor{Light: selected, Dark: selected}).
+		Padding(0, 0, 0, 2+indentOnSelect)
+
+	s.SelectedDesc = s.SelectedTitle.
+		Foreground(lipgloss.AdaptiveColor{Light: selected, Dark: selected})
+
+	s.SelectedCursorTitle = lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder(), false, false, false, true).
-		BorderForeground(lipgloss.AdaptiveColor{Light: "#F793FF", Dark: "#AD58B4"}).
-		Foreground(lipgloss.AdaptiveColor{Light: "#1a1a1a", Dark: "#dddddd"}).
+		BorderForeground(lipgloss.AdaptiveColor{Light: cursor, Dark: cursor}).
+		Foreground(lipgloss.AdaptiveColor{Light: selected, Dark: selected}).
 		Padding(0, 0, 0, 1)
 
-	s.SelectedDesc = s.CursorTitle.
-		Foreground(lipgloss.AdaptiveColor{Light: "#A49FA5", Dark: "#777777"})
+	s.SelectedCursorDesc = s.SelectedCursorTitle.
+		Foreground(lipgloss.AdaptiveColor{Light: selected, Dark: selected})
 
 	return s
 }
@@ -105,7 +123,7 @@ func NewRestoreDelegate(cfg config.UI, files []File) RestoreDelegate {
 
 	return RestoreDelegate{
 		showDescription: showDescription,
-		Styles:          NewRestoreItemStyles(),
+		Styles:          NewRestoreItemStyles(cfg),
 		height:          height,
 		spacing:         spacing,
 	}
@@ -163,7 +181,7 @@ func (d RestoreDelegate) Render(w io.Writer, m list.Model, index int, item list.
 	}
 
 	var (
-		isSelected  = index == m.Index()
+		onCursor    = index == m.Index()
 		emptyFilter = m.FilterState() == list.Filtering && m.FilterValue() == ""
 		isFiltered  = m.FilterState() == list.Filtering || m.FilterState() == list.FilterApplied
 	)
@@ -176,16 +194,21 @@ func (d RestoreDelegate) Render(w io.Writer, m list.Model, index int, item list.
 	if emptyFilter {
 		title = s.DimmedTitle.Render(title)
 		desc = s.DimmedDesc.Render(desc)
-	} else if isSelected && m.FilterState() != list.Filtering {
+	} else if onCursor && m.FilterState() != list.Filtering {
 		if isFiltered {
 			// Highlight matches
 			unmatched := s.CursorTitle.Inline(true)
 			matched := unmatched.Inherit(s.FilterMatch)
 			title = lipgloss.StyleRunes(title, matchedRunes, matched, unmatched)
 		}
-		title = s.CursorTitle.Render(title)
-		desc = s.CursorDesc.Render(desc)
-	} else if file.isSelected() && m.FilterState() != list.Filtering {
+		if file.isSelected() {
+			title = s.SelectedCursorTitle.Render(title)
+			desc = s.SelectedCursorDesc.Render(desc)
+		} else {
+			title = s.CursorTitle.Render(title)
+			desc = s.CursorDesc.Render(desc)
+		}
+	} else if file.isSelected() {
 		title = s.SelectedTitle.Render(title)
 		desc = s.SelectedDesc.Render(desc)
 	} else {

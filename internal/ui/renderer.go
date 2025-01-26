@@ -31,9 +31,10 @@ func (m Model) renderHeader() string {
 	name := ansi.Truncate(file.Title(), defaultWidth-len(ellipsis), ellipsis)
 
 	if file.isSelected() {
+		selected := m.config.Style.ListView.Selected
 		name = lipgloss.NewStyle().
 			Foreground(lipgloss.AdaptiveColor{Light: "#000000", Dark: "#000000"}).
-			Background(lipgloss.AdaptiveColor{Light: "#EE6FF8", Dark: "#EE6FF8"}).
+			Background(lipgloss.AdaptiveColor{Light: selected, Dark: selected}). // green
 			Render(name)
 	}
 
