@@ -77,13 +77,13 @@ func (f File) Browse() (string, error) {
 
 	fi, err := os.Stat(f.To)
 	if err != nil {
-		slog.Debug(fmt.Sprintf("no such file %s", f.To))
+		slog.Debug("no such file", "file", f.To)
 		return content, errCannotPreview
 	}
 	if fi.IsDir() {
 		input := fmt.Sprintf("cd %s; %s", f.To, f.dirListCommand)
 		if input == "" {
-			slog.Debug("preview list_dir command is not set, fallback to builtin list_dir func")
+			slog.Debug("preview dir command is not set, fallback to builtin dir func")
 			lines := []string{}
 			dirs, _ := os.ReadDir(f.To)
 			for _, dir := range dirs {
@@ -104,7 +104,7 @@ func (f File) Browse() (string, error) {
 		}
 		out, _, err := utils.RunShell(input)
 		if err != nil {
-			slog.Error(fmt.Sprintf("command failed: %s", input), "error", err)
+			slog.Error("command failed", "command", input, "error", err)
 		}
 		return out, err
 	}
@@ -118,7 +118,7 @@ func (f File) Browse() (string, error) {
 		mtype.Parent().Is("text/plain"):
 		// can preview
 	default:
-		slog.Debug(fmt.Sprintf("mimetype %s not supported to preview", mtype.String()))
+		slog.Debug("cannot preview since no support mimetype", "mimetype", mtype.String())
 		return content, errCannotPreview
 	}
 	fp, err := os.Open(f.To)

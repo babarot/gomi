@@ -14,6 +14,7 @@ import (
 	"github.com/babarot/gomi/internal/utils"
 	"github.com/docker/go-units"
 	"github.com/gobwas/glob"
+	"github.com/k0kubun/pp/v3"
 	"github.com/k1LoW/duration"
 	"github.com/rs/xid"
 	"github.com/samber/lo"
@@ -53,7 +54,7 @@ func New(c config.Inventory) Inventory {
 }
 
 func (i *Inventory) Open() error {
-	slog.Debug(fmt.Sprintf("open inventory file: %s", i.path))
+	slog.Debug("open inventory", "path", i.path)
 	f, err := os.Open(i.path)
 	if err != nil {
 		return err
@@ -67,7 +68,7 @@ func (i *Inventory) Open() error {
 }
 
 func (i *Inventory) update(files []File) error {
-	slog.Debug("updating inventory")
+	slog.Debug("update inventory", "path", i.path)
 	f, err := os.Create(i.path)
 	if err != nil {
 		return err
@@ -79,7 +80,7 @@ func (i *Inventory) update(files []File) error {
 }
 
 func (i *Inventory) Save(files []File) error {
-	slog.Debug("saving inventory")
+	slog.Debug("save inventory", "path", i.path)
 	f, err := os.Create(i.path)
 	if err != nil {
 		return err
@@ -153,7 +154,7 @@ func (i Inventory) Filter() []File {
 }
 
 func (i *Inventory) Remove(target File) error {
-	slog.Debug("deleting from inventory", "file", target)
+	slog.Debug("delete file from inventory", "path", i.path, "file", target)
 	var files []File
 	for _, file := range i.Files {
 		if file.ID == target.ID {
@@ -193,4 +194,10 @@ func FileInfo(runID string, arg string) (File, error) {
 		),
 		Timestamp: now,
 	}, nil
+}
+
+func (f File) String() string {
+	p := pp.New()
+	p.SetColoringEnabled(false)
+	return p.Sprint(f)
 }

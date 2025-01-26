@@ -20,6 +20,9 @@ var (
 )
 
 func init() {
+	// https://github.com/charmbracelet/log/issues/35
+	os.Setenv("CLICOLOR_FORCE", "1")
+
 	if e, found := os.LookupEnv("GOMI_CONFIG_PATH"); !found || e == "" {
 		configDir := os.Getenv("XDG_CONFIG_HOME")
 		if configDir == "" {

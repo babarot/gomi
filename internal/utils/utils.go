@@ -63,8 +63,8 @@ func RunShell(input string) (string, int, error) {
 	if errStr := stderr.String(); errStr != "" {
 		output = errStr
 		slog.Warn("command might be failed",
-			slog.String("command", input),
-			slog.String("output", output),
+			"command", input,
+			"output", output,
 		)
 	}
 	if err == nil {

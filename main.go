@@ -3,17 +3,21 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/babarot/gomi/internal/config"
+	"github.com/babarot/gomi/internal/debug"
+	"github.com/babarot/gomi/internal/env"
 	"github.com/babarot/gomi/internal/inventory"
-	"github.com/babarot/gomi/internal/log"
 	"github.com/babarot/gomi/internal/ui"
 
+	"github.com/charmbracelet/log"
 	"github.com/jessevdk/go-flags"
 	"github.com/rs/xid"
 	"golang.org/x/sync/errgroup"
@@ -85,6 +89,28 @@ func runMain() error {
 		return err
 	}
 
+	var w io.Writer
+	if file, err := os.OpenFile(env.GOMI_LOG_PATH, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err == nil {
+		w = file
+	} else {
+		w = os.Stderr
+	}
+	logger := log.NewWithOptions(os.Stderr, log.Options{
+		ReportCaller:    true,
+		ReportTimestamp: true,
+		TimeFormat:      time.Kitchen,
+		Level:           log.DebugLevel,
+		Formatter: func() log.Formatter {
+			if strings.ToLower(cfg.Core.Log.Type) == "json" {
+				return log.JSONFormatter
+			}
+			return log.TextFormatter
+		}(),
+	})
+	logger.SetOutput(w)
+	logger.With("run_id", runID())
+	slog.SetDefault(slog.New(logger))
+
 	cli := CLI{
 		config:    cfg,
 		option:    opt,
@@ -96,16 +122,12 @@ func runMain() error {
 
 func (c CLI) Run(args []string) error {
 	defer slog.Debug("finished main function")
-	log.New(
-		c.config.Core.Log.Type,
-		slog.String("context", "main"),
-		slog.String("run_id", runID()),
-	).Debug(
+	slog.Debug(
 		"cli.Run starts",
 		slog.Group(
 			"attributes",
-			slog.String("version", Version),
-			slog.String("revision", Revision),
+			"version", Version,
+			"revision", Revision,
 		),
 	)
 
@@ -118,16 +140,9 @@ func (c CLI) Run(args []string) error {
 		fmt.Fprintf(os.Stdout, "%s %s (%s)\n", appName, Version, Revision)
 		return nil
 	case c.option.Restore:
-		slog.SetDefault(
-			log.New(
-				c.config.Core.Log.Type,
-				slog.String("context", "restore"),
-				slog.String("run_id", runID()),
-			),
-		)
 		return c.Restore()
 	case c.option.ViewLogs:
-		return log.Follow(os.Stdout)
+		return debug.Logs(os.Stdout)
 	default:
 	}
 
@@ -147,7 +162,7 @@ func (c CLI) Restore() error {
 		for _, file := range deletedFiles {
 			err := c.inventory.Remove(file)
 			if err != nil {
-				slog.Error(fmt.Sprintf("removing from inventory failed: %s", file.Name), "error", err)
+				slog.Error("removing from inventory failed", "file", file.Name, "error", err)
 			}
 			if c.config.Core.Restore.Verbose {
 				fmt.Printf("restored %s to %s\n", file.Name, file.From)
@@ -254,7 +269,7 @@ func (c CLI) Put(args []string) error {
 			_ = os.MkdirAll(filepath.Dir(file.To), 0777)
 
 			// Log the file move
-			slog.Debug(fmt.Sprintf("moving %q -> %q", file.From, file.To))
+			slog.Debug("moved", "from", file.From, "to", file.To)
 			return os.Rename(file.From, file.To)
 		})
 	}
@@ -263,7 +278,7 @@ func (c CLI) Put(args []string) error {
 	defer func() {
 		err := c.inventory.Save(files)
 		if err != nil {
-			slog.Error("failed to update inventory")
+			slog.Error("failed to update inventory", "error", err)
 		}
 	}()
 

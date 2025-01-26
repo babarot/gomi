@@ -350,7 +350,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					} else {
 						m.choices = files
 					}
-					slog.Debug("key input: enter", slog.Any("selected_files", files))
+					slog.Debug("key input: enter", slog.Any("selected_files", m.choices))
 					return m, tea.Quit
 				}
 			}

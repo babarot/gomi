@@ -225,7 +225,7 @@ func (p parser) writeDefaultConfigContents(newConfigFile *os.File) error {
 
 func (p parser) createConfigFileIfMissing(configFilePath string) error {
 	if _, err := os.Stat(configFilePath); os.IsNotExist(err) {
-		slog.Warn(fmt.Sprintf("config file %s does not exist. creating...", configFilePath))
+		slog.Warn("create config since no exist", "config-file", configFilePath)
 		newConfigFile, err := os.OpenFile(configFilePath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
 		if err != nil {
 			return err
@@ -243,7 +243,7 @@ func (p parser) getDefaultConfigFileOrCreateIfMissing() (string, error) {
 	// Ensure directory exists before attempting to create file
 	configDir := filepath.Dir(path)
 	if _, err := os.Stat(configDir); os.IsNotExist(err) {
-		slog.Warn(fmt.Sprintf("configDir %s does not exist. creating...", configDir))
+		slog.Warn("create dir since no exist", "dir", configDir)
 		if err = os.MkdirAll(configDir, os.ModePerm); err != nil {
 			return "", configError{
 				parser:    p,
@@ -317,7 +317,7 @@ func Parse(path string) (Config, error) {
 	} else {
 		configFilePath = path
 	}
-	slog.Debug(fmt.Sprintf("config found: %s. parsing", configFilePath))
+	slog.Debug("config file found", "config-file", configFilePath)
 
 	config, err = parser.readConfigFile(configFilePath)
 	if err != nil {
