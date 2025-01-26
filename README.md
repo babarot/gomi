@@ -169,7 +169,7 @@ ui:
   exit_message: bye!   # up-to-you
   paginator_type: dots # or arabic
 
-inventory:
+history:
   include:
     within_days: 100 # only show files deleted within 100 days
   exclude:

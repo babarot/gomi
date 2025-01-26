@@ -1,4 +1,4 @@
-package inventory
+package history
 
 import (
 	"encoding/json"
@@ -21,22 +21,21 @@ import (
 )
 
 const (
-	inventoryVersion = 1
-
-	inventoryFile = "inventory.json"
+	historyVersion = 1
+	historyFile    = "history.json"
 )
 
 var (
-	gomiPath      = filepath.Join(os.Getenv("HOME"), ".gomi")
-	inventoryPath = filepath.Join(gomiPath, inventoryFile)
+	gomiPath    = filepath.Join(os.Getenv("HOME"), ".gomi")
+	historyPath = filepath.Join(gomiPath, historyFile)
 )
 
-// Inventory represents the log data of deleted objects
-type Inventory struct {
+// History represents the history of deleted files
+type History struct {
 	Version int    `json:"version"`
 	Files   []File `json:"files"`
 
-	config config.Inventory
+	config config.History
 	path   string
 }
 
@@ -49,63 +48,63 @@ type File struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
-func New(c config.Inventory) Inventory {
-	return Inventory{path: inventoryPath, config: c}
+func New(c config.History) History {
+	return History{path: historyPath, config: c}
 }
 
-func (i *Inventory) Open() error {
-	slog.Debug("open inventory", "path", i.path)
-	f, err := os.Open(i.path)
+func (h *History) Open() error {
+	slog.Debug("open history", "path", h.path)
+	f, err := os.Open(h.path)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	if err := json.NewDecoder(f).Decode(&i); err != nil {
+	if err := json.NewDecoder(f).Decode(&h); err != nil {
 		return err
 	}
-	slog.Debug(fmt.Sprintf("inventory version: %d", i.Version))
+	slog.Debug(fmt.Sprintf("history version: %d", h.Version))
 	return nil
 }
 
-func (i *Inventory) update(files []File) error {
-	slog.Debug("update inventory", "path", i.path)
-	f, err := os.Create(i.path)
+func (h *History) update(files []File) error {
+	slog.Debug("update history", "path", h.path)
+	f, err := os.Create(h.path)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	i.Files = files
-	i.setVersion()
-	return json.NewEncoder(f).Encode(&i)
+	h.Files = files
+	h.setVersion()
+	return json.NewEncoder(f).Encode(&h)
 }
 
-func (i *Inventory) Save(files []File) error {
-	slog.Debug("save inventory", "path", i.path)
-	f, err := os.Create(i.path)
+func (h *History) Save(files []File) error {
+	slog.Debug("save history", "path", h.path)
+	f, err := os.Create(h.path)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	i.Files = append(i.Files, files...)
-	i.setVersion()
-	return json.NewEncoder(f).Encode(&i)
+	h.Files = append(h.Files, files...)
+	h.setVersion()
+	return json.NewEncoder(f).Encode(&h)
 }
 
-func (i Inventory) Filter() []File {
+func (h History) Filter() []File {
 	// do not overwrite original slices
-	// because remove them from inventory file actually
-	// when updating inventory
-	files := i.Files
+	// because remove them from history file actually
+	// when updating history
+	files := h.Files
 	files = lo.Reject(files, func(file File, index int) bool {
-		return slices.Contains(i.config.Exclude.Files, file.Name)
+		return slices.Contains(h.config.Exclude.Files, file.Name)
 	})
 	files = lo.Reject(files, func(file File, index int) bool {
-		for _, pat := range i.config.Exclude.Patterns {
+		for _, pat := range h.config.Exclude.Patterns {
 			if regexp.MustCompile(pat).MatchString(file.Name) {
 				return true
 			}
 		}
-		for _, g := range i.config.Exclude.Globs {
+		for _, g := range h.config.Exclude.Globs {
 			if glob.MustCompile(g).Match(file.Name) {
 				return true
 			}
@@ -117,7 +116,7 @@ func (i Inventory) Filter() []File {
 		if err != nil {
 			return false // false positive
 		}
-		if s := i.config.Exclude.Size.Min; s != "" {
+		if s := h.config.Exclude.Size.Min; s != "" {
 			min, err := units.FromHumanSize(s)
 			if err != nil {
 				return false
@@ -126,7 +125,7 @@ func (i Inventory) Filter() []File {
 				return true
 			}
 		}
-		if s := i.config.Exclude.Size.Max; s != "" {
+		if s := h.config.Exclude.Size.Max; s != "" {
 			max, err := units.FromHumanSize(s)
 			if err != nil {
 				return false
@@ -138,7 +137,7 @@ func (i Inventory) Filter() []File {
 		return false
 	})
 	files = lo.Filter(files, func(file File, index int) bool {
-		if period := i.config.Include.Period; period > 0 {
+		if period := h.config.Include.Period; period > 0 {
 			d, err := duration.Parse(fmt.Sprintf("%d days", period))
 			if err != nil {
 				slog.Error("parsing duration failed", "error", err)
@@ -153,21 +152,21 @@ func (i Inventory) Filter() []File {
 	return files
 }
 
-func (i *Inventory) Remove(target File) error {
-	slog.Debug("delete file from inventory", "path", i.path, "file", target)
+func (h *History) Remove(target File) error {
+	slog.Debug("delete file from history", "path", h.path, "file", target)
 	var files []File
-	for _, file := range i.Files {
+	for _, file := range h.Files {
 		if file.ID == target.ID {
 			continue
 		}
 		files = append(files, file)
 	}
-	return i.update(files)
+	return h.update(files)
 }
 
-func (i *Inventory) setVersion() {
-	if i.Version == 0 {
-		i.Version = inventoryVersion
+func (h *History) setVersion() {
+	if h.Version == 0 {
+		h.Version = historyVersion
 	}
 }
 

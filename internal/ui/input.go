@@ -6,13 +6,13 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/babarot/gomi/internal/inventory"
+	"github.com/babarot/gomi/internal/history"
 	"github.com/babarot/gomi/internal/ui/input"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jimschubert/answer/validate"
 )
 
-func InputFilename(file inventory.File) (string, error) {
+func InputFilename(file history.File) (string, error) {
 	m := input.New()
 	m.Prompt = "New name to avoid to overwrite:"
 	m.Placeholder = file.Name

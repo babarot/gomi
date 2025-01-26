@@ -14,7 +14,7 @@ import (
 	"github.com/babarot/gomi/internal/config"
 	"github.com/babarot/gomi/internal/debug"
 	"github.com/babarot/gomi/internal/env"
-	"github.com/babarot/gomi/internal/inventory"
+	"github.com/babarot/gomi/internal/history"
 	"github.com/babarot/gomi/internal/ui"
 	"github.com/charmbracelet/log"
 	"github.com/jessevdk/go-flags"
@@ -42,11 +42,11 @@ type RmOption struct {
 }
 
 type CLI struct {
-	version   Version
-	option    Option
-	config    config.Config
-	inventory inventory.Inventory
-	runID     string
+	version Version
+	option  Option
+	config  config.Config
+	history history.History
+	runID   string
 }
 
 var runID = sync.OnceValue(func() string {
@@ -99,11 +99,11 @@ func Run(v Version) error {
 	}
 
 	cli := CLI{
-		version:   v,
-		option:    opt,
-		config:    cfg,
-		inventory: inventory.New(cfg.Inventory),
-		runID:     runID(),
+		version: v,
+		option:  opt,
+		config:  cfg,
+		history: history.New(cfg.History),
+		runID:   runID(),
 	}
 
 	if err := cli.Run(args); err != nil {
@@ -114,7 +114,7 @@ func Run(v Version) error {
 }
 
 func (c CLI) Run(args []string) error {
-	if err := c.inventory.Open(); err != nil {
+	if err := c.history.Open(); err != nil {
 		return err
 	}
 
@@ -139,20 +139,20 @@ func (c CLI) Restore() error {
 	slog.Debug("cil.restore started")
 	defer slog.Debug("cil.restore finished")
 
-	files := c.inventory.Filter()
+	files := c.history.Filter()
 	files, err := ui.RenderList(files, c.config.UI)
 	if err != nil {
 		return err
 	}
 
-	var deletedFiles []inventory.File
+	var deletedFiles []history.File
 	var errs []error
 
 	defer func() {
 		for _, file := range deletedFiles {
-			err := c.inventory.Remove(file)
+			err := c.history.Remove(file)
 			if err != nil {
-				slog.Error("removing from inventory failed", "file", file.Name, "error", err)
+				slog.Error("removing from history failed", "file", file.Name, "error", err)
 			}
 			if c.config.Core.Restore.Verbose {
 				fmt.Printf("restored %s to %s\n", file.Name, file.From)
@@ -211,7 +211,7 @@ func (c CLI) Restore() error {
 		err := os.Rename(file.To, file.From)
 		if err != nil {
 			errs = append(errs, err)
-			slog.Error("failed to restore! file would not be deleted from inventory file", "error", err)
+			slog.Error("failed to restore! file would not be deleted from history file", "error", err)
 			continue
 		}
 		deletedFiles = append(deletedFiles, file)
@@ -237,7 +237,7 @@ func (c CLI) Put(args []string) error {
 		return errors.New("too few arguments")
 	}
 
-	files := make([]inventory.File, len(args))
+	files := make([]history.File, len(args))
 	var eg errgroup.Group
 	var mu sync.Mutex // Mutex to synchronize writes to files
 
@@ -248,7 +248,7 @@ func (c CLI) Put(args []string) error {
 			if os.IsNotExist(err) {
 				return fmt.Errorf("%s: no such file or directory", arg)
 			}
-			file, err := inventory.FileInfo(c.runID, arg)
+			file, err := history.FileInfo(c.runID, arg)
 			if err != nil {
 				return err
 			}
@@ -269,9 +269,9 @@ func (c CLI) Put(args []string) error {
 
 	// Save the files after all tasks are done
 	defer func() {
-		err := c.inventory.Save(files)
+		err := c.history.Save(files)
 		if err != nil {
-			slog.Error("failed to update inventory", "error", err)
+			slog.Error("failed to update history", "error", err)
 		}
 	}()
 

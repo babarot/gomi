@@ -17,9 +17,9 @@ import (
 var validate *validator.Validate
 
 type Config struct {
-	Core      Core      `yaml:"core"`
-	UI        UI        `yaml:"ui"`
-	Inventory Inventory `yaml:"inventory"`
+	Core    Core    `yaml:"core"`
+	UI      UI      `yaml:"ui"`
+	History History `yaml:"history"`
 }
 
 type Core struct {
@@ -34,7 +34,7 @@ type UI struct {
 	Paginator   string        `yaml:"paginator_type"`
 }
 
-type Inventory struct {
+type History struct {
 	Include includeConfig `yaml:"include"`
 	Exclude excludeConfig `yaml:"exclude"`
 }
@@ -164,7 +164,7 @@ func (p parser) getDefaultConfig() Config {
 				},
 			},
 		},
-		Inventory: Inventory{
+		History: History{
 			Include: includeConfig{
 				Period: 365,
 			},

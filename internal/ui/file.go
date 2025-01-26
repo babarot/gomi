@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/babarot/gomi/internal/inventory"
+	"github.com/babarot/gomi/internal/history"
 	"github.com/babarot/gomi/internal/utils"
 
 	"github.com/alecthomas/chroma"
@@ -22,7 +22,7 @@ import (
 )
 
 type File struct {
-	inventory.File
+	history.File
 
 	dirListCommand  string
 	syntaxHighlight bool

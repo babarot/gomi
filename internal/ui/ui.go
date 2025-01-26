@@ -8,7 +8,7 @@ import (
 	"sort"
 
 	"github.com/babarot/gomi/internal/config"
-	"github.com/babarot/gomi/internal/inventory"
+	"github.com/babarot/gomi/internal/history"
 	"github.com/babarot/gomi/internal/ui/keys"
 
 	// "github.com/babarot/gomi/internal/ui/state"
@@ -358,7 +358,7 @@ func (m *Model) newViewportModel(file File) viewport.Model {
 	return viewportModel
 }
 
-func RenderList(filteredFiles []inventory.File, cfg config.UI) ([]inventory.File, error) {
+func RenderList(filteredFiles []history.File, cfg config.UI) ([]history.File, error) {
 	var items []list.Item
 	var files []File
 	for _, file := range filteredFiles {
@@ -405,7 +405,7 @@ func RenderList(filteredFiles []inventory.File, cfg config.UI) ([]inventory.File
 
 	returnModel, err := tea.NewProgram(m).Run()
 	if err != nil {
-		return []inventory.File{}, err
+		return []history.File{}, err
 	}
 
 	choices := returnModel.(Model).choices
@@ -413,10 +413,10 @@ func RenderList(filteredFiles []inventory.File, cfg config.UI) ([]inventory.File
 		if msg := cfg.ExitMessage; msg != "" {
 			fmt.Println(msg)
 		}
-		return []inventory.File{}, nil
+		return []history.File{}, nil
 	}
 
-	invFiles := make([]inventory.File, len(choices))
+	invFiles := make([]history.File, len(choices))
 	for i, file := range choices {
 		invFiles[i] = file.File
 	}
