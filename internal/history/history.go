@@ -53,7 +53,22 @@ func New(c config.History) History {
 }
 
 func (h *History) Open() error {
-	slog.Debug("open history", "path", h.path)
+	slog.Debug("opening history file", "path", h.path)
+
+	if _, err := os.Stat(h.path); os.IsNotExist(err) {
+		backupFile := h.path + ".backup"
+		slog.Warn("history file not found", "path", h.path)
+		slog.Warn("create a new history file if this is the initial run or restoring from backup")
+		if _, err := os.Stat(backupFile); !os.IsNotExist(err) {
+			slog.Warn("backup file found! attempting to restore from backup", "path", backupFile)
+			err := os.Rename(backupFile, h.path)
+			if err != nil {
+				return fmt.Errorf("failed to restore history from backup: %w", err)
+			}
+			slog.Debug("successfully restored history from backup")
+		}
+	}
+
 	f, err := os.Open(h.path)
 	if err != nil {
 		return err
@@ -62,12 +77,27 @@ func (h *History) Open() error {
 	if err := json.NewDecoder(f).Decode(&h); err != nil {
 		return err
 	}
-	slog.Debug(fmt.Sprintf("history version: %d", h.Version))
+	slog.Debug("history version", "version", h.Version)
 	return nil
 }
 
+func (h *History) backup() error {
+	backupFile := h.path + ".backup"
+	slog.Debug("backing up history", "path", backupFile)
+	f, err := os.Create(backupFile)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	h.setVersion()
+	return json.NewEncoder(f).Encode(&h)
+}
+
 func (h *History) update(files []File) error {
-	slog.Debug("update history", "path", h.path)
+	slog.Debug("updating history file", "path", h.path)
+	defer func() {
+		_ = h.backup()
+	}()
 	f, err := os.Create(h.path)
 	if err != nil {
 		return err
@@ -79,7 +109,10 @@ func (h *History) update(files []File) error {
 }
 
 func (h *History) Save(files []File) error {
-	slog.Debug("save history", "path", h.path)
+	slog.Debug("saving history file", "path", h.path)
+	defer func() {
+		_ = h.backup()
+	}()
 	f, err := os.Create(h.path)
 	if err != nil {
 		return err
@@ -140,7 +173,7 @@ func (h History) Filter() []File {
 		if period := h.config.Include.Period; period > 0 {
 			d, err := duration.Parse(fmt.Sprintf("%d days", period))
 			if err != nil {
-				slog.Error("parsing duration failed", "error", err)
+				slog.Error("failed to parse duration", "error", err)
 				return false
 			}
 			if time.Since(file.Timestamp) < d {
@@ -153,7 +186,7 @@ func (h History) Filter() []File {
 }
 
 func (h *History) Remove(target File) error {
-	slog.Debug("delete file from history", "path", h.path, "file", target)
+	slog.Debug("deleting file from history file", "path", h.path, "file", target)
 	var files []File
 	for _, file := range h.Files {
 		if file.ID == target.ID {
