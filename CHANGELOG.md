@@ -1,5 +1,7 @@
 # Changelog
 
+## [v1.2.1](https://github.com/babarot/gomi/compare/v1.2.0...v1.2.1) - 2025-01-27
+
 ## [v1.2.0](https://github.com/babarot/gomi/compare/v1.1.9...v1.2.0) - 2025-01-27
 ### New Features
 - Add brand new UI for restore functionality (Bubble Tea integration) by @babarot in https://github.com/babarot/gomi/pull/44
