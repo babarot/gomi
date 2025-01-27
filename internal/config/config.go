@@ -187,7 +187,7 @@ func (p parser) getDefaultConfig() Config {
 	}
 }
 
-func (p parser) getDefaultConfigYamlContents() string {
+func (p parser) getDefaultConfigContents() string {
 	defaultConfig := p.getDefaultConfig()
 	content, _ := yaml.Marshal(defaultConfig)
 	return string(content)
@@ -207,56 +207,67 @@ func (e configError) Error() string {
 		`,
 		e.configPath,
 		env.GOMI_CONFIG_PATH,
-		e.parser.getDefaultConfigYamlContents(),
+		e.parser.getDefaultConfigContents(),
 		indent.String(e.err.Error(), 2),
 	)
 }
 
-func (p parser) writeDefaultConfigContents(newConfigFile *os.File) error {
-	_, err := newConfigFile.WriteString(p.getDefaultConfigYamlContents())
-	if err != nil {
+func (p parser) createConfigFile(path string) error {
+	// Ensure directory exists
+	if err := p.ensureDirExists(filepath.Dir(path)); err != nil {
 		return err
 	}
-	return nil
-}
 
-func (p parser) createConfigFileIfMissing(path string) error {
+	// Create the config file if missing
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		slog.Warn("create config since no exist", "config-file", path)
+		slog.Warn("creating config file as it does not exist", "config-file", path)
 		newConfigFile, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
 		if err != nil {
 			return err
 		}
 		defer newConfigFile.Close()
-		return p.writeDefaultConfigContents(newConfigFile)
+
+		// Write default config contents
+		if err := p.writeConfigFileContents(newConfigFile); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func (p parser) getDefaultConfigFileOrCreateIfMissing() (string, error) {
-	path := env.GOMI_CONFIG_PATH
-
-	// Ensure directory exists before attempting to create file
-	configDir := filepath.Dir(path)
-	if _, err := os.Stat(configDir); os.IsNotExist(err) {
-		slog.Warn("create dir since no exist", "dir", configDir)
-		if err = os.MkdirAll(configDir, os.ModePerm); err != nil {
-			return "", configError{
-				parser:    p,
-				configDir: configDir,
-				err:       err,
-			}
+func (p parser) ensureDirExists(dirPath string) error {
+	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
+		slog.Warn("creating directory as it does not exist", "dir", dirPath)
+		if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
+			return err
 		}
 	}
+	return nil
+}
 
-	if err := p.createConfigFileIfMissing(path); err != nil {
+func (p parser) writeConfigFileContents(file *os.File) error {
+	_, err := file.WriteString(p.getDefaultConfigContents())
+	return err
+}
+
+func (p parser) ensureConfigFile() (string, error) {
+	path := env.GOMI_CONFIG_PATH
+
+	// Ensure directory exists before creating file
+	if err := p.ensureDirExists(filepath.Dir(path)); err != nil {
+		return "", err
+	}
+
+	// Create file if missing
+	if err := p.createConfigFile(path); err != nil {
 		return "", configError{
 			parser:    p,
-			configDir: configDir,
+			configDir: filepath.Dir(path),
 			err:       err,
 		}
 	}
+
 	return path, nil
 }
 
@@ -269,22 +280,18 @@ func (e parsingError) Error() string {
 }
 
 func (p parser) readConfigFile(path string) (Config, error) {
-	// override default config if empty part
-	// cfg := p.getDefaultConfig()
-
 	var cfg Config
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return cfg, configError{
 			configPath: path,
-			configDir:  path,
+			configDir:  filepath.Dir(path),
 			parser:     p,
 			err:        err,
 		}
 	}
 
-	err = yaml.Unmarshal([]byte(data), &cfg)
-	if err != nil {
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return cfg, err
 	}
 
@@ -298,7 +305,6 @@ func (p parser) readConfigFile(path string) (Config, error) {
 
 func initParser() parser {
 	validate = validator.New()
-
 	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		name := strings.Split(fld.Tag.Get("yaml"), ",")[0]
 		if name == "-" {
@@ -317,19 +323,19 @@ func Parse(path string) (Config, error) {
 
 	var cfg Config
 	var err error
-	var configFilePath string
+	var configPath string
 
 	if path == "" {
-		configFilePath, err = parser.getDefaultConfigFileOrCreateIfMissing()
+		configPath, err = parser.ensureConfigFile()
 		if err != nil {
 			return cfg, parsingError{err: err}
 		}
 	} else {
-		configFilePath = path
+		configPath = path
 	}
-	slog.Debug("config file found", "config-file", configFilePath)
+	slog.Debug("config file found", "config-file", configPath)
 
-	cfg, err = parser.readConfigFile(configFilePath)
+	cfg, err = parser.readConfigFile(configPath)
 	if err != nil {
 		return cfg, parsingError{err: err}
 	}
