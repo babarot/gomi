@@ -55,10 +55,15 @@ func New(c config.History) History {
 func (h *History) Open() error {
 	slog.Debug("opening history file", "path", h.path)
 
+	parentDir := filepath.Dir(h.path)
+	if _, err := os.Stat(parentDir); os.IsNotExist(err) {
+		slog.Warn("mkdir", "dir", parentDir)
+		_ = os.Mkdir(parentDir, 0755)
+	}
+
 	if _, err := os.Stat(h.path); os.IsNotExist(err) {
 		backupFile := h.path + ".backup"
 		slog.Warn("history file not found", "path", h.path)
-		slog.Warn("create a new history file if this is the initial run or restoring from backup")
 		if _, err := os.Stat(backupFile); !os.IsNotExist(err) {
 			slog.Warn("backup file found! attempting to restore from backup", "path", backupFile)
 			err := os.Rename(backupFile, h.path)
@@ -69,19 +74,28 @@ func (h *History) Open() error {
 		}
 	}
 
-	f, err := os.Open(h.path)
+	f, err := os.OpenFile(h.path, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
+		slog.Error("err", "error", err)
 		return err
 	}
 	defer f.Close()
+
+	if stat, err := f.Stat(); err == nil && stat.Size() == 0 {
+		slog.Warn("history is empty")
+		return nil
+	}
+
 	if err := json.NewDecoder(f).Decode(&h); err != nil {
+		slog.Error("err", "error", err)
 		return err
 	}
+
 	slog.Debug("history version", "version", h.Version)
 	return nil
 }
 
-func (h *History) backup() error {
+func (h *History) Backup() error {
 	backupFile := h.path + ".backup"
 	slog.Debug("backing up history", "path", backupFile)
 	f, err := os.Create(backupFile)
@@ -95,9 +109,6 @@ func (h *History) backup() error {
 
 func (h *History) update(files []File) error {
 	slog.Debug("updating history file", "path", h.path)
-	defer func() {
-		_ = h.backup()
-	}()
 	f, err := os.Create(h.path)
 	if err != nil {
 		return err
@@ -110,9 +121,6 @@ func (h *History) update(files []File) error {
 
 func (h *History) Save(files []File) error {
 	slog.Debug("saving history file", "path", h.path)
-	defer func() {
-		_ = h.backup()
-	}()
 	f, err := os.Create(h.path)
 	if err != nil {
 		return err

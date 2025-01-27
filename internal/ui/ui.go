@@ -110,7 +110,7 @@ type inventoryLoadedMsg struct {
 
 func (m Model) loadInventory() tea.Msg {
 	files := m.files
-	slog.Debug("loadInventory starts")
+	slog.Debug("loadInventory starts", "len(files)", len(files))
 	if len(files) == 0 {
 		return errorMsg{errors.New("no deleted files found")}
 	}
@@ -310,8 +310,8 @@ func (m Model) View() string {
 	s := ""
 
 	if m.err != nil {
-		s += fmt.Sprintf("error happen %s", m.err)
-		return s
+		slog.Error("rendering of the view has stopped", "error", m.err)
+		return m.err.Error()
 	}
 
 	switch m.viewType {
@@ -388,8 +388,6 @@ func RenderList(filteredFiles []history.File, cfg config.UI) ([]history.File, er
 	l.DisableQuitKeybindings()
 	l.SetShowStatusBar(false)
 	l.SetShowTitle(false)
-	// l.AdditionalShortHelpKeys = keys.ListKeys.ShortHelp
-	// l.AdditionalFullHelpKeys = keys.ListKeys.FullHelp
 
 	m := Model{
 		listKeys:   keys.ListKeys,

@@ -125,6 +125,9 @@ func (c CLI) Run(args []string) error {
 	if err := c.history.Open(); err != nil {
 		return err
 	}
+	defer func() {
+		_ = c.history.Backup()
+	}()
 
 	switch {
 	case c.option.Version:
@@ -147,7 +150,17 @@ func (c CLI) Restore() error {
 	slog.Debug("cil.restore started")
 	defer slog.Debug("cil.restore finished")
 
+	if len(c.history.Files) == 0 {
+		fmt.Printf("The history is empty. Let's try deleting a file first\n")
+		return nil
+	}
+
 	files := c.history.Filter()
+	if len(files) == 0 {
+		fmt.Printf("Could not find any files to display. The history may be empty, or the history.exclude conditions may be too strict\n")
+		return nil
+	}
+
 	files, err := ui.RenderList(files, c.config.UI)
 	if err != nil {
 		return err
