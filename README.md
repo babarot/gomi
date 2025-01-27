@@ -68,7 +68,7 @@ github:
     alias:
       rm: gomi
 ```
-```console
+```bash
 afx install
 ```
 
@@ -153,7 +153,7 @@ history:
 
 To get extra debug output (not shown in the official help), use the `--debug` flag:
 
-```console
+```bash
 gomi --debug
 ```
 
@@ -161,7 +161,7 @@ This command will stream log output, similar to `tail -f`. While running `gomi -
 
 If you prefer JSON formatted output, use:
 
-```console
+```bash
 gomi --debug=json
 ```
 
