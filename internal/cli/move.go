@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"syscall"
 
 	cp "github.com/otiai10/copy"
 )
@@ -42,8 +43,19 @@ func isSamePartition(src, dst string) (bool, error) {
 		return false, fmt.Errorf("failed to get destination file stats: %w", err)
 	}
 
-	// Compare the file system identifiers of both files
-	return srcStat.Sys() == dstStat.Sys(), nil
+	srcSys := srcStat.Sys().(*syscall.Stat_t)
+	dstSys := dstStat.Sys().(*syscall.Stat_t)
+
+	// Compare the device identifiers (st_dev) of the source and destination
+	// If the device IDs are the same, the files are on the same partition.
+	samePartition := srcSys.Dev == dstSys.Dev
+
+	slog.Debug("check src/dst file info",
+		"samePartition", samePartition,
+		"src st_dev", srcSys.Dev,
+		"dst st_dev", dstSys.Dev)
+
+	return samePartition, nil
 }
 
 // move attempts to rename a file or directory. If it's on different partitions, it falls back to copying and deleting.
@@ -67,6 +79,7 @@ func move(src, dst string) error {
 
 	// If they are on the same partition, use os.Rename; otherwise, fallback to copy-and-delete
 	if samePartition {
+		slog.Debug("removing file with os.Rename")
 		return os.Rename(src, dst)
 	}
 
