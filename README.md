@@ -61,7 +61,7 @@ github:
   repo: gomi
   release:
     name: gomi
-    tag: v1.2.0
+    tag: v1.2.3
   command:
     link:
     - from: gomi
