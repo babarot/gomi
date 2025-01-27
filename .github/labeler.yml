@@ -1,3 +1,4 @@
 no-update-changelog:
-- changed-files:
-  - any-glob-to-all-files: '!*.go'
+- all:
+  - changed-files:
+    - all-globs-to-all-files: '!**/*.go'
