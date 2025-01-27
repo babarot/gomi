@@ -6,11 +6,13 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/babarot/gomi/internal/env"
 	"github.com/go-playground/validator/v10"
+	"github.com/muesli/reflow/indent"
 	"gopkg.in/yaml.v2"
 )
 
@@ -27,11 +29,11 @@ type Core struct {
 }
 
 type UI struct {
-	Density     string        `yaml:"density"`
+	Density     string        `yaml:"density" validate:"required,oneof=compact spacious"`
 	Style       styleConfig   `yaml:"style"`
 	ExitMessage string        `yaml:"exit_message"`
 	Preview     previewConfig `yaml:"preview"`
-	Paginator   string        `yaml:"paginator_type"`
+	Paginator   string        `yaml:"paginator_type" validate:"required,oneof=dots arabic"`
 }
 
 type History struct {
@@ -56,8 +58,8 @@ type excludeConfig struct {
 }
 
 type size struct {
-	Min string `yaml:"min"`
-	Max string `yaml:"max"`
+	Min string `yaml:"min" validate:"validSize"`
+	Max string `yaml:"max" validate:"validSize"`
 }
 
 type previewConfig struct {
@@ -94,26 +96,25 @@ type previewPane struct {
 	Scroll color  `yaml:"scroll"`
 }
 
-type header struct {
-	Border string `yaml:"border"`
-}
-
-type footer struct {
-	Border string `yaml:"border"`
-}
-
 type color struct {
 	Foreground string `yaml:"fg"`
 	Background string `yaml:"bg"`
 }
 
 type configError struct {
-	configDir string
-	parser    parser
-	err       error
+	configPath string
+	configDir  string
+	parser     parser
+	err        error
 }
 
 type parser struct{}
+
+func validSize(fl validator.FieldLevel) bool {
+	value := strings.ToUpper(fl.Field().String())
+	re := regexp.MustCompile(`^\d+(KB|MB|GB|TB|PB)$`)
+	return re.MatchString(value)
+}
 
 func (p parser) getDefaultConfig() Config {
 	return Config{
@@ -124,14 +125,14 @@ func (p parser) getDefaultConfig() Config {
 			},
 		},
 		UI: UI{
-			Density:     "compact | spacious",
+			Density:     "spacious", // or compact
 			ExitMessage: "bye!",
 			Preview: previewConfig{
 				SyntaxHighlight:  true,
 				Colorscheme:      "nord",
 				DirectoryCommand: "ls -GF -1 -A --color=always",
 			},
-			Paginator: "dots | arabic",
+			Paginator: "dots", // or arabic
 			Style: styleConfig{
 				ListView: ListView{
 					IndentOnSelect: true,
@@ -194,16 +195,20 @@ func (p parser) getDefaultConfigYamlContents() string {
 
 func (e configError) Error() string {
 	return heredoc.Docf(`
-		Couldn't find a "config.yaml" config file.
-		Create one under: %s
-		Example of a config.yaml file:
+		Couldn't find the "%s" config file.
+		Please try again after creating it or specifying a valid config path.
+		The recommended config path is %s (default).
+		Example YAML file contents:
 		---
 		%s
 		---
-		The detail error is: %v`,
+		Original error:
+		%s
+		`,
+		e.configPath,
 		env.GOMI_CONFIG_PATH,
-		string(e.parser.getDefaultConfigYamlContents()),
-		e.err,
+		e.parser.getDefaultConfigYamlContents(),
+		indent.String(e.err.Error(), 2),
 	)
 }
 
@@ -215,10 +220,10 @@ func (p parser) writeDefaultConfigContents(newConfigFile *os.File) error {
 	return nil
 }
 
-func (p parser) createConfigFileIfMissing(configFilePath string) error {
-	if _, err := os.Stat(configFilePath); os.IsNotExist(err) {
-		slog.Warn("create config since no exist", "config-file", configFilePath)
-		newConfigFile, err := os.OpenFile(configFilePath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
+func (p parser) createConfigFileIfMissing(path string) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		slog.Warn("create config since no exist", "config-file", path)
+		newConfigFile, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
 		if err != nil {
 			return err
 		}
@@ -260,24 +265,35 @@ type parsingError struct {
 }
 
 func (e parsingError) Error() string {
-	return fmt.Sprintf("failed parsing config.yaml: %v", e.err)
+	return fmt.Sprintf("failed to parse config: %v", e.err)
 }
 
 func (p parser) readConfigFile(path string) (Config, error) {
-	// config := p.getDefaultConfig()
-	var config Config
+	// override default config if empty part
+	// cfg := p.getDefaultConfig()
+
+	var cfg Config
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return config, configError{parser: p, configDir: path, err: err}
+		return cfg, configError{
+			configPath: path,
+			configDir:  path,
+			parser:     p,
+			err:        err,
+		}
 	}
 
-	err = yaml.Unmarshal([]byte(data), &config)
+	err = yaml.Unmarshal([]byte(data), &cfg)
 	if err != nil {
-		return config, err
+		return cfg, err
 	}
 
-	err = validate.Struct(config)
-	return config, err
+	if err := validate.Struct(cfg); err != nil {
+		for _, err := range err.(validator.ValidationErrors) {
+			return cfg, fmt.Errorf("validation error: Field %s, %q is invalid\n", err.Field(), err.Value())
+		}
+	}
+	return cfg, nil
 }
 
 func initParser() parser {
@@ -291,30 +307,32 @@ func initParser() parser {
 		return name
 	})
 
+	_ = validate.RegisterValidation("validSize", validSize)
+
 	return parser{}
 }
 
 func Parse(path string) (Config, error) {
 	parser := initParser()
 
-	var config Config
+	var cfg Config
 	var err error
 	var configFilePath string
 
 	if path == "" {
 		configFilePath, err = parser.getDefaultConfigFileOrCreateIfMissing()
 		if err != nil {
-			return config, parsingError{err: err}
+			return cfg, parsingError{err: err}
 		}
 	} else {
 		configFilePath = path
 	}
 	slog.Debug("config file found", "config-file", configFilePath)
 
-	config, err = parser.readConfigFile(configFilePath)
+	cfg, err = parser.readConfigFile(configFilePath)
 	if err != nil {
-		return config, parsingError{err: err}
+		return cfg, parsingError{err: err}
 	}
 
-	return config, nil
+	return cfg, nil
 }
