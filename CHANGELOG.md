@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.2.0](https://github.com/babarot/gomi/compare/v1.1.9...v1.2.0) - 2025-01-27
+### New Features
+- Add brand new UI for restore functionality (Bubble Tea integration) by @babarot in https://github.com/babarot/gomi/pull/44
+
 ## [v1.1.9](https://github.com/babarot/gomi/compare/v1.1.8...v1.1.9) - 2025-01-23
 ### New Features
 - Support fuzzy search by @babarot in https://github.com/babarot/gomi/pull/42
