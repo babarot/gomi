@@ -54,6 +54,10 @@ func New(c config.History) History {
 
 func (h *History) Open() error {
 	slog.Debug("opening history file", "path", h.path)
+	defer func() {
+		_ = h.backup()
+		slog.Debug("backed up")
+	}()
 
 	parentDir := filepath.Dir(h.path)
 	if _, err := os.Stat(parentDir); os.IsNotExist(err) {
@@ -95,7 +99,7 @@ func (h *History) Open() error {
 	return nil
 }
 
-func (h *History) Backup() error {
+func (h *History) backup() error {
 	backupFile := h.path + ".backup"
 	slog.Debug("backing up history", "path", backupFile)
 	f, err := os.Create(backupFile)
@@ -103,24 +107,18 @@ func (h *History) Backup() error {
 		return err
 	}
 	defer f.Close()
-	h.setVersion()
 	return json.NewEncoder(f).Encode(&h)
 }
 
-func (h *History) update(files []File) error {
+// Update updates the history by appending the given files to the existing ones.
+// It overwrites the current history file with the updated data and sets the version before saving.
+// A backup of the current state is created before the update is applied.
+func (h *History) Update(files []File) error {
 	slog.Debug("updating history file", "path", h.path)
-	f, err := os.Create(h.path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	h.Files = files
-	h.setVersion()
-	return json.NewEncoder(f).Encode(&h)
-}
-
-func (h *History) Save(files []File) error {
-	slog.Debug("saving history file", "path", h.path)
+	defer func() {
+		_ = h.backup()
+		slog.Debug("backed up")
+	}()
 	f, err := os.Create(h.path)
 	if err != nil {
 		return err
@@ -129,6 +127,47 @@ func (h *History) Save(files []File) error {
 	h.Files = append(h.Files, files...)
 	h.setVersion()
 	return json.NewEncoder(f).Encode(&h)
+}
+
+// Save saves the current history to the file, overwriting the existing data.
+// A backup is performed before saving the history to ensure the current state is preserved.
+// Unlike 'update', it does not modify the list of files or set the version.
+func (h *History) Save() error {
+	slog.Debug("saving history file", "path", h.path)
+	defer func() {
+		_ = h.backup()
+		slog.Debug("backed up")
+	}()
+	f, err := os.Create(h.path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return json.NewEncoder(f).Encode(&h)
+}
+
+func (h *History) Remove(target File) error {
+	defer func() {
+		_ = h.backup()
+		slog.Debug("backed up")
+	}()
+	slog.Debug("deleting file from history file", "path", h.path, "file", target)
+	var files []File
+	for _, file := range h.Files {
+		if file.ID == target.ID {
+			slog.Debug("target file found", "id", file.ID, "name", file.Name)
+			continue
+		}
+		files = append(files, file)
+	}
+	h.Files = files
+	return h.Save()
+}
+
+func (h *History) setVersion() {
+	if h.Version == 0 {
+		h.Version = historyVersion
+	}
 }
 
 func (h History) Filter() []File {
@@ -191,24 +230,6 @@ func (h History) Filter() []File {
 		return false
 	})
 	return files
-}
-
-func (h *History) Remove(target File) error {
-	slog.Debug("deleting file from history file", "path", h.path, "file", target)
-	var files []File
-	for _, file := range h.Files {
-		if file.ID == target.ID {
-			continue
-		}
-		files = append(files, file)
-	}
-	return h.update(files)
-}
-
-func (h *History) setVersion() {
-	if h.Version == 0 {
-		h.Version = historyVersion
-	}
 }
 
 func FileInfo(runID string, arg string) (File, error) {

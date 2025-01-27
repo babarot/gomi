@@ -125,9 +125,6 @@ func (c CLI) Run(args []string) error {
 	if err := c.history.Open(); err != nil {
 		return err
 	}
-	defer func() {
-		_ = c.history.Backup()
-	}()
 
 	switch {
 	case c.option.Version:
@@ -290,7 +287,7 @@ func (c CLI) Put(args []string) error {
 
 	// Save the files after all tasks are done
 	defer func() {
-		err := c.history.Save(files)
+		err := c.history.Update(files)
 		if err != nil {
 			slog.Error("failed to update history", "error", err)
 		}
