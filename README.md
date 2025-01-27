@@ -135,14 +135,14 @@ In `gomi`, you can customize its behavior and appearance using a YAML configurat
 ```yaml
 core:
   restore:
-    confirm: false  # if true, allows you to confirm before restoring with yes/no prompt
-    verbose: true   # if true, allows you to see what was being done
+    confirm: false  # If true, prompts you for confirmation before restoring (yes/no)
+    verbose: true   # If true, shows detailed information about the restoration process
 
 ui:
   density: spacious # or compact
   preview:
     syntax_highlight: true
-    colorscheme: nord  # available themes are here: https://xyproto.github.io/splash/docs/index.html
+    colorscheme: nord  # Available themes can be found here: https://xyproto.github.io/splash/docs/index.html
     directory_command: ls -F -A --color=always
   style:
     list_view:
@@ -166,22 +166,22 @@ ui:
         scroll:
           fg: "#EEEEDD"
           bg: "#3C3C3C"
-  exit_message: bye!   # up-to-you
+  exit_message: bye!   # Customizable exit message
   paginator_type: dots # or arabic
 
 history:
   include:
-    within_days: 100 # only show files deleted within 100 days
+    within_days: 100 # Only show files deleted within the last 100 days
   exclude:
     files:
-    - .DS_Store      # do not show .DS_Store
+    - .DS_Store      # Exclude .DS_Store files
     patterns:
-    - "^go\\..*"     # do not show the file beginning with "go."
+    - "^go\\..*"     # Exclude files starting with "go."
     globs:
-    - "*.jpg"        # do not show jpeg files
+    - "*.jpg"        # Exclude JPEG files
     size:
-      min: 0KB       # do not show empty file and dir
-      max: 10GB      # do not show too big file and dir
+      min: 0KB       # Exclude empty files and directories
+      max: 10GB      # Exclude files and directories that are too large
 ```
 
 ## Tips

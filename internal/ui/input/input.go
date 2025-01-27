@@ -11,6 +11,21 @@ import (
 	"github.com/jimschubert/answer/validate"
 )
 
+/*
+ This file contains code originally sourced from jimschubert/answer
+ The original code is licensed under the Apache License 2.0.
+ Changes have been made to this code to suit personal requirements.
+ See LICENSE file for more details on the original licensing.
+
+ What has been changed in the code for clarity:
+  - Changed the input validation logic so that validation now runs
+    even before any input is entered. Previously, validation only triggered
+    after the user began typing.
+  - This change was made to prevent issues where, if empty input is not allowed,
+    the user could press Enter before typing anything, causing validation to not
+    trigger properly or leading to unclear error messages about which validation failed.
+*/
+
 var (
 	_ tea.Model = (*Model)(nil)
 )

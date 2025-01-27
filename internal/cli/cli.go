@@ -99,7 +99,7 @@ func Run(v Version) error {
 	slog.SetDefault(slog.New(logger))
 
 	defer slog.Debug("main function finished")
-	slog.Debug("main function started", "version", v)
+	slog.Debug("main function started", "version", v.Version, "revision", v.Revision, "buildDate", v.Date)
 
 	cfg, err := config.Parse(opt.Config)
 	if err != nil {

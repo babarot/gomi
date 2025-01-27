@@ -6,6 +6,17 @@ import (
 	"github.com/jimschubert/answer/colors"
 )
 
+/*
+ This file contains code originally sourced from jimschubert/answer
+ The original code is licensed under the Apache License 2.0.
+ Changes have been made to this code to suit personal requirements.
+ See LICENSE file for more details on the original licensing.
+
+ What has been changed in the code for clarity:
+ - Added a feature to immediately check if the input is "Yes" or "No"
+   after a letter is entered, without requiring additional confirmation.
+*/
+
 // Decision is an enumeration of decisions available in the confirmation bubble
 type Decision int
 
