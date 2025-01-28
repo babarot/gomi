@@ -201,7 +201,7 @@ func (c CLI) Restore() error {
 		allowed := func() bool {
 			if _, err := os.Stat(file.From); !os.IsNotExist(err) {
 				yes := ui.Confirm(
-					fmt.Sprintf("Causion! The same name already exists. Even so okay to restore? %s",
+					fmt.Sprintf("Caution! The same name already exists. Even so okay to restore? %s",
 						filepath.Base(file.From)))
 				if yes {
 					return true
