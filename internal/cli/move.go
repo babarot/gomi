@@ -51,7 +51,7 @@ func move(src, dst string) error {
 
 	// If they are on the same partition, use os.Rename; otherwise, fallback to copy-and-delete
 	if samePartition {
-		slog.Debug("removing file with os.Rename")
+		slog.Debug("moving file with os.Rename")
 		return os.Rename(src, dst)
 	}
 
