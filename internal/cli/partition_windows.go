@@ -5,7 +5,6 @@ package cli
 import (
 	"fmt"
 	"log/slog"
-	"os"
 	"path/filepath"
 
 	"golang.org/x/sys/windows"
