@@ -112,7 +112,7 @@ type parser struct{}
 
 func validSize(fl validator.FieldLevel) bool {
 	value := strings.ToUpper(fl.Field().String())
-	re := regexp.MustCompile(`^\d+(KB|MB|GB|TB|PB)$`)
+	re := regexp.MustCompile(`^\d+(KB|MB|GB|TB|PB)|$`) // empty is acceptable
 	return re.MatchString(value)
 }
 

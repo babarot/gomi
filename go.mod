@@ -24,9 +24,11 @@ require (
 	github.com/muesli/reflow v0.3.0
 	github.com/muesli/termenv v0.15.2
 	github.com/nxadm/tail v1.4.11
+	github.com/otiai10/copy v1.14.1
 	github.com/rs/xid v1.6.0
 	github.com/samber/lo v1.47.0
 	golang.org/x/sync v0.10.0
+	golang.org/x/sys v0.29.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -47,12 +49,12 @@ require (
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
+	github.com/otiai10/mint v1.6.3 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sahilm/fuzzy v0.1.1 // indirect
 	golang.org/x/crypto v0.32.0 // indirect
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/net v0.34.0 // indirect
-	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 )

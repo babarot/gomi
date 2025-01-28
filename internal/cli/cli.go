@@ -144,8 +144,8 @@ func (c CLI) Run(args []string) error {
 }
 
 func (c CLI) Restore() error {
-	slog.Debug("cil.restore started")
-	defer slog.Debug("cil.restore finished")
+	slog.Debug("cli.restore started")
+	defer slog.Debug("cli.restore finished")
 
 	if len(c.history.Files) == 0 {
 		fmt.Printf("The history is empty. Let's try deleting a file first\n")
@@ -226,7 +226,7 @@ func (c CLI) Restore() error {
 		if !allowed() {
 			continue
 		}
-		err := os.Rename(file.To, file.From)
+		err := move(file.To, file.From)
 		if err != nil {
 			errs = append(errs, err)
 			slog.Error("failed to restore! file would not be deleted from history file", "error", err)
@@ -248,8 +248,8 @@ func (c CLI) Restore() error {
 }
 
 func (c CLI) Put(args []string) error {
-	slog.Debug("cil.put started")
-	defer slog.Debug("cil.put finished")
+	slog.Debug("cli.put started")
+	defer slog.Debug("cli.put finished")
 
 	if len(args) == 0 {
 		return errors.New("too few arguments")
@@ -276,12 +276,7 @@ func (c CLI) Put(args []string) error {
 			files[i] = file
 			mu.Unlock()
 
-			// Ensure the directory exists before renaming the file
-			_ = os.MkdirAll(filepath.Dir(file.To), 0777)
-
-			// Log the file move
-			slog.Debug("moved", "from", file.From, "to", file.To)
-			return os.Rename(file.From, file.To)
+			return move(file.From, file.To)
 		})
 	}
 
