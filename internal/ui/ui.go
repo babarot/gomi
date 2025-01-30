@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"sort"
 
 	"github.com/babarot/gomi/internal/config"
 	"github.com/babarot/gomi/internal/history"
 	"github.com/babarot/gomi/internal/ui/keys"
+	"github.com/mistakenelf/teacup/image"
 
 	// "github.com/babarot/gomi/internal/ui/state"
 
@@ -24,12 +26,19 @@ import (
 	"github.com/samber/lo"
 )
 
+type State uint8
+
+const (
+	LIST_VIEW State = iota
+	DETAIL_VIEW
+	QUITTING
+)
+
 type ViewType uint8
 
 const (
-	LIST_VIEW ViewType = iota
-	DETAIL_VIEW
-	QUITTING
+	FILE_VIEW ViewType = iota
+	IMAGE_VIEW
 )
 
 type ListDensityType uint8
@@ -85,6 +94,7 @@ type Model struct {
 	listKeys   *keys.ListKeyMap
 	detailKeys *keys.DetailKeyMap
 
+	state         State
 	viewType      ViewType
 	detailFile    File
 	datefmt       string
@@ -97,6 +107,7 @@ type Model struct {
 	help     help.Model
 	list     list.Model
 	viewport viewport.Model
+	image    image.Model
 
 	err error
 }
@@ -141,7 +152,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		slog.Debug("Key pressed", "key", msg.String())
 		switch {
 		case key.Matches(msg, m.listKeys.Quit):
-			m.viewType = QUITTING
+			m.state = QUITTING
 			return m, tea.Quit
 
 		case key.Matches(msg, m.listKeys.Select):
@@ -156,8 +167,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					selectionManager.Add(item)
 				}
 				m.list.CursorDown()
-				if m.viewType == DETAIL_VIEW {
-					cmds = append(cmds, getInventoryDetails(item))
+				if m.state == DETAIL_VIEW {
+					cmds = append(cmds, m.getInventoryDetails(item))
 				}
 			}
 
@@ -171,13 +182,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					selectionManager.Remove(item)
 				}
 				m.list.CursorUp()
-				if m.viewType == DETAIL_VIEW {
-					cmds = append(cmds, getInventoryDetails(item))
+				if m.state == DETAIL_VIEW {
+					cmds = append(cmds, m.getInventoryDetails(item))
 				}
 			}
 
 		case key.Matches(msg, m.detailKeys.AtSign):
-			switch m.viewType {
+			switch m.state {
 			case DETAIL_VIEW:
 				switch m.datefmt {
 				case datefmtRel:
@@ -191,7 +202,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			msg, m.detailKeys.PreviewUp, m.detailKeys.PreviewDown,
 			m.detailKeys.HalfPageUp, m.detailKeys.HalfPageDown,
 		):
-			switch m.viewType {
+			switch m.state {
 			case DETAIL_VIEW:
 				var cmd tea.Cmd
 				m.viewport, cmd = m.viewport.Update(msg)
@@ -199,58 +210,58 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case key.Matches(msg, m.detailKeys.GotoTop):
-			switch m.viewType {
+			switch m.state {
 			case DETAIL_VIEW:
 				m.viewport.GotoTop()
 			}
 
 		case key.Matches(msg, m.detailKeys.GotoBottom):
-			switch m.viewType {
+			switch m.state {
 			case DETAIL_VIEW:
 				m.viewport.GotoBottom()
 			}
 
 		case key.Matches(msg, m.detailKeys.Prev):
-			switch m.viewType {
+			switch m.state {
 			case DETAIL_VIEW:
 				m.list.CursorUp()
 				file, ok := m.list.SelectedItem().(File)
 				if ok {
-					cmds = append(cmds, getInventoryDetails(file))
+					cmds = append(cmds, m.getInventoryDetails(file))
 				}
 			}
 
 		case key.Matches(msg, m.detailKeys.Next):
-			switch m.viewType {
+			switch m.state {
 			case DETAIL_VIEW:
 				m.list.CursorDown()
 				file, ok := m.list.SelectedItem().(File)
 				if ok {
-					cmds = append(cmds, getInventoryDetails(file))
+					cmds = append(cmds, m.getInventoryDetails(file))
 				}
 			}
 
 		case key.Matches(msg, m.detailKeys.Esc):
-			switch m.viewType {
+			switch m.state {
 			case DETAIL_VIEW:
-				m.viewType = LIST_VIEW
+				m.state = LIST_VIEW
 			}
 
 		case key.Matches(msg, m.listKeys.Space):
-			switch m.viewType {
+			switch m.state {
 			case LIST_VIEW:
 				if m.list.FilterState() != list.Filtering {
 					file, ok := m.list.SelectedItem().(File)
 					if ok {
-						cmds = append(cmds, getInventoryDetails(file))
+						cmds = append(cmds, m.getInventoryDetails(file))
 					}
 				}
 			case DETAIL_VIEW:
-				m.viewType = LIST_VIEW
+				m.state = LIST_VIEW
 			}
 
 		case key.Matches(msg, m.listKeys.Enter):
-			switch m.viewType {
+			switch m.state {
 			case LIST_VIEW:
 				if m.list.FilterState() != list.Filtering {
 					files := selectionManager.items
@@ -272,6 +283,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.WindowSizeMsg:
+		resizeImgCmd := m.image.SetSize(msg.Width/2, 15)
+		cmds = append(cmds, resizeImgCmd)
 		m.list.SetWidth(msg.Width)
 
 	case inventoryLoadedMsg:
@@ -285,23 +298,34 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.list.SetItems(msg.files)
 
 	case DetailsMsg:
-		m.viewType = DETAIL_VIEW
+		// 改修する
+		// https://github.com/dreamjz/fm/blob/e9b57a578b1919563bddf36dbd3a1b26f63eb354/internal/tui/update.go#L170
+		m.state = DETAIL_VIEW
 		m.detailFile = msg.file
 		m.cannotPreview = false
 		m.viewport = m.newViewportModel(msg.file)
+		switch filepath.Ext(msg.file.Name) {
+		case ".png", ".jpg", ".jpeg":
+			m.viewType = IMAGE_VIEW
+			readFileCmd := m.image.SetFileName(msg.file.To)
+			cmds = append(cmds, readFileCmd)
+			slog.Debug("Read Image", "cmd", readFileCmd)
+		}
 
 	case errorMsg:
-		m.viewType = QUITTING
+		m.state = QUITTING
 		m.err = msg
 		return m, tea.Quit
 	}
 
 	var cmd tea.Cmd
-	switch m.viewType {
+	switch m.state {
 	case LIST_VIEW:
 		m.list, cmd = m.list.Update(msg)
 		cmds = append(cmds, cmd)
 	}
+	m.image, cmd = m.image.Update(msg)
+	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
 }
 
@@ -314,7 +338,7 @@ func (m Model) View() string {
 		return m.err.Error()
 	}
 
-	switch m.viewType {
+	switch m.state {
 	case LIST_VIEW:
 		s += m.list.View()
 	case DETAIL_VIEW:
@@ -341,7 +365,13 @@ func getAllInventoryItems(files []File) tea.Msg {
 	return GotInventorysMsg{files: result}
 }
 
-func getInventoryDetails(file File) tea.Cmd {
+func (m *Model) getInventoryDetails(file File) tea.Cmd {
+	switch filepath.Ext(file.Name) {
+	case ".png", ".jpg", ".jpeg":
+		m.viewType = IMAGE_VIEW
+		m.image.SetFileName(file.To)
+	}
+
 	return func() tea.Msg {
 		return DetailsMsg{file: file}
 	}
@@ -392,13 +422,15 @@ func RenderList(filteredFiles []history.File, cfg config.UI) ([]history.File, er
 	m := Model{
 		listKeys:   keys.ListKeys,
 		detailKeys: keys.DetailKeys,
-		viewType:   LIST_VIEW,
+		state:      LIST_VIEW,
+		viewType:   FILE_VIEW,
 		datefmt:    datefmtRel,
 		files:      files,
 		config:     cfg,
 		list:       l,
 		viewport:   viewport.Model{},
 		help:       help.New(),
+		image:      image.New(true, true, lipgloss.AdaptiveColor{Light: "#000000", Dark: "#ffffff"}),
 	}
 
 	returnModel, err := tea.NewProgram(m).Run()
@@ -407,7 +439,7 @@ func RenderList(filteredFiles []history.File, cfg config.UI) ([]history.File, er
 	}
 
 	choices := returnModel.(Model).choices
-	if returnModel.(Model).viewType == QUITTING {
+	if returnModel.(Model).state == QUITTING {
 		if msg := cfg.ExitMessage; msg != "" {
 			fmt.Println(msg)
 		}

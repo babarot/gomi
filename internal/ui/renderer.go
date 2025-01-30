@@ -16,11 +16,15 @@ import (
 )
 
 func renderDetailed(m Model) string {
+	preview := m.renderPreview()
+	if m.viewType == IMAGE_VIEW {
+		preview = "====" + m.image.View()
+	}
 	return lipgloss.JoinVertical(lipgloss.Left,
 		m.renderHeader(),
 		m.renderDeletedFrom(),
 		m.renderDeletedAt(),
-		m.renderPreview(),
+		preview,
 		m.renderFooter(),
 	)
 }
