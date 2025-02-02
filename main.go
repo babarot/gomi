@@ -10,17 +10,17 @@ import (
 const appName = "gomi"
 
 var (
-	version  = "unset"
-	revision = "unset"
-	date     = "unknown"
+	version   = "unset"
+	revision  = "unset"
+	buildDate = "unknown"
 )
 
 func main() {
 	err := cli.Run(cli.Version{
-		AppName:  appName,
-		Version:  version,
-		Revision: revision,
-		Date:     date,
+		AppName:   appName,
+		Version:   version,
+		Revision:  revision,
+		BuildDate: buildDate,
 	})
 
 	if err != nil {

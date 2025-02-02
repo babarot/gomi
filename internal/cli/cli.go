@@ -99,7 +99,7 @@ func Run(v Version) error {
 	slog.SetDefault(slog.New(logger))
 
 	defer slog.Debug("main function finished")
-	slog.Debug("main function started", "version", v.Version, "revision", v.Revision, "buildDate", v.Date)
+	slog.Debug("main function started", "version", v.Version, "revision", v.Revision, "buildDate", v.BuildDate)
 
 	cfg, err := config.Parse(opt.Config)
 	if err != nil {
@@ -128,7 +128,7 @@ func (c CLI) Run(args []string) error {
 
 	switch {
 	case c.option.Version:
-		fmt.Fprintln(os.Stdout, c.version.Print())
+		fmt.Fprint(os.Stdout, c.version.Print())
 		return nil
 
 	case c.option.Restore:

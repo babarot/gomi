@@ -15,7 +15,7 @@ builds:
       - -s -w
       - -X main.version=v{{.Version}}
       - -X main.revision={{.ShortCommit}}
-      - -X main.date={{.CommitDate}}
+      - -X main.buildDate={{.CommitDate}}
     main: .
 
 archives:

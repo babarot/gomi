@@ -11,10 +11,10 @@ const (
 )
 
 type Version struct {
-	AppName  string
-	Version  string
-	Revision string
-	Date     string
+	AppName   string
+	Version   string
+	Revision  string
+	BuildDate string
 }
 
 func (v Version) Print() string {
@@ -25,11 +25,11 @@ func (v Version) Print() string {
 			v.Version = info.Main.Version
 		}
 	}
-	fmt.Fprintln(&s, v.AppName+" - trashcan in CLI")
+	fmt.Fprintln(&s, v.AppName+" - a CLI trash manager")
 	fmt.Fprintln(&s, appURL)
 	fmt.Fprintln(&s, "")
 	fmt.Fprintln(&s, "version: "+v.Version)
 	fmt.Fprintln(&s, "revision: "+v.Revision)
-	fmt.Fprintln(&s, "buildDate: "+v.Date)
+	fmt.Fprintln(&s, "buildDate: "+v.BuildDate)
 	return s.String()
 }
