@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.2.3](https://github.com/babarot/gomi/compare/v1.2.2...v1.2.3) - 2025-02-02
+### New Features
+- Make moving files across different partitions possible by adding fallback to copy-and-delete by @babarot in https://github.com/babarot/gomi/pull/51
+### Others
+- Refactor history package by @babarot in https://github.com/babarot/gomi/pull/49
+- Fix typo, Causion -> Caution by @kianmeng in https://github.com/babarot/gomi/pull/52
+
 ## [v1.2.2](https://github.com/babarot/gomi/compare/v1.2.1...v1.2.2) - 2025-01-27
 
 ## [v1.2.1](https://github.com/babarot/gomi/compare/v1.2.0...v1.2.1) - 2025-01-27
