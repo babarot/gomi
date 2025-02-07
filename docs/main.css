@@ -280,8 +280,24 @@ code {
   border: 2px solid var(--accent);
 }
 
+.footer-author {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  max-width: 400px;
+}
+
+.footer-author img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  flex-shrink: 0;
+}
+
 .footer-author-info {
   text-align: left;
+  min-width: 0;
 }
 
 .footer-author-name {
@@ -295,6 +311,13 @@ code {
   font-family: var(--font-hack);
   color: var(--text-secondary);
   font-size: 0.9rem;
+  line-height: 1.4;
+  max-width: 300px;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  -webkit-hyphens: auto;
+  -ms-hyphens: auto;
+  hyphens: auto;
 }
 
 .footer-links {
@@ -308,11 +331,13 @@ code {
   text-decoration: none;
   font-family: var(--font-hack);
   font-size: 0.9rem;
-  transition: color 0.3s ease;
+  display: block;
+  transition: transform 0.2s ease;
 }
 
 .footer-link:hover {
   color: var(--accent);
+  transform: scale(1.1);
 }
 
 .footer-copyright {
@@ -321,3 +346,4 @@ code {
   font-size: 0.9rem;
   margin-top: var(--space-sm);
 }
+

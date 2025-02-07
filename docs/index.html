@@ -5,78 +5,115 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>gomi - Modern Trash Management CLI</title>
 
+    <!-- Primary Meta Tags -->
     <meta name="title" content="gomi - Modern Trash Management CLI">
     <meta name="description" content="A safer alternative to the rm command. Move files to trash instead of permanent deletion.">
 
+    <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://github.com/babarot/gomi">
     <meta property="og:title" content="gomi - Modern Trash Management CLI">
     <meta property="og:description" content="A safer alternative to the rm command. Move files to trash instead of permanent deletion.">
     <meta property="og:image" content="./preview-dark.png">
 
+    <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://github.com/babarot/gomi">
     <meta property="twitter:title" content="gomi - Modern Trash Management CLI">
     <meta property="twitter:description" content="A safer alternative to the rm command. Move files to trash instead of permanent deletion.">
     <meta property="twitter:image" content="./preview-dark.png">
 
+    <!-- Fonts and Styles -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/hack-font/3.3.0/web/hack.min.css" rel="stylesheet">
     <link rel="stylesheet" href="main.css">
   </head>
   <body>
-    <section class="hero">
-      <h1>gomi</h1>
-      <p><b>Replacement for UNIX rm!</b></p>
-    </section>
+    <main>
+      <!-- Hero Section -->
+      <section class="hero">
+        <h1>gomi</h1>
+        <p><b>Replacement for UNIX rm!</b></p>
+      </section>
 
-    <section class="demo-section">
-      <h2 class="demo-heading">See gomi in Action</h2>
-      <p class="demo-description">Watch how easily you can manage your trash with simple commands</p>
-      <div class="demo-container">
-        <img src="demo-mini.gif" alt="gomi CLI demonstration" class="demo-gif" />
-      </div>
-    </section>
+      <!-- Demo Section -->
+      <section class="demo-section">
+        <h2 class="demo-heading">See gomi in Action</h2>
+        <p class="demo-description">Watch how easily you can manage your trash with simple commands</p>
+        <div class="demo-container">
+          <img src="demo-mini.gif" alt="gomi CLI demonstration" class="demo-gif">
+        </div>
+      </section>
 
-    <section class="features">
-      <div class="container">
-        <div class="features-grid">
-          <div class="feature">
-            <h3>🗑️ Safe File Removal</h3>
-            <p>Works just like the familiar <code>rm</code> command, but moves files to trash instead of permanent deletion. Supports most <code>rm</code> command flags for seamless transition.</p>
-          </div>
-          <div class="feature">
-            <h3>🔄 Easy Restoration</h3>
-            <p>Simple and intuitive restoration process with a user-friendly interface. Find and restore your files effortlessly when you need them back.</p>
-          </div>
-          <div class="feature">
-            <h3>🔍 Fuzzy Search</h3>
-            <p>Quickly locate deleted files using powerful fuzzy search capabilities. No need to remember exact file names or locations.</p>
+      <!-- Features Section -->
+      <section class="features">
+        <div class="container">
+          <div class="features-grid">
+            <div class="feature">
+              <h3>🗑️ Safe File Removal</h3>
+              <p>Works just like the familiar <code>rm</code> command, but moves files to trash instead of permanent deletion. Supports most <code>rm</code> command flags for seamless transition.</p>
+            </div>
+            <div class="feature">
+              <h3>🔄 Easy Restoration</h3>
+              <p>Simple and intuitive restoration process with a user-friendly interface. Find and restore your files effortlessly when you need them back.</p>
+            </div>
+            <div class="feature">
+              <h3>🔍 Fuzzy Search</h3>
+              <p>Quickly locate deleted files using powerful fuzzy search capabilities. No need to remember exact file names or locations.</p>
+            </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section class="installation">
-      <h2>Installation</h2>
-      <div class="code-container">
-        <div class="code">
-          <pre><code>$ brew install gomi</code></pre>
+      <!-- Installation Section -->
+      <section class="installation">
+        <h2>Installation</h2>
+        <div class="code-container">
+          <div class="code">
+            <pre><code>$ brew install gomi</code></pre>
+          </div>
+          <button class="copy-button" onclick="copyInstallCommand()">COPY</button>
         </div>
-        <button class="copy-button" onclick="copyInstallCommand()">COPY</button>
-      </div>
 
-      <div class="cli-demo">
-        <pre><span class="command">$ gomi example.txt</span>
+        <div class="cli-demo">
+          <pre><span class="command">$ gomi example.txt</span>
 <span class="output">Moving example.txt to trash...</span>
 
 <span class="command">$ gomi --restore</span>
 <span class="output">Restored example.txt to original location</span></pre>
+        </div>
+
+        <a href="https://github.com/babarot/gomi" class="button">EXPLORE ON GITHUB</a>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-content">
+        <div class="footer-author">
+          <a href="https://github.com/babarot" class="footer-avatar-link">
+            <img src="https://avatars.githubusercontent.com/babarot"
+            alt="babarot"
+            class="footer-avatar"
+            onerror="this.src='/api/placeholder/40/40'">
+          </a>
+          <div class="footer-author-info">
+            <div class="footer-author-name">babarot</div>
+            <div class="footer-author-title">I work as an SRE engineer at a company, based in Tokyo.</div>
+          </div>
+        </div>
+        <div class="footer-links">
+          <a href="https://github.com/babarot" class="footer-link">GitHub</a>
+          <a href="https://github.com/babarot/gomi" class="footer-link">Repository</a>
+          <a href="https://github.com/babarot/gomi/issues" class="footer-link">Issues</a>
+        </div>
+        <div class="footer-copyright">
+          © 2024 gomi. Made with 💜 by babarot
+        </div>
       </div>
+    </footer>
 
-      <a href="https://github.com/babarot/gomi" class="button">EXPLORE ON GITHUB</a>
-    </section>
-
+    <!-- Scripts -->
     <script>
       function copyInstallCommand() {
         const command = "brew install gomi";
@@ -93,25 +130,4 @@
       }
     </script>
   </body>
-
-  <footer class="footer">
-    <div class="footer-content">
-      <div class="footer-author">
-        <img src="https://avatars.githubusercontent.com/babarot" alt="babarot"
-        onerror="this.src='/api/placeholder/40/40'"/>
-        <div class="footer-author-info">
-          <div class="footer-author-name">babarot</div>
-          <div class="footer-author-title">Creator of gomi</div>
-        </div>
-      </div>
-      <div class="footer-links">
-        <a href="https://github.com/babarot" class="footer-link">GitHub</a>
-        <a href="https://github.com/babarot/gomi" class="footer-link">Repository</a>
-        <a href="https://github.com/babarot/gomi/issues" class="footer-link">Issues</a>
-      </div>
-      <div class="footer-copyright">
-        © 2024 gomi. Made with 💜 by babarot
-      </div>
-    </div>
-  </footer>
 </html>
