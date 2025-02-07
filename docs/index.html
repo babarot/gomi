@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>gomi - Modern Trash Management CLI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/hack-font/3.3.0/web/hack.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css">
+    <style>
+        :root {
+            --bg-primary: #1a1b26;
+            --bg-secondary: #24283b;
+            --text-primary: #c0caf5;
+            --text-secondary: #9aa5ce;
+            --accent: #7aa2f7;
+            --accent-secondary: #bb9af7;
+            --success: #9ece6a;
+            --warning: #e0af68;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+        }
+
+        code {
+            font-family: Hack, monospace;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            padding: 6rem 2rem;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4.5rem;
+            margin-bottom: 1rem;
+            letter-spacing: 2px;
+            color: var(--accent);
+            text-transform: uppercase;
+        }
+
+        .hero p {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .feature h3 {
+            color: var(--accent-secondary);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .feature p {
+            font-family: Hack, monospace;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .installation {
+            background: var(--bg-secondary);
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .installation h2 {
+            margin-bottom: 2rem;
+            font-size: 2rem;
+            font-family: 'Orbitron', sans-serif;
+            color: var(--accent);
+        }
+
+        .code {
+            background: var(--bg-primary);
+            padding: 1.5rem;
+            border-radius: 8px;
+            display: inline-block;
+            text-align: left;
+            font-family: 'Fira Code', monospace;
+            margin: 1rem 0;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .button {
+            display: inline-block;
+            background: var(--accent);
+            color: var(--bg-primary);
+            padding: 1rem 2rem;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 2rem;
+            transition: all 0.3s ease;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .button:hover {
+            background: var(--accent-secondary);
+            transform: translateY(-2px);
+        }
+
+        .cli-demo {
+            background: var(--bg-primary);
+            padding: 2rem;
+            border-radius: 8px;
+            margin: 2rem auto;
+            max-width: 600px;
+            font-family: 'Fira Code', monospace;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .cli-demo pre {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+
+        .command {
+            color: var(--success);
+        }
+
+        .output {
+            color: var(--text-secondary);
+        }
+
+        .demo-section {
+            background: var(--bg-secondary);
+            padding: 4rem 2rem;
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .demo-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 1rem;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        }
+
+        .demo-heading {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--accent);
+            font-size: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .demo-description {
+            font-family: Hack, monospace;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+            line-height: 1.6;
+        }
+
+        .demo-gif {
+            width: 100%;
+            border-radius: 8px;
+            margin: 0 auto;
+            display: block;
+        }
+
+        .code-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .copy-button {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--accent);
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            color: var(--bg-primary);
+            cursor: pointer;
+            font-size: 12px;
+            font-family: 'Orbitron', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .copy-button:hover {
+            background: var(--accent-secondary);
+        }
+
+        .copy-button.copied {
+            background: var(--success);
+        }
+
+        .code {
+            padding-right: 100px;
+        }
+    </style>
+</head>
+<body>
+    <section class="hero">
+        <h1>gomi</h1>
+        <p><b>Replacement for UNIX rm!</b></p>
+    </section>
+
+    <section class="demo-section">
+        <h2 class="demo-heading">See gomi in Action</h2>
+        <p class="demo-description">Watch how easily you can manage your trash with simple commands</p>
+        <div class="demo-container">
+            <img src="demo-mini.gif" alt="gomi CLI demonstration" class="demo-gif" />
+        </div>
+    </section>
+
+    <div class="features">
+        <div class="feature">
+            <h3>🗑️ Safe File Removal</h3>
+            <p>Works just like the familiar <code>rm</code> command, but moves files to trash instead of permanent deletion. Supports most <code>rm</code> command flags for seamless transition.</p>
+        </div>
+        <div class="feature">
+            <h3>🔄 Easy Restoration</h3>
+            <p>Simple and intuitive restoration process with a user-friendly interface. Find and restore your files effortlessly when you need them back.</p>
+        </div>
+        <div class="feature">
+            <h3>🔍 Fuzzy Search</h3>
+            <p>Quickly locate deleted files using powerful fuzzy search capabilities. No need to remember exact file names or locations.</p>
+        </div>
+    </div>
+
+    <section class="installation">
+        <h2>Installation</h2>
+        <div class="code-container">
+            <div class="code">
+                <pre><code>$ brew install gomi</code></pre>
+            </div>
+            <button class="copy-button" onclick="copyInstallCommand()">COPY</button>
+        </div>
+
+        <div class="cli-demo">
+            <pre><span class="command">$ gomi example.txt</span>
+<span class="output">Moving example.txt to trash...</span>
+
+<span class="command">$ gomi --restore</span>
+<span class="output">Restored example.txt to original location</span></pre>
+        </div>
+
+        <a href="https://github.com/babarot/gomi" class="button">EXPLORE ON GITHUB</a>
+    </section>
+
+    <script>
+        function copyInstallCommand() {
+            const command = "brew install gomi";
+            navigator.clipboard.writeText(command).then(() => {
+                const button = document.querySelector('.copy-button');
+                button.textContent = 'COPIED!';
+                button.classList.add('copied');
+
+                setTimeout(() => {
+                    button.textContent = 'COPY';
+                    button.classList.remove('copied');
+                }, 3000);
+            });
+        }
+    </script>
+</body>
+</html>
