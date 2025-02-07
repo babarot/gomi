@@ -3,30 +3,32 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>gomi - Modern Trash Management CLI</title>
+    <title>gomi - A Safer Alternative to the UNIX rm Command</title>
 
     <!-- SEO Meta Tags -->
-    <meta name="title" content="gomi - Modern Trash Management CLI">
-    <meta name="description" content="A safer alternative to the rm command. Move files to trash instead of permanent deletion.">
+    <meta name="title" content="gomi - A Safer Alternative to the UNIX rm Command">
+    <meta name="description" content="Never worry about accidentally deleting important files again. gomi moves them to trash instead of permanent deletion, giving you peace of mind in the command line.">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://github.com/babarot/gomi">
-    <meta property="og:title" content="gomi - Modern Trash Management CLI">
-    <meta property="og:description" content="A safer alternative to the rm command. Move files to trash instead of permanent deletion.">
+    <meta property="og:title" content="gomi - A Safer Alternative to the UNIX rm Command">
+    <meta property="og:description" content="Never worry about accidentally deleting important files again. gomi moves them to trash instead of permanent deletion, giving you peace of mind in the command line.">
     <meta property="og:image" content="./preview-dark.png">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://github.com/babarot/gomi">
-    <meta property="twitter:title" content="gomi - Modern Trash Management CLI">
-    <meta property="twitter:description" content="A safer alternative to the rm command. Move files to trash instead of permanent deletion.">
+    <meta property="twitter:title" content="gomi - A Safer Alternative to the UNIX rm Command">
+    <meta property="twitter:description" content="Never worry about accidentally deleting important files again. gomi moves them to trash instead of permanent deletion, giving you peace of mind in the command line.">
     <meta property="twitter:image" content="./preview-dark.png">
 
     <!-- External Resources -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hack-font/3.3.0/web/hack.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Custom Styles -->
     <link rel="stylesheet" href="main.css">
   </head>
   <body>
@@ -34,13 +36,16 @@
       <!-- Hero Section -->
       <section class="hero">
         <h1>gomi</h1>
-        <p><b>Replacement for UNIX rm!</b></p>
+        <p><b>A Safer Alternative to the UNIX rm Command!</b></p>
+        <div class="hero-stats">
+          <img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/babarot/gomi">
+        </div>
       </section>
 
       <!-- Demo Section -->
       <section class="demo-section">
-        <h2 class="demo-heading">See gomi in Action</h2>
-        <p class="demo-description">Watch how easily you can manage your trash with simple commands</p>
+        <h2 class="demo-heading">Safety First, Always</h2>
+        <p class="demo-description">Never worry about accidentally deleting important files again. gomi moves them to trash instead of permanent deletion, giving you peace of mind while working in the command line.</p>
         <div class="demo-container">
           <img src="demo-mini.gif"
           alt="gomi CLI demonstration"
@@ -54,16 +59,16 @@
         <div class="container">
           <div class="features-grid">
             <article class="feature">
-              <h3>🗑️ Safe File Removal</h3>
-              <p>Works just like the familiar <code>rm</code> command, but moves files to trash instead of permanent deletion. Supports most <code>rm</code> command flags for seamless transition.</p>
+              <h3>🗑️ Safe File Handler</h3>
+              <p>Works exactly like <code>rm</code> but with a safety net. Seamlessly replace your existing <code>rm</code> command with gomi using a simple alias, maintaining all your familiar command flags.</p>
             </article>
             <article class="feature">
-              <h3>🔄 Easy Restoration</h3>
-              <p>Simple and intuitive restoration process with a user-friendly interface. Find and restore your files effortlessly when you need them back.</p>
+              <h3>🔄 Quick Recovery</h3>
+              <p>Made a mistake? No problem. Quickly restore files to their original location with a simple <code>gomi --restore</code> command. Includes an intuitive interface for browsing and selecting files to restore.</p>
             </article>
             <article class="feature">
-              <h3>🔍 Fuzzy Search</h3>
-              <p>Quickly locate deleted files using powerful fuzzy search capabilities. No need to remember exact file names or locations.</p>
+              <h3>⚙️ Rich Configuration</h3>
+              <p>Tailor gomi to your workflow with extensive YAML configuration. Customize everything from file filters and color schemes to preview options and UI density. Your CLI, your rules.</p>
             </article>
           </div>
         </div>
@@ -83,6 +88,7 @@
           </button>
         </div>
 
+        <h2>Usage</h2>
         <div class="cli-demo">
           <pre><span class="command">$ gomi example.txt</span>
 <span class="output">Moving example.txt to trash...</span>
@@ -104,7 +110,7 @@
     <footer class="footer">
       <div class="footer-content">
         <div class="footer-author">
-          <a href="https://github.com/babarot"
+          <a href="https://babarot.me"
             class="footer-avatar-link"
             target="_blank"
             rel="noopener noreferrer">

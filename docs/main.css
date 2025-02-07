@@ -35,14 +35,13 @@
   --transition-default: all 0.3s ease;
 }
 
-/* Reset */
+/* Reset & Base Styles */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-/* Base styles */
 body {
   font-family: var(--font-system);
   line-height: 1.6;
@@ -50,17 +49,18 @@ body {
   background: var(--bg-primary);
 }
 
-code {
-  font-family: var(--font-hack);
-  padding: 2px 4px;
-  border-radius: var(--radius-sm);
-}
-
-/* Layout */
+/* Common Layout Styles */
 .container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 var(--space-md);
+}
+
+/* Common Text Styles */
+code {
+  font-family: var(--font-hack);
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
 }
 
 /* Hero Section */
@@ -83,8 +83,23 @@ code {
   font-family: var(--font-orbitron);
   font-size: 1.5rem;
   color: var(--text-secondary);
-  max-width: 600px;
+  max-width: 650px;
   margin: 0 auto;
+}
+
+.hero-stats {
+  margin-top: var(--space-md);
+}
+
+.hero-stats img {
+  height: 20px;
+  filter: brightness(1.1);
+  transition: var(--transition-default);
+}
+
+.hero-stats img:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.2);
 }
 
 /* Demo Section */
@@ -170,20 +185,32 @@ code {
   margin-bottom: var(--space-md);
 }
 
-/* Code Block Styles */
-.code-container {
-  position: relative;
-  display: inline-block;
+/* Code Blocks - Common Styles */
+.code-container,
+.cli-demo {
+  max-width: 600px;
+  margin: var(--space-md) auto;
+  text-align: left;
+  background: var(--bg-primary);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  border: var(--border-default);
+  width: 100%;
 }
 
-.code {
-  background: var(--bg-primary);
-  padding: var(--space-md) var(--space-lg) var(--space-md) var(--space-md);
-  border-radius: var(--radius-md);
-  text-align: left;
+/* Installation Code Block */
+.code-container {
+  position: relative;
+}
+
+.code pre {
+  margin: 0;
+  white-space: pre;
   font-family: var(--font-hack);
-  margin: var(--space-sm) 0;
-  border: var(--border-default);
+  font-size: 1.1rem;
+  line-height: 1.8;
+  padding-left: 1rem;
+  padding-right: 100px;
 }
 
 .copy-button {
@@ -209,28 +236,24 @@ code {
   background: var(--success);
 }
 
-/* CLI Demo */
-.cli-demo {
-  background: var(--bg-primary);
-  padding: var(--space-md);
-  border-radius: var(--radius-md);
-  margin: var(--space-md) auto;
-  max-width: 600px;
-  font-family: var(--font-hack);
-  border: var(--border-default);
-}
-
+/* CLI Demo Block */
 .cli-demo pre {
   margin: 0;
   white-space: pre-wrap;
+  font-family: var(--font-hack);
+  font-size: 1.1rem;
+  line-height: 1.8;
+  padding-left: 1rem;
 }
 
-.command {
+.cli-demo .command {
   color: var(--success);
 }
 
-.output {
+.cli-demo .output {
   color: var(--text-secondary);
+  display: inline-block;
+  width: 100%;
 }
 
 /* Common Button Style */
@@ -252,7 +275,7 @@ code {
   transform: translateY(-2px);
 }
 
-/* Footer */
+/* Footer Styles */
 .footer {
   background: var(--bg-secondary);
   padding: var(--space-lg) var(--space-md);
@@ -279,7 +302,7 @@ code {
 
 .footer-avatar-link {
   display: block;
-  transition: transform 0.2s ease;
+  transition: var(--transition-default);
 }
 
 .footer-avatar-link:hover {
@@ -314,8 +337,6 @@ code {
   max-width: 300px;
   overflow-wrap: break-word;
   word-wrap: break-word;
-  -webkit-hyphens: auto;
-  -ms-hyphens: auto;
   hyphens: auto;
 }
 
@@ -335,7 +356,6 @@ code {
   transition: var(--transition-default);
   display: flex;
   align-items: center;
-  gap: 8px;
 }
 
 .footer-link i {
@@ -345,10 +365,6 @@ code {
 .footer-link:hover {
   color: var(--accent);
   transform: translateY(-2px);
-}
-
-.footer-link:hover i {
-  transform: scale(1.1);
 }
 
 .footer-link-separator {
@@ -361,4 +377,26 @@ code {
   font-family: var(--font-hack);
   color: var(--text-secondary);
   font-size: 0.9rem;
+}
+
+/* Responsive Styles */
+@media (max-width: 480px) {
+  .code-container,
+  .cli-demo {
+    margin: var(--space-sm);
+    font-size: 0.9rem;
+  }
+
+  .code pre,
+  .cli-demo pre {
+    padding-left: 0.5rem;
+  }
+
+  .hero h1 {
+    font-size: 3rem;
+  }
+
+  .hero p {
+    font-size: 1.2rem;
+  }
 }
