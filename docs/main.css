@@ -381,22 +381,58 @@ code {
 
 /* Responsive Styles */
 @media (max-width: 480px) {
-  .code-container,
-  .cli-demo {
-    margin: var(--space-sm);
-    font-size: 0.9rem;
-  }
-
-  .code pre,
-  .cli-demo pre {
+  /* Installation code block */
+  .code-container .code pre,
+  .code-container .code code {
+    font-size: 0.8rem;
+    line-height: 1.4;
     padding-left: 0.5rem;
   }
 
+  /* CLI demo block */
+  .cli-demo pre,
+  .cli-demo .command,
+  .cli-demo .output {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    padding-left: 0.5rem;
+  }
+
+  /* Copy button */
+  .copy-button {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+
+  /* Installation section heading */
+  .installation h2 {
+    font-size: 1.5rem;
+  }
+
+  /* Hero section */
   .hero h1 {
     font-size: 3rem;
   }
 
   .hero p {
     font-size: 1.2rem;
+  }
+
+  /* Container padding adjustment */
+  .code-container,
+  .cli-demo {
+    padding: var(--space-sm);
+  }
+}
+
+/* Larger mobile devices */
+@media (min-width: 481px) and (max-width: 768px) {
+  .code-container .code pre,
+  .code-container .code code,
+  .cli-demo pre,
+  .cli-demo .command,
+  .cli-demo .output {
+    font-size: 0.8rem;
+    padding-left: 0.75rem;
   }
 }
