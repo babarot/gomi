@@ -30,6 +30,9 @@
   /* Shadows */
   --shadow-sm: 0 4px 6px rgba(0,0,0,0.2);
   --shadow-lg: 0 8px 24px rgba(0,0,0,0.2);
+
+  /* Transitions */
+  --transition-default: all 0.3s ease;
 }
 
 /* Reset */
@@ -175,13 +178,12 @@ code {
 
 .code {
   background: var(--bg-primary);
-  padding: var(--space-md);
+  padding: var(--space-md) var(--space-lg) var(--space-md) var(--space-md);
   border-radius: var(--radius-md);
   text-align: left;
   font-family: var(--font-hack);
   margin: var(--space-sm) 0;
   border: var(--border-default);
-  padding-right: 100px;
 }
 
 .copy-button {
@@ -196,7 +198,7 @@ code {
   cursor: pointer;
   font-size: 12px;
   font-family: var(--font-orbitron);
-  transition: all 0.3s ease;
+  transition: var(--transition-default);
 }
 
 .copy-button:hover {
@@ -231,7 +233,7 @@ code {
   color: var(--text-secondary);
 }
 
-/* Button */
+/* Common Button Style */
 .button {
   display: inline-block;
   background: var(--accent);
@@ -241,7 +243,7 @@ code {
   text-decoration: none;
   font-weight: bold;
   margin-top: var(--space-md);
-  transition: all 0.3s ease;
+  transition: var(--transition-default);
   font-family: var(--font-orbitron);
 }
 
@@ -267,24 +269,21 @@ code {
   gap: var(--space-md);
 }
 
-.footer-author {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-.footer-author img {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 2px solid var(--accent);
-}
-
+/* Footer Author */
 .footer-author {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
   max-width: 400px;
+}
+
+.footer-avatar-link {
+  display: block;
+  transition: transform 0.2s ease;
+}
+
+.footer-avatar-link:hover {
+  transform: scale(1.1);
 }
 
 .footer-author img {
@@ -320,9 +319,11 @@ code {
   hyphens: auto;
 }
 
+/* Footer Links */
 .footer-links {
   display: flex;
-  gap: var(--space-md);
+  align-items: center;
+  gap: var(--space-sm);
   margin-top: var(--space-sm);
 }
 
@@ -331,19 +332,33 @@ code {
   text-decoration: none;
   font-family: var(--font-hack);
   font-size: 0.9rem;
-  display: block;
-  transition: transform 0.2s ease;
+  transition: var(--transition-default);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.footer-link:hover,
-.footer-avatar-link:hover {
+.footer-link i {
+  font-size: 1.2rem;
+}
+
+.footer-link:hover {
   color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.footer-link:hover i {
   transform: scale(1.1);
+}
+
+.footer-link-separator {
+  color: var(--text-secondary);
+  opacity: 0.5;
+  font-size: 0.8rem;
 }
 
 .footer-copyright {
   font-family: var(--font-hack);
   color: var(--text-secondary);
   font-size: 0.9rem;
-  margin-top: var(--space-sm);
 }

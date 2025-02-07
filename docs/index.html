@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>gomi - Modern Trash Management CLI</title>
 
-    <!-- Primary Meta Tags -->
+    <!-- SEO Meta Tags -->
     <meta name="title" content="gomi - Modern Trash Management CLI">
     <meta name="description" content="A safer alternative to the rm command. Move files to trash instead of permanent deletion.">
 
@@ -23,9 +23,10 @@
     <meta property="twitter:description" content="A safer alternative to the rm command. Move files to trash instead of permanent deletion.">
     <meta property="twitter:image" content="./preview-dark.png">
 
-    <!-- Fonts and Styles -->
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/hack-font/3.3.0/web/hack.min.css" rel="stylesheet">
+    <!-- External Resources -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hack-font/3.3.0/web/hack.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="main.css">
   </head>
   <body>
@@ -41,7 +42,10 @@
         <h2 class="demo-heading">See gomi in Action</h2>
         <p class="demo-description">Watch how easily you can manage your trash with simple commands</p>
         <div class="demo-container">
-          <img src="demo-mini.gif" alt="gomi CLI demonstration" class="demo-gif">
+          <img src="demo-mini.gif"
+          alt="gomi CLI demonstration"
+          class="demo-gif"
+          loading="lazy">
         </div>
       </section>
 
@@ -49,18 +53,18 @@
       <section class="features">
         <div class="container">
           <div class="features-grid">
-            <div class="feature">
+            <article class="feature">
               <h3>🗑️ Safe File Removal</h3>
               <p>Works just like the familiar <code>rm</code> command, but moves files to trash instead of permanent deletion. Supports most <code>rm</code> command flags for seamless transition.</p>
-            </div>
-            <div class="feature">
+            </article>
+            <article class="feature">
               <h3>🔄 Easy Restoration</h3>
               <p>Simple and intuitive restoration process with a user-friendly interface. Find and restore your files effortlessly when you need them back.</p>
-            </div>
-            <div class="feature">
+            </article>
+            <article class="feature">
               <h3>🔍 Fuzzy Search</h3>
               <p>Quickly locate deleted files using powerful fuzzy search capabilities. No need to remember exact file names or locations.</p>
-            </div>
+            </article>
           </div>
         </div>
       </section>
@@ -72,7 +76,11 @@
           <div class="code">
             <pre><code>$ brew install gomi</code></pre>
           </div>
-          <button class="copy-button" onclick="copyInstallCommand()">COPY</button>
+          <button class="copy-button"
+            onclick="copyInstallCommand()"
+            aria-label="Copy installation command">
+            COPY
+          </button>
         </div>
 
         <div class="cli-demo">
@@ -83,7 +91,12 @@
 <span class="output">Restored example.txt to original location</span></pre>
         </div>
 
-        <a href="https://github.com/babarot/gomi" class="button">EXPLORE ON GITHUB</a>
+        <a href="https://github.com/babarot/gomi"
+          class="button"
+          target="_blank"
+          rel="noopener noreferrer">
+          EXPLORE ON GITHUB
+        </a>
       </section>
     </main>
 
@@ -91,10 +104,14 @@
     <footer class="footer">
       <div class="footer-content">
         <div class="footer-author">
-          <a href="https://github.com/babarot" class="footer-avatar-link">
+          <a href="https://github.com/babarot"
+            class="footer-avatar-link"
+            target="_blank"
+            rel="noopener noreferrer">
             <img src="https://avatars.githubusercontent.com/babarot"
-            alt="babarot"
+            alt="babarot's profile picture"
             class="footer-avatar"
+            loading="lazy"
             onerror="this.src='/api/placeholder/40/40'">
           </a>
           <div class="footer-author-info">
@@ -102,11 +119,33 @@
             <div class="footer-author-title">I work as an SRE engineer at a company, based in Tokyo.</div>
           </div>
         </div>
-        <div class="footer-links">
-          <a href="https://github.com/babarot" class="footer-link">GitHub</a>
-          <a href="https://github.com/babarot/gomi" class="footer-link">Repository</a>
-          <a href="https://tellme.tokyo/post/2025/01/29/gomi/" class="footer-link">Blog</a>
-        </div>
+
+        <nav class="footer-links">
+          <a href="https://github.com/babarot"
+            class="footer-link"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="GitHub Profile">
+            <i class="fab fa-github"></i>
+          </a>
+          <span class="footer-link-separator" aria-hidden="true">•</span>
+          <a href="https://x.com/b4b4r07"
+            class="footer-link"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="X (Twitter) Profile">
+            <i class="fa-brands fa-x-twitter"></i>
+          </a>
+          <span class="footer-link-separator" aria-hidden="true">•</span>
+          <a href="https://tellme.tokyo/post/2025/01/29/gomi/"
+            class="footer-link"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Blog Post">
+            <i class="fa-solid fa-blog"></i>
+          </a>
+        </nav>
+
         <div class="footer-copyright">
           © 2024 gomi. Made with 💜 by babarot
         </div>
