@@ -335,7 +335,8 @@ code {
   transition: transform 0.2s ease;
 }
 
-.footer-link:hover {
+.footer-link:hover,
+.footer-avatar-link:hover {
   color: var(--accent);
   transform: scale(1.1);
 }
@@ -346,4 +347,3 @@ code {
   font-size: 0.9rem;
   margin-top: var(--space-sm);
 }
-
