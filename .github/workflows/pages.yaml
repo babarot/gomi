@@ -27,13 +27,14 @@ jobs:
       - name: Create install page
         run: |
           mkdir -p docs/install
-          python3 - << EOF
+          python3 - << 'EOF'
           import json
+          import shlex
 
           with open('hack/install', 'r') as f:
               content = f.read()
 
-          escaped_content = json.dumps(content)[1:-1]
+          escaped_content = shlex.quote(content)
 
           js_content = f'''
           document.addEventListener('DOMContentLoaded', function() {{
@@ -43,7 +44,7 @@ jobs:
                              userAgent.includes('httpie');
 
               const contentElement = document.getElementById('content');
-              const content = `{escaped_content}`;
+              const content = {escaped_content};
 
               if (isCurl) {{
                   contentElement.textContent = content;
