@@ -31,7 +31,7 @@ jobs:
           import html
 
           with open('hack/install', 'r') as f:
-              content = html.escape(f.read())
+              content = f.read()
 
           with open('docs/install/index.html', 'w') as f:
               f.write(content)
