@@ -33,22 +33,8 @@ jobs:
           with open('hack/install', 'r') as f:
               content = html.escape(f.read())
 
-          html_template = f'''<!DOCTYPE html>
-          <html>
-          <head>
-              <title>Install Guide</title>
-              <style>
-                  body {{ font-family: monospace; white-space: pre-wrap; }}
-                  pre {{ word-wrap: break-word; }}
-              </style>
-          </head>
-          <body>
-          <pre>{content}</pre>
-          </body>
-          </html>'''
-
           with open('docs/install/index.html', 'w') as f:
-              f.write(html_template)
+              f.write(content)
           EOF
 
       - name: Upload GitHub Pages artifact
