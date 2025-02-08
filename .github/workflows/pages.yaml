@@ -27,16 +27,18 @@ jobs:
       - name: Create install page
         run: |
           mkdir -p docs/install
-          python3 - << EOF
-          import os
+          python3 - << 'EOF'
+          import json
 
           with open('hack/install', 'r') as f:
               content = f.read()
 
+          escaped_content = json.dumps(content)[1:-1]
+
           html_template = f'''<!DOCTYPE html>
           <html>
           <head>
-              <title>Install Guide</title>
+              <title>Install Script</title>
               <script>
               document.addEventListener('DOMContentLoaded', function() {{
                   const userAgent = navigator.userAgent.toLowerCase();
@@ -45,11 +47,12 @@ jobs:
                                  userAgent.includes('httpie');
 
                   const contentElement = document.getElementById('content');
+                  const content = `{escaped_content}`;
 
                   if (isCurl) {{
-                      contentElement.textContent = `{content}`;
+                      contentElement.textContent = content;
                   }} else {{
-                      contentElement.innerHTML = `<pre>{content}</pre>`;
+                      contentElement.innerHTML = `<pre>${{content}}</pre>`;
                   }}
               }});
               </script>
