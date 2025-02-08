@@ -76,7 +76,7 @@ code {
   margin-bottom: var(--space-sm);
   letter-spacing: 2px;
   color: var(--accent);
-  text-transform: uppercase;
+  /* text-transform: uppercase; */
 }
 
 .hero p {

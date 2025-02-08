@@ -50,13 +50,13 @@ rm -b
 Get started with `gomi` in just one command:
 
 ```bash
-curl -fsSL https://babarot.me/gomi/install | bash
+curl -fsSL https://gomi.dev/install | bash
 ```
 
 To install it in a custom directory (e.g., `~/.local/bin`):
 
 ```bash
-curl -fsSL https://babarot.me/gomi/install | GOMI_BIN_DIR=~/.local/bin bash
+curl -fsSL https://gomi.dev/install | GOMI_BIN_DIR=~/.local/bin bash
 ```
 
 | Environment Variable | Description | Default |
