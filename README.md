@@ -45,9 +45,28 @@ rm -b
 
 ## Installation
 
-### From Binaries
+### Getting Started in Seconds
 
-Download a precompiled binary directly from [GitHub Releases][release] and place it in your `$PATH`.
+Get started with `gomi` in just one command:
+
+```bash
+curl -fsSL https://babarot.me/gomi/install | bash
+```
+
+To install it in a custom directory (e.g., `~/.local/bin`):
+
+```bash
+curl -fsSL https://babarot.me/gomi/install | GOMI_BIN_DIR=~/.local/bin bash
+```
+
+| Environment Variable | Description | Default |
+|---|---|---|
+| `GOMI_VERSION` | Version to install (available versions are listed on [Releases](https://github.com/babarot/gomi/releases)) | `latest` |
+| `GOMI_BIN_DIR` | Installation path | `~/bin` |
+
+### From Prebuilt Binaries
+
+Download the latest precompiled binary from [GitHub Releases][release] and place it in a directory included in your `$PATH`.
 
 ### Using a CLI Package Manager
 
@@ -68,6 +87,7 @@ github:
     alias:
       rm: gomi
 ```
+
 ```bash
 afx install
 ```
@@ -84,7 +104,7 @@ yay -S gomi
 paru -S gomi
 ```
 
-Find it [here on AUR](https://aur.archlinux.org/packages/gomi/).
+Find it [on AUR](https://aur.archlinux.org/packages/gomi/).
 
 ## Configuration
 

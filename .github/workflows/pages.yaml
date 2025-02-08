@@ -27,47 +27,14 @@ jobs:
       - name: Create install page
         run: |
           mkdir -p docs/install
-          python3 - << 'EOF'
-          import json
+          python3 - << EOF
+          import html
 
           with open('hack/install', 'r') as f:
               content = f.read()
 
-          escaped_content = json.dumps(content)[1:-1]
-
-          html_template = f'''<!DOCTYPE html>
-          <html>
-          <head>
-              <title>Install Script</title>
-              <style>
-                  body {{ font-family: monospace; white-space: pre-wrap; }}
-                  pre {{ word-wrap: break-word; }}
-              </style>
-              <script>
-              document.addEventListener('DOMContentLoaded', function() {{
-                  const userAgent = navigator.userAgent.toLowerCase();
-                  const isCurl = userAgent.includes('curl') ||
-                                 userAgent.includes('wget') ||
-                                 userAgent.includes('httpie');
-
-                  const contentElement = document.getElementById('content');
-                  const content = `{escaped_content}`;
-
-                  if (isCurl) {{
-                      contentElement.textContent = content;
-                  }} else {{
-                      contentElement.innerHTML = `<pre>${content}</pre>`;
-                  }}
-              }});
-              </script>
-          </head>
-          <body>
-              <div id="content"></div>
-          </body>
-          </html>'''
-
           with open('docs/install/index.html', 'w') as f:
-              f.write(html_template)
+              f.write(content)
           EOF
 
       - name: Upload GitHub Pages artifact
