@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+   <title>Installation</title>
+   <style>
+     pre {
+       background-color: #f4f4f4;
+       padding: 15px;
+       border-radius: 5px;
+       overflow-x: auto;
+       line-height: 1.5;
+     }
+   </style>
+</head>
+<body>
+   <div id="content"></div>
+
+   <script>
+     async function loadRawContent() {
+       try {
+         const response = await fetch('https://raw.githubusercontent.com/babarot/gomi/main/hack/install');
+         const text = await response.text();
+
+         const escapedText = text
+           .replace(/&/g, '&amp;')
+           .replace(/</g, '&lt;')
+           .replace(/>/g, '&gt;')
+           .replace(/"/g, '&quot;')
+           .replace(/'/g, '&#039;');
+
+         document.getElementById('content').innerHTML = `<pre>${escapedText}</pre>`;
+       } catch (error) {
+         console.error('Error loading content:', error);
+         document.getElementById('content').innerHTML = 'Failed to load content.';
+       }
+     }
+
+     loadRawContent();
+   </script>
+</body>
+</html>
