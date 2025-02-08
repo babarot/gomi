@@ -1,0 +1,68 @@
+# .github/workflows/deploy.yml
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Create install page
+        run: |
+          mkdir -p docs/install
+          python3 - << EOF
+          import html
+
+          with open('../hack/install', 'r') as f:
+              content = html.escape(f.read())
+
+          html_template = f'''<!DOCTYPE html>
+          <html>
+          <head>
+              <title>Install Guide</title>
+              <style>
+                  body {{ font-family: monospace; white-space: pre-wrap; }}
+                  pre {{ word-wrap: break-word; }}
+              </style>
+          </head>
+          <body>
+          <pre>{content}</pre>
+          </body>
+          </html>'''
+
+          with open('docs/install/index.html', 'w') as f:
+              f.write(html_template)
+          EOF
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
