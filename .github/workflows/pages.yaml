@@ -27,7 +27,7 @@ jobs:
       - name: Create install page
         run: |
           mkdir -p docs/install
-          python3 - << 'EOF'
+          python3 - << EOF
           import json
 
           with open('hack/install', 'r') as f:
@@ -38,8 +38,8 @@ jobs:
           js_content = f'''
           document.addEventListener('DOMContentLoaded', function() {{
               const userAgent = navigator.userAgent.toLowerCase();
-              const isCurl = userAgent.includes('curl') || 
-                             userAgent.includes('wget') || 
+              const isCurl = userAgent.includes('curl') ||
+                             userAgent.includes('wget') ||
                              userAgent.includes('httpie');
 
               const contentElement = document.getElementById('content');
