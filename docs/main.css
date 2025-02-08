@@ -437,3 +437,22 @@ code {
     padding-left: 0.75rem;
   }
 }
+
+@media (max-width: 480px) {
+  .code {
+    padding: var(--space-sm);
+  }
+
+  .code pre {
+    overflow-x: auto; /* enable horizontal scroll */
+    white-space: pre;
+    -webkit-overflow-scrolling: touch; /* for iOS smooth scroll */
+    font-size: 0.9rem;
+    padding-right: 2.5rem;
+  }
+
+  .copy-button {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+}
