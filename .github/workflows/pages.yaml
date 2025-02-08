@@ -30,7 +30,7 @@ jobs:
           python3 - << EOF
           import html
 
-          with open('../hack/install', 'r') as f:
+          with open('hack/install', 'r') as f:
               content = html.escape(f.read())
 
           html_template = f'''<!DOCTYPE html>
