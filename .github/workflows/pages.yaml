@@ -35,34 +35,39 @@ jobs:
 
           escaped_content = json.dumps(content)[1:-1]
 
-          html_template = f'''<!DOCTYPE html>
+          js_content = f'''
+          document.addEventListener('DOMContentLoaded', function() {{
+              const userAgent = navigator.userAgent.toLowerCase();
+              const isCurl = userAgent.includes('curl') || 
+                             userAgent.includes('wget') || 
+                             userAgent.includes('httpie');
+
+              const contentElement = document.getElementById('content');
+              const content = `{escaped_content}`;
+
+              if (isCurl) {{
+                  contentElement.textContent = content;
+              }} else {{
+                  contentElement.innerHTML = `<pre>${{content}}</pre>`;
+              }}
+          }});
+          '''
+
+          with open('docs/install/index.js', 'w') as f:
+              f.write(js_content)
+
+          html_template = '''<!DOCTYPE html>
           <html>
           <head>
               <title>Install Script</title>
-              <script>
-              document.addEventListener('DOMContentLoaded', function() {{
-                  const userAgent = navigator.userAgent.toLowerCase();
-                  const isCurl = userAgent.includes('curl') ||
-                                 userAgent.includes('wget') ||
-                                 userAgent.includes('httpie');
-
-                  const contentElement = document.getElementById('content');
-                  const content = `{escaped_content}`;
-
-                  if (isCurl) {{
-                      contentElement.textContent = content;
-                  }} else {{
-                      contentElement.innerHTML = `<pre>${{content}}</pre>`;
-                  }}
-              }});
-              </script>
               <style>
-                  body {{ font-family: monospace; white-space: pre-wrap; }}
-                  pre {{ word-wrap: break-word; }}
+                  body { font-family: monospace; white-space: pre-wrap; }
+                  pre { word-wrap: break-word; }
               </style>
           </head>
           <body>
               <div id="content"></div>
+              <script src="index.js"></script>
           </body>
           </html>'''
 
