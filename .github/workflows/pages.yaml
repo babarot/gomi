@@ -28,13 +28,43 @@ jobs:
         run: |
           mkdir -p docs/install
           python3 - << EOF
-          import html
+          import os
 
           with open('hack/install', 'r') as f:
               content = f.read()
 
+          html_template = f'''<!DOCTYPE html>
+          <html>
+          <head>
+              <title>Install Guide</title>
+              <script>
+              document.addEventListener('DOMContentLoaded', function() {{
+                  const userAgent = navigator.userAgent.toLowerCase();
+                  const isCurl = userAgent.includes('curl') ||
+                                 userAgent.includes('wget') ||
+                                 userAgent.includes('httpie');
+
+                  const contentElement = document.getElementById('content');
+
+                  if (isCurl) {{
+                      contentElement.textContent = `{content}`;
+                  }} else {{
+                      contentElement.innerHTML = `<pre>{content}</pre>`;
+                  }}
+              }});
+              </script>
+              <style>
+                  body {{ font-family: monospace; white-space: pre-wrap; }}
+                  pre {{ word-wrap: break-word; }}
+              </style>
+          </head>
+          <body>
+              <div id="content"></div>
+          </body>
+          </html>'''
+
           with open('docs/install/index.html', 'w') as f:
-              f.write(content)
+              f.write(html_template)
           EOF
 
       - name: Upload GitHub Pages artifact
