@@ -444,6 +444,7 @@ code {
   }
 
   .code pre {
+    overflow-y: hidden;
     overflow-x: auto; /* enable horizontal scroll */
     white-space: pre;
     -webkit-overflow-scrolling: touch; /* for iOS smooth scroll */
