@@ -470,10 +470,7 @@ code {
   align-items: center;
   justify-content: center;
   opacity: 1;
-  /* transform: none; /* or
-  set animation with below
-  */
-  transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: none;
 }
 
 .floating-icon img {

@@ -185,29 +185,6 @@
           }, 3000);
         });
       }
-
-
-      let lastScrollTop = 0;
-      const floatingIcon = document.querySelector('.floating-icon');
-      let scrollTimeout;
-      window.addEventListener('scroll', () => {
-        const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
-        clearTimeout(scrollTimeout);
-        // detect horizontal scroll
-        if (currentScroll < lastScrollTop) {
-          floatingIcon.style.transition = 'none';
-          floatingIcon.style.transform = 'translateY(-40px)';
-          requestAnimationFrame(() => {
-            floatingIcon.style.transition = 'transform 1s cubic-bezier(0.4, 0, 0.2, 1)';
-          });
-        }
-        // detect stoping scroll
-        scrollTimeout = setTimeout(() => {
-          // go back original position after stoping scroll
-          floatingIcon.style.transform = 'translateY(0)';
-        }, 350); // waiting for going back (delay)
-        lastScrollTop = currentScroll;
-      });
     </script>
   </body>
 </html>
