@@ -1,5 +1,8 @@
 # 🗑️ A Safer Alternative to the UNIX `rm` Command!
 
+
+<a href="https://gomi.dev"><img align="left" src="./docs/favicon.png" alt="image"/></a>
+
 `gomi` (meaning "trash" in Japanese) is a simple CLI tool written in Go that adds trash can functionality to the command line.
 
 In a typical CLI, there’s no "trash" folder like in graphical file managers. This means if you accidentally delete important files using the `rm` command, restoring them can be very difficult. That's where `gomi` comes in. Unlike `rm`, which permanently deletes files, `gomi` moves them to the trash, allowing you to easily restore files whenever necessary. If you’re used to `rm` in the shell, `gomi` works as a more convenient, safer alternative.

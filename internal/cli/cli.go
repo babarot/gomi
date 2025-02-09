@@ -23,7 +23,7 @@ import (
 )
 
 type Option struct {
-	Version  bool     `long:"version" description:"Show version"`
+	Version  bool     `short:"V" long:"version" description:"Show version"`
 	Restore  bool     `short:"b" long:"restore" description:"Restore deleted file"`
 	Debug    string   `long:"debug" description:"View logs" optional:"yes" optional-value:"text" hidden:"true"`
 	Config   string   `long:"config" description:"Path to config file" default:""`
