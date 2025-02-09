@@ -458,6 +458,7 @@ code {
   }
 }
 
+
 .floating-icon {
   position: fixed; /* fixed position */
   right: 20px;
@@ -473,7 +474,7 @@ code {
   transform: none;
 }
 
-.floating-icon img {
+.floating-icon > img {
   width: 64px;
   height: 64px;
   border-radius: 50%;
