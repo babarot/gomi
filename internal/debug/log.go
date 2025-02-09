@@ -10,9 +10,21 @@ import (
 	"github.com/nxadm/tail"
 )
 
-func Logs(w io.Writer) error {
+func Logs(w io.Writer, live bool) error {
 	shouldFollow := isatty.IsTerminal(os.Stdout.Fd())
-	t, err := tail.TailFile(env.GOMI_LOG_PATH, tail.Config{Follow: shouldFollow, ReOpen: shouldFollow})
+	tailConfig := tail.Config{
+		ReOpen: shouldFollow,
+		Follow: shouldFollow,
+		Poll:   true,
+		Logger: tail.DiscardingLogger,
+	}
+	if live {
+		tailConfig.Location = &tail.SeekInfo{
+			Offset: 0,
+			Whence: io.SeekEnd,
+		}
+	}
+	t, err := tail.TailFile(env.GOMI_LOG_PATH, tailConfig)
 	if err != nil {
 		return err
 	}
