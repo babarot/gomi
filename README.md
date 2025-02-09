@@ -1,7 +1,7 @@
 # 🗑️ A Safer Alternative to the UNIX `rm` Command!
 
 
-<a href="https://gomi.dev"><img align="left" src="./docs/favicon.png" alt="image"/></a>
+<a href="https://gomi.dev"><img align="left" width="96px" src="./docs/favicon/web-app-manifest-512x512.png" alt="image"/></a>
 
 `gomi` (meaning "trash" in Japanese) is a simple CLI tool written in Go that adds trash can functionality to the command line.
 
