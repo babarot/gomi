@@ -275,6 +275,33 @@ code {
   transform: translateY(-2px);
 }
 
+/* 404 */
+.notfound {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.notfound-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.notfound-icon {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+
+.notfound p {
+  font-family: var(--font-orbitron);
+  color: var(--text-secondary);
+  font-size: 2rem;
+  margin: 0;
+}
+
 /* Footer Styles */
 .footer {
   background: var(--bg-secondary);
@@ -458,9 +485,9 @@ code {
   }
 }
 
-
+/*
 .floating-icon {
-  position: fixed; /* fixed position */
+  position: fixed;
   right: 20px;
   bottom: 20px;
   z-index: 9999;
@@ -495,3 +522,4 @@ code {
     height: 40px;
   }
 }
+*/
