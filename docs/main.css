@@ -457,3 +457,43 @@ code {
     padding: 2px 6px;
   }
 }
+
+.floating-icon {
+  position: fixed; /* fixed position */
+  right: 20px;
+  bottom: 20px;
+  z-index: 9999;
+  transition: all 0.3s ease;
+  border-radius: 50%;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  /* transform: none; /* or
+  set animation with below
+  */
+  transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.floating-icon img {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+}
+
+.floating-icon:hover {
+  transform: translateY(-10px) scale(1.1);
+}
+
+@media (max-width: 480px) {
+  .floating-icon {
+    right: 12px;
+    bottom: 12px;
+  }
+
+  .floating-icon img {
+    width: 40px;
+    height: 40px;
+  }
+}
