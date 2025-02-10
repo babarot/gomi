@@ -117,7 +117,7 @@ func Run(v Version) error {
 		version: v,
 		option:  opt,
 		config:  cfg,
-		history: history.New(cfg.History),
+		history: history.New(cfg.Core.TrashDir, cfg.History),
 		runID:   runID(),
 	}
 
@@ -275,7 +275,7 @@ func (c CLI) Put(args []string) error {
 			if os.IsNotExist(err) {
 				return fmt.Errorf("%s: no such file or directory", arg)
 			}
-			file, err := history.FileInfo(c.runID, arg)
+			file, err := c.history.FileInfo(c.runID, arg)
 			if err != nil {
 				return err
 			}

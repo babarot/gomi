@@ -11,6 +11,7 @@ import (
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/babarot/gomi/internal/env"
+	"github.com/babarot/gomi/internal/shell"
 	"github.com/go-playground/validator/v10"
 	"github.com/muesli/reflow/indent"
 	"gopkg.in/yaml.v2"
@@ -25,7 +26,8 @@ type Config struct {
 }
 
 type Core struct {
-	Restore Restore `yaml:"restore"`
+	TrashDir string  `yaml:"trash_dir" validate:"dirpath|allowEmpty"`
+	Restore  Restore `yaml:"restore"`
 }
 
 type UI struct {
@@ -58,8 +60,8 @@ type excludeConfig struct {
 }
 
 type size struct {
-	Min string `yaml:"min" validate:"validSize"`
-	Max string `yaml:"max" validate:"validSize"`
+	Min string `yaml:"min" validate:"validSize|allowEmpty"`
+	Max string `yaml:"max" validate:"validSize|allowEmpty"`
 }
 
 type previewConfig struct {
@@ -112,13 +114,19 @@ type parser struct{}
 
 func validSize(fl validator.FieldLevel) bool {
 	value := strings.ToUpper(fl.Field().String())
-	re := regexp.MustCompile(`^\d+(KB|MB|GB|TB|PB)|$`) // empty is acceptable
+	re := regexp.MustCompile(`^\d+(KB|MB|GB|TB|PB)$`)
 	return re.MatchString(value)
+}
+
+func allowEmpty(fl validator.FieldLevel) bool {
+	str := fl.Field().String()
+	return strings.TrimSpace(str) == "" || fl.Parent().FieldByName(fl.StructFieldName()).IsValid()
 }
 
 func (p parser) getDefaultConfig() Config {
 	return Config{
 		Core: Core{
+			TrashDir: filepath.Join(os.Getenv("HOME"), ".gomi"),
 			Restore: Restore{
 				Verbose: true,
 				Confirm: true,
@@ -314,6 +322,7 @@ func initParser() parser {
 	})
 
 	_ = validate.RegisterValidation("validSize", validSize)
+	_ = validate.RegisterValidation("allowEmpty", allowEmpty)
 
 	return parser{}
 }
@@ -339,6 +348,13 @@ func Parse(path string) (Config, error) {
 	if err != nil {
 		return cfg, parsingError{err: err}
 	}
+
+	// expand tilda etc
+	trashDir, err := shell.ExpandHome(cfg.Core.TrashDir)
+	if err != nil {
+		return cfg, parsingError{err: err}
+	}
+	cfg.Core.TrashDir = trashDir
 
 	return cfg, nil
 }

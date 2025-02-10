@@ -10,8 +10,11 @@ const oldHistoryFile = "inventory.json"
 
 // init is called when the application starts, to handle migration from inventory.json to history.json
 func init() {
-	oldPath := filepath.Join(gomiPath, oldHistoryFile)
-	newPath := filepath.Join(gomiPath, historyFile)
+	// Before v1.2.2, the trash home was fixed, so these are hardcoded in the migration script.
+	fixedHome := filepath.Join(os.Getenv("HOME"), ".gomi")
+
+	oldPath := filepath.Join(fixedHome, oldHistoryFile)
+	newPath := filepath.Join(fixedHome, historyFile)
 
 	// Check if inventory.json exists and rename it to history.json
 	if _, err := os.Stat(oldPath); err == nil {

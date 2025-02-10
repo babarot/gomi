@@ -121,9 +121,12 @@ Here is an example of the default config:
 
 ```yaml
 core:
+  trash_dir: ~/.gomi  # Path to store trashed files. Can be changed to another location.
+                      # Supports environment variable expansion like $HOME or ~.
+                      # If empty, defaults to ~/.gomi.
   restore:
-    confirm: false  # If true, prompts for confirmation before restoring (yes/no)
-    verbose: true   # If true, displays detailed restoration information
+    confirm: false    # If true, prompts for confirmation before restoring (yes/no)
+    verbose: true     # If true, displays detailed restoration information
 
 ui:
   density: spacious # or compact
