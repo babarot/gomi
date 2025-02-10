@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	appURL = "https://github.com/babarot/gomi"
+	appURL = "https://gomi.dev"
 )
 
 type Version struct {

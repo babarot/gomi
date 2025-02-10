@@ -5,13 +5,12 @@ gomi_version=${GOMI_VERSION:-latest}
 gomi_tmp_dir=${TMPDIR:-/tmp}/gomi-${gomi_version}
 
 main() {
-  # Try to download binary executable
   local arch
-  local notfound=false
   local tarball
+  local installation_method
 
   if [[ -x ${gomi_bin_dir}/gomi ]]; then
-    echo "already installed: ${gomi_bin_dir}/gomi"
+    echo "gomi is already installed at: ${gomi_bin_dir}/gomi"
     return 0
   fi
 
@@ -21,22 +20,38 @@ main() {
     "Darwin x86_64")  tarball="gomi_Darwin_x86_64.tar.gz" ;;
     "Linux aarch64")  tarball="gomi_Linux_arm64.tar.gz"   ;;
     "Linux "*64)      tarball="gomi_Linux_x86_64.tar.gz"  ;;
-    *)                notfound=true                       ;;
+    *)                tarball=""                          ;;
   esac
 
-  if ! { download ${tarball} && install -v -m 0755 "${gomi_tmp_dir}/gomi" "${gomi_bin_dir}/gomi"; } || ${notfound}; then
-    echo "gomi available on your system is not found. So trying to make gomi from Go!"
+  # Try to get precompiled binaries
+  if [[ -n "${tarball}" ]]; then
+    if download "${tarball}"; then
+      install -v -m 0755 "${gomi_tmp_dir}/gomi" "${gomi_bin_dir}/gomi"
+      installation_method="binary"
+    fi
+  fi
+
+  # Try to build from source code if failed to get binaries
+  if [[ -z "${installation_method}" ]]; then
     if command -v go >/dev/null; then
-      try_go
+      echo "No precompiled binary found for your system. Attempting to build from source..."
+      if try_go; then
+        installation_method="source"
+      else
+        echo "Unable to install gomi. Please visit https://gomi.dev for manual installation instructions." >&2
+        return 1
+      fi
     else
-      echo "go executable not found. Installation failed." >&2
+      echo "No installation method available. Please visit https://gomi.dev for installation guidance." >&2
       return 1
     fi
   fi
 
-  command -v gomi &>/dev/null && gomi --version
+  echo "================================="
+  bash -c "${gomi_bin_dir}/gomi --version"
+  echo "================================="
 
-  echo 'For more information, see: https://github.com/babarot/gomi'
+  echo 'Done.'
 }
 
 try_curl() {
@@ -46,7 +61,7 @@ try_curl() {
     curl --progress-bar -fL "${file}" | tar -xzf - -C "${gomi_tmp_dir}"
   else
     local tmp=${gomi_tmp_dir}/gomi.zip
-    curl --progress-bar -fLo "${tmp}" "${file}" && unzip -o "${tmp}" && rm -f "${tmp}"
+    curl --progress-bar -fLo "${tmp}" "${file}" && unzip -o "${tmp}" -d "${gomi_tmp_dir}" && rm -f "${tmp}"
   fi
 }
 
@@ -57,7 +72,7 @@ try_wget() {
     wget -O - "${file}" | tar -xzf - -C "${gomi_tmp_dir}"
   else
     local tmp=${gomi_tmp_dir}/gomi.zip
-    wget -O "${tmp}" "${file}" && unzip -o "${tmp}" && rm -f "${tmp}"
+    wget -O "${tmp}" "${file}" && unzip -o "${tmp}" -d "${gomi_tmp_dir}" && rm -f "${tmp}"
   fi
 }
 
@@ -66,17 +81,11 @@ download() {
   local url
 
   if [[ -z ${tarball} ]]; then
-    # when not found what to download
     return 1
   fi
 
-  mkdir -p "${gomi_bin_dir}" || {
-    echo "Failed to create directory" >&2
-    return 1
-  }
-
-  mkdir -p "${gomi_tmp_dir}" || {
-    echo "Failed to create directory" >&2
+  mkdir -p "${gomi_bin_dir}" "${gomi_tmp_dir}" || {
+    echo "Could not create temporary directories" >&2
     return 1
   }
 
@@ -86,40 +95,38 @@ download() {
     url="https://github.com/babarot/gomi/releases/download/${gomi_version}/${tarball}"
   fi
 
-  echo "Downloading gomi ..."
-  if ! (try_curl "${url}" || try_wget "${url}"); then
-    echo "Failed to download with curl and wget" >&2
+  echo "Downloading gomi..."
+  try_curl "${url}" || try_wget "${url}" || {
+    echo "Failed to download binary using curl or wget" >&2
+    return 1
+  }
+
+  if [[ ! -f ${gomi_tmp_dir}/gomi ]]; then
+    echo "Download failed for ${tarball}" >&2
     return 1
   fi
 
-  if [[ ! -f ${gomi_tmp_dir}/gomi ]]; then
-    echo "Failed to download ${tarball}" >&2
-    return 1
-  fi
+  return 0
 }
 
 try_go() {
-  local do_cp=false
-  local path="github.com/babarot/gomi"
-  local cmd="${path}/cmd"
+  local tmp_dir
+  tmp_dir="$(mktemp -d)"
+  trap 'rm -rf "${tmp_dir}"' EXIT
 
-  echo -n "Building binary (go get -u ${path}) ... "
-  if [[ -z ${GOPATH} ]]; then
-    do_cp=true
-    export GOPATH="${TMPDIR:-/tmp}/gomi-gopath"
-    mkdir -p "${GOPATH}"
-  fi
+  git clone https://github.com/babarot/gomi "${tmp_dir}"
+  (
+    cd "${tmp_dir}" &&
+    if make install; then
+      echo "Build completed successfully"
+      return 0
+    else
+      echo "Source code build failed" >&2
+      return 1
+    fi
+  )
 
-  local ts
-  ts=$(date "+%Y-%m-%d")
-
-  if go install -ldflags "-s -w -X ${cmd}.Version=${gomi_version} -X ${cmd}.BuildTag=built-by-go -X ${cmd}.BuildSHA=${ts}" ${path}; then
-    echo "OK"
-    ${do_cp} && cp -v "${GOPATH}/bin/gomi" "${gomi_bin_dir}/gomi"
-  else
-    echo "Failed to build binary. Installation failed." >&2
-    return 1
-  fi
+  return 0
 }
 
 main "${@}"
