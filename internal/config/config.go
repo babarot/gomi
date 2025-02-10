@@ -26,8 +26,8 @@ type Config struct {
 }
 
 type Core struct {
-	TrashHome string  `yaml:"trash_home" validate:"dirpath|allowEmpty"`
-	Restore   Restore `yaml:"restore"`
+	TrashDir string  `yaml:"trash_dir" validate:"dirpath|allowEmpty"`
+	Restore  Restore `yaml:"restore"`
 }
 
 type UI struct {
@@ -126,7 +126,7 @@ func allowEmpty(fl validator.FieldLevel) bool {
 func (p parser) getDefaultConfig() Config {
 	return Config{
 		Core: Core{
-			TrashHome: filepath.Join(os.Getenv("HOME"), ".gomi"),
+			TrashDir: filepath.Join(os.Getenv("HOME"), ".gomi"),
 			Restore: Restore{
 				Verbose: true,
 				Confirm: true,
@@ -350,11 +350,11 @@ func Parse(path string) (Config, error) {
 	}
 
 	// expand tilda etc
-	trashHome, err := shell.ExpandHome(cfg.Core.TrashHome)
+	trashDir, err := shell.ExpandHome(cfg.Core.TrashDir)
 	if err != nil {
 		return cfg, parsingError{err: err}
 	}
-	cfg.Core.TrashHome = trashHome
+	cfg.Core.TrashDir = trashDir
 
 	return cfg, nil
 }

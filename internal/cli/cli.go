@@ -110,7 +110,7 @@ func Run(v Version) error {
 		version: v,
 		option:  opt,
 		config:  cfg,
-		history: history.New(cfg.Core.TrashHome, cfg.History),
+		history: history.New(cfg.Core.TrashDir, cfg.History),
 		runID:   runID(),
 	}
 
