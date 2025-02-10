@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-gomi_bin_dir=${GOMI_BIN_DIR:-~/bin}
-gomi_version=${GOMI_VERSION:-latest}
+gomi_bin_dir=${PREFIX:-~/bin}
+gomi_version=${VERSION:-latest}
 gomi_tmp_dir=${TMPDIR:-/tmp}/gomi-${gomi_version}
 
 main() {

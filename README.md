@@ -59,13 +59,13 @@ curl -fsSL https://gomi.dev/install | bash
 To install it in a custom directory (e.g., `~/.local/bin`):
 
 ```bash
-curl -fsSL https://gomi.dev/install | GOMI_BIN_DIR=~/.local/bin bash
+curl -fsSL https://gomi.dev/install | PREFIX=~/.local/bin bash
 ```
 
 | Environment Variable | Description | Default |
 |---|---|---|
-| `GOMI_VERSION` | Version to install (available versions are listed on [Releases](https://github.com/babarot/gomi/releases)) | `latest` |
-| `GOMI_BIN_DIR` | Installation path | `~/bin` |
+| `VERSION` | Version to install (available versions are listed on [Releases](https://github.com/babarot/gomi/releases)) | `latest` |
+| `PREFIX`  | Installation path | `~/bin` |
 
 ### From Prebuilt Binaries
 
@@ -93,6 +93,12 @@ github:
 
 ```bash
 afx install
+```
+
+With [Homebrew](https://brew.sh/):
+
+```bash
+brew babarot/tap/gomi
 ```
 
 ### AUR (Arch User Repository)
