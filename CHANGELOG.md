@@ -1,5 +1,16 @@
 # Changelog
 
+## [v1.3.0](https://github.com/babarot/gomi/compare/v1.2.2...v1.3.0) - 2025-02-10
+### New Features
+- Make moving files across different partitions possible by adding fallback to copy-and-delete by @babarot in https://github.com/babarot/gomi/pull/51
+- Enhancements to Debugging and Installation Process by @babarot in https://github.com/babarot/gomi/pull/57
+- Make trash dir configuable instead of being hardcoded to ~/.gomi by @babarot in https://github.com/babarot/gomi/pull/56
+### Bug fixes
+- Escape string to being passed to cd by @babarot in https://github.com/babarot/gomi/pull/60
+### Others
+- Refactor history package by @babarot in https://github.com/babarot/gomi/pull/49
+- Fix typo, Causion -> Caution by @kianmeng in https://github.com/babarot/gomi/pull/52
+
 ## [v1.2.2](https://github.com/babarot/gomi/compare/v1.2.1...v1.2.2) - 2025-01-27
 
 ## [v1.2.1](https://github.com/babarot/gomi/compare/v1.2.0...v1.2.1) - 2025-01-27
