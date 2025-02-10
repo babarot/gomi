@@ -13,6 +13,7 @@ import (
 	"github.com/babarot/gomi/internal/shell"
 	"github.com/babarot/gomi/internal/utils"
 
+	"al.essio.dev/pkg/shellescape"
 	"github.com/alecthomas/chroma"
 	"github.com/alecthomas/chroma/lexers"
 	"github.com/alecthomas/chroma/quick"
@@ -82,7 +83,7 @@ func (f File) Browse() (string, error) {
 		return content, errCannotPreview
 	}
 	if fi.IsDir() {
-		input := fmt.Sprintf("cd %s; %s", f.To, f.dirListCommand)
+		input := fmt.Sprintf("cd %s; %s", shellescape.Quote(f.To), f.dirListCommand)
 		if input == "" {
 			slog.Debug("preview dir command is not set, fallback to builtin dir func")
 			lines := []string{}
@@ -103,6 +104,7 @@ func (f File) Browse() (string, error) {
 			}
 			return strings.Join(lines, "\n"), nil
 		}
+		slog.Debug("command to list dir", "input", input)
 		out, _, err := shell.RunCommand(input)
 		if err != nil {
 			slog.Error("command failed", "command", input, "error", err)
