@@ -3,6 +3,7 @@ module github.com/babarot/gomi
 go 1.23
 
 require (
+	al.essio.dev/pkg/shellescape v1.5.1
 	github.com/MakeNowJust/heredoc/v2 v2.0.1
 	github.com/alecthomas/chroma v0.10.0
 	github.com/charmbracelet/bubbles v0.20.0
