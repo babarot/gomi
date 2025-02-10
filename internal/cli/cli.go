@@ -23,11 +23,16 @@ import (
 )
 
 type Option struct {
-	Version  bool     `short:"V" long:"version" description:"Show version"`
-	Restore  bool     `short:"b" long:"restore" description:"Restore deleted file"`
-	Debug    string   `long:"debug" description:"View logs" optional:"yes" optional-value:"text" hidden:"true"`
-	Config   string   `long:"config" description:"Path to config file" default:""`
-	RmOption RmOption `group:"Compatible (rm) Options"`
+	Restore bool   `short:"b" long:"restore" description:"Restore deleted file"`
+	Config  string `long:"config" description:"Path to config file" default:""`
+
+	Meta MetaOption `group:"Meta Options"`
+	Rm   RmOption   `group:"Compatible (rm) Options"`
+}
+
+type MetaOption struct {
+	Version bool   `short:"V" long:"version" description:"Show version"`
+	Debug   string `long:"debug" description:"View debug logs (default: \"full\")" optional-value:"full" optional:"yes" choice:"full" choice:"live"`
 }
 
 // This should be not conflicts with app option
@@ -88,7 +93,9 @@ func Run(v Version) error {
 		TimeFormat:      time.Kitchen,
 		Level:           log.DebugLevel,
 		Formatter: func() log.Formatter {
-			if strings.ToLower(opt.Debug) == "json" {
+			// TODO: fix this
+			// json is no longer valid argument so doesnt work anymore.
+			if strings.ToLower(opt.Meta.Debug) == "json" {
 				return log.JSONFormatter
 			}
 			return log.TextFormatter
@@ -127,7 +134,7 @@ func (c CLI) Run(args []string) error {
 	}
 
 	switch {
-	case c.option.Version:
+	case c.option.Meta.Version:
 		fmt.Fprint(os.Stdout, c.version.Print())
 		return nil
 
@@ -135,9 +142,11 @@ func (c CLI) Run(args []string) error {
 		return c.Restore()
 
 	default:
-		switch c.option.Debug {
-		case "text", "json":
-			return debug.Logs(os.Stdout)
+		switch c.option.Meta.Debug {
+		case "live":
+			return debug.Logs(os.Stdout, true)
+		case "full":
+			return debug.Logs(os.Stdout, false)
 		}
 		return c.Put(args)
 	}

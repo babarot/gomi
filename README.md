@@ -172,21 +172,20 @@ history:
 
 ```
 
-## Tips
+## Debugging
 
-To get extra debug output (not shown in the official help), use the `--debug` flag:
+Gain deeper insights into `gomi`'s operations by using the `--debug` flag:
 
 ```bash
 gomi --debug
 ```
 
-This command will stream log output, similar to `tail -f`. While running `gomi --debug`, you can open another terminal or console and execute `gomi` commands to view live updates in the log as they happen. This is useful for debugging and monitoring `gomi`'s actions in real time.
+This command streams log output in real-time, similar to `tail -f`. While running `gomi --debug`, you can open another terminal and execute `gomi` commands to monitor live log updates. This feature is invaluable for troubleshooting and tracking `gomi`'s actions in real-time.
 
-If you prefer JSON formatted output, use:
+The `--debug` flag supports two modes:
 
-```bash
-gomi --debug=json
-```
+- `--debug=full`: Displays the entire log file from the beginning, outputting its contents to `stdout`. After showing the complete log history, it continues to follow and display new log entries in real-time.
+- `--debug=live`: Skips the initial log file content and immediately begins displaying new log entries as they are written, providing a live stream of ongoing activity.
 
 ## Related
 
