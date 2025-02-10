@@ -1,11 +1,7 @@
 package utils
 
 import (
-	"bytes"
-	"errors"
-	"log/slog"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sync"
 )
@@ -51,28 +47,4 @@ func DirSize(path string) (int64, error) {
 	}
 
 	return size, nil
-}
-
-func RunShell(input string) (string, int, error) {
-	cmd := exec.Command("bash", "-c", input)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
-	output := stdout.String()
-	if errStr := stderr.String(); errStr != "" {
-		output = errStr
-		slog.Warn("command might be failed",
-			"command", input,
-			"output", output,
-		)
-	}
-	if err == nil {
-		return output, 0, nil
-	}
-	var ee *exec.ExitError
-	if !errors.As(err, &ee) {
-		return output, -1, err
-	}
-	return output, ee.ExitCode(), nil
 }

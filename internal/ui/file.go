@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/babarot/gomi/internal/history"
+	"github.com/babarot/gomi/internal/shell"
 	"github.com/babarot/gomi/internal/utils"
 
 	"github.com/alecthomas/chroma"
@@ -102,7 +103,7 @@ func (f File) Browse() (string, error) {
 			}
 			return strings.Join(lines, "\n"), nil
 		}
-		out, _, err := utils.RunShell(input)
+		out, _, err := shell.RunCommand(input)
 		if err != nil {
 			slog.Error("command failed", "command", input, "error", err)
 		}

@@ -25,17 +25,13 @@ const (
 	historyFile    = "history.json"
 )
 
-var (
-	gomiPath    = filepath.Join(os.Getenv("HOME"), ".gomi")
-	historyPath = filepath.Join(gomiPath, historyFile)
-)
-
 // History represents the history of deleted files
 type History struct {
 	Version int    `json:"version"`
 	Files   []File `json:"files"`
 
 	config config.History
+	home   string
 	path   string
 }
 
@@ -48,8 +44,15 @@ type File struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
-func New(c config.History) History {
-	return History{path: historyPath, config: c}
+func New(home string, c config.History) History {
+	if home == "" {
+		home = filepath.Join(os.Getenv("HOME"), ".gomi")
+	}
+	return History{
+		home:   home,
+		path:   filepath.Join(home, historyFile),
+		config: c,
+	}
 }
 
 func (h *History) Open() error {
@@ -232,7 +235,7 @@ func (h History) Filter() []File {
 	return files
 }
 
-func FileInfo(runID string, arg string) (File, error) {
+func (h History) FileInfo(runID string, arg string) (File, error) {
 	name := filepath.Base(arg)
 	from, err := filepath.Abs(arg)
 	if err != nil {
@@ -246,7 +249,7 @@ func FileInfo(runID string, arg string) (File, error) {
 		RunID: runID,
 		From:  from,
 		To: filepath.Join(
-			gomiPath,
+			h.home,
 			fmt.Sprintf("%04d", now.Year()),
 			fmt.Sprintf("%02d", now.Month()),
 			fmt.Sprintf("%02d", now.Day()),
