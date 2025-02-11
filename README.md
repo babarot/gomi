@@ -75,6 +75,8 @@ Download the latest precompiled binary from [GitHub Releases][release] and place
 
 With [afx](https://github.com/babarot/afx):
 
+Writing YAML manifest, then run `install` command.
+
 ```yaml
 github:
 - name: babarot/gomi
@@ -101,7 +103,14 @@ With [Homebrew](https://brew.sh/):
 brew babarot/tap/gomi
 ```
 
-### AUR (Arch User Repository)
+With [Scoop](https://scoop.sh/):
+
+```bash
+scoop bucket add babarot https://github.com/babarot/scoop-bucket
+scoop install gomi
+```
+
+With [AUR](https://aur.archlinux.org/gomi.git):
 
 You can install `gomi` using an AUR helper:
 
