@@ -56,7 +56,7 @@ Get started with `gomi` in just one command:
 curl -fsSL https://gomi.dev/install | bash
 ```
 
-To install it in a custom directory (e.g., `~/.local/bin`):
+To install it in a specific directory (e.g., `~/.local/bin`):
 
 ```bash
 curl -fsSL https://gomi.dev/install | PREFIX=~/.local/bin bash
@@ -67,15 +67,14 @@ curl -fsSL https://gomi.dev/install | PREFIX=~/.local/bin bash
 | `VERSION` | Version to install (available versions are listed on [Releases](https://github.com/babarot/gomi/releases)) | `latest` |
 | `PREFIX`  | Installation path | `~/bin` |
 
+
 ### From Prebuilt Binaries
 
 Download the latest precompiled binary from [GitHub Releases][release] and place it in a directory included in your `$PATH`.
 
-### Using a CLI Package Manager
+### Using [afx](https://github.com/babarot/afx), a CLI Package Manager
 
-With [afx](https://github.com/babarot/afx):
-
-Writing YAML manifest, then run `install` command.
+"Write a YAML manifest, then run the `install` command.
 
 ```yaml
 github:
@@ -97,20 +96,20 @@ github:
 afx install
 ```
 
-With [Homebrew](https://brew.sh/):
+### Using [Homebrew](https://brew.sh/)
 
 ```bash
-brew babarot/tap/gomi
+brew install gomi
 ```
 
-With [Scoop](https://scoop.sh/):
+### Using [Scoop](https://scoop.sh/)
 
 ```bash
 scoop bucket add babarot https://github.com/babarot/scoop-bucket
 scoop install gomi
 ```
 
-With [AUR](https://aur.archlinux.org/gomi.git):
+### Using [AUR](https://aur.archlinux.org/gomi.git)
 
 You can install `gomi` using an AUR helper:
 
