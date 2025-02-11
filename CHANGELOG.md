@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.3.1](https://github.com/babarot/gomi/compare/v1.3.0...v1.3.1) - 2025-02-11
+### Others
+- feat: added scoop config by @Souvlaki42 in https://github.com/babarot/gomi/pull/54
+
 ## [v1.3.0](https://github.com/babarot/gomi/compare/v1.2.2...v1.3.0) - 2025-02-10
 ### New Features
 - Make moving files across different partitions possible by adding fallback to copy-and-delete by @babarot in https://github.com/babarot/gomi/pull/51
