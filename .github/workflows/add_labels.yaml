@@ -3,6 +3,7 @@ on: pull_request
 
 jobs:
   triage:
+    if: github.event.pull_request.head.repo.fork == false # Skip this job if fork
     timeout-minutes: 5
     permissions:
       contents: read
@@ -11,6 +12,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
       - uses: actions/labeler@v5
         with:
           sync-labels: true
