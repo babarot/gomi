@@ -55,3 +55,12 @@ brews:
     homepage: https://gomi.dev
     description: A Safer Alternative to the UNIX rm Command!
     license: MIT
+scoops:
+  - repository:
+      owner: babarot
+      name: scoop-bucket
+      branch: main
+      token: "{{ .Env.SCOOP_GITHUB_TOKEN }}"
+    homepage: "https://gomi.dev/"
+    description: "🗑️ Your UNIX rm command with a safety net!"
+    license: MIT
