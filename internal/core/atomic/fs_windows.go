@@ -1,10 +1,9 @@
 //go:build windows
 
-package cli
+package atomic
 
 import (
 	"fmt"
-	"log/slog"
 	"path/filepath"
 
 	"golang.org/x/sys/windows"
@@ -22,23 +21,15 @@ func isSamePartition(src, dst string) (bool, error) {
 
 	// Get volume information for both source and destination volumes
 	var srcVolID, dstVolID uint32
-	err := windows.GetVolumeInformation(windows.StringToUTF16Ptr(srcVolume), nil, 0, &srcVolID, nil, nil, nil, 0)
+	err := windows.GetVolumeInformation(windows.StringToUTF16Ptr(srcVolume+"\\"), nil, 0, &srcVolID, nil, nil, nil, 0)
 	if err != nil {
 		return false, fmt.Errorf("failed to get source volume information: %w", err)
 	}
 
-	err = windows.GetVolumeInformation(windows.StringToUTF16Ptr(dstVolume), nil, 0, &dstVolID, nil, nil, nil, 0)
+	err = windows.GetVolumeInformation(windows.StringToUTF16Ptr(dstVolume+"\\"), nil, 0, &dstVolID, nil, nil, nil, 0)
 	if err != nil {
 		return false, fmt.Errorf("failed to get destination volume information: %w", err)
 	}
 
-	// Compare the volume IDs to determine if they are on the same partition
-	samePartition := srcVolID == dstVolID
-
-	slog.Debug("check src/dst volume info",
-		"samePartition", samePartition,
-		"src volume", srcVolID,
-		"dst volume", dstVolID)
-
-	return samePartition, nil
+	return srcVolID == dstVolID, nil
 }

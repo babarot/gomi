@@ -8,7 +8,7 @@ import (
 	"sort"
 
 	"github.com/babarot/gomi/internal/config"
-	"github.com/babarot/gomi/internal/history"
+	"github.com/babarot/gomi/internal/core/types"
 	"github.com/babarot/gomi/internal/ui/keys"
 
 	// "github.com/babarot/gomi/internal/ui/state"
@@ -115,10 +115,10 @@ func (m Model) loadInventory() tea.Msg {
 		return errorMsg{errors.New("no deleted files found")}
 	}
 	sort.Slice(files, func(i, j int) bool {
-		return files[i].File.Timestamp.After(files[j].File.Timestamp)
+		return files[i].TrashFile.Timestamp.After(files[j].TrashFile.Timestamp)
 	})
 	files = lo.Reject(files, func(f File, index int) bool {
-		_, err := os.Stat(f.File.To)
+		_, err := os.Stat(f.TrashFile.To)
 		return os.IsNotExist(err)
 	})
 	items := make([]list.Item, len(files))
@@ -358,13 +358,13 @@ func (m *Model) newViewportModel(file File) viewport.Model {
 	return viewportModel
 }
 
-func RenderList(filteredFiles []history.File, cfg config.UI) ([]history.File, error) {
+func RenderList(filteredFiles []types.TrashFile, cfg config.UI) ([]types.TrashFile, error) {
 	var items []list.Item
 	var files []File
 	for _, file := range filteredFiles {
-		items = append(items, File{File: file})
+		items = append(items, File{TrashFile: file})
 		files = append(files, File{
-			File:            file,
+			TrashFile:       file,
 			dirListCommand:  cfg.Preview.DirectoryCommand,
 			syntaxHighlight: cfg.Preview.SyntaxHighlight,
 			colorscheme:     cfg.Preview.Colorscheme,
@@ -403,7 +403,7 @@ func RenderList(filteredFiles []history.File, cfg config.UI) ([]history.File, er
 
 	returnModel, err := tea.NewProgram(m).Run()
 	if err != nil {
-		return []history.File{}, err
+		return []types.TrashFile{}, err
 	}
 
 	choices := returnModel.(Model).choices
@@ -411,12 +411,12 @@ func RenderList(filteredFiles []history.File, cfg config.UI) ([]history.File, er
 		if msg := cfg.ExitMessage; msg != "" {
 			fmt.Println(msg)
 		}
-		return []history.File{}, nil
+		return []types.TrashFile{}, nil
 	}
 
-	invFiles := make([]history.File, len(choices))
+	invFiles := make([]types.TrashFile, len(choices))
 	for i, file := range choices {
-		invFiles[i] = file.File
+		invFiles[i] = file.TrashFile
 	}
 	return invFiles, nil
 }

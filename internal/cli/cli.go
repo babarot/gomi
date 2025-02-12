@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -15,11 +14,9 @@ import (
 	"github.com/babarot/gomi/internal/debug"
 	"github.com/babarot/gomi/internal/env"
 	"github.com/babarot/gomi/internal/history"
-	"github.com/babarot/gomi/internal/ui"
 	"github.com/charmbracelet/log"
 	"github.com/jessevdk/go-flags"
 	"github.com/rs/xid"
-	"golang.org/x/sync/errgroup"
 )
 
 type Option struct {
@@ -50,7 +47,7 @@ type CLI struct {
 	version Version
 	option  Option
 	config  config.Config
-	history history.History
+	history *history.History
 	runID   string
 }
 
@@ -113,11 +110,16 @@ func Run(v Version) error {
 		return err
 	}
 
+	h, err := history.New(cfg.Core.TrashDir, cfg.History)
+	if err != nil {
+		return err
+	}
+
 	cli := CLI{
 		version: v,
 		option:  opt,
 		config:  cfg,
-		history: history.New(cfg.Core.TrashDir, cfg.History),
+		history: h,
 		runID:   runID(),
 	}
 
@@ -129,10 +131,6 @@ func Run(v Version) error {
 }
 
 func (c CLI) Run(args []string) error {
-	if err := c.history.Open(); err != nil {
-		return err
-	}
-
 	switch {
 	case c.option.Meta.Version:
 		fmt.Fprint(os.Stdout, c.version.Print())
@@ -150,157 +148,4 @@ func (c CLI) Run(args []string) error {
 		}
 		return c.Put(args)
 	}
-}
-
-func (c CLI) Restore() error {
-	slog.Debug("cli.restore started")
-	defer slog.Debug("cli.restore finished")
-
-	if len(c.history.Files) == 0 {
-		fmt.Printf("The history is empty. Let's try deleting a file first\n")
-		return nil
-	}
-
-	files := c.history.Filter()
-	if len(files) == 0 {
-		fmt.Printf("Could not find any files to display. The history may be empty, or the history.exclude conditions may be too strict\n")
-		return nil
-	}
-
-	files, err := ui.RenderList(files, c.config.UI)
-	if err != nil {
-		return err
-	}
-
-	var deletedFiles []history.File
-	var errs []error
-
-	defer func() {
-		for _, file := range deletedFiles {
-			err := c.history.Remove(file)
-			if err != nil {
-				slog.Error("removing from history failed", "file", file.Name, "error", err)
-			}
-			if c.config.Core.Restore.Verbose {
-				fmt.Printf("restored %s to %s\n", file.Name, file.From)
-			}
-		}
-	}()
-
-	for _, file := range files {
-		if _, err := os.Stat(file.From); err == nil {
-			newName, err := ui.InputFilename(file)
-			if err != nil {
-				if errors.Is(err, ui.ErrInputCanceled) {
-					if c.config.Core.Restore.Verbose {
-						if newName == "" {
-							fmt.Printf("canceled!\n")
-						} else {
-							fmt.Printf("you're inputting %q but it's canceled!\n", newName)
-						}
-					}
-					continue
-				}
-				errs = append(errs, err)
-				continue
-			}
-			// Update with new name
-			file.From = filepath.Join(filepath.Dir(file.From), newName)
-		}
-		allowed := func() bool {
-			if _, err := os.Stat(file.From); !os.IsNotExist(err) {
-				yes := ui.Confirm(
-					fmt.Sprintf("Caution! The same name already exists. Even so okay to restore? %s",
-						filepath.Base(file.From)))
-				if yes {
-					return true
-				}
-				if c.config.Core.Restore.Verbose {
-					fmt.Printf("Replied no, canceled!\n")
-				}
-				return false
-			}
-			if c.config.Core.Restore.Confirm {
-				yes := ui.Confirm(fmt.Sprintf("OK to put back? %s", filepath.Base(file.From)))
-				if yes {
-					return true
-				}
-				if c.config.Core.Restore.Verbose {
-					fmt.Printf("Replied no, canceled!\n")
-				}
-				return false
-			}
-			return true
-		}
-		if !allowed() {
-			continue
-		}
-		err := move(file.To, file.From)
-		if err != nil {
-			errs = append(errs, err)
-			slog.Error("failed to restore! file would not be deleted from history file", "error", err)
-			continue
-		}
-		deletedFiles = append(deletedFiles, file)
-	}
-
-	// respect https://github.com/hashicorp/go-multierror
-	if len(errs) > 0 {
-		lines := []string{fmt.Sprintf("%d errors occurred:", len(errs))}
-		for _, err := range errs {
-			lines = append(lines, fmt.Sprintf("\t* %s", err))
-		}
-		lines = append(lines, "\n")
-		return errors.New(strings.Join(lines, "\n"))
-	}
-	return nil
-}
-
-func (c CLI) Put(args []string) error {
-	slog.Debug("cli.put started")
-	defer slog.Debug("cli.put finished")
-
-	if len(args) == 0 {
-		return errors.New("too few arguments")
-	}
-
-	files := make([]history.File, len(args))
-	var eg errgroup.Group
-	var mu sync.Mutex // Mutex to synchronize writes to files
-
-	for i, arg := range args {
-		i, arg := i, arg // https://golang.org/doc/faq#closures_and_goroutines
-		eg.Go(func() error {
-			_, err := os.Stat(arg)
-			if os.IsNotExist(err) {
-				return fmt.Errorf("%s: no such file or directory", arg)
-			}
-			file, err := c.history.FileInfo(c.runID, arg)
-			if err != nil {
-				return err
-			}
-
-			// Lock before modifying the shared 'files' slice
-			mu.Lock()
-			files[i] = file
-			mu.Unlock()
-
-			return move(file.From, file.To)
-		})
-	}
-
-	// Save the files after all tasks are done
-	defer func() {
-		err := c.history.Update(files)
-		if err != nil {
-			slog.Error("failed to update history", "error", err)
-		}
-	}()
-
-	// Wait for all goroutines to complete
-	if err := eg.Wait(); err != nil {
-		return err
-	}
-
-	return nil
 }

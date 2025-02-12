@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/babarot/gomi/internal/history"
+	"github.com/babarot/gomi/internal/core/types"
 	"github.com/babarot/gomi/internal/shell"
 	"github.com/babarot/gomi/internal/utils"
 
@@ -24,7 +24,7 @@ import (
 )
 
 type File struct {
-	history.File
+	types.TrashFile
 
 	dirListCommand  string
 	syntaxHighlight bool
@@ -36,31 +36,31 @@ func (f File) isSelected() bool {
 }
 
 func (f File) Description() string {
-	_, err := os.Stat(f.File.To)
+	_, err := os.Stat(f.TrashFile.To)
 	if os.IsNotExist(err) {
 		return "(already might have been deleted)"
 	}
 
 	return fmt.Sprintf("%s %s %s",
-		humanize.Time(f.File.Timestamp),
+		humanize.Time(f.TrashFile.Timestamp),
 		bullet,
-		filepath.Dir(f.File.From),
+		filepath.Dir(f.TrashFile.From),
 	)
 }
 
 func (f File) Title() string {
-	fi, err := os.Stat(f.File.To)
+	fi, err := os.Stat(f.TrashFile.To)
 	if err != nil {
-		return f.File.Name + "?"
+		return f.TrashFile.Name + "?"
 	}
 	if fi.IsDir() {
-		return f.File.Name + "/"
+		return f.TrashFile.Name + "/"
 	}
-	return f.File.Name
+	return f.TrashFile.Name
 }
 
 func (f File) FilterValue() string {
-	return f.File.Name
+	return f.TrashFile.Name
 }
 
 func (f File) Size() string {
