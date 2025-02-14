@@ -27,9 +27,11 @@ type Config struct {
 	PreservePaths  bool // Preserve original path structure in trash
 	UseCompression bool // Use compression for trashed files
 
-	// for backward TODO:
+	// TODO:: implement
+	// for backward
 	History  config.History
 	TrashDir string
+	RunID    string
 }
 
 // StorageType represents the type of trash storage

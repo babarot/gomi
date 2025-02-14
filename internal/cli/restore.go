@@ -69,6 +69,7 @@ func (c *CLI) filterFiles(files []*core.File) []*core.File {
 
 		// Add filters here based on configuration
 		// For example: time-based filters, name patterns, etc.
+		// TODO: implement
 
 		filtered = append(filtered, file)
 	}
@@ -124,11 +125,11 @@ func (c *CLI) restoreFile(file *core.File) error {
 
 	// Perform the restore
 	if err := c.storage.Restore(file, originalPath); err != nil {
-		return fmt.Errorf("failed to restore %s: %w", file.Name, err)
+		return fmt.Errorf("failed to restore '%s': %w", file.Name, err)
 	}
 
 	if c.config.Core.Verbose {
-		fmt.Printf("restored %s to %s\n", file.Name, originalPath)
+		fmt.Printf("restored '%s' to %s\n", file.Name, originalPath)
 	}
 
 	return nil

@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/babarot/gomi/internal/shell"
+	"github.com/babarot/gomi/internal/fs"
 	"github.com/babarot/gomi/internal/trash/core"
-	"github.com/babarot/gomi/internal/utils"
+	"github.com/babarot/gomi/internal/utils/shell"
 
 	"al.essio.dev/pkg/shellescape"
 	"github.com/alecthomas/chroma"
@@ -65,7 +65,7 @@ func (f File) FilterValue() string {
 
 func (f File) Size() string {
 	var sizeStr string
-	size, err := utils.DirSize(f.TrashPath)
+	size, err := fs.DirSize(f.TrashPath)
 	if err != nil {
 		sizeStr = "(cannot be calculated)"
 	} else {
@@ -77,7 +77,7 @@ func (f File) Size() string {
 func (f File) Browse() (string, error) {
 	var content string
 
-	fi, err := os.Stat(f.TrashPath)
+	fi, err := os.Lstat(f.TrashPath)
 	if err != nil {
 		slog.Debug("no such file", "file", f.TrashPath)
 		return content, errCannotPreview
@@ -115,12 +115,9 @@ func (f File) Browse() (string, error) {
 	if err != nil {
 		return content, err
 	}
-	switch {
-	case
-		mtype.Is("text/plain"),
-		mtype.Parent().Is("text/plain"):
-		// can preview
-	default:
+	if mtype.Is("text/plain") || (mtype.Parent() != nil && mtype.Parent().Is("text/plain")) {
+		// ok
+	} else {
 		slog.Debug("cannot preview", "mimetype", mtype.String())
 		return content, errCannotPreview
 	}

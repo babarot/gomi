@@ -5,11 +5,17 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"regexp"
+	"slices"
 	"strconv"
 	"time"
 
 	"github.com/babarot/gomi/internal/fs"
 	"github.com/babarot/gomi/internal/trash/core"
+	"github.com/docker/go-units"
+	"github.com/gobwas/glob"
+	"github.com/k1LoW/duration"
+	"github.com/samber/lo"
 )
 
 // Storage implements the core.Storage interface for XDG trash specification
@@ -21,10 +27,7 @@ type Storage struct {
 	externalTrashes []*trashLocation
 
 	// Configuration
-	config *core.Config
-
-	infoPath  string
-	trashPath string
+	config core.Config
 }
 
 // trashLocation represents a single trash directory
@@ -43,7 +46,7 @@ type trashLocation struct {
 }
 
 // NewStorage creates a new XDG-compliant trash storage
-func NewStorage(cfg *core.Config) (*Storage, error) {
+func NewStorage(cfg core.Config) (*Storage, error) {
 	s := &Storage{config: cfg}
 
 	// Initialize home trash
@@ -103,7 +106,7 @@ func (s *Storage) Put(src string) error {
 		}
 
 		// Generate new name with counter
-		trashName = fmt.Sprintf("%s.%d", baseName, counter)
+		trashName = fmt.Sprintf("%s_%d", baseName, counter)
 		counter++
 	}
 
@@ -120,7 +123,7 @@ func (s *Storage) Put(src string) error {
 
 	// Move file to trash
 	dstPath := filepath.Join(loc.filesDir, trashName)
-	if err := fs.MoveFile(abs, dstPath, s.config.EnableHomeFallback); err != nil {
+	if err := fs.Move(abs, dstPath, s.config.EnableHomeFallback); err != nil {
 		// If move fails, clean up the .trashinfo file
 		os.Remove(infoPath)
 		return core.NewStorageError("put", src, fmt.Errorf("failed to move file to trash: %w", err))
@@ -150,7 +153,7 @@ func (s *Storage) List() ([]*core.File, error) {
 		files = append(files, extFiles...)
 	}
 
-	return files, nil
+	return s.filter(files), nil
 }
 
 func (s *Storage) Restore(file *core.File, dst string) error {
@@ -164,7 +167,7 @@ func (s *Storage) Restore(file *core.File, dst string) error {
 	}
 
 	// Move file back
-	if err := fs.MoveFile(file.TrashPath, dst, s.config.EnableHomeFallback); err != nil {
+	if err := fs.Move(file.TrashPath, dst, s.config.EnableHomeFallback); err != nil {
 		return core.NewStorageError("restore", dst, err)
 	}
 
@@ -336,4 +339,64 @@ func (s *Storage) selectTrashLocation(path string) (*trashLocation, error) {
 	}
 
 	return nil, core.ErrCrossDevice
+}
+
+func (s *Storage) filter(files []*core.File) []*core.File {
+	cfg := s.config.History
+
+	files = lo.Reject(files, func(file *core.File, index int) bool {
+		return slices.Contains(cfg.Exclude.Files, file.Name)
+	})
+	files = lo.Reject(files, func(file *core.File, index int) bool {
+		for _, pat := range cfg.Exclude.Patterns {
+			if regexp.MustCompile(pat).MatchString(file.Name) {
+				return true
+			}
+		}
+		for _, g := range cfg.Exclude.Globs {
+			if glob.MustCompile(g).Match(file.Name) {
+				return true
+			}
+		}
+		return false
+	})
+	files = lo.Reject(files, func(file *core.File, index int) bool {
+		size, err := fs.DirSize(file.TrashPath)
+		if err != nil {
+			return false // false positive
+		}
+		if s := cfg.Exclude.Size.Min; s != "" {
+			min, err := units.FromHumanSize(s)
+			if err != nil {
+				return false
+			}
+			if size <= min {
+				return true
+			}
+		}
+		if s := cfg.Exclude.Size.Max; s != "" {
+			max, err := units.FromHumanSize(s)
+			if err != nil {
+				return false
+			}
+			if max <= size {
+				return true
+			}
+		}
+		return false
+	})
+	files = lo.Filter(files, func(file *core.File, index int) bool {
+		if period := cfg.Include.Period; period > 0 {
+			d, err := duration.Parse(fmt.Sprintf("%d days", period))
+			if err != nil {
+				slog.Error("failed to parse duration", "error", err)
+				return false
+			}
+			if time.Since(file.DeletedAt) < d {
+				return true
+			}
+		}
+		return false
+	})
+	return files
 }

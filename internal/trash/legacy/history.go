@@ -1,11 +1,7 @@
 package legacy
 
-import (
-	"fmt"
-	"os"
-	"path/filepath"
-	"time"
-)
+/*
+TODO: merge this file into history/
 
 const (
 	// Version of the history file format
@@ -173,3 +169,4 @@ func (h *History) Exists(path string) bool {
 func (h *History) Count() int {
 	return len(h.Files)
 }
+*/

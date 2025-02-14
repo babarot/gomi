@@ -7,31 +7,30 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/babarot/gomi/internal/trash/core"
 	"github.com/samber/lo"
-	"golang.org/x/exp/slices"
 )
 
 type Strategy string
 
 const (
-	TrashStrategyXDG       Strategy = "xdg"
-	TrashStrategyLegacy    Strategy = "legacy"
-	TrashStrategyComposite Strategy = "composite"
+	StrategyXDG       Strategy = "xdg"
+	StrategyLegacy    Strategy = "legacy"
+	StrategyComposite Strategy = "composite"
 )
 
 // Manager handles multiple trash storage implementations
 type Manager struct {
 	storages []core.Storage
-	config   *core.Config
+	config   core.Config
 	strategy Strategy
 }
 
 // NewManager creates a new trash manager with the given configuration
-func NewManager(cfg *core.Config) (*Manager, error) {
-
+func NewManager(cfg core.Config) (*Manager, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
@@ -46,56 +45,53 @@ func NewManager(cfg *core.Config) (*Manager, error) {
 	slog.Info("primaryStorage set", "storage", primaryStorage.Info().Type)
 	storages = append(storages, primaryStorage)
 
-	// Initialize fallback storage if enabled
-	if cfg.EnableHomeFallback && cfg.Type == core.StorageTypeXDG {
-		fallbackCfg := *cfg // Create a copy of the config
-		fallbackCfg.Type = core.StorageTypeLegacy
-		fallbackCfg.UseXDG = false
-		fallbackStorage, err := NewStorage(&fallbackCfg)
-		if err != nil {
-			slog.Warn("failed to initialize fallback storage", "error", err)
-		} else {
-			storages = append(storages, fallbackStorage)
-		}
-	}
+	// // Initialize fallback storage if enabled
+	// if cfg.EnableHomeFallback && cfg.Type == core.StorageTypeXDG {
+	// 	fallbackCfg := cfg // Create a copy of the config
+	// 	fallbackCfg.Type = core.StorageTypeLegacy
+	// 	fallbackCfg.UseXDG = false
+	// 	fallbackStorage, err := NewStorage(fallbackCfg)
+	// 	if err != nil {
+	// 		slog.Warn("failed to initialize fallback storage", "error", err)
+	// 	} else {
+	// 		storages = append(storages, fallbackStorage)
+	// 	}
+	// }
 
 	if legacy, _ := DetectExistingLegacy(); legacy && cfg.Type == core.StorageTypeXDG {
 		slog.Debug("found legacy storage in XDG enabled")
-		ls, err := newLegacyStorage(cfg)
+		secondaryStorage, err := newLegacyStorage(cfg)
 		if err != nil {
 			slog.Error("failed to set legacy storage", "error", err)
 		}
-		storages = append(storages, ls)
+		storages = append(storages, secondaryStorage)
+		slog.Debug("secondaryStorage set", "storage", secondaryStorage.Info().Type)
 	}
 
 	if len(storages) == 0 {
 		return nil, errors.New("no storage backend configured")
 	}
 
-	// var sts []core.StorageType
-	// for _, storage := range storages {
-	// 	switch storage.Info().Type {
-	// 		case
-	// 	}
-	// }
-	sts := lo.Map(storages, func(s core.Storage, index int) core.StorageType {
-		return s.Info().Type
-	})
-
-	var strategy Strategy
-	switch len(slices.Compact(sts)) {
-	case 1:
-		switch sts[0] {
-		case core.StorageTypeXDG:
-			strategy = TrashStrategyXDG
-		case core.StorageTypeLegacy:
-			strategy = TrashStrategyLegacy
+	strategy := func() Strategy {
+		sts := lo.Map(storages, func(s core.Storage, index int) core.StorageType {
+			return s.Info().Type
+		})
+		var s Strategy
+		switch len(slices.Compact(sts)) {
+		case 1:
+			switch sts[0] {
+			case core.StorageTypeXDG:
+				s = StrategyXDG
+			case core.StorageTypeLegacy:
+				s = StrategyLegacy
+			}
+		case 2:
+			s = StrategyComposite
 		}
-	case 2:
-		strategy = TrashStrategyComposite
-	}
+		return s
+	}()
 
-	slog.Info("Trash Strategy!", "strategy", strategy)
+	slog.Info("trash manager", "strategy", strategy)
 	return &Manager{
 		storages: storages,
 		config:   cfg,
@@ -163,6 +159,11 @@ func (m *Manager) Restore(file *core.File, dst string) error {
 	// Find the appropriate storage for this file
 	var targetStorage core.Storage
 	for _, storage := range m.storages {
+		slog.Debug("storage",
+			"type", storage.Info().Type,
+			"file", file.Name,
+			"info", storage.Info(),
+		)
 		if strings.HasPrefix(file.TrashPath, storage.Info().Root) {
 			targetStorage = storage
 			break

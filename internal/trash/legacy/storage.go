@@ -9,8 +9,9 @@ import (
 	"time"
 
 	"github.com/babarot/gomi/internal/fs"
-	"github.com/babarot/gomi/internal/history"
 	"github.com/babarot/gomi/internal/trash/core"
+	"github.com/babarot/gomi/internal/trash/legacy/history"
+	"github.com/google/uuid"
 )
 
 // Storage implements the core.Storage interface for legacy (.gomi) storage
@@ -22,11 +23,13 @@ type Storage struct {
 	historyPath string
 
 	// Configuration
-	config *core.Config
+	config core.Config
 
 	// In-memory cache of trash history
 	// history *History
 	history history.History
+
+	runID string
 }
 
 // Config holds legacy-specific configuration
@@ -39,7 +42,7 @@ type Config struct {
 }
 
 // NewStorage creates a new legacy storage instance
-func NewStorage(cfg *core.Config) (*Storage, error) {
+func NewStorage(cfg core.Config) (*Storage, error) {
 	var root string
 	if cfg.HomeTrashDir != "" {
 		root = cfg.HomeTrashDir
@@ -57,6 +60,7 @@ func NewStorage(cfg *core.Config) (*Storage, error) {
 		config:      cfg,
 		// history:     history.New(cfg.Core.TrashDir, cfg.History),
 		history: history.New(cfg.TrashDir, cfg.History),
+		runID:   cfg.RunID,
 	}
 	if err := s.history.Open(); err != nil {
 		slog.Error("failed to open legacy history", "error", err)
@@ -85,14 +89,13 @@ func (s *Storage) Info() *core.StorageInfo {
 }
 
 func (s *Storage) Put(src string) error {
-	// Get absolute path
 	abs, err := filepath.Abs(src)
 	if err != nil {
 		return core.NewStorageError("put", src, err)
 	}
 
 	// Generate unique ID for the file
-	id := generateID()
+	id := uuid.New().String()
 	trashName := fmt.Sprintf("%s.%s", filepath.Base(abs), id)
 	trashPath := filepath.Join(s.root, time.Now().Format("2006/01/02"), id, trashName)
 
@@ -102,7 +105,7 @@ func (s *Storage) Put(src string) error {
 	}
 
 	// Move file to trash
-	if err := fs.MoveFile(abs, trashPath, false); err != nil {
+	if err := fs.Move(abs, trashPath, false); err != nil {
 		return core.NewStorageError("put", src, err)
 	}
 
@@ -120,7 +123,7 @@ func (s *Storage) Put(src string) error {
 	// Save history
 	if err := s.saveHistory(); err != nil {
 		// Try to roll back the file move
-		if moveErr := fs.MoveFile(trashPath, abs, false); moveErr != nil {
+		if moveErr := fs.Move(trashPath, abs, false); moveErr != nil {
 			return core.NewStorageError("put", src, fmt.Errorf("failed to save history and rollback failed: %v (original error: %w)", moveErr, err))
 		}
 		return core.NewStorageError("put", src, fmt.Errorf("failed to save history: %w", err))
@@ -140,12 +143,12 @@ func (s *Storage) Restore(file *core.File, dst string) error {
 	}
 
 	// Move file back
-	if err := fs.MoveFile(file.TrashPath, dst, false); err != nil {
+	if err := fs.Move(file.TrashPath, dst, false); err != nil {
 		return core.NewStorageError("restore", dst, err)
 	}
 
 	// Remove from history
-	// s.history.Remove(file) TODO:
+	s.history.RemoveByPath(file.TrashPath) // TODO:
 
 	// Save history
 	if err := s.saveHistory(); err != nil {
@@ -175,9 +178,8 @@ func (s *Storage) Remove(file *core.File) error {
 
 func (s *Storage) List() ([]*core.File, error) {
 	var files []*core.File
-	slog.Debug("storage.(legacy).List")
 
-	for _, f := range s.history.Files {
+	for _, f := range s.history.Filter() { // TODO: make filter more generic
 		// Convert legacy File to core.File
 		file := &core.File{
 			Name:         f.Name,
@@ -193,7 +195,6 @@ func (s *Storage) List() ([]*core.File, error) {
 			file.FileMode = info.Mode()
 		}
 
-		// slog.Debug("storage.List", "file", file)
 		file.SetStorage(s)
 		files = append(files, file)
 	}
@@ -259,10 +260,4 @@ func (s *Storage) saveHistory() error {
 	}
 
 	return nil
-}
-
-// generateID generates a unique ID for a file
-// This should match the format of the existing .gomi implementation
-func generateID() string {
-	return time.Now().Format("20060102150405")
 }

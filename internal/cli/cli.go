@@ -11,11 +11,10 @@ import (
 	"time"
 
 	"github.com/babarot/gomi/internal/config"
-	"github.com/babarot/gomi/internal/debug"
 	"github.com/babarot/gomi/internal/env"
-	"github.com/babarot/gomi/internal/history"
 	"github.com/babarot/gomi/internal/trash"
 	"github.com/babarot/gomi/internal/trash/core"
+	"github.com/babarot/gomi/internal/utils/debug"
 	"github.com/charmbracelet/log"
 	"github.com/jessevdk/go-flags"
 	"github.com/rs/xid"
@@ -49,8 +48,8 @@ type CLI struct {
 	version Version
 	option  Option
 	config  config.Config
-	history history.History
 	runID   string
+	// history history.History
 	// storage core.Storage // Storage implementation (XDG or Legacy)
 	storage *trash.Manager
 }
@@ -103,19 +102,11 @@ func Run(v Version) error {
 		}(),
 	})
 
-	// const SuccessLevel = log.InfoLevel + 1
-	// styles := log.DefaultStyles()
-	// styles.Levels[SuccessLevel] = lipgloss.NewStyle().
-	// 	SetString("IMPORTANT").
-	// 	Bold(true).
-	// 	Foreground(lipgloss.Color("42"))
-	// logger.SetStyles(styles)
-
 	logger.SetOutput(w)
 	logger.With("run_id", runID())
 	slog.SetDefault(slog.New(logger))
 
-	defer slog.Debug("main function finished")
+	defer slog.Debug("main function finished\n\n\n\n")
 	slog.Debug("main function started", "version", v.Version, "revision", v.Revision, "buildDate", v.BuildDate)
 
 	cfg, err := config.Parse(opt.Config)
@@ -138,11 +129,12 @@ func Run(v Version) error {
 		// TODO:
 		TrashDir: cfg.Core.TrashDir,
 		History:  cfg.History,
+		RunID:    runID(),
 	}
 	if !cfg.Core.UseXDG {
 		trashConfig.Type = core.StorageTypeLegacy
 	}
-	storageManager, err := trash.NewManager(&trashConfig)
+	storageManager, err := trash.NewManager(trashConfig)
 	if err != nil {
 		return fmt.Errorf("failed to initialize storage manager: %w", err)
 	}

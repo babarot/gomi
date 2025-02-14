@@ -11,7 +11,7 @@ import (
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/babarot/gomi/internal/env"
-	"github.com/babarot/gomi/internal/shell"
+	"github.com/babarot/gomi/internal/utils/shell"
 	"github.com/go-playground/validator/v10"
 	"github.com/muesli/reflow/indent"
 	"gopkg.in/yaml.v2"
@@ -26,6 +26,8 @@ type Config struct {
 }
 
 type Core struct {
+	Trash Trash `yaml:"trash"`
+
 	// TrashDir specifies the trash directory location
 	TrashDir string `yaml:"trash_dir" validate:"dirpath|allowEmpty"`
 
@@ -41,6 +43,10 @@ type Core struct {
 
 	// Verbose enables detailed output
 	Verbose bool `yaml:"verbose"`
+}
+
+type Trash struct {
+	Strategy string `yaml:"strategy" validate:"validStrategy|allowEmpty"`
 }
 
 type RestoreConfig struct {
@@ -125,6 +131,9 @@ type parser struct{}
 func (p parser) getDefaultConfig() Config {
 	return Config{
 		Core: Core{
+			Trash: Trash{
+				Strategy: "auto",
+			},
 			// Default to XDG spec if config doesn't exist
 			UseXDG: true,
 			// Default to $XDG_DATA_HOME/Trash for XDG spec
@@ -201,6 +210,16 @@ type configError struct {
 	configDir  string
 	parser     parser
 	err        error
+}
+
+func validStrategy(fl validator.FieldLevel) bool {
+	value := strings.ToUpper(fl.Field().String())
+	switch value {
+	case "auto", "xdg", "legacy":
+		return true
+	default:
+		return false
+	}
 }
 
 func validSize(fl validator.FieldLevel) bool {
@@ -340,6 +359,7 @@ func initParser() parser {
 		return name
 	})
 
+	_ = validate.RegisterValidation("validStrategy", validStrategy)
 	_ = validate.RegisterValidation("validSize", validSize)
 	_ = validate.RegisterValidation("allowEmpty", allowEmpty)
 

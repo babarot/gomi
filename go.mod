@@ -17,6 +17,7 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.8
 	github.com/go-playground/validator/v10 v10.24.0
 	github.com/gobwas/glob v0.2.3
+	github.com/google/uuid v1.6.0
 	github.com/jessevdk/go-flags v1.6.1
 	github.com/jimschubert/answer v0.1.5
 	github.com/k0kubun/pp/v3 v3.4.1
@@ -29,6 +30,7 @@ require (
 	github.com/otiai10/copy v1.14.1
 	github.com/rs/xid v1.6.0
 	github.com/samber/lo v1.47.0
+	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	golang.org/x/sync v0.10.0
 	golang.org/x/sys v0.29.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -55,7 +57,6 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sahilm/fuzzy v0.1.1 // indirect
 	golang.org/x/crypto v0.32.0 // indirect
-	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/net v0.34.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
