@@ -22,6 +22,7 @@ require (
 	github.com/k0kubun/pp/v3 v3.4.1
 	github.com/k1LoW/duration v1.2.0
 	github.com/mattn/go-isatty v0.0.20
+	github.com/moby/sys/mountinfo v0.7.2
 	github.com/muesli/reflow v0.3.0
 	github.com/muesli/termenv v0.15.2
 	github.com/nxadm/tail v1.4.11
