@@ -45,13 +45,13 @@ func (c *CLI) Restore() error {
 		return nil
 	}
 
-	// Process selected files
-	fmt.Printf("\nSelected %d files to restore\n", len(selected))
 	for _, file := range selected {
 		if err := c.restoreFile(file); err != nil {
 			return err
 		}
 	}
+	// Process selected files
+	fmt.Printf("Selected %d files to restore\n", len(selected))
 
 	return nil
 }

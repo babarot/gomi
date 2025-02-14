@@ -2,6 +2,7 @@ package xdg
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -52,10 +53,12 @@ func NewStorage(cfg *core.Config) (*Storage, error) {
 	}
 	s.homeTrash = home
 
-	// Scan for external trash locations
-	if err := s.scanExternalTrashes(); err != nil {
-		// Log error but continue - home trash is still usable
-		fmt.Fprintf(os.Stderr, "Warning: failed to scan external trashes: %v\n", err)
+	// Skip external trash initialization if forced to use home trash
+	if !cfg.ForceHomeTrash {
+		if err := s.scanExternalTrashes(); err != nil {
+			// Log error but continue - home trash is still usable
+			fmt.Fprintf(os.Stderr, "Warning: failed to scan external trashes: %v\n", err)
+		}
 	}
 
 	return s, nil
@@ -66,6 +69,7 @@ func (s *Storage) Info() *core.StorageInfo {
 		Location:  core.LocationHome,
 		Root:      s.homeTrash.root,
 		Available: true,
+		Type:      core.StorageTypeXDG,
 	}
 }
 
@@ -165,8 +169,15 @@ func (s *Storage) Restore(file *core.File, dst string) error {
 	}
 
 	// Remove .trashinfo file
-	infoPath := file.TrashPath[:len(file.TrashPath)-len(filepath.Base(file.TrashPath))] +
-		filepath.Base(file.TrashPath) + ".trashinfo"
+	infoPath := filepath.Join(
+		file.TrashPath[:len(file.TrashPath)-len("files/"+filepath.Base(file.TrashPath))],
+		"info",
+		filepath.Base(file.TrashPath)+".trashinfo",
+	)
+	slog.Info("infoPath",
+		"infoPath", infoPath,
+		"file.TrashPath", file.TrashPath,
+	)
 	if err := os.Remove(infoPath); err != nil {
 		// Log error but don't fail - file is already restored
 		fmt.Fprintf(os.Stderr, "Warning: failed to remove trash info: %v\n", err)
