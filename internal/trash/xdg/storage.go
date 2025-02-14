@@ -5,11 +5,18 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"regexp"
+	"slices"
 	"strconv"
 	"time"
 
 	"github.com/babarot/gomi/internal/fs"
 	"github.com/babarot/gomi/internal/trash/core"
+	"github.com/babarot/gomi/internal/utils"
+	"github.com/docker/go-units"
+	"github.com/gobwas/glob"
+	"github.com/k1LoW/duration"
+	"github.com/samber/lo"
 )
 
 // Storage implements the core.Storage interface for XDG trash specification
@@ -22,9 +29,6 @@ type Storage struct {
 
 	// Configuration
 	config *core.Config
-
-	infoPath  string
-	trashPath string
 }
 
 // trashLocation represents a single trash directory
@@ -150,7 +154,7 @@ func (s *Storage) List() ([]*core.File, error) {
 		files = append(files, extFiles...)
 	}
 
-	return files, nil
+	return s.filter(files), nil
 }
 
 func (s *Storage) Restore(file *core.File, dst string) error {
@@ -336,4 +340,66 @@ func (s *Storage) selectTrashLocation(path string) (*trashLocation, error) {
 	}
 
 	return nil, core.ErrCrossDevice
+}
+
+func (s *Storage) filter(files []*core.File) []*core.File {
+	cfg := s.config.History
+
+	slog.Warn("filter in xdg...", "cfg", cfg)
+
+	files = lo.Reject(files, func(file *core.File, index int) bool {
+		return slices.Contains(cfg.Exclude.Files, file.Name)
+	})
+	files = lo.Reject(files, func(file *core.File, index int) bool {
+		for _, pat := range cfg.Exclude.Patterns {
+			if regexp.MustCompile(pat).MatchString(file.Name) {
+				return true
+			}
+		}
+		for _, g := range cfg.Exclude.Globs {
+			if glob.MustCompile(g).Match(file.Name) {
+				return true
+			}
+		}
+		return false
+	})
+	files = lo.Reject(files, func(file *core.File, index int) bool {
+		size, err := utils.DirSize(file.TrashPath)
+		if err != nil {
+			return false // false positive
+		}
+		if s := cfg.Exclude.Size.Min; s != "" {
+			min, err := units.FromHumanSize(s)
+			if err != nil {
+				return false
+			}
+			if size <= min {
+				return true
+			}
+		}
+		if s := cfg.Exclude.Size.Max; s != "" {
+			max, err := units.FromHumanSize(s)
+			if err != nil {
+				return false
+			}
+			if max <= size {
+				return true
+			}
+		}
+		return false
+	})
+	files = lo.Filter(files, func(file *core.File, index int) bool {
+		if period := cfg.Include.Period; period > 0 {
+			d, err := duration.Parse(fmt.Sprintf("%d days", period))
+			if err != nil {
+				slog.Error("failed to parse duration", "error", err)
+				return false
+			}
+			if time.Since(file.DeletedAt) < d {
+				return true
+			}
+		}
+		return false
+	})
+	return files
 }

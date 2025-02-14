@@ -12,7 +12,6 @@ import (
 	"github.com/babarot/gomi/internal/history"
 	"github.com/babarot/gomi/internal/trash/core"
 	"github.com/google/uuid"
-	"github.com/rs/xid"
 )
 
 // Storage implements the core.Storage interface for legacy (.gomi) storage
@@ -97,8 +96,7 @@ func (s *Storage) Put(src string) error {
 	}
 
 	// Generate unique ID for the file
-	id := xid.New().String()
-	id = uuid.New().String()
+	id := uuid.New().String()
 	trashName := fmt.Sprintf("%s.%s", filepath.Base(abs), id)
 	trashPath := filepath.Join(s.root, time.Now().Format("2006/01/02"), id, trashName)
 
@@ -181,9 +179,8 @@ func (s *Storage) Remove(file *core.File) error {
 
 func (s *Storage) List() ([]*core.File, error) {
 	var files []*core.File
-	slog.Debug("storage.(legacy).List")
 
-	for _, f := range s.history.Files {
+	for _, f := range s.history.Filter() { // TODO: make filter more generic
 		// Convert legacy File to core.File
 		file := &core.File{
 			Name:         f.Name,
@@ -199,7 +196,6 @@ func (s *Storage) List() ([]*core.File, error) {
 			file.FileMode = info.Mode()
 		}
 
-		// slog.Debug("storage.List", "file", file)
 		file.SetStorage(s)
 		files = append(files, file)
 	}

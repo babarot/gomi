@@ -7,19 +7,19 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/babarot/gomi/internal/trash/core"
 	"github.com/samber/lo"
-	"golang.org/x/exp/slices"
 )
 
 type Strategy string
 
 const (
-	TrashStrategyXDG       Strategy = "xdg"
-	TrashStrategyLegacy    Strategy = "legacy"
-	TrashStrategyComposite Strategy = "composite"
+	StrategyXDG       Strategy = "xdg"
+	StrategyLegacy    Strategy = "legacy"
+	StrategyComposite Strategy = "composite"
 )
 
 // Manager handles multiple trash storage implementations
@@ -87,12 +87,12 @@ func NewManager(cfg *core.Config) (*Manager, error) {
 	case 1:
 		switch sts[0] {
 		case core.StorageTypeXDG:
-			strategy = TrashStrategyXDG
+			strategy = StrategyXDG
 		case core.StorageTypeLegacy:
-			strategy = TrashStrategyLegacy
+			strategy = StrategyLegacy
 		}
 	case 2:
-		strategy = TrashStrategyComposite
+		strategy = StrategyComposite
 	}
 
 	slog.Info("Trash Strategy!", "strategy", strategy)
@@ -220,3 +220,66 @@ func (m *Manager) IsPrimaryStorageAvailable() bool {
 	}
 	return m.storages[0].Info().Available
 }
+
+// func (m *Manager) Filter() []*core.File {
+// 	// do not overwrite original slices
+// 	// because remove them from history file actually
+// 	// when updating history
+// 	m.storages
+// 	files := h.Files
+// 	files = lo.Reject(files, func(file File, index int) bool {
+// 		return slices.Contains(h.config.Exclude.Files, file.Name)
+// 	})
+// 	files = lo.Reject(files, func(file File, index int) bool {
+// 		for _, pat := range h.config.Exclude.Patterns {
+// 			if regexp.MustCompile(pat).MatchString(file.Name) {
+// 				return true
+// 			}
+// 		}
+// 		for _, g := range h.config.Exclude.Globs {
+// 			if glob.MustCompile(g).Match(file.Name) {
+// 				return true
+// 			}
+// 		}
+// 		return false
+// 	})
+// 	files = lo.Reject(files, func(file File, index int) bool {
+// 		size, err := utils.DirSize(file.To)
+// 		if err != nil {
+// 			return false // false positive
+// 		}
+// 		if s := h.config.Exclude.Size.Min; s != "" {
+// 			min, err := units.FromHumanSize(s)
+// 			if err != nil {
+// 				return false
+// 			}
+// 			if size <= min {
+// 				return true
+// 			}
+// 		}
+// 		if s := h.config.Exclude.Size.Max; s != "" {
+// 			max, err := units.FromHumanSize(s)
+// 			if err != nil {
+// 				return false
+// 			}
+// 			if max <= size {
+// 				return true
+// 			}
+// 		}
+// 		return false
+// 	})
+// 	files = lo.Filter(files, func(file File, index int) bool {
+// 		if period := h.config.Include.Period; period > 0 {
+// 			d, err := duration.Parse(fmt.Sprintf("%d days", period))
+// 			if err != nil {
+// 				slog.Error("failed to parse duration", "error", err)
+// 				return false
+// 			}
+// 			if time.Since(file.Timestamp) < d {
+// 				return true
+// 			}
+// 		}
+// 		return false
+// 	})
+// 	return files
+// }

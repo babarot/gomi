@@ -17,7 +17,7 @@ import (
 const (
 	// According to XDG spec
 	trashInfoHeader = "[Trash Info]"
-	timeFormat     = "2006-01-02T15:04:05"
+	timeFormat      = "2006-01-02T15:04:05"
 )
 
 // TrashInfo represents the contents of a .trashinfo file
@@ -87,7 +87,7 @@ func parseTrashInfo(r io.Reader) (*TrashInfo, error) {
 			info.OriginalName = filepath.Base(path)
 
 		case "DeletionDate":
-			date, err := time.Parse(timeFormat, value)
+			date, err := time.ParseInLocation(timeFormat, value, time.Local)
 			if err != nil {
 				return nil, fmt.Errorf("invalid DeletionDate format: %w", err)
 			}
