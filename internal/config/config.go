@@ -11,7 +11,7 @@ import (
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/babarot/gomi/internal/env"
-	"github.com/babarot/gomi/internal/shell"
+	"github.com/babarot/gomi/internal/utils/shell"
 	"github.com/go-playground/validator/v10"
 	"github.com/muesli/reflow/indent"
 	"gopkg.in/yaml.v2"

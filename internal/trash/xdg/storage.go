@@ -12,7 +12,6 @@ import (
 
 	"github.com/babarot/gomi/internal/fs"
 	"github.com/babarot/gomi/internal/trash/core"
-	"github.com/babarot/gomi/internal/utils"
 	"github.com/docker/go-units"
 	"github.com/gobwas/glob"
 	"github.com/k1LoW/duration"
@@ -362,7 +361,7 @@ func (s *Storage) filter(files []*core.File) []*core.File {
 		return false
 	})
 	files = lo.Reject(files, func(file *core.File, index int) bool {
-		size, err := utils.DirSize(file.TrashPath)
+		size, err := fs.DirSize(file.TrashPath)
 		if err != nil {
 			return false // false positive
 		}

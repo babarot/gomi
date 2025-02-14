@@ -11,10 +11,10 @@ import (
 	"time"
 
 	"github.com/babarot/gomi/internal/config"
-	"github.com/babarot/gomi/internal/debug"
 	"github.com/babarot/gomi/internal/env"
 	"github.com/babarot/gomi/internal/trash"
 	"github.com/babarot/gomi/internal/trash/core"
+	"github.com/babarot/gomi/internal/utils/debug"
 	"github.com/charmbracelet/log"
 	"github.com/jessevdk/go-flags"
 	"github.com/rs/xid"
@@ -101,14 +101,6 @@ func Run(v Version) error {
 			return log.TextFormatter
 		}(),
 	})
-
-	// const SuccessLevel = log.InfoLevel + 1
-	// styles := log.DefaultStyles()
-	// styles.Levels[SuccessLevel] = lipgloss.NewStyle().
-	// 	SetString("IMPORTANT").
-	// 	Bold(true).
-	// 	Foreground(lipgloss.Color("42"))
-	// logger.SetStyles(styles)
 
 	logger.SetOutput(w)
 	logger.With("run_id", runID())

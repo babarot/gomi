@@ -45,26 +45,27 @@ func NewManager(cfg core.Config) (*Manager, error) {
 	slog.Info("primaryStorage set", "storage", primaryStorage.Info().Type)
 	storages = append(storages, primaryStorage)
 
-	// Initialize fallback storage if enabled
-	if cfg.EnableHomeFallback && cfg.Type == core.StorageTypeXDG {
-		fallbackCfg := cfg // Create a copy of the config
-		fallbackCfg.Type = core.StorageTypeLegacy
-		fallbackCfg.UseXDG = false
-		fallbackStorage, err := NewStorage(fallbackCfg)
-		if err != nil {
-			slog.Warn("failed to initialize fallback storage", "error", err)
-		} else {
-			storages = append(storages, fallbackStorage)
-		}
-	}
+	// // Initialize fallback storage if enabled
+	// if cfg.EnableHomeFallback && cfg.Type == core.StorageTypeXDG {
+	// 	fallbackCfg := cfg // Create a copy of the config
+	// 	fallbackCfg.Type = core.StorageTypeLegacy
+	// 	fallbackCfg.UseXDG = false
+	// 	fallbackStorage, err := NewStorage(fallbackCfg)
+	// 	if err != nil {
+	// 		slog.Warn("failed to initialize fallback storage", "error", err)
+	// 	} else {
+	// 		storages = append(storages, fallbackStorage)
+	// 	}
+	// }
 
 	if legacy, _ := DetectExistingLegacy(); legacy && cfg.Type == core.StorageTypeXDG {
 		slog.Debug("found legacy storage in XDG enabled")
-		ls, err := newLegacyStorage(cfg)
+		secondaryStorage, err := newLegacyStorage(cfg)
 		if err != nil {
 			slog.Error("failed to set legacy storage", "error", err)
 		}
-		storages = append(storages, ls)
+		storages = append(storages, secondaryStorage)
+		slog.Debug("secondaryStorage set", "storage", secondaryStorage.Info().Type)
 	}
 
 	if len(storages) == 0 {
@@ -90,7 +91,7 @@ func NewManager(cfg core.Config) (*Manager, error) {
 		return s
 	}()
 
-	slog.Info("Trash manager is ready", "strategy", strategy)
+	slog.Info("trash manager", "strategy", strategy)
 	return &Manager{
 		storages: storages,
 		config:   cfg,

@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/babarot/gomi/internal/fs"
-	"github.com/babarot/gomi/internal/history"
 	"github.com/babarot/gomi/internal/trash/core"
+	"github.com/babarot/gomi/internal/trash/legacy/history"
 	"github.com/google/uuid"
 )
 

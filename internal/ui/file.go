@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/babarot/gomi/internal/shell"
+	"github.com/babarot/gomi/internal/fs"
 	"github.com/babarot/gomi/internal/trash/core"
-	"github.com/babarot/gomi/internal/utils"
+	"github.com/babarot/gomi/internal/utils/shell"
 
 	"al.essio.dev/pkg/shellescape"
 	"github.com/alecthomas/chroma"
@@ -65,7 +65,7 @@ func (f File) FilterValue() string {
 
 func (f File) Size() string {
 	var sizeStr string
-	size, err := utils.DirSize(f.TrashPath)
+	size, err := fs.DirSize(f.TrashPath)
 	if err != nil {
 		sizeStr = "(cannot be calculated)"
 	} else {
@@ -115,7 +115,6 @@ func (f File) Browse() (string, error) {
 	if err != nil {
 		return content, err
 	}
-	slog.Warn("mimetype.DetectFile", "mtype", mtype.Parent())
 	if mtype.Is("text/plain") || (mtype.Parent() != nil && mtype.Parent().Is("text/plain")) {
 		// ok
 	} else {

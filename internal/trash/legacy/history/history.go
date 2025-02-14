@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/babarot/gomi/internal/config"
-	"github.com/babarot/gomi/internal/utils"
+	"github.com/babarot/gomi/internal/fs"
 	"github.com/docker/go-units"
 	"github.com/gobwas/glob"
 	"github.com/k0kubun/pp/v3"
@@ -195,7 +195,7 @@ func (h History) Filter() []File {
 		return false
 	})
 	files = lo.Reject(files, func(file File, index int) bool {
-		size, err := utils.DirSize(file.To)
+		size, err := fs.DirSize(file.To)
 		if err != nil {
 			return false // false positive
 		}
