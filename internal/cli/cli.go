@@ -114,7 +114,7 @@ func Run(v Version) error {
 	logger.With("run_id", runID())
 	slog.SetDefault(slog.New(logger))
 
-	defer slog.Debug("main function finished")
+	defer slog.Debug("main function finished\n\n\n\n")
 	slog.Debug("main function started", "version", v.Version, "revision", v.Revision, "buildDate", v.BuildDate)
 
 	cfg, err := config.Parse(opt.Config)
@@ -142,7 +142,7 @@ func Run(v Version) error {
 	if !cfg.Core.UseXDG {
 		trashConfig.Type = core.StorageTypeLegacy
 	}
-	storageManager, err := trash.NewManager(&trashConfig)
+	storageManager, err := trash.NewManager(trashConfig)
 	if err != nil {
 		return fmt.Errorf("failed to initialize storage manager: %w", err)
 	}

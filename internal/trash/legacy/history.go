@@ -7,6 +7,10 @@ import (
 	"time"
 )
 
+/*
+TODO: merge this file into history/
+*/
+
 const (
 	// Version of the history file format
 	historyVersion = 1

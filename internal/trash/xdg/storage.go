@@ -28,7 +28,7 @@ type Storage struct {
 	externalTrashes []*trashLocation
 
 	// Configuration
-	config *core.Config
+	config core.Config
 }
 
 // trashLocation represents a single trash directory
@@ -47,7 +47,7 @@ type trashLocation struct {
 }
 
 // NewStorage creates a new XDG-compliant trash storage
-func NewStorage(cfg *core.Config) (*Storage, error) {
+func NewStorage(cfg core.Config) (*Storage, error) {
 	s := &Storage{config: cfg}
 
 	// Initialize home trash
@@ -107,7 +107,7 @@ func (s *Storage) Put(src string) error {
 		}
 
 		// Generate new name with counter
-		trashName = fmt.Sprintf("%s.%d", baseName, counter)
+		trashName = fmt.Sprintf("%s_%d", baseName, counter)
 		counter++
 	}
 
@@ -344,8 +344,6 @@ func (s *Storage) selectTrashLocation(path string) (*trashLocation, error) {
 
 func (s *Storage) filter(files []*core.File) []*core.File {
 	cfg := s.config.History
-
-	slog.Warn("filter in xdg...", "cfg", cfg)
 
 	files = lo.Reject(files, func(file *core.File, index int) bool {
 		return slices.Contains(cfg.Exclude.Files, file.Name)

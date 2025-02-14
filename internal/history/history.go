@@ -265,3 +265,24 @@ func (f File) String() string {
 	p.SetColoringEnabled(false)
 	return p.Sprint(f)
 }
+
+// FindByID finds a file in the history by its ID
+func (h History) FindByID(id string) *File {
+	for _, f := range h.Files {
+		if f.ID == id {
+			return &f
+		}
+	}
+	return nil
+}
+
+// RemoveByPath removes a file from the history by its original path
+func (h *History) RemoveByPath(path string) {
+	var filtered []File
+	for _, f := range h.Files {
+		if f.To != path {
+			filtered = append(filtered, f)
+		}
+	}
+	h.Files = filtered
+}

@@ -12,7 +12,7 @@ import (
 )
 
 // NewStorage creates a new Storage instance based on the provided configuration
-func NewStorage(cfg *core.Config) (core.Storage, error) {
+func NewStorage(cfg core.Config) (core.Storage, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
@@ -28,7 +28,7 @@ func NewStorage(cfg *core.Config) (core.Storage, error) {
 }
 
 // newXDGStorage creates a new XDG-compliant trash storage
-func newXDGStorage(cfg *core.Config) (core.Storage, error) {
+func newXDGStorage(cfg core.Config) (core.Storage, error) {
 	if cfg.HomeTrashDir == "" {
 		home, err := os.UserHomeDir()
 		if err != nil {
@@ -46,7 +46,7 @@ func newXDGStorage(cfg *core.Config) (core.Storage, error) {
 }
 
 // newLegacyStorage creates a new legacy (.gomi) trash storage
-func newLegacyStorage(cfg *core.Config) (core.Storage, error) {
+func newLegacyStorage(cfg core.Config) (core.Storage, error) {
 	if cfg.HomeTrashDir == "" {
 		home, err := os.UserHomeDir()
 		if err != nil {

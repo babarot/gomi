@@ -23,7 +23,7 @@ type Storage struct {
 	historyPath string
 
 	// Configuration
-	config *core.Config
+	config core.Config
 
 	// In-memory cache of trash history
 	// history *History
@@ -42,7 +42,7 @@ type Config struct {
 }
 
 // NewStorage creates a new legacy storage instance
-func NewStorage(cfg *core.Config) (*Storage, error) {
+func NewStorage(cfg core.Config) (*Storage, error) {
 	var root string
 	if cfg.HomeTrashDir != "" {
 		root = cfg.HomeTrashDir
@@ -89,7 +89,6 @@ func (s *Storage) Info() *core.StorageInfo {
 }
 
 func (s *Storage) Put(src string) error {
-	// Get absolute path
 	abs, err := filepath.Abs(src)
 	if err != nil {
 		return core.NewStorageError("put", src, err)
@@ -149,7 +148,7 @@ func (s *Storage) Restore(file *core.File, dst string) error {
 	}
 
 	// Remove from history
-	// s.history.Remove(file) TODO:
+	s.history.RemoveByPath(file.TrashPath) // TODO:
 
 	// Save history
 	if err := s.saveHistory(); err != nil {

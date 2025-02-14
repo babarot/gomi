@@ -25,13 +25,12 @@ const (
 // Manager handles multiple trash storage implementations
 type Manager struct {
 	storages []core.Storage
-	config   *core.Config
+	config   core.Config
 	strategy Strategy
 }
 
 // NewManager creates a new trash manager with the given configuration
-func NewManager(cfg *core.Config) (*Manager, error) {
-
+func NewManager(cfg core.Config) (*Manager, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
@@ -48,10 +47,10 @@ func NewManager(cfg *core.Config) (*Manager, error) {
 
 	// Initialize fallback storage if enabled
 	if cfg.EnableHomeFallback && cfg.Type == core.StorageTypeXDG {
-		fallbackCfg := *cfg // Create a copy of the config
+		fallbackCfg := cfg // Create a copy of the config
 		fallbackCfg.Type = core.StorageTypeLegacy
 		fallbackCfg.UseXDG = false
-		fallbackStorage, err := NewStorage(&fallbackCfg)
+		fallbackStorage, err := NewStorage(fallbackCfg)
 		if err != nil {
 			slog.Warn("failed to initialize fallback storage", "error", err)
 		} else {
@@ -72,30 +71,26 @@ func NewManager(cfg *core.Config) (*Manager, error) {
 		return nil, errors.New("no storage backend configured")
 	}
 
-	// var sts []core.StorageType
-	// for _, storage := range storages {
-	// 	switch storage.Info().Type {
-	// 		case
-	// 	}
-	// }
-	sts := lo.Map(storages, func(s core.Storage, index int) core.StorageType {
-		return s.Info().Type
-	})
-
-	var strategy Strategy
-	switch len(slices.Compact(sts)) {
-	case 1:
-		switch sts[0] {
-		case core.StorageTypeXDG:
-			strategy = StrategyXDG
-		case core.StorageTypeLegacy:
-			strategy = StrategyLegacy
+	strategy := func() Strategy {
+		sts := lo.Map(storages, func(s core.Storage, index int) core.StorageType {
+			return s.Info().Type
+		})
+		var s Strategy
+		switch len(slices.Compact(sts)) {
+		case 1:
+			switch sts[0] {
+			case core.StorageTypeXDG:
+				s = StrategyXDG
+			case core.StorageTypeLegacy:
+				s = StrategyLegacy
+			}
+		case 2:
+			s = StrategyComposite
 		}
-	case 2:
-		strategy = StrategyComposite
-	}
+		return s
+	}()
 
-	slog.Info("Trash Strategy!", "strategy", strategy)
+	slog.Info("Trash manager is ready", "strategy", strategy)
 	return &Manager{
 		storages: storages,
 		config:   cfg,
@@ -163,6 +158,11 @@ func (m *Manager) Restore(file *core.File, dst string) error {
 	// Find the appropriate storage for this file
 	var targetStorage core.Storage
 	for _, storage := range m.storages {
+		slog.Debug("storage",
+			"type", storage.Info().Type,
+			"file", file.Name,
+			"info", storage.Info(),
+		)
 		if strings.HasPrefix(file.TrashPath, storage.Info().Root) {
 			targetStorage = storage
 			break
@@ -220,66 +220,3 @@ func (m *Manager) IsPrimaryStorageAvailable() bool {
 	}
 	return m.storages[0].Info().Available
 }
-
-// func (m *Manager) Filter() []*core.File {
-// 	// do not overwrite original slices
-// 	// because remove them from history file actually
-// 	// when updating history
-// 	m.storages
-// 	files := h.Files
-// 	files = lo.Reject(files, func(file File, index int) bool {
-// 		return slices.Contains(h.config.Exclude.Files, file.Name)
-// 	})
-// 	files = lo.Reject(files, func(file File, index int) bool {
-// 		for _, pat := range h.config.Exclude.Patterns {
-// 			if regexp.MustCompile(pat).MatchString(file.Name) {
-// 				return true
-// 			}
-// 		}
-// 		for _, g := range h.config.Exclude.Globs {
-// 			if glob.MustCompile(g).Match(file.Name) {
-// 				return true
-// 			}
-// 		}
-// 		return false
-// 	})
-// 	files = lo.Reject(files, func(file File, index int) bool {
-// 		size, err := utils.DirSize(file.To)
-// 		if err != nil {
-// 			return false // false positive
-// 		}
-// 		if s := h.config.Exclude.Size.Min; s != "" {
-// 			min, err := units.FromHumanSize(s)
-// 			if err != nil {
-// 				return false
-// 			}
-// 			if size <= min {
-// 				return true
-// 			}
-// 		}
-// 		if s := h.config.Exclude.Size.Max; s != "" {
-// 			max, err := units.FromHumanSize(s)
-// 			if err != nil {
-// 				return false
-// 			}
-// 			if max <= size {
-// 				return true
-// 			}
-// 		}
-// 		return false
-// 	})
-// 	files = lo.Filter(files, func(file File, index int) bool {
-// 		if period := h.config.Include.Period; period > 0 {
-// 			d, err := duration.Parse(fmt.Sprintf("%d days", period))
-// 			if err != nil {
-// 				slog.Error("failed to parse duration", "error", err)
-// 				return false
-// 			}
-// 			if time.Since(file.Timestamp) < d {
-// 				return true
-// 			}
-// 		}
-// 		return false
-// 	})
-// 	return files
-// }
