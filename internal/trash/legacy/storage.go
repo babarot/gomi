@@ -11,6 +11,8 @@ import (
 	"github.com/babarot/gomi/internal/fs"
 	"github.com/babarot/gomi/internal/history"
 	"github.com/babarot/gomi/internal/trash/core"
+	"github.com/google/uuid"
+	"github.com/rs/xid"
 )
 
 // Storage implements the core.Storage interface for legacy (.gomi) storage
@@ -27,6 +29,8 @@ type Storage struct {
 	// In-memory cache of trash history
 	// history *History
 	history history.History
+
+	runID string
 }
 
 // Config holds legacy-specific configuration
@@ -57,6 +61,7 @@ func NewStorage(cfg *core.Config) (*Storage, error) {
 		config:      cfg,
 		// history:     history.New(cfg.Core.TrashDir, cfg.History),
 		history: history.New(cfg.TrashDir, cfg.History),
+		runID:   cfg.RunID,
 	}
 	if err := s.history.Open(); err != nil {
 		slog.Error("failed to open legacy history", "error", err)
@@ -92,7 +97,8 @@ func (s *Storage) Put(src string) error {
 	}
 
 	// Generate unique ID for the file
-	id := generateID()
+	id := xid.New().String()
+	id = uuid.New().String()
 	trashName := fmt.Sprintf("%s.%s", filepath.Base(abs), id)
 	trashPath := filepath.Join(s.root, time.Now().Format("2006/01/02"), id, trashName)
 
@@ -259,10 +265,4 @@ func (s *Storage) saveHistory() error {
 	}
 
 	return nil
-}
-
-// generateID generates a unique ID for a file
-// This should match the format of the existing .gomi implementation
-func generateID() string {
-	return time.Now().Format("20060102150405")
 }

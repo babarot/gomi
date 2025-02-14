@@ -13,7 +13,6 @@ import (
 	"github.com/babarot/gomi/internal/config"
 	"github.com/babarot/gomi/internal/debug"
 	"github.com/babarot/gomi/internal/env"
-	"github.com/babarot/gomi/internal/history"
 	"github.com/babarot/gomi/internal/trash"
 	"github.com/babarot/gomi/internal/trash/core"
 	"github.com/charmbracelet/log"
@@ -49,8 +48,8 @@ type CLI struct {
 	version Version
 	option  Option
 	config  config.Config
-	history history.History
 	runID   string
+	// history history.History
 	// storage core.Storage // Storage implementation (XDG or Legacy)
 	storage *trash.Manager
 }
@@ -138,6 +137,7 @@ func Run(v Version) error {
 		// TODO:
 		TrashDir: cfg.Core.TrashDir,
 		History:  cfg.History,
+		RunID:    runID(),
 	}
 	if !cfg.Core.UseXDG {
 		trashConfig.Type = core.StorageTypeLegacy

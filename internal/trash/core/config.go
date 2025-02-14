@@ -30,6 +30,7 @@ type Config struct {
 	// for backward TODO:
 	History  config.History
 	TrashDir string
+	RunID    string
 }
 
 // StorageType represents the type of trash storage

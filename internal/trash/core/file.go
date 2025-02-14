@@ -29,8 +29,6 @@ type File struct {
 	// FileMode is the original mode of the file
 	FileMode fs.FileMode
 
-	ID string
-
 	// storage is a reference to the Storage implementation that manages this file
 	// This field is used internally by implementations and is not exported
 	storage Storage
