@@ -3,11 +3,13 @@ package legacy
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/babarot/gomi/internal/fs"
+	"github.com/babarot/gomi/internal/history"
 	"github.com/babarot/gomi/internal/trash/core"
 )
 
@@ -23,7 +25,8 @@ type Storage struct {
 	config *core.Config
 
 	// In-memory cache of trash history
-	history *History
+	// history *History
+	history history.History
 }
 
 // Config holds legacy-specific configuration
@@ -52,6 +55,11 @@ func NewStorage(cfg *core.Config) (*Storage, error) {
 		root:        root,
 		historyPath: filepath.Join(root, "history.json"),
 		config:      cfg,
+		// history:     history.New(cfg.Core.TrashDir, cfg.History),
+		history: history.New(cfg.TrashDir, cfg.History),
+	}
+	if err := s.history.Open(); err != nil {
+		slog.Error("failed to open legacy history", "error", err)
 	}
 
 	// Create trash directory if it doesn't exist
@@ -59,10 +67,10 @@ func NewStorage(cfg *core.Config) (*Storage, error) {
 		return nil, fmt.Errorf("failed to create trash directory: %w", err)
 	}
 
-	// Load history
-	if err := s.loadHistory(); err != nil {
-		return nil, fmt.Errorf("failed to load history: %w", err)
-	}
+	// // Load history
+	// if err := s.loadHistory(); err != nil {
+	// 	return nil, fmt.Errorf("failed to load history: %w", err)
+	// }
 
 	return s, nil
 }
@@ -72,6 +80,7 @@ func (s *Storage) Info() *core.StorageInfo {
 		Location:  core.LocationHome,
 		Root:      s.root,
 		Available: true,
+		Type:      core.StorageTypeLegacy,
 	}
 }
 
@@ -98,7 +107,7 @@ func (s *Storage) Put(src string) error {
 	}
 
 	// Add to history
-	file := &File{
+	file := history.File{
 		Name:      filepath.Base(abs),
 		ID:        id,
 		RunID:     id, // For compatibility with old format
@@ -136,7 +145,7 @@ func (s *Storage) Restore(file *core.File, dst string) error {
 	}
 
 	// Remove from history
-	s.history.Remove(filepath.Base(file.TrashPath))
+	// s.history.Remove(file) TODO:
 
 	// Save history
 	if err := s.saveHistory(); err != nil {
@@ -153,7 +162,8 @@ func (s *Storage) Remove(file *core.File) error {
 	}
 
 	// Remove from history
-	s.history.Remove(filepath.Base(file.TrashPath))
+	// s.history.Remove(filepath.Base(file.TrashPath))
+	// s.history.Remove(file) TODO:
 
 	// Save history
 	if err := s.saveHistory(); err != nil {
@@ -165,6 +175,7 @@ func (s *Storage) Remove(file *core.File) error {
 
 func (s *Storage) List() ([]*core.File, error) {
 	var files []*core.File
+	slog.Debug("storage.(legacy).List")
 
 	for _, f := range s.history.Files {
 		// Convert legacy File to core.File
@@ -182,6 +193,7 @@ func (s *Storage) List() ([]*core.File, error) {
 			file.FileMode = info.Mode()
 		}
 
+		// slog.Debug("storage.List", "file", file)
 		file.SetStorage(s)
 		files = append(files, file)
 	}
@@ -189,26 +201,26 @@ func (s *Storage) List() ([]*core.File, error) {
 	return files, nil
 }
 
-func (s *Storage) loadHistory() error {
-	s.history = NewHistory()
-
-	if _, err := os.Stat(s.historyPath); os.IsNotExist(err) {
-		// No history file yet, start with empty history
-		return nil
-	}
-
-	f, err := os.Open(s.historyPath)
-	if err != nil {
-		return fmt.Errorf("failed to open history file: %w", err)
-	}
-	defer f.Close()
-
-	if err := json.NewDecoder(f).Decode(s.history); err != nil {
-		return fmt.Errorf("failed to decode history file: %w", err)
-	}
-
-	return nil
-}
+// func (s *Storage) loadHistory() error {
+// 	s.history = NewHistory()
+//
+// 	if _, err := os.Stat(s.historyPath); os.IsNotExist(err) {
+// 		// No history file yet, start with empty history
+// 		return nil
+// 	}
+//
+// 	f, err := os.Open(s.historyPath)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to open history file: %w", err)
+// 	}
+// 	defer f.Close()
+//
+// 	if err := json.NewDecoder(f).Decode(s.history); err != nil {
+// 		return fmt.Errorf("failed to decode history file: %w", err)
+// 	}
+//
+// 	return nil
+// }
 
 func (s *Storage) saveHistory() error {
 	// Create history file atomically using a temporary file

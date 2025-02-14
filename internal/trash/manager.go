@@ -1,71 +1,110 @@
+// internal/trash/manager.go
 package trash
 
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
-	"syscall"
+	"strings"
+
+	"github.com/babarot/gomi/internal/trash/core"
+	"github.com/samber/lo"
+	"golang.org/x/exp/slices"
+)
+
+type Strategy string
+
+const (
+	TrashStrategyXDG       Strategy = "xdg"
+	TrashStrategyLegacy    Strategy = "legacy"
+	TrashStrategyComposite Strategy = "composite"
 )
 
 // Manager handles multiple trash storage implementations
 type Manager struct {
-	storages []Storage
-	config   *Config
-}
-
-// Config holds configuration for the trash manager
-type Config struct {
-	// Enable XDG trash storage
-	EnableXDG bool
-
-	// Enable Legacy trash storage (~/.gomi)
-	EnableLegacy bool
-
-	// Enable fallback to home trash when external trash fails
-	EnableHomeFallback bool
-
-	// Custom home trash directory (optional)
-	HomeTrashDir string
-
-	// Verbose output
-	Verbose bool
+	storages []core.Storage
+	config   *core.Config
+	strategy Strategy
 }
 
 // NewManager creates a new trash manager with the given configuration
-func NewManager(cfg *Config) (*Manager, error) {
-	var storages []Storage
+func NewManager(cfg *core.Config) (*Manager, error) {
 
-	// Initialize storages based on configuration
-	if cfg.EnableXDG {
-		xdgStorage, err := newXDGStorage(cfg)
-		if err != nil {
-			return nil, fmt.Errorf("failed to initialize XDG storage: %w", err)
-		}
-		storages = append(storages, xdgStorage)
+	if err := cfg.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
 
-	if cfg.EnableLegacy {
-		legacyStorage, err := newLegacyStorage(cfg)
+	var storages []core.Storage
+
+	// Initialize primary storage
+	primaryStorage, err := NewStorage(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize primary storage: %w", err)
+	}
+	slog.Info("primaryStorage set", "storage", primaryStorage.Info().Type)
+	storages = append(storages, primaryStorage)
+
+	// Initialize fallback storage if enabled
+	if cfg.EnableHomeFallback && cfg.Type == core.StorageTypeXDG {
+		fallbackCfg := *cfg // Create a copy of the config
+		fallbackCfg.Type = core.StorageTypeLegacy
+		fallbackCfg.UseXDG = false
+		fallbackStorage, err := NewStorage(&fallbackCfg)
 		if err != nil {
-			return nil, fmt.Errorf("failed to initialize legacy storage: %w", err)
+			slog.Warn("failed to initialize fallback storage", "error", err)
+		} else {
+			storages = append(storages, fallbackStorage)
 		}
-		storages = append(storages, legacyStorage)
+	}
+
+	if legacy, _ := DetectExistingLegacy(); legacy && cfg.Type == core.StorageTypeXDG {
+		slog.Debug("found legacy storage in XDG enabled")
+		ls, err := newLegacyStorage(cfg)
+		if err != nil {
+			slog.Error("failed to set legacy storage", "error", err)
+		}
+		storages = append(storages, ls)
 	}
 
 	if len(storages) == 0 {
 		return nil, errors.New("no storage backend configured")
 	}
 
+	// var sts []core.StorageType
+	// for _, storage := range storages {
+	// 	switch storage.Info().Type {
+	// 		case
+	// 	}
+	// }
+	sts := lo.Map(storages, func(s core.Storage, index int) core.StorageType {
+		return s.Info().Type
+	})
+
+	var strategy Strategy
+	switch len(slices.Compact(sts)) {
+	case 1:
+		switch sts[0] {
+		case core.StorageTypeXDG:
+			strategy = TrashStrategyXDG
+		case core.StorageTypeLegacy:
+			strategy = TrashStrategyLegacy
+		}
+	case 2:
+		strategy = TrashStrategyComposite
+	}
+
+	slog.Info("Trash Strategy!", "strategy", strategy)
 	return &Manager{
 		storages: storages,
 		config:   cfg,
+		strategy: strategy,
 	}, nil
 }
 
 // Put moves the file at src path to trash
 func (m *Manager) Put(src string) error {
-	// Get absolute path
 	absPath, err := filepath.Abs(src)
 	if err != nil {
 		return fmt.Errorf("failed to get absolute path: %w", err)
@@ -77,131 +116,107 @@ func (m *Manager) Put(src string) error {
 		return fmt.Errorf("failed to stat file: %w", err)
 	}
 
-	// Select appropriate storage
-	storage, err := m.selectStorageForPath(absPath)
-	if err != nil {
-		if !m.config.EnableHomeFallback {
-			return err
+	// Try each storage in order until one succeeds
+	var lastErr error
+	for _, storage := range m.storages {
+		err := storage.Put(absPath)
+		if err == nil {
+			if m.config.Verbose {
+				if fi.IsDir() {
+					fmt.Printf("Moved directory %s to trash\n", absPath)
+				} else {
+					fmt.Printf("Moved file %s to trash\n", absPath)
+				}
+			}
+			return nil
 		}
-		// Try fallback to home storage
-		storage, err = m.getHomeStorage()
-		if err != nil {
-			return fmt.Errorf("failed to get home storage for fallback: %w", err)
-		}
-		if m.config.Verbose {
-			fmt.Printf("Falling back to home storage for %s\n", absPath)
-		}
+		lastErr = err
+		slog.Debug("storage failed to put file", "storage", storage.Info().Root, "error", err)
 	}
 
-	// Try to put the file
-	if err := storage.Put(absPath); err != nil {
-		return fmt.Errorf("failed to put file: %w", err)
-	}
-
-	if m.config.Verbose {
-		if fi.IsDir() {
-			fmt.Printf("Moved directory %s to trash\n", absPath)
-		} else {
-			fmt.Printf("Moved file %s to trash\n", absPath)
-		}
-	}
-
-	return nil
+	return fmt.Errorf("all storage backends failed to put file: %w", lastErr)
 }
 
 // List returns all files from all storages
-func (m *Manager) List() ([]*File, error) {
-	var allFiles []*File
+func (m *Manager) List() ([]*core.File, error) {
+	var allFiles []*core.File
+	var errs []error
 
 	for _, storage := range m.storages {
 		files, err := storage.List()
 		if err != nil {
-			// Log error but continue with other storages
-			fmt.Fprintf(os.Stderr, "Warning: failed to list files from storage: %v\n", err)
+			errs = append(errs, fmt.Errorf("failed to list files from %s: %w", storage.Info().Root, err))
 			continue
 		}
 		allFiles = append(allFiles, files...)
+	}
+
+	if len(allFiles) == 0 && len(errs) > 0 {
+		return nil, fmt.Errorf("all storage backends failed: %v", errs)
 	}
 
 	return allFiles, nil
 }
 
 // Restore restores the given file
-func (m *Manager) Restore(file *File, dst string) error {
-	if file.storage == nil {
-		return errors.New("file has no associated storage")
+func (m *Manager) Restore(file *core.File, dst string) error {
+	// Find the appropriate storage for this file
+	var targetStorage core.Storage
+	for _, storage := range m.storages {
+		if strings.HasPrefix(file.TrashPath, storage.Info().Root) {
+			targetStorage = storage
+			break
+		}
 	}
-	return file.storage.Restore(file, dst)
+
+	if targetStorage == nil {
+		return errors.New("file does not belong to any known storage")
+	}
+
+	if dst == "" {
+		dst = file.OriginalPath
+	}
+
+	// Check if destination exists
+	// if _, err := os.Stat(dst); err == nil && !m.config.Force { TODO:
+	if _, err := os.Stat(dst); err == nil {
+		return core.ErrFileExists
+	}
+
+	return targetStorage.Restore(file, dst)
 }
 
 // Remove permanently removes the file from trash
-func (m *Manager) Remove(file *File) error {
-	if file.storage == nil {
-		return errors.New("file has no associated storage")
+func (m *Manager) Remove(file *core.File) error {
+	// Find the appropriate storage for this file
+	var targetStorage core.Storage
+	for _, storage := range m.storages {
+		if strings.HasPrefix(file.TrashPath, storage.Info().Root) {
+			targetStorage = storage
+			break
+		}
 	}
-	return file.storage.Remove(file)
+
+	if targetStorage == nil {
+		return errors.New("file does not belong to any known storage")
+	}
+
+	return targetStorage.Remove(file)
 }
 
-// selectStorageForPath selects the appropriate storage for the given path
-func (m *Manager) selectStorageForPath(path string) (Storage, error) {
-	// First storage that accepts the path wins
-	for _, s := range m.storages {
-		info := s.Info()
-		if !info.Available {
-			continue
-		}
-
-		// For XDG storage, check if path is on the same device
-		if info.Location == LocationExternal {
-			// Implementation will check if the path is on the same device
-			if err := m.checkSameDevice(path, info.Root); err == nil {
-				return s, nil
-			}
-			continue
-		}
-
-		// For home storage or legacy storage
-		if info.Location == LocationHome {
-			return s, nil
-		}
+// ListStorages returns information about all available storage backends
+func (m *Manager) ListStorages() []*core.StorageInfo {
+	var infos []*core.StorageInfo
+	for _, storage := range m.storages {
+		infos = append(infos, storage.Info())
 	}
-
-	return nil, errors.New("no suitable storage found for path")
+	return infos
 }
 
-// getHomeStorage returns the home directory storage
-func (m *Manager) getHomeStorage() (Storage, error) {
-	for _, s := range m.storages {
-		info := s.Info()
-		if info.Location == LocationHome && info.Available {
-			return s, nil
-		}
+// IsPrimaryStorageAvailable checks if the primary storage is available
+func (m *Manager) IsPrimaryStorageAvailable() bool {
+	if len(m.storages) == 0 {
+		return false
 	}
-	return nil, errors.New("home storage not available")
-}
-
-// checkSameDevice checks if two paths are on the same device
-func (m *Manager) checkSameDevice(path1, path2 string) error {
-	stat1, err := os.Stat(path1)
-	if err != nil {
-		return err
-	}
-
-	stat2, err := os.Stat(path2)
-	if err != nil {
-		return err
-	}
-
-	// Type assertion to get sys-specific fields
-	sys1, ok1 := stat1.Sys().(*syscall.Stat_t)
-	sys2, ok2 := stat2.Sys().(*syscall.Stat_t)
-	if !ok1 || !ok2 {
-		return errors.New("failed to get device information")
-	}
-
-	if sys1.Dev != sys2.Dev {
-		return errors.New("paths are on different devices")
-	}
-
-	return nil
+	return m.storages[0].Info().Available
 }

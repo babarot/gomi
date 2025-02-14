@@ -14,9 +14,8 @@ import (
 	"github.com/babarot/gomi/internal/debug"
 	"github.com/babarot/gomi/internal/env"
 	"github.com/babarot/gomi/internal/history"
+	"github.com/babarot/gomi/internal/trash"
 	"github.com/babarot/gomi/internal/trash/core"
-	"github.com/babarot/gomi/internal/trash/legacy"
-	"github.com/babarot/gomi/internal/trash/xdg"
 	"github.com/charmbracelet/log"
 	"github.com/jessevdk/go-flags"
 	"github.com/rs/xid"
@@ -52,7 +51,8 @@ type CLI struct {
 	config  config.Config
 	history history.History
 	runID   string
-	storage core.Storage // Storage implementation (XDG or Legacy)
+	// storage core.Storage // Storage implementation (XDG or Legacy)
+	storage *trash.Manager
 }
 
 var runID = sync.OnceValue(func() string {
@@ -102,6 +102,15 @@ func Run(v Version) error {
 			return log.TextFormatter
 		}(),
 	})
+
+	// const SuccessLevel = log.InfoLevel + 1
+	// styles := log.DefaultStyles()
+	// styles.Levels[SuccessLevel] = lipgloss.NewStyle().
+	// 	SetString("IMPORTANT").
+	// 	Bold(true).
+	// 	Foreground(lipgloss.Color("42"))
+	// logger.SetStyles(styles)
+
 	logger.SetOutput(w)
 	logger.With("run_id", runID())
 	slog.SetDefault(slog.New(logger))
@@ -114,33 +123,56 @@ func Run(v Version) error {
 		return err
 	}
 
-	// Initialize appropriate storage based on configuration
-	storageConfig := &core.Config{
-		HomeTrashDir:       cfg.Core.TrashDir,
+	// Initialize appropriate storage using factory
+	// storageType := trash.StorageTypeXDG
+	// if !cfg.Core.UseXDG {
+	// 	storageType = trash.StorageTypeLegacy
+	// }
+
+	trashConfig := core.Config{
+		Type:               core.StorageTypeXDG,
+		UseXDG:             cfg.Core.UseXDG,
 		EnableHomeFallback: cfg.Core.HomeFallback,
+		HomeTrashDir:       cfg.Core.TrashDir,
 		Verbose:            cfg.Core.Verbose,
+		// TODO:
+		TrashDir: cfg.Core.TrashDir,
+		History:  cfg.History,
+	}
+	if !cfg.Core.UseXDG {
+		trashConfig.Type = core.StorageTypeLegacy
+	}
+	storageManager, err := trash.NewManager(&trashConfig)
+	if err != nil {
+		return fmt.Errorf("failed to initialize storage manager: %w", err)
 	}
 
-	var storage core.Storage
-	if cfg.Core.UseXDG {
-		storage, err = xdg.NewStorage(storageConfig)
-		// if legacy, _ := trash.DetectLegacy(); legacy {
-		// 	// storage, err = legacy.NewStorage(storageConfig)
-		// }
-	} else {
-		storage, err = legacy.NewStorage(storageConfig)
-	}
-	if err != nil {
-		return fmt.Errorf("failed to initialize storage: %w", err)
-	}
+	// // Initialize appropriate storage based on configuration
+	// storageConfig := &core.Config{
+	// 	HomeTrashDir:       cfg.Core.TrashDir,
+	// 	EnableHomeFallback: cfg.Core.HomeFallback,
+	// 	Verbose:            cfg.Core.Verbose,
+	// }
+	//
+	// var storage core.Storage
+	// if cfg.Core.UseXDG {
+	// 	storage, err = xdg.NewStorage(storageConfig)
+	// 	// if legacy, _ := trash.DetectLegacy(); legacy {
+	// 	// 	// storage, err = legacy.NewStorage(storageConfig)
+	// 	// }
+	// } else {
+	// 	storage, err = legacy.NewStorage(storageConfig)
+	// }
+	// if err != nil {
+	// 	return fmt.Errorf("failed to initialize storage: %w", err)
+	// }
 
 	cli := CLI{
 		version: v,
 		option:  opt,
 		config:  cfg,
-		history: history.New(cfg.Core.TrashDir, cfg.History),
 		runID:   runID(),
-		storage: storage,
+		storage: storageManager,
 	}
 
 	if err := cli.Run(args); err != nil {
@@ -151,10 +183,6 @@ func Run(v Version) error {
 }
 
 func (c CLI) Run(args []string) error {
-	if err := c.history.Open(); err != nil {
-		return err
-	}
-
 	switch {
 	case c.option.Meta.Version:
 		fmt.Fprint(os.Stdout, c.version.Print())

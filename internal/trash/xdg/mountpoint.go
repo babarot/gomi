@@ -154,7 +154,7 @@ func isValidExternalTrash(path string) bool {
 	info, err := os.Lstat(path)
 	if err != nil {
 		// return fmt.Errorf("failed to stat trash directory: %w", err)
-		slog.Debug("failed to stat trash directory", "path", path, "error", err)
+		slog.Debug("no trash directory", "path", path)
 		return false
 	}
 

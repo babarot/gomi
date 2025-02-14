@@ -38,16 +38,6 @@ type StorageInfo struct {
 	// Available indicates whether this storage is currently available
 	// (e.g., external storage might become unavailable)
 	Available bool
-}
 
-// Config holds configuration for creating Storage instances
-type Config struct {
-	// HomeTrashDir specifies a custom home trash directory
-	HomeTrashDir string
-
-	// EnableHomeFallback enables fallback to home trash when external trash fails
-	EnableHomeFallback bool
-
-	// Verbose enables detailed logging
-	Verbose bool
+	Type StorageType
 }
