@@ -26,8 +26,29 @@ type Config struct {
 }
 
 type Core struct {
-	TrashDir string  `yaml:"trash_dir" validate:"dirpath|allowEmpty"`
-	Restore  Restore `yaml:"restore"`
+	// TrashDir specifies the trash directory location
+	TrashDir string `yaml:"trash_dir" validate:"dirpath|allowEmpty"`
+
+	// UseXDG specifies whether to use XDG trash specification
+	// If false, uses legacy .gomi format
+	UseXDG bool `yaml:"use_xdg"`
+
+	// HomeFallback enables fallback to home trash when external trash fails
+	HomeFallback bool `yaml:"home_fallback"`
+
+	// Restore contains restore-specific settings
+	Restore RestoreConfig `yaml:"restore"`
+
+	// Verbose enables detailed output
+	Verbose bool `yaml:"verbose"`
+}
+
+type RestoreConfig struct {
+	// Confirm asks for confirmation before restoring
+	Confirm bool `yaml:"confirm"`
+
+	// Verbose enables detailed output during restore
+	Verbose bool `yaml:"verbose"`
 }
 
 type UI struct {
@@ -41,11 +62,6 @@ type UI struct {
 type History struct {
 	Include includeConfig `yaml:"include"`
 	Exclude excludeConfig `yaml:"exclude"`
-}
-
-type Restore struct {
-	Verbose bool `yaml:"verbose"`
-	Confirm bool `yaml:"confirm"`
 }
 
 type includeConfig struct {
@@ -103,49 +119,37 @@ type color struct {
 	Background string `yaml:"bg"`
 }
 
-type configError struct {
-	configPath string
-	configDir  string
-	parser     parser
-	err        error
-}
-
+// Parser handles configuration file parsing and validation
 type parser struct{}
-
-func validSize(fl validator.FieldLevel) bool {
-	value := strings.ToUpper(fl.Field().String())
-	re := regexp.MustCompile(`^\d+(KB|MB|GB|TB|PB)$`)
-	return re.MatchString(value)
-}
-
-func allowEmpty(fl validator.FieldLevel) bool {
-	str := fl.Field().String()
-	return strings.TrimSpace(str) == "" || fl.Parent().FieldByName(fl.StructFieldName()).IsValid()
-}
 
 func (p parser) getDefaultConfig() Config {
 	return Config{
 		Core: Core{
-			TrashDir: filepath.Join(os.Getenv("HOME"), ".gomi"),
-			Restore: Restore{
-				Verbose: true,
+			// Default to XDG spec if config doesn't exist
+			UseXDG: true,
+			// Default to $XDG_DATA_HOME/Trash for XDG spec
+			TrashDir:     filepath.Join(os.Getenv("HOME"), ".local", "share", "Trash"),
+			HomeFallback: true,
+			Restore: RestoreConfig{
 				Confirm: true,
+				Verbose: true,
 			},
+			Verbose: false,
 		},
 		UI: UI{
-			Density:     "spacious", // or compact
+			Density:     "spacious",
 			ExitMessage: "bye!",
 			Preview: previewConfig{
 				SyntaxHighlight:  true,
 				Colorscheme:      "nord",
 				DirectoryCommand: "ls -GF -1 -A --color=always",
 			},
-			Paginator: "dots", // or arabic
+			Paginator: "dots",
 			Style: styleConfig{
 				ListView: ListView{
 					IndentOnSelect: true,
-					Cursor:         "#AD58B4", // Purple
-					Selected:       "#5FB458", // Green
+					Cursor:         "#AD58B4",
+					Selected:       "#5FB458",
 				},
 				DetailView: DetailView{
 					Border: "#EEEEDD",
@@ -179,9 +183,6 @@ func (p parser) getDefaultConfig() Config {
 			},
 			Exclude: excludeConfig{
 				Files: []string{
-					// In macOS, .DS_Store is a file that stores custom attributes of its
-					// containing folder, such as folder view options, icon positions,
-					// and other visual information
 					".DS_Store",
 				},
 				Patterns: []string{},
@@ -193,6 +194,24 @@ func (p parser) getDefaultConfig() Config {
 			},
 		},
 	}
+}
+
+type configError struct {
+	configPath string
+	configDir  string
+	parser     parser
+	err        error
+}
+
+func validSize(fl validator.FieldLevel) bool {
+	value := strings.ToUpper(fl.Field().String())
+	re := regexp.MustCompile(`^\d+(KB|MB|GB|TB|PB)$`)
+	return re.MatchString(value)
+}
+
+func allowEmpty(fl validator.FieldLevel) bool {
+	str := fl.Field().String()
+	return strings.TrimSpace(str) == "" || fl.Parent().FieldByName(fl.StructFieldName()).IsValid()
 }
 
 func (p parser) getDefaultConfigContents() string {
@@ -347,6 +366,11 @@ func Parse(path string) (Config, error) {
 	cfg, err = parser.readConfigFile(configPath)
 	if err != nil {
 		return cfg, parsingError{err: err}
+	}
+
+	// If using legacy format, adjust trash dir
+	if !cfg.Core.UseXDG && cfg.Core.TrashDir == "" {
+		cfg.Core.TrashDir = filepath.Join(os.Getenv("HOME"), ".gomi")
 	}
 
 	// expand tilda etc

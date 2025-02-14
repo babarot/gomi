@@ -68,7 +68,7 @@ func (m Model) renderFooter() string {
 
 func (m Model) renderDeletedFrom() string {
 	file := m.detailFile
-	text := filepath.Dir(file.From)
+	text := filepath.Dir(file.OriginalPath)
 	w := wordwrap.NewWriter(46)
 	w.Breakpoints = []rune{'/', '.'}
 	w.KeepNewlines = false
@@ -87,9 +87,9 @@ func (m Model) renderDeletedAt() string {
 	var ts string
 	switch m.datefmt {
 	case datefmtAbs:
-		ts = file.Timestamp.Format(time.DateTime)
+		ts = file.DeletedAt.Format(time.DateTime)
 	default:
-		ts = humanize.Time(file.Timestamp)
+		ts = humanize.Time(file.DeletedAt)
 	}
 	return styles.DeletedAtSection(m.config).Render(
 		lipgloss.JoinHorizontal(
@@ -119,7 +119,7 @@ func (m Model) previewFooter() string {
 func (m Model) renderPreview() string {
 	content := m.viewport.View()
 	if m.cannotPreview {
-		mtype, _ := mimetype.DetectFile(m.detailFile.To)
+		mtype, _ := mimetype.DetectFile(m.detailFile.TrashPath)
 		verticalMarginHeight := lipgloss.Height(m.previewHeader())
 		content = lipgloss.Place(defaultWidth, 15-verticalMarginHeight,
 			lipgloss.Center, lipgloss.Center,

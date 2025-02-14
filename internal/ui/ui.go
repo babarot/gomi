@@ -8,10 +8,8 @@ import (
 	"sort"
 
 	"github.com/babarot/gomi/internal/config"
-	"github.com/babarot/gomi/internal/history"
+	"github.com/babarot/gomi/internal/trash/core"
 	"github.com/babarot/gomi/internal/ui/keys"
-
-	// "github.com/babarot/gomi/internal/ui/state"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -115,10 +113,10 @@ func (m Model) loadInventory() tea.Msg {
 		return errorMsg{errors.New("no deleted files found")}
 	}
 	sort.Slice(files, func(i, j int) bool {
-		return files[i].File.Timestamp.After(files[j].File.Timestamp)
+		return files[i].File.DeletedAt.After(files[j].File.DeletedAt)
 	})
 	files = lo.Reject(files, func(f File, index int) bool {
-		_, err := os.Stat(f.File.To)
+		_, err := os.Stat(f.File.TrashPath)
 		return os.IsNotExist(err)
 	})
 	items := make([]list.Item, len(files))
@@ -358,7 +356,7 @@ func (m *Model) newViewportModel(file File) viewport.Model {
 	return viewportModel
 }
 
-func RenderList(filteredFiles []history.File, cfg config.UI) ([]history.File, error) {
+func RenderList(filteredFiles []*core.File, cfg config.UI) ([]*core.File, error) {
 	var items []list.Item
 	var files []File
 	for _, file := range filteredFiles {
@@ -403,7 +401,7 @@ func RenderList(filteredFiles []history.File, cfg config.UI) ([]history.File, er
 
 	returnModel, err := tea.NewProgram(m).Run()
 	if err != nil {
-		return []history.File{}, err
+		return []*core.File{}, err
 	}
 
 	choices := returnModel.(Model).choices
@@ -411,10 +409,10 @@ func RenderList(filteredFiles []history.File, cfg config.UI) ([]history.File, er
 		if msg := cfg.ExitMessage; msg != "" {
 			fmt.Println(msg)
 		}
-		return []history.File{}, nil
+		return []*core.File{}, nil
 	}
 
-	invFiles := make([]history.File, len(choices))
+	invFiles := make([]*core.File, len(choices))
 	for i, file := range choices {
 		invFiles[i] = file.File
 	}
