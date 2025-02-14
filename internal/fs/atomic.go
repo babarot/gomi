@@ -15,10 +15,10 @@ func Create(path string, perm os.FileMode) (*os.File, error) {
 	return os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, perm)
 }
 
-// MoveFile moves a file or directory from src to dst.
+// Move moves a file or directory from src to dst.
 // If the move fails due to being on different devices and fallbackCopy is true,
 // it will fall back to copy and delete.
-func MoveFile(src, dst string, fallbackCopy bool) error {
+func Move(src, dst string, fallbackCopy bool) error {
 	// Ensure the destination directory exists
 	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
 		return fmt.Errorf("failed to create destination directory: %w", err)

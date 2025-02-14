@@ -105,7 +105,7 @@ func (s *Storage) Put(src string) error {
 	}
 
 	// Move file to trash
-	if err := fs.MoveFile(abs, trashPath, false); err != nil {
+	if err := fs.Move(abs, trashPath, false); err != nil {
 		return core.NewStorageError("put", src, err)
 	}
 
@@ -123,7 +123,7 @@ func (s *Storage) Put(src string) error {
 	// Save history
 	if err := s.saveHistory(); err != nil {
 		// Try to roll back the file move
-		if moveErr := fs.MoveFile(trashPath, abs, false); moveErr != nil {
+		if moveErr := fs.Move(trashPath, abs, false); moveErr != nil {
 			return core.NewStorageError("put", src, fmt.Errorf("failed to save history and rollback failed: %v (original error: %w)", moveErr, err))
 		}
 		return core.NewStorageError("put", src, fmt.Errorf("failed to save history: %w", err))
@@ -143,7 +143,7 @@ func (s *Storage) Restore(file *core.File, dst string) error {
 	}
 
 	// Move file back
-	if err := fs.MoveFile(file.TrashPath, dst, false); err != nil {
+	if err := fs.Move(file.TrashPath, dst, false); err != nil {
 		return core.NewStorageError("restore", dst, err)
 	}
 

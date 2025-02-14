@@ -77,7 +77,7 @@ func (f File) Size() string {
 func (f File) Browse() (string, error) {
 	var content string
 
-	fi, err := os.Stat(f.TrashPath)
+	fi, err := os.Lstat(f.TrashPath)
 	if err != nil {
 		slog.Debug("no such file", "file", f.TrashPath)
 		return content, errCannotPreview
@@ -115,12 +115,10 @@ func (f File) Browse() (string, error) {
 	if err != nil {
 		return content, err
 	}
-	switch {
-	case
-		mtype.Is("text/plain"),
-		mtype.Parent().Is("text/plain"):
-		// can preview
-	default:
+	slog.Warn("mimetype.DetectFile", "mtype", mtype.Parent())
+	if mtype.Is("text/plain") || (mtype.Parent() != nil && mtype.Parent().Is("text/plain")) {
+		// ok
+	} else {
 		slog.Debug("cannot preview", "mimetype", mtype.String())
 		return content, errCannotPreview
 	}

@@ -124,7 +124,7 @@ func (s *Storage) Put(src string) error {
 
 	// Move file to trash
 	dstPath := filepath.Join(loc.filesDir, trashName)
-	if err := fs.MoveFile(abs, dstPath, s.config.EnableHomeFallback); err != nil {
+	if err := fs.Move(abs, dstPath, s.config.EnableHomeFallback); err != nil {
 		// If move fails, clean up the .trashinfo file
 		os.Remove(infoPath)
 		return core.NewStorageError("put", src, fmt.Errorf("failed to move file to trash: %w", err))
@@ -168,7 +168,7 @@ func (s *Storage) Restore(file *core.File, dst string) error {
 	}
 
 	// Move file back
-	if err := fs.MoveFile(file.TrashPath, dst, s.config.EnableHomeFallback); err != nil {
+	if err := fs.Move(file.TrashPath, dst, s.config.EnableHomeFallback); err != nil {
 		return core.NewStorageError("restore", dst, err)
 	}
 
