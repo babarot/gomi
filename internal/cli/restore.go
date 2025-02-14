@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/babarot/gomi/internal/trash/core"
+	"github.com/babarot/gomi/internal/trash"
 	"github.com/babarot/gomi/internal/ui"
 )
 
@@ -57,8 +57,8 @@ func (c *CLI) Restore() error {
 }
 
 // filterFiles applies configured filters to the list of files
-func (c *CLI) filterFiles(files []*core.File) []*core.File {
-	var filtered []*core.File
+func (c *CLI) filterFiles(files []*trash.File) []*trash.File {
+	var filtered []*trash.File
 
 	for _, file := range files {
 		// Skip files that don't exist anymore
@@ -78,7 +78,7 @@ func (c *CLI) filterFiles(files []*core.File) []*core.File {
 }
 
 // restoreFile handles the restoration of a single file
-func (c *CLI) restoreFile(file *core.File) error {
+func (c *CLI) restoreFile(file *trash.File) error {
 	// Check if destination exists
 	originalPath := file.OriginalPath
 	if _, err := os.Stat(originalPath); err == nil {

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/babarot/gomi/internal/trash/core"
+	"github.com/babarot/gomi/internal/trash"
 	"github.com/moby/sys/mountinfo"
 )
 
@@ -139,7 +139,7 @@ func isOnSameDevice(path1, path2 string) (bool, error) {
 	stat2, ok2 := info2.Sys().(*syscall.Stat_t)
 
 	if !ok1 || !ok2 {
-		return false, core.NewStorageError("check-device", "", fmt.Errorf("failed to get device information"))
+		return false, trash.NewStorageError("check-device", "", fmt.Errorf("failed to get device information"))
 	}
 
 	slog.Debug("device comparison",
@@ -153,14 +153,12 @@ func isOnSameDevice(path1, path2 string) (bool, error) {
 func isValidExternalTrash(path string) bool {
 	info, err := os.Lstat(path)
 	if err != nil {
-		// return fmt.Errorf("failed to stat trash directory: %w", err)
 		slog.Debug("no trash directory", "path", path)
 		return false
 	}
 
 	// Must be a directory
 	if !info.IsDir() {
-		// return fmt.Errorf("%s is not a directory", path)
 		slog.Debug("not a directory", "path", path)
 		return false
 	}

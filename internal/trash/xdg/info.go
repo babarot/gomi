@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/babarot/gomi/internal/fs"
-	"github.com/babarot/gomi/internal/trash/core"
+	"github.com/babarot/gomi/internal/trash"
 )
 
 const (
@@ -101,13 +101,13 @@ func parseTrashInfo(r io.Reader) (*TrashInfo, error) {
 
 	// Validate required fields
 	if !headerFound {
-		return nil, core.NewStorageError("parse", "", fmt.Errorf("missing [Trash Info] header"))
+		return nil, trash.NewStorageError("parse", "", fmt.Errorf("missing [Trash Info] header"))
 	}
 	if info.Path == "" {
-		return nil, core.NewStorageError("parse", "", fmt.Errorf("missing Path field"))
+		return nil, trash.NewStorageError("parse", "", fmt.Errorf("missing Path field"))
 	}
 	if info.DeletionDate.IsZero() {
-		return nil, core.NewStorageError("parse", "", fmt.Errorf("missing DeletionDate field"))
+		return nil, trash.NewStorageError("parse", "", fmt.Errorf("missing DeletionDate field"))
 	}
 
 	return info, nil

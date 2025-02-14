@@ -8,7 +8,7 @@ import (
 	"sort"
 
 	"github.com/babarot/gomi/internal/config"
-	"github.com/babarot/gomi/internal/trash/core"
+	"github.com/babarot/gomi/internal/trash"
 	"github.com/babarot/gomi/internal/ui/keys"
 
 	"github.com/charmbracelet/bubbles/help"
@@ -356,7 +356,7 @@ func (m *Model) newViewportModel(file File) viewport.Model {
 	return viewportModel
 }
 
-func RenderList(filteredFiles []*core.File, cfg config.UI) ([]*core.File, error) {
+func RenderList(filteredFiles []*trash.File, cfg config.UI) ([]*trash.File, error) {
 	var items []list.Item
 	var files []File
 	for _, file := range filteredFiles {
@@ -401,7 +401,7 @@ func RenderList(filteredFiles []*core.File, cfg config.UI) ([]*core.File, error)
 
 	returnModel, err := tea.NewProgram(m).Run()
 	if err != nil {
-		return []*core.File{}, err
+		return []*trash.File{}, err
 	}
 
 	choices := returnModel.(Model).choices
@@ -409,10 +409,10 @@ func RenderList(filteredFiles []*core.File, cfg config.UI) ([]*core.File, error)
 		if msg := cfg.ExitMessage; msg != "" {
 			fmt.Println(msg)
 		}
-		return []*core.File{}, nil
+		return []*trash.File{}, nil
 	}
 
-	invFiles := make([]*core.File, len(choices))
+	invFiles := make([]*trash.File, len(choices))
 	for i, file := range choices {
 		invFiles[i] = file.File
 	}

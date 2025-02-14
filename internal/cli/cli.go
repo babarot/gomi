@@ -10,10 +10,12 @@ import (
 	"sync"
 	"time"
 
+	_ "github.com/babarot/gomi/internal/trash/legacy"
+	_ "github.com/babarot/gomi/internal/trash/xdg"
+
 	"github.com/babarot/gomi/internal/config"
 	"github.com/babarot/gomi/internal/env"
 	"github.com/babarot/gomi/internal/trash"
-	"github.com/babarot/gomi/internal/trash/core"
 	"github.com/babarot/gomi/internal/utils/debug"
 	"github.com/charmbracelet/log"
 	"github.com/jessevdk/go-flags"
@@ -120,8 +122,8 @@ func Run(v Version) error {
 	// 	storageType = trash.StorageTypeLegacy
 	// }
 
-	trashConfig := core.Config{
-		Type:               core.StorageTypeXDG,
+	trashConfig := trash.Config{
+		Type:               trash.StorageTypeXDG,
 		UseXDG:             cfg.Core.UseXDG,
 		EnableHomeFallback: cfg.Core.HomeFallback,
 		HomeTrashDir:       cfg.Core.TrashDir,
@@ -132,7 +134,7 @@ func Run(v Version) error {
 		RunID:    runID(),
 	}
 	if !cfg.Core.UseXDG {
-		trashConfig.Type = core.StorageTypeLegacy
+		trashConfig.Type = trash.StorageTypeLegacy
 	}
 	storageManager, err := trash.NewManager(trashConfig)
 	if err != nil {

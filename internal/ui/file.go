@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/babarot/gomi/internal/fs"
-	"github.com/babarot/gomi/internal/trash/core"
+	"github.com/babarot/gomi/internal/trash"
 	"github.com/babarot/gomi/internal/utils/shell"
 
 	"al.essio.dev/pkg/shellescape"
@@ -24,7 +24,7 @@ import (
 )
 
 type File struct {
-	*core.File
+	*trash.File
 
 	dirListCommand  string
 	syntaxHighlight bool

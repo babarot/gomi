@@ -1,21 +1,12 @@
+// Package trash provides the core functionality for trash management
 package trash
 
 import (
-	"errors"
 	"fmt"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"time"
-)
-
-// Common errors that can be returned by Storage implementations
-var (
-	ErrNotFound         = errors.New("file not found in trash")
-	ErrInvalidStorage   = errors.New("invalid storage")
-	ErrCrossDevice      = errors.New("cross-device operation not supported")
-	ErrStorageNotReady  = errors.New("storage is not ready")
-	ErrPermissionDenied = errors.New("permission denied")
-	ErrFileExists       = errors.New("file already exists")
 )
 
 // Storage defines the interface for different trash implementations
@@ -37,11 +28,56 @@ type Storage interface {
 	Info() *StorageInfo
 }
 
+// StorageConstructor is a function type for creating new Storage instances
+type StorageConstructor func(Config) (Storage, error)
+
+// storageImplementations holds registered Storage implementations
+var storageImplementations = make(map[StorageType]StorageConstructor)
+
+// RegisterStorage registers a new Storage implementation
+func RegisterStorage(typ StorageType, constructor StorageConstructor) {
+	storageImplementations[typ] = constructor
+}
+
+// NewStorage creates a new Storage instance of the specified type
+func NewStorage(cfg Config) (Storage, error) {
+	constructor, ok := storageImplementations[cfg.Type]
+	if !ok {
+		return nil, fmt.Errorf("unknown storage type: %v", cfg.Type)
+	}
+	return constructor(cfg)
+}
+
+// StorageType represents the type of trash storage
+type StorageType int
+
+const (
+	// StorageTypeXDG represents XDG-compliant trash storage
+	StorageTypeXDG StorageType = iota
+
+	// StorageTypeLegacy represents legacy (.gomi) trash storage
+	StorageTypeLegacy
+)
+
+func (t StorageType) String() string {
+	switch t {
+	case StorageTypeXDG:
+		return "xdg"
+	case StorageTypeLegacy:
+		return "legacy"
+	default:
+		return "unknown"
+	}
+}
+
 // StorageLocation represents where the trash storage is located
 type StorageLocation int
 
 const (
+	// LocationHome indicates home directory storage
 	LocationHome StorageLocation = iota
+
+	// LocationExternal indicates external device storage
 	LocationExternal
 )
 
@@ -56,6 +92,9 @@ type StorageInfo struct {
 	// Available indicates whether this storage is currently available
 	// (e.g., external storage might become unavailable)
 	Available bool
+
+	// Type indicates the storage implementation type
+	Type StorageType
 }
 
 // File represents a file in trash
@@ -85,28 +124,6 @@ type File struct {
 	storage Storage
 }
 
-// setStorage sets the storage reference for this file
-// This is used internally by Storage implementations
-func (f *File) setStorage(s Storage) {
-	f.storage = s
-}
-
-// Restore restores the file to its original location or specified destination
-func (f *File) Restore(dst string) error {
-	if f.storage == nil {
-		return fmt.Errorf("cannot restore: %w", ErrInvalidStorage)
-	}
-	return f.storage.Restore(f, dst)
-}
-
-// Remove permanently removes the file from trash
-func (f *File) Remove() error {
-	if f.storage == nil {
-		return fmt.Errorf("cannot remove: %w", ErrInvalidStorage)
-	}
-	return f.storage.Remove(f)
-}
-
 // Exists checks if the file still exists in the trash
 func (f *File) Exists() bool {
 	_, err := os.Stat(f.TrashPath)
@@ -121,4 +138,66 @@ func (f *File) RequiresAdmin() bool {
 		return false
 	}
 	return info.Mode().Perm()&0200 == 0
+}
+
+// SetStorage sets the storage reference for this file
+func (f *File) SetStorage(s Storage) {
+	f.storage = s
+}
+
+// GetStorage returns the storage reference for this file
+func (f *File) GetStorage() Storage {
+	return f.storage
+}
+
+// DetectExistingStorage tries to detect what type of storage is already in use
+func DetectExistingStorage() (StorageType, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return StorageTypeXDG, fmt.Errorf("failed to get home directory: %w", err)
+	}
+
+	// Check for legacy storage (.gomi)
+	legacyPath := filepath.Join(home, ".gomi")
+	if fi, err := os.Stat(legacyPath); err == nil && fi.IsDir() {
+		return StorageTypeLegacy, nil
+	}
+
+	// Check for XDG storage
+	xdgPath := filepath.Join(home, ".local", "share", "Trash")
+	if fi, err := os.Stat(xdgPath); err == nil && fi.IsDir() {
+		return StorageTypeXDG, nil
+	}
+
+	// Default to XDG if no existing storage is found
+	return StorageTypeXDG, nil
+}
+
+// AutoConfigure creates a default configuration based on the environment
+func AutoConfigure() (*Config, error) {
+	storageType, err := DetectExistingStorage()
+	if err != nil {
+		return nil, err
+	}
+
+	cfg := NewDefaultConfig()
+	cfg.Type = storageType
+	cfg.UseXDG = (storageType == StorageTypeXDG)
+
+	return cfg, nil
+}
+
+// DetectExistingLegacy checks if legacy storage exists
+func DetectExistingLegacy() (bool, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return false, fmt.Errorf("failed to get home directory: %w", err)
+	}
+
+	legacyPath := filepath.Join(home, ".gomi")
+	if fi, err := os.Stat(legacyPath); err == nil && fi.IsDir() {
+		return true, nil
+	}
+
+	return false, nil
 }
