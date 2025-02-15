@@ -38,7 +38,7 @@ func (f File) isSelected() bool {
 func (f File) Description() string {
 	_, err := os.Stat(f.File.TrashPath)
 	if os.IsNotExist(err) {
-		return "(already might have been deleted)"
+		return "(already might have been deleted or unmounted)"
 	}
 
 	return fmt.Sprintf("%s %s %s",
