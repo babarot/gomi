@@ -237,6 +237,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.viewType = LIST_VIEW
 			}
 
+		case key.Matches(msg, m.listKeys.Delete):
+			switch m.viewType {
+			case LIST_VIEW:
+				if m.list.FilterState() != list.Filtering {
+					file, ok := m.list.SelectedItem().(File)
+					if ok {
+						cmds = append(cmds, getInventoryDetails(file))
+					}
+					if err := os.Remove(file.File.TrashPath); err != nil {
+						return m, errorCmd(err)
+					}
+				}
+			}
+
 		case key.Matches(msg, m.listKeys.Space):
 			switch m.viewType {
 			case LIST_VIEW:
