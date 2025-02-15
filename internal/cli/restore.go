@@ -50,8 +50,6 @@ func (c *CLI) Restore() error {
 			return err
 		}
 	}
-	// Process selected files
-	fmt.Printf("Selected %d files to restore\n", len(selected))
 
 	return nil
 }
@@ -79,6 +77,7 @@ func (c *CLI) filterFiles(files []*trash.File) []*trash.File {
 
 // restoreFile handles the restoration of a single file
 func (c *CLI) restoreFile(file *trash.File) error {
+	verbose := c.config.Core.Restore.Verbose
 	// Check if destination exists
 	originalPath := file.OriginalPath
 	if _, err := os.Stat(originalPath); err == nil {
@@ -86,7 +85,7 @@ func (c *CLI) restoreFile(file *trash.File) error {
 		newName, err := ui.InputFilename(file)
 		if err != nil {
 			if errors.Is(err, ui.ErrInputCanceled) {
-				if c.config.Core.Verbose {
+				if verbose {
 					if newName == "" {
 						fmt.Printf("canceled!\n")
 					} else {
@@ -99,12 +98,13 @@ func (c *CLI) restoreFile(file *trash.File) error {
 		}
 		// Update destination path with new name
 		originalPath = filepath.Join(filepath.Dir(originalPath), newName)
+		file.OriginalPath = originalPath
 	}
 
 	// If configured, ask for confirmation
 	if c.config.Core.Restore.Confirm {
 		if !ui.Confirm(fmt.Sprintf("OK to restore? %s", filepath.Base(originalPath))) {
-			if c.config.Core.Verbose {
+			if verbose {
 				fmt.Printf("Replied no, canceled!\n")
 			}
 			return nil
@@ -116,7 +116,7 @@ func (c *CLI) restoreFile(file *trash.File) error {
 		msg := fmt.Sprintf("Caution! The same name already exists. Even so okay to restore? %s",
 			filepath.Base(originalPath))
 		if !ui.Confirm(msg) {
-			if c.config.Core.Verbose {
+			if verbose {
 				fmt.Printf("Replied no, canceled!\n")
 			}
 			return nil
@@ -128,8 +128,8 @@ func (c *CLI) restoreFile(file *trash.File) error {
 		return fmt.Errorf("failed to restore '%s': %w", file.Name, err)
 	}
 
-	if c.config.Core.Verbose {
-		fmt.Printf("restored '%s' to %s\n", file.Name, originalPath)
+	if verbose {
+		fmt.Printf("Restored '%s' to %s\n", file.Name, originalPath)
 	}
 
 	return nil

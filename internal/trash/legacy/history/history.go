@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/babarot/gomi/internal/config"
-	"github.com/babarot/gomi/internal/trash/filter"
+	"github.com/babarot/gomi/internal/trash"
 	"github.com/k0kubun/pp/v3"
 	"github.com/rs/xid"
 )
@@ -104,7 +104,6 @@ func (h *History) Open() error {
 		return err
 	}
 
-	slog.Debug("history version", "version", h.Version)
 	return nil
 }
 
@@ -180,11 +179,11 @@ func (h *History) setVersion() {
 }
 
 func (h History) Filter() []File {
-	opts := filter.Options{
+	opts := trash.FilterOptions{
 		Include: h.config.Include,
 		Exclude: h.config.Exclude,
 	}
-	return filter.Filter(h.Files, opts)
+	return trash.Filter(h.Files, opts)
 }
 
 func (h History) FileInfo(runID string, arg string) (File, error) {
@@ -237,4 +236,9 @@ func (h *History) RemoveByPath(path string) {
 		}
 	}
 	h.Files = filtered
+}
+
+// Add adds a file to the history
+func (h *History) Add(file File) {
+	h.Files = append(h.Files, file)
 }

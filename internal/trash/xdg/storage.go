@@ -10,7 +10,6 @@ import (
 
 	"github.com/babarot/gomi/internal/fs"
 	"github.com/babarot/gomi/internal/trash"
-	"github.com/babarot/gomi/internal/trash/filter"
 )
 
 // Storage implements the trash.Storage interface for XDG trash specification
@@ -345,9 +344,9 @@ func (s *Storage) selectTrashLocation(path string) (*trashLocation, error) {
 }
 
 func (s *Storage) filter(files []*trash.File) []*trash.File {
-	opts := filter.Options{
+	opts := trash.FilterOptions{
 		Include: s.config.History.Include,
 		Exclude: s.config.History.Exclude,
 	}
-	return filter.Filter(files, opts)
+	return trash.Filter(files, opts)
 }

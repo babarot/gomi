@@ -36,9 +36,6 @@ type Core struct {
 
 	// Restore contains restore-specific settings
 	Restore RestoreConfig `yaml:"restore"`
-
-	// Verbose enables detailed output
-	Verbose bool `yaml:"verbose"`
 }
 
 type Trash struct {
@@ -137,22 +134,21 @@ func (p parser) getDefaultConfig() Config {
 				Confirm: true,
 				Verbose: true,
 			},
-			Verbose: false,
 		},
 		UI: UI{
-			Density:     "spacious",
+			Density:     "spacious", // or compact
 			ExitMessage: "bye!",
 			Preview: previewConfig{
 				SyntaxHighlight:  true,
 				Colorscheme:      "nord",
 				DirectoryCommand: "ls -GF -1 -A --color=always",
 			},
-			Paginator: "dots",
+			Paginator: "dots", // or arabic
 			Style: styleConfig{
 				ListView: ListView{
 					IndentOnSelect: true,
-					Cursor:         "#AD58B4",
-					Selected:       "#5FB458",
+					Cursor:         "#AD58B4", // Purple
+					Selected:       "#5FB458", // Green
 				},
 				DetailView: DetailView{
 					Border: "#EEEEDD",
@@ -186,6 +182,9 @@ func (p parser) getDefaultConfig() Config {
 			},
 			Exclude: ExcludeConfig{
 				Files: []string{
+					// In macOS, .DS_Store is a file that stores custom attributes of its
+					// containing folder, such as folder view options, icon positions,
+					// and other visual information
 					".DS_Store",
 				},
 				Patterns: []string{},

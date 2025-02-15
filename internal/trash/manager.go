@@ -112,12 +112,10 @@ func (m *Manager) Put(src string) error {
 	for _, storage := range m.storages {
 		err := storage.Put(path)
 		if err == nil {
-			if m.config.Verbose {
-				if fi.IsDir() {
-					fmt.Printf("moved directory '%s' to trash\n", path)
-				} else {
-					fmt.Printf("moved file '%s' to trash\n", path)
-				}
+			if fi.IsDir() {
+				slog.Debug("moved directory to trash", "path", path)
+			} else {
+				slog.Debug("moved file to trash", "path", path)
 			}
 			return nil
 		}
@@ -139,13 +137,18 @@ func (m *Manager) List() ([]*File, error) {
 
 	for _, storage := range m.storages {
 		files, err := storage.List()
-		slog.Debug("list files", "storage_type", storage.Info().Type)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("failed to list files from %s: %w",
 				storage.Info().Root, err))
 			continue
 		}
 		allFiles = append(allFiles, files...)
+		slog.Debug("list files",
+			"storage_type",
+			storage.Info().Type,
+			"len(files)",
+			len(files),
+		)
 	}
 
 	if len(allFiles) == 0 && len(errs) > 0 {

@@ -44,9 +44,6 @@ type Config struct {
 	// UseCompression enables compression for trashed files
 	UseCompression bool
 
-	// Verbose enables detailed output
-	Verbose bool
-
 	// HomeFallback enables fallback to home trash when external trash fails
 	HomeFallback bool
 
@@ -61,10 +58,9 @@ type Config struct {
 // NewDefaultConfig creates a new Config with default values
 func NewDefaultConfig() *Config {
 	return &Config{
+		Strategy:           StrategyAuto,
 		Type:               StorageTypeXDG,
 		EnableHomeFallback: true,
-		Strategy:           StrategyAuto,
-		Verbose:            false,
 	}
 }
 

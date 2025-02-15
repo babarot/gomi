@@ -50,20 +50,16 @@ func NewStorage(cfg trash.Config) (trash.Storage, error) {
 		config:      cfg,
 		history:     history.New(cfg.TrashDir, cfg.History),
 	}
-	if err := s.history.Open(); err != nil {
-		slog.Error("failed to open legacy history", "error", err)
-	}
 
 	// Create trash directory if it doesn't exist
 	if err := os.MkdirAll(root, 0700); err != nil {
 		return nil, fmt.Errorf("failed to create trash directory: %w", err)
 	}
 
-	// TODO: replace with opne.
 	// Load history
-	// if err := s.loadHistory(); err != nil {
-	// 	return nil, fmt.Errorf("failed to load history: %w", err)
-	// }
+	if err := s.loadHistory(); err != nil {
+		return nil, fmt.Errorf("failed to load history: %w", err)
+	}
 
 	return s, nil
 }
@@ -99,24 +95,28 @@ func (s *Storage) Put(src string) error {
 	}
 
 	// Add to history
-	file := history.File{
+	s.history.Add(history.File{
 		Name:      filepath.Base(abs),
 		ID:        id,
 		RunID:     id, // For compatibility with old format
 		From:      abs,
 		To:        trashPath,
 		Timestamp: time.Now(),
-	}
-	// s.history.Add(file)
-	s.history.Files = append(s.history.Files, file)
+	})
 
 	// Save history
 	if err := s.saveHistory(); err != nil {
 		// Try to roll back the file move
 		if moveErr := fs.Move(trashPath, abs, false); moveErr != nil {
-			return trash.NewStorageError("put", src, fmt.Errorf("failed to save history and rollback failed: %v (original error: %w)", moveErr, err))
+			return trash.NewStorageError(
+				"put",
+				src,
+				fmt.Errorf("failed to save history and rollback failed: %v (original error: %w)", moveErr, err))
 		}
-		return trash.NewStorageError("put", src, fmt.Errorf("failed to save history: %w", err))
+		return trash.NewStorageError(
+			"put",
+			src,
+			fmt.Errorf("failed to save history: %w", err))
 	}
 
 	return nil
@@ -164,9 +164,6 @@ func (s *Storage) Restore(file *trash.File, dst string) error {
 	}
 
 	// Remove from history
-	// if legacyFile := s.history.FindByPath(file.TrashPath); legacyFile != nil {
-	// 	s.history.Remove(filepath.Base(file.TrashPath))
-	// }
 	s.history.RemoveByPath(file.TrashPath)
 
 	// Save history
@@ -184,9 +181,6 @@ func (s *Storage) Remove(file *trash.File) error {
 	}
 
 	// Remove from history
-	// if legacyFile := s.history.FindByPath(file.TrashPath); legacyFile != nil {
-	// 	s.history.Remove(filepath.Base(file.TrashPath))
-	// }
 	s.history.RemoveByPath(file.TrashPath)
 
 	// Save history
@@ -198,6 +192,13 @@ func (s *Storage) Remove(file *trash.File) error {
 }
 
 func (s *Storage) loadHistory() error {
+	if err := s.history.Open(); err != nil {
+		slog.Error("failed to open legacy history", "error", err)
+		return err
+	}
+
+	/* TODO: Remove this logic or keep instead of s.history.Open()
+
 	if _, err := os.Stat(s.historyPath); os.IsNotExist(err) {
 		// No history file yet, start with empty history
 		return nil
@@ -209,9 +210,10 @@ func (s *Storage) loadHistory() error {
 	}
 	defer f.Close()
 
-	if err := json.NewDecoder(f).Decode(s.history); err != nil {
+	if err := json.NewDecoder(f).Decode(&s.history); err != nil {
 		return fmt.Errorf("failed to decode history file: %w", err)
 	}
+	*/
 
 	return nil
 }

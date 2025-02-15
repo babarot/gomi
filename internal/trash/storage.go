@@ -145,31 +145,8 @@ type Storage interface {
 // StorageConstructor is a function type for creating new Storage instances
 type StorageConstructor func(Config) (Storage, error)
 
-// DetectExistingStorage tries to detect what type of storage is already in use
-func DetectExistingStorage() (StorageType, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return StorageTypeXDG, fmt.Errorf("failed to get home directory: %w", err)
-	}
-
-	// Check for legacy storage (.gomi)
-	legacyPath := filepath.Join(home, ".gomi")
-	if fi, err := os.Stat(legacyPath); err == nil && fi.IsDir() {
-		return StorageTypeLegacy, nil
-	}
-
-	// Check for XDG storage
-	xdgPath := filepath.Join(home, ".local", "share", "Trash")
-	if fi, err := os.Stat(xdgPath); err == nil && fi.IsDir() {
-		return StorageTypeXDG, nil
-	}
-
-	// Default to XDG if no existing storage is found
-	return StorageTypeXDG, nil
-}
-
-// DetectExistingLegacy checks if legacy storage exists
-func DetectExistingLegacy() (bool, error) {
+// IsExistLegacy checks if legacy storage exists
+func IsExistLegacy() (bool, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return false, fmt.Errorf("failed to get home directory: %w", err)

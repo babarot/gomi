@@ -1,5 +1,4 @@
-// internal/trash/filter/filter.go
-package filter
+package trash
 
 import (
 	"fmt"
@@ -24,14 +23,14 @@ type Filterable interface {
 	GetDeletedAt() time.Time
 }
 
-// Options holds filtering configuration
-type Options struct {
+// FilterOptions holds filtering configuration
+type FilterOptions struct {
 	Include config.IncludeConfig
 	Exclude config.ExcludeConfig
 }
 
 // Filter applies filtering rules to a slice of items
-func Filter[T Filterable](items []T, opts Options) []T {
+func Filter[T Filterable](items []T, opts FilterOptions) []T {
 	// Filter by filename exclusions
 	items = rejectByNames(items, opts.Exclude.Files)
 

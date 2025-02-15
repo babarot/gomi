@@ -35,6 +35,7 @@ type MetaOption struct {
 }
 
 // RmOption provides compatibility with rm command options
+// https://man7.org/linux/man-pages/man1/rm.1.html
 type RmOption struct {
 	Interactive bool `short:"i" description:"(dummy) prompt before every removal"`
 	Recursive   bool `short:"r" long:"recursive" description:"(dummy) remove directories and their contents recursively"`
@@ -92,6 +93,8 @@ func Run(v Version) error {
 		Level:           log.DebugLevel,
 		Formatter: func() log.Formatter {
 			if strings.ToLower(opt.Meta.Debug) == "json" {
+				// TODO: fix this
+				// json is no longer valid argument so doesnt work anymore.
 				return log.JSONFormatter
 			}
 			return log.TextFormatter
@@ -114,7 +117,6 @@ func Run(v Version) error {
 		Strategy:           trash.Strategy(cfg.Core.Trash.Strategy),
 		HomeTrashDir:       cfg.Core.TrashDir,
 		EnableHomeFallback: cfg.Core.HomeFallback,
-		Verbose:            cfg.Core.Verbose,
 		History:            cfg.History,
 		TrashDir:           cfg.Core.TrashDir,
 		RunID:              runID(),
@@ -134,7 +136,9 @@ func Run(v Version) error {
 	case trash.StrategyAuto:
 		// Default to XDG with optional legacy fallback
 		managerOpts = append(managerOpts, trash.WithStorage(xdg.NewStorage))
-		if exist, _ := trash.DetectExistingLegacy(); exist {
+		if exist, err := trash.IsExistLegacy(); err != nil {
+			slog.Error("failed to check if legacy storage exists", "error", err)
+		} else if exist {
 			managerOpts = append(managerOpts, trash.WithStorage(legacy.NewStorage))
 		}
 	default:
