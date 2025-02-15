@@ -1,5 +1,4 @@
 //go:build !windows
-// +build !windows
 
 package xdg
 
@@ -47,6 +46,8 @@ func getMountPoints() ([]string, error) {
 		if skipFSTypes[info.FSType] {
 			slog.Debug("skipping filesystem", "type", info.FSType, "mountpoint", info.Mountpoint)
 			return true, false
+		} else {
+			slog.Debug("checking filesystem", "type", info.FSType, "mountpoint", info.Mountpoint)
 		}
 
 		// Skip read-only filesystems
@@ -69,7 +70,7 @@ func getMountPoints() ([]string, error) {
 	var points []string
 
 	for _, m := range mounts {
-		if !seen[m.Mountpoint] {
+		if !seen[m.Mountpoint] && m.Mountpoint != "" {
 			points = append(points, m.Mountpoint)
 			seen[m.Mountpoint] = true
 			slog.Debug("found mount point", "mountpoint", m.Mountpoint, "fstype", m.FSType)
@@ -119,16 +120,18 @@ func getMountPoint(path string) (string, error) {
 
 // isOnSameDevice checks if two paths are on the same device
 func isOnSameDevice(path1, path2 string) (bool, error) {
-	// Resolve any symlinks
+	// Resolve any symlinks first
 	real1, err := filepath.EvalSymlinks(path1)
 	if err != nil {
 		return false, fmt.Errorf("failed to resolve path %s: %w", path1, err)
 	}
+	slog.Debug("resolved symlink", "from", path1, "to", real1)
 
 	real2, err := filepath.EvalSymlinks(path2)
 	if err != nil {
 		return false, fmt.Errorf("failed to resolve path %s: %w", path2, err)
 	}
+	slog.Debug("resolved symlink", "from", path2, "to", real2)
 
 	info1, err := os.Stat(real1)
 	if err != nil {
@@ -151,7 +154,10 @@ func isOnSameDevice(path1, path2 string) (bool, error) {
 		"path1", real1, "dev1", stat1.Dev,
 		"path2", real2, "dev2", stat2.Dev)
 
-	return stat1.Dev == stat2.Dev, nil
+	sameDevice := stat1.Dev == stat2.Dev
+	slog.Debug("device comparison result", "sameDevice", sameDevice)
+
+	return sameDevice, nil
 }
 
 // isValidExternalTrash checks if a directory is a valid trash directory according to the XDG spec
@@ -178,6 +184,7 @@ func isValidExternalTrash(path string) bool {
 	if filepath.Base(path) == ".Trash" {
 		if info.Mode()&os.ModeSticky == 0 {
 			slog.Debug("missing sticky bit", "path", path)
+			slog.Debug("external trash directory not valid", "reason", "missing sticky bit", "path", path)
 			return false
 		}
 	}
@@ -200,9 +207,11 @@ func isValidExternalTrash(path string) bool {
 			slog.Warn("incorrect permissions on trash subdirectory",
 				"path", subdirPath,
 				"mode", info.Mode().Perm(),
-				"expected", 0700)
+				"expected", 0700,
+				"actual", info.Mode().Perm())
 		}
 	}
+	slog.Debug("external trash directory is valid", "path", path)
 
 	return true
 }

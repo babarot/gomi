@@ -81,6 +81,10 @@ type File struct {
 	// FileMode is the original mode of the file
 	FileMode fs.FileMode
 
+	// MountRoot is the root path of the mount point containing this trash
+	// This is used to resolve relative paths in .trashinfo files
+	MountRoot string
+
 	// storage is a reference to the Storage implementation that manages this file
 	storage Storage
 }
@@ -121,6 +125,37 @@ func (f *File) SetStorage(s Storage) {
 // GetStorage returns the storage reference for this file
 func (f *File) GetStorage() Storage {
 	return f.storage
+}
+
+// GetOriginalPath returns the absolute original path of the file
+// It handles both absolute and relative paths from .trashinfo files
+func (f *File) GetOriginalPath() string {
+	// If original path is already absolute, return as is
+	if filepath.IsAbs(f.OriginalPath) {
+		return f.OriginalPath
+	}
+
+	// For relative paths, join with mount root
+	if f.MountRoot != "" {
+		return filepath.Join(f.MountRoot, f.OriginalPath)
+	}
+
+	// Fallback to original path if no mount root is available
+	return f.OriginalPath
+}
+
+// GetRelativePath returns the path relative to the mount root
+// This is used when saving .trashinfo files
+func (f *File) GetRelativePath() string {
+	if f.MountRoot == "" || !filepath.IsAbs(f.OriginalPath) {
+		return f.OriginalPath
+	}
+
+	rel, err := filepath.Rel(f.MountRoot, f.OriginalPath)
+	if err != nil {
+		return f.OriginalPath
+	}
+	return rel
 }
 
 // Storage defines the interface for different trash implementations

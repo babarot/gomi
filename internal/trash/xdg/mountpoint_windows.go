@@ -1,5 +1,4 @@
 //go:build windows
-// +build windows
 
 package xdg
 
@@ -48,9 +47,41 @@ func getMountPoints() ([]string, error) {
 				continue
 			}
 
+			// Get drive properties
+			volumeName := make([]uint16, 261)
+			serialNumber := uint32(0)
+			maxComponentLength := uint32(0)
+			fsFlags := uint32(0)
+			fileSystemName := make([]uint16, 261)
+
+			kernel32 := syscall.NewLazyDLL("kernel32.dll")
+			proc := kernel32.NewProc("GetVolumeInformationW")
+			r1, _, err := proc.Call(
+				uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(drive))),
+				uintptr(unsafe.Pointer(&volumeName[0])),
+				uintptr(len(volumeName)),
+				uintptr(unsafe.Pointer(&serialNumber)),
+				uintptr(unsafe.Pointer(&maxComponentLength)),
+				uintptr(unsafe.Pointer(&fsFlags)),
+				uintptr(unsafe.Pointer(&fileSystemName[0])),
+				uintptr(len(fileSystemName)),
+			)
+
+			if r1 == 0 {
+				slog.Warn("could not get volume information", "drive", drive, "error", err)
+				continue
+			}
+
 			points = append(points, drive)
-			slog.Debug("found mount point", "mountpoint", drive, "fstype", fsType)
+			slog.Debug("found mount point",
+				"mountpoint", drive,
+				"fstype", syscall.UTF16ToString(fileSystemName),
+				"volumeName", syscall.UTF16ToString(volumeName))
 		}
+	}
+
+	if len(points) == 0 {
+		return nil, fmt.Errorf("no valid mount points found")
 	}
 
 	return points, nil
@@ -58,28 +89,23 @@ func getMountPoints() ([]string, error) {
 
 // getLogicalDrives retrieves the available logical drives
 func getLogicalDrives() (uint32, error) {
-	// Wrapper for Windows API GetLogicalDrives
 	kernel32 := syscall.NewLazyDLL("kernel32.dll")
-	getLogicalDrivesProc := kernel32.NewProc("GetLogicalDrives")
-
-	drives, _, err := getLogicalDrivesProc.Call()
-	if drives == 0 {
+	proc := kernel32.NewProc("GetLogicalDrives")
+	r1, _, err := proc.Call()
+	if r1 == 0 {
 		return 0, fmt.Errorf("GetLogicalDrives failed: %w", err)
 	}
-
-	return uint32(drives), nil
+	return uint32(r1), nil
 }
 
 // getFileSystemType retrieves the filesystem type for a given drive
 func getFileSystemType(drive string) (string, error) {
-	// Wrapper for Windows API GetVolumeInformation
-	kernel32 := syscall.NewLazyDLL("kernel32.dll")
-	getVolumeInformationProc := kernel32.NewProc("GetVolumeInformationW")
-
 	volumeName := make([]uint16, 261)
 	fileSystemName := make([]uint16, 261)
 
-	r1, _, err := getVolumeInformationProc.Call(
+	kernel32 := syscall.NewLazyDLL("kernel32.dll")
+	proc := kernel32.NewProc("GetVolumeInformationW")
+	r1, _, err := proc.Call(
 		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(drive))),
 		uintptr(unsafe.Pointer(&volumeName[0])),
 		uintptr(len(volumeName)),
@@ -107,7 +133,10 @@ func getMountPoint(path string) (string, error) {
 	// On Windows, get the root of the drive
 	drive := filepath.VolumeName(absPath)
 	if drive == "" {
-		return filepath.VolumeName(absPath) + "\\", nil
+		drive = filepath.VolumeName(os.Getenv("SYSTEMDRIVE"))
+		if drive == "" {
+			drive = "C:"
+		}
 	}
 
 	slog.Debug("found mount point", "path", absPath, "mountpoint", drive+"\\")
@@ -121,21 +150,75 @@ func isOnSameDevice(path1, path2 string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to resolve path %s: %w", path1, err)
 	}
+	slog.Debug("resolved symlink", "from", path1, "to", real1)
 
 	real2, err := filepath.EvalSymlinks(path2)
 	if err != nil {
 		return false, fmt.Errorf("failed to resolve path %s: %w", path2, err)
 	}
+	slog.Debug("resolved symlink", "from", path2, "to", real2)
 
 	// On Windows, compare drive letters
 	drive1 := filepath.VolumeName(real1)
 	drive2 := filepath.VolumeName(real2)
 
-	slog.Debug("device comparison",
-		"path1", real1, "drive1", drive1,
-		"path2", real2, "drive2", drive2)
+	// Get volume information for comparison
+	volumeInfo1, err := getVolumeInfo(drive1)
+	if err != nil {
+		return false, fmt.Errorf("failed to get volume info for %s: %w", drive1, err)
+	}
 
-	return strings.EqualFold(drive1, drive2), nil
+	volumeInfo2, err := getVolumeInfo(drive2)
+	if err != nil {
+		return false, fmt.Errorf("failed to get volume info for %s: %w", drive2, err)
+	}
+
+	slog.Debug("device comparison",
+		"path1", real1, "drive1", drive1, "volumeInfo1", volumeInfo1,
+		"path2", real2, "drive2", drive2, "volumeInfo2", volumeInfo2)
+
+	sameDevice := strings.EqualFold(volumeInfo1, volumeInfo2)
+	slog.Debug("device comparison result", "sameDevice", sameDevice)
+	return sameDevice, nil
+}
+
+// getVolumeInfo gets volume information for comparison
+func getVolumeInfo(drive string) (string, error) {
+	if drive == "" {
+		return "", fmt.Errorf("empty drive letter")
+	}
+
+	// Ensure drive ends with backslash
+	if !strings.HasSuffix(drive, "\\") {
+		drive += "\\"
+	}
+
+	// Get volume name and serial number for unique identification
+	volumeName := make([]uint16, 261)
+	serialNumber := uint32(0)
+	maxComponentLength := uint32(0)
+	fsFlags := uint32(0)
+	fileSystemName := make([]uint16, 261)
+
+	kernel32 := syscall.NewLazyDLL("kernel32.dll")
+	proc := kernel32.NewProc("GetVolumeInformationW")
+	r1, _, err := proc.Call(
+		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(drive))),
+		uintptr(unsafe.Pointer(&volumeName[0])),
+		uintptr(len(volumeName)),
+		uintptr(unsafe.Pointer(&serialNumber)),
+		uintptr(unsafe.Pointer(&maxComponentLength)),
+		uintptr(unsafe.Pointer(&fsFlags)),
+		uintptr(unsafe.Pointer(&fileSystemName[0])),
+		uintptr(len(fileSystemName)),
+	)
+
+	if r1 == 0 {
+		return "", fmt.Errorf("GetVolumeInformation failed: %w", err)
+	}
+
+	// Combine volume name and serial number for unique identification
+	return fmt.Sprintf("%s_%d", syscall.UTF16ToString(volumeName), serialNumber), nil
 }
 
 // isValidExternalTrash checks if a directory is a valid trash directory
@@ -153,8 +236,6 @@ func isValidExternalTrash(path string) bool {
 	}
 
 	// Windows doesn't have sticky bit or exact permission matching
-	// Additional validation might be needed based on specific requirements
-
 	// Check for standard trash subdirectories
 	for _, subdir := range []string{"files", "info"} {
 		subdirPath := filepath.Join(path, subdir)
@@ -164,6 +245,7 @@ func isValidExternalTrash(path string) bool {
 		}
 	}
 
+	slog.Debug("external trash directory is valid", "path", path)
 	return true
 }
 
@@ -182,6 +264,6 @@ func createTrashDir(path string) error {
 		}
 	}
 
-	slog.Debug("created trash directory", "path", path)
+	slog.Debug("trash directory created successfully", "path", path)
 	return nil
 }

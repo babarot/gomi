@@ -23,29 +23,22 @@ const (
 
 // TrashInfo represents the contents of a .trashinfo file
 type TrashInfo struct {
-	// Original absolute path of the file
+	// Path is the original path of the file, can be absolute or relative
 	Path string
 
-	// Original base name of the file
+	// OriginalName is just the base name of the file
 	OriginalName string
 
-	// When the file was trashed
+	// DeletionDate is when the file was moved to trash
 	DeletionDate time.Time
+
+	// MountRoot is the root path of the mount point containing this trash
+	// This is used to resolve relative paths
+	MountRoot string
 }
 
-// loadTrashInfo loads and parses a .trashinfo file
-func loadTrashInfo(path string) (*TrashInfo, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open info file: %w", err)
-	}
-	defer f.Close()
-
-	return parseTrashInfo(f)
-}
-
-// parseTrashInfo parses the content of a .trashinfo file
-func parseTrashInfo(r io.Reader) (*TrashInfo, error) {
+// NewInfo creates a TrashInfo from a reader
+func NewInfo(r io.Reader) (*TrashInfo, error) {
 	scanner := bufio.NewScanner(r)
 	info := &TrashInfo{}
 	var headerFound bool
@@ -84,15 +77,11 @@ func parseTrashInfo(r io.Reader) (*TrashInfo, error) {
 			if err != nil {
 				return nil, fmt.Errorf("invalid Path encoding: %w", err)
 			}
-			/* TODO: support relative path? */
-			// if !filepath.IsAbs(path) {
-			// 	path, _ = filepath.Abs(path)
-			// }
 			info.Path = path
 			info.OriginalName = filepath.Base(path)
 			slog.Debug("parse trash info",
-				"info.Path", info.Path,
-				"info.OriginalName", info.OriginalName)
+				"path", info.Path,
+				"originalName", info.OriginalName)
 
 		case "DeletionDate":
 			date, err := time.ParseInLocation(timeFormat, value, time.Local)
@@ -121,12 +110,48 @@ func parseTrashInfo(r io.Reader) (*TrashInfo, error) {
 	return info, nil
 }
 
+// GetAbsolutePath returns the absolute path of the file
+// If the path is relative, it is resolved against the mount root
+func (i *TrashInfo) GetAbsolutePath() string {
+	// If path is already absolute, return as is
+	if filepath.IsAbs(i.Path) {
+		return i.Path
+	}
+
+	// If we have a mount root, resolve relative path against it
+	if i.MountRoot != "" {
+		absPath := filepath.Join(i.MountRoot, i.Path)
+		slog.Debug("resolved relative path",
+			"relative", i.Path,
+			"mountRoot", i.MountRoot,
+			"absolute", absPath)
+		return absPath
+	}
+
+	// If no mount root is available, return the path as is
+	return i.Path
+}
+
+// GetRelativePath returns the path relative to the mount root
+// This is used when saving .trashinfo files
+func (i *TrashInfo) GetRelativePath() string {
+	if i.MountRoot == "" || !filepath.IsAbs(i.Path) {
+		return i.Path
+	}
+
+	rel, err := filepath.Rel(i.MountRoot, i.Path)
+	if err != nil {
+		return i.Path
+	}
+	return rel
+}
+
 // Save writes the trash info to a file atomically
 func (i *TrashInfo) Save(path string) error {
-	// Create content
+	// Create content using relative path if mount root is available
 	content := new(strings.Builder)
 	fmt.Fprintln(content, trashInfoHeader)
-	fmt.Fprintf(content, "Path=%s\n", encodeTrashPath(i.Path))
+	fmt.Fprintf(content, "Path=%s\n", encodeTrashPath(i.GetRelativePath()))
 	fmt.Fprintf(content, "DeletionDate=%s\n", i.DeletionDate.Format(timeFormat))
 
 	// Write atomically using O_EXCL flag to prevent overwriting existing files
@@ -163,16 +188,23 @@ func encodeTrashPath(path string) string {
 	return strings.Join(parts, "/")
 }
 
-// isTrashInfo checks if a filename is a valid .trashinfo file
-func isTrashInfo(name string) bool {
-	return strings.HasSuffix(name, ".trashinfo")
+// loadTrashInfo loads and parses a .trashinfo file
+func loadTrashInfo(path string) (*TrashInfo, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open info file: %w", err)
+	}
+	defer f.Close()
+
+	info, err := NewInfo(f)
+	if err != nil {
+		return nil, err
+	}
+
+	return info, nil
 }
 
-// getOriginalPath returns the original path from a trashinfo file path
-func getOriginalPath(infoPath string) (string, error) {
-	info, err := loadTrashInfo(infoPath)
-	if err != nil {
-		return "", err
-	}
-	return info.Path, nil
+// setMountRoot sets the mount root for resolving relative paths
+func (i *TrashInfo) setMountRoot(mountRoot string) {
+	i.MountRoot = mountRoot
 }

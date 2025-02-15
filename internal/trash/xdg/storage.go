@@ -10,7 +10,6 @@ import (
 
 	"github.com/babarot/gomi/internal/fs"
 	"github.com/babarot/gomi/internal/trash"
-	"github.com/samber/lo"
 )
 
 // Storage implements the trash.Storage interface for XDG trash specification
@@ -38,6 +37,9 @@ type trashLocation struct {
 
 	// Whether this is a home trash directory
 	isHome bool
+
+	// Mount point root path for resolving relative paths
+	mountRoot string
 }
 
 // NewStorage creates a new XDG-compliant trash storage
@@ -65,11 +67,9 @@ func NewStorage(cfg trash.Config) (trash.Storage, error) {
 }
 
 func (s *Storage) Info() *trash.StorageInfo {
-	trashes := lo.Map(s.externalTrashes, func(loc *trashLocation, index int) string {
-		return loc.root
-	})
-	if root := s.homeTrash.root; root != "" {
-		trashes = append(trashes, root)
+	trashes := []string{s.homeTrash.root}
+	for _, ext := range s.externalTrashes {
+		trashes = append(trashes, ext.root)
 	}
 	return &trash.StorageInfo{
 		Location:  trash.LocationHome,
@@ -115,6 +115,7 @@ func (s *Storage) Put(src string) error {
 	// Create .trashinfo file first
 	info := &TrashInfo{
 		Path:         abs,
+		MountRoot:    loc.mountRoot,
 		DeletionDate: time.Now(),
 	}
 
@@ -174,10 +175,11 @@ func (s *Storage) Restore(file *trash.File, dst string) error {
 	}
 
 	// Remove .trashinfo file
+	infoBaseName := filepath.Base(file.TrashPath) + ".trashinfo"
 	infoPath := filepath.Join(
-		file.TrashPath[:len(file.TrashPath)-len("files/"+filepath.Base(file.TrashPath))],
+		filepath.Dir(filepath.Dir(file.TrashPath)), // Go up two levels (past "files" dir)
 		"info",
-		filepath.Base(file.TrashPath)+".trashinfo",
+		infoBaseName,
 	)
 	if err := os.Remove(infoPath); err != nil {
 		// Log error but don't fail - file is already restored
@@ -222,13 +224,13 @@ func (s *Storage) initHomeTrash() (*trashLocation, error) {
 	}
 	root = filepath.Join(dataDir, "Trash")
 
-	slog.Debug("initHomeTrash", "root", root)
-
 	loc := &trashLocation{
 		root:     root,
 		filesDir: filepath.Join(root, "files"),
 		infoDir:  filepath.Join(root, "info"),
 		isHome:   true,
+		// Home trash doesn't need mount root as it always uses absolute paths
+		mountRoot: "",
 	}
 
 	// Create directories if they don't exist
@@ -257,10 +259,11 @@ func (s *Storage) scanExternalTrashes() error {
 		trashPath := filepath.Join(mount, ".Trash", uidStr)
 		if isValidExternalTrash(trashPath) {
 			loc := &trashLocation{
-				root:     trashPath,
-				filesDir: filepath.Join(trashPath, "files"),
-				infoDir:  filepath.Join(trashPath, "info"),
-				isHome:   false,
+				root:      trashPath,
+				filesDir:  filepath.Join(trashPath, "files"),
+				infoDir:   filepath.Join(trashPath, "info"),
+				isHome:    false,
+				mountRoot: mount, // Set mount root for relative paths
 			}
 			s.externalTrashes = append(s.externalTrashes, loc)
 			continue
@@ -270,10 +273,11 @@ func (s *Storage) scanExternalTrashes() error {
 		trashPath = filepath.Join(mount, fmt.Sprintf(".Trash-%d", uid))
 		if isValidExternalTrash(trashPath) {
 			loc := &trashLocation{
-				root:     trashPath,
-				filesDir: filepath.Join(trashPath, "files"),
-				infoDir:  filepath.Join(trashPath, "info"),
-				isHome:   false,
+				root:      trashPath,
+				filesDir:  filepath.Join(trashPath, "files"),
+				infoDir:   filepath.Join(trashPath, "info"),
+				isHome:    false,
+				mountRoot: mount, // Set mount root for relative paths
 			}
 			s.externalTrashes = append(s.externalTrashes, loc)
 		}
@@ -299,6 +303,12 @@ func (s *Storage) listLocation(loc *trashLocation) ([]*trash.File, error) {
 			continue
 		}
 
+		// Set mount root for resolving relative paths
+		info.setMountRoot(loc.mountRoot)
+
+		// Get absolute path
+		origPath := info.GetAbsolutePath()
+
 		// Get file info
 		filePath := filepath.Join(loc.filesDir, entry.Name())
 		fileInfo, err := os.Stat(filePath)
@@ -308,8 +318,8 @@ func (s *Storage) listLocation(loc *trashLocation) ([]*trash.File, error) {
 		}
 
 		file := &trash.File{
-			Name:         info.OriginalName,
-			OriginalPath: info.Path,
+			Name:         filepath.Base(origPath),
+			OriginalPath: origPath,
 			TrashPath:    filePath,
 			DeletedAt:    info.DeletionDate,
 			Size:         fileInfo.Size(),
