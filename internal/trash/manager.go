@@ -121,7 +121,7 @@ func (m *Manager) Put(src string) error {
 		}
 		lastErr = err
 		slog.Debug("storage failed to put file",
-			"storage", storage.Info().Root,
+			"trashes", storage.Info().Trashes,
 			"error", err)
 	}
 
@@ -139,7 +139,7 @@ func (m *Manager) List() ([]*File, error) {
 		files, err := storage.List()
 		if err != nil {
 			errs = append(errs, fmt.Errorf("failed to list files from %s: %w",
-				storage.Info().Root, err))
+				storage.Info().Trashes, err))
 			continue
 		}
 		allFiles = append(allFiles, files...)
@@ -164,10 +164,25 @@ func (m *Manager) Restore(file *File, dst string) error {
 	var targetStorage Storage
 	for _, storage := range m.storages {
 		slog.Debug("checking storage",
-			"type", storage.Info().Type,
-			"file", file.Name,
-			"info", storage.Info())
-		if strings.HasPrefix(file.TrashPath, storage.Info().Root) {
+			"file", strings.Join([]string{
+				"name: " + file.Name,
+				"trashPath: " + file.TrashPath,
+				"originalPath: " + file.OriginalPath,
+			}, "\n"),
+			"info", strings.Join([]string{
+				fmt.Sprintf("type: %s", storage.Info().Type),
+				"trashes: " + strings.Join(storage.Info().Trashes, ", "),
+			}, "\n"),
+		)
+		foundStorage := func() bool {
+			for _, trashRoot := range storage.Info().Trashes {
+				if strings.HasPrefix(file.TrashPath, trashRoot) {
+					return true
+				}
+			}
+			return false
+		}()
+		if foundStorage {
 			targetStorage = storage
 			break
 		}
@@ -194,7 +209,15 @@ func (m *Manager) Remove(file *File) error {
 	// Find the appropriate storage for this file
 	var targetStorage Storage
 	for _, storage := range m.storages {
-		if strings.HasPrefix(file.TrashPath, storage.Info().Root) {
+		foundStorage := func() bool {
+			for _, trashRoot := range storage.Info().Trashes {
+				if strings.HasPrefix(file.TrashPath, trashRoot) {
+					return true
+				}
+			}
+			return false
+		}()
+		if foundStorage {
 			targetStorage = storage
 			break
 		}

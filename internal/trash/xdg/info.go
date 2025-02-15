@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -83,8 +84,15 @@ func parseTrashInfo(r io.Reader) (*TrashInfo, error) {
 			if err != nil {
 				return nil, fmt.Errorf("invalid Path encoding: %w", err)
 			}
+			/* TODO: support relative path? */
+			// if !filepath.IsAbs(path) {
+			// 	path, _ = filepath.Abs(path)
+			// }
 			info.Path = path
 			info.OriginalName = filepath.Base(path)
+			slog.Debug("parse trash info",
+				"info.Path", info.Path,
+				"info.OriginalName", info.OriginalName)
 
 		case "DeletionDate":
 			date, err := time.ParseInLocation(timeFormat, value, time.Local)

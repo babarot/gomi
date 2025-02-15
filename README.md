@@ -9,7 +9,7 @@ In a typical CLI, there’s no "trash" folder like in graphical file managers. T
 
 ![demo](./docs/demo.gif)
 
-[![Go](https://github.com/babarot/gomi/actions/workflows/build.yaml/badge.svg)](https://github.com/babarot/gomi/actions/workflows/build.yaml)
+<!-- [![Go](https://github.com/babarot/gomi/actions/workflows/build.yaml/badge.svg)](https://github.com/babarot/gomi/actions/workflows/build.yaml) -->
 [![Release](https://github.com/babarot/gomi/actions/workflows/release.yaml/badge.svg)](https://github.com/babarot/gomi/actions/workflows/release.yaml)
 
 ## Features

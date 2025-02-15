@@ -47,8 +47,8 @@ type StorageInfo struct {
 	// Location indicates whether this is a home or external storage
 	Location StorageLocation
 
-	// Root is the root directory of this storage (e.g., ~/.local/share/Trash)
-	Root string
+	// Trashes is the root directory of this storage (e.g., ~/.local/share/Trash)
+	Trashes []string
 
 	// Available indicates whether this storage is currently available
 	// (e.g., external storage might become unavailable)

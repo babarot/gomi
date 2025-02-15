@@ -70,7 +70,7 @@ func NewStorage(cfg trash.Config) (trash.Storage, error) {
 func (s *Storage) Info() *trash.StorageInfo {
 	return &trash.StorageInfo{
 		Location:  trash.LocationHome,
-		Root:      s.root,
+		Trashes:   []string{s.root},
 		Available: true,
 		Type:      trash.StorageTypeLegacy,
 	}

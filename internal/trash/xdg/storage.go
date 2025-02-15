@@ -10,6 +10,7 @@ import (
 
 	"github.com/babarot/gomi/internal/fs"
 	"github.com/babarot/gomi/internal/trash"
+	"github.com/samber/lo"
 )
 
 // Storage implements the trash.Storage interface for XDG trash specification
@@ -64,16 +65,21 @@ func NewStorage(cfg trash.Config) (trash.Storage, error) {
 }
 
 func (s *Storage) Info() *trash.StorageInfo {
+	trashes := lo.Map(s.externalTrashes, func(loc *trashLocation, index int) string {
+		return loc.root
+	})
+	if root := s.homeTrash.root; root != "" {
+		trashes = append(trashes, root)
+	}
 	return &trash.StorageInfo{
 		Location:  trash.LocationHome,
-		Root:      s.homeTrash.root,
+		Trashes:   trashes,
 		Available: true,
 		Type:      trash.StorageTypeXDG,
 	}
 }
 
 func (s *Storage) Put(src string) error {
-	// Get absolute path
 	abs, err := filepath.Abs(src)
 	if err != nil {
 		return trash.NewStorageError("put", src, err)
@@ -204,10 +210,7 @@ func (s *Storage) Remove(file *trash.File) error {
 
 func (s *Storage) initHomeTrash() (*trashLocation, error) {
 	var root string
-	// if s.config.HomeTrashDir != "" {
-	// 	root = s.config.HomeTrashDir
-	// } else {
-	// First try $XDG_DATA_HOME
+
 	dataDir := os.Getenv("XDG_DATA_HOME")
 	if dataDir == "" {
 		// Fallback to ~/.local/share
@@ -218,7 +221,7 @@ func (s *Storage) initHomeTrash() (*trashLocation, error) {
 		dataDir = filepath.Join(home, ".local", "share")
 	}
 	root = filepath.Join(dataDir, "Trash")
-	// }
+
 	slog.Debug("initHomeTrash", "root", root)
 
 	loc := &trashLocation{
