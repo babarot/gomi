@@ -5,17 +5,12 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"regexp"
-	"slices"
 	"strconv"
 	"time"
 
 	"github.com/babarot/gomi/internal/fs"
 	"github.com/babarot/gomi/internal/trash"
-	"github.com/docker/go-units"
-	"github.com/gobwas/glob"
-	"github.com/k1LoW/duration"
-	"github.com/samber/lo"
+	"github.com/babarot/gomi/internal/trash/filter"
 )
 
 // Storage implements the trash.Storage interface for XDG trash specification
@@ -350,61 +345,9 @@ func (s *Storage) selectTrashLocation(path string) (*trashLocation, error) {
 }
 
 func (s *Storage) filter(files []*trash.File) []*trash.File {
-	cfg := s.config.History
-
-	files = lo.Reject(files, func(file *trash.File, index int) bool {
-		return slices.Contains(cfg.Exclude.Files, file.Name)
-	})
-	files = lo.Reject(files, func(file *trash.File, index int) bool {
-		for _, pat := range cfg.Exclude.Patterns {
-			if regexp.MustCompile(pat).MatchString(file.Name) {
-				return true
-			}
-		}
-		for _, g := range cfg.Exclude.Globs {
-			if glob.MustCompile(g).Match(file.Name) {
-				return true
-			}
-		}
-		return false
-	})
-	files = lo.Reject(files, func(file *trash.File, index int) bool {
-		size, err := fs.DirSize(file.TrashPath)
-		if err != nil {
-			return false // false positive
-		}
-		if s := cfg.Exclude.Size.Min; s != "" {
-			min, err := units.FromHumanSize(s)
-			if err != nil {
-				return false
-			}
-			if size <= min {
-				return true
-			}
-		}
-		if s := cfg.Exclude.Size.Max; s != "" {
-			max, err := units.FromHumanSize(s)
-			if err != nil {
-				return false
-			}
-			if max <= size {
-				return true
-			}
-		}
-		return false
-	})
-	files = lo.Filter(files, func(file *trash.File, index int) bool {
-		if period := cfg.Include.Period; period > 0 {
-			d, err := duration.Parse(fmt.Sprintf("%d days", period))
-			if err != nil {
-				slog.Error("failed to parse duration", "error", err)
-				return false
-			}
-			if time.Since(file.DeletedAt) < d {
-				return true
-			}
-		}
-		return false
-	})
-	return files
+	opts := filter.Options{
+		Include: s.config.History.Include,
+		Exclude: s.config.History.Exclude,
+	}
+	return filter.Filter(files, opts)
 }

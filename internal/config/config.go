@@ -62,22 +62,22 @@ type UI struct {
 }
 
 type History struct {
-	Include includeConfig `yaml:"include"`
-	Exclude excludeConfig `yaml:"exclude"`
+	Include IncludeConfig `yaml:"include"`
+	Exclude ExcludeConfig `yaml:"exclude"`
 }
 
-type includeConfig struct {
+type IncludeConfig struct {
 	Period int `yaml:"within_days"`
 }
 
-type excludeConfig struct {
+type ExcludeConfig struct {
 	Files    []string `yaml:"files"`
 	Patterns []string `yaml:"patterns"`
 	Globs    []string `yaml:"globs"`
-	Size     size     `yaml:"size"`
+	Size     Size     `yaml:"size"`
 }
 
-type size struct {
+type Size struct {
 	Min string `yaml:"min" validate:"validSize|allowEmpty"`
 	Max string `yaml:"max" validate:"validSize|allowEmpty"`
 }
@@ -181,16 +181,16 @@ func (p parser) getDefaultConfig() Config {
 			},
 		},
 		History: History{
-			Include: includeConfig{
+			Include: IncludeConfig{
 				Period: 365,
 			},
-			Exclude: excludeConfig{
+			Exclude: ExcludeConfig{
 				Files: []string{
 					".DS_Store",
 				},
 				Patterns: []string{},
 				Globs:    []string{},
-				Size: size{
+				Size: Size{
 					Min: "0KB",
 					Max: "10GB",
 				},

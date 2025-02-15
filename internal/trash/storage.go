@@ -85,6 +85,18 @@ type File struct {
 	storage Storage
 }
 
+func (f *File) GetName() string {
+	return f.Name
+}
+
+func (f *File) GetPath() string {
+	return f.TrashPath
+}
+
+func (f *File) GetDeletedAt() time.Time {
+	return f.DeletedAt
+}
+
 // Exists checks if the file still exists in the trash
 func (f *File) Exists() bool {
 	_, err := os.Stat(f.TrashPath)

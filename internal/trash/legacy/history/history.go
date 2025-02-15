@@ -6,18 +6,12 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"regexp"
-	"slices"
 	"time"
 
 	"github.com/babarot/gomi/internal/config"
-	"github.com/babarot/gomi/internal/fs"
-	"github.com/docker/go-units"
-	"github.com/gobwas/glob"
+	"github.com/babarot/gomi/internal/trash/filter"
 	"github.com/k0kubun/pp/v3"
-	"github.com/k1LoW/duration"
 	"github.com/rs/xid"
-	"github.com/samber/lo"
 )
 
 const (
@@ -42,6 +36,18 @@ type File struct {
 	From      string    `json:"from"`
 	To        string    `json:"to"`
 	Timestamp time.Time `json:"timestamp"`
+}
+
+func (f File) GetName() string {
+	return f.Name
+}
+
+func (f File) GetPath() string {
+	return f.To
+}
+
+func (f File) GetDeletedAt() time.Time {
+	return f.Timestamp
 }
 
 func New(home string, c config.History) History {
@@ -174,65 +180,11 @@ func (h *History) setVersion() {
 }
 
 func (h History) Filter() []File {
-	// do not overwrite original slices
-	// because remove them from history file actually
-	// when updating history
-	files := h.Files
-	files = lo.Reject(files, func(file File, index int) bool {
-		return slices.Contains(h.config.Exclude.Files, file.Name)
-	})
-	files = lo.Reject(files, func(file File, index int) bool {
-		for _, pat := range h.config.Exclude.Patterns {
-			if regexp.MustCompile(pat).MatchString(file.Name) {
-				return true
-			}
-		}
-		for _, g := range h.config.Exclude.Globs {
-			if glob.MustCompile(g).Match(file.Name) {
-				return true
-			}
-		}
-		return false
-	})
-	files = lo.Reject(files, func(file File, index int) bool {
-		size, err := fs.DirSize(file.To)
-		if err != nil {
-			return false // false positive
-		}
-		if s := h.config.Exclude.Size.Min; s != "" {
-			min, err := units.FromHumanSize(s)
-			if err != nil {
-				return false
-			}
-			if size <= min {
-				return true
-			}
-		}
-		if s := h.config.Exclude.Size.Max; s != "" {
-			max, err := units.FromHumanSize(s)
-			if err != nil {
-				return false
-			}
-			if max <= size {
-				return true
-			}
-		}
-		return false
-	})
-	files = lo.Filter(files, func(file File, index int) bool {
-		if period := h.config.Include.Period; period > 0 {
-			d, err := duration.Parse(fmt.Sprintf("%d days", period))
-			if err != nil {
-				slog.Error("failed to parse duration", "error", err)
-				return false
-			}
-			if time.Since(file.Timestamp) < d {
-				return true
-			}
-		}
-		return false
-	})
-	return files
+	opts := filter.Options{
+		Include: h.config.Include,
+		Exclude: h.config.Exclude,
+	}
+	return filter.Filter(h.Files, opts)
 }
 
 func (h History) FileInfo(runID string, arg string) (File, error) {
