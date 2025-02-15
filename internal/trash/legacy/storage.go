@@ -19,11 +19,11 @@ type Storage struct {
 	// Root directory for trash storage (~/.gomi)
 	root string
 
-	// History file path (~/.gomi/history.json)
-	historyPath string
-
 	// Configuration
 	config trash.Config
+
+	// History file path (~/.gomi/history.json)
+	historyPath string
 
 	// In-memory cache of trash history
 	history history.History
@@ -34,8 +34,8 @@ func NewStorage(cfg trash.Config) (trash.Storage, error) {
 	slog.Info("initialize legacy storage")
 
 	var root string
-	if cfg.HomeTrashDir != "" {
-		root = cfg.HomeTrashDir
+	if cfg.GomiDir != "" {
+		root = cfg.GomiDir
 	} else {
 		home, err := os.UserHomeDir()
 		if err != nil {
@@ -46,10 +46,13 @@ func NewStorage(cfg trash.Config) (trash.Storage, error) {
 
 	s := &Storage{
 		root:        root,
-		historyPath: filepath.Join(root, "history.json"),
 		config:      cfg,
-		history:     history.New(cfg.TrashDir, cfg.History),
+		historyPath: filepath.Join(root, history.Filename),
+		history:     history.New(cfg.GomiDir, cfg.History),
 	}
+	slog.Debug("legacy storage",
+		"gomiDir", cfg.GomiDir,
+		"historyPath", s.historyPath)
 
 	// Create trash directory if it doesn't exist
 	if err := os.MkdirAll(root, 0700); err != nil {

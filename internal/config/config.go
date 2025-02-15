@@ -28,9 +28,6 @@ type Config struct {
 type Core struct {
 	Trash Trash `yaml:"trash"`
 
-	// TrashDir specifies the trash directory location
-	TrashDir string `yaml:"trash_dir" validate:"dirpath|allowEmpty"`
-
 	// HomeFallback enables fallback to home trash when external trash fails
 	HomeFallback bool `yaml:"home_fallback"`
 
@@ -40,6 +37,9 @@ type Core struct {
 
 type Trash struct {
 	Strategy string `yaml:"strategy" validate:"validStrategy|allowEmpty"`
+
+	// GomiDir specifies the trash directory location
+	GomiDir string `yaml:"gomi_dir" validate:"dirpath|allowEmpty"`
 }
 
 type RestoreConfig struct {
@@ -126,9 +126,8 @@ func (p parser) getDefaultConfig() Config {
 		Core: Core{
 			Trash: Trash{
 				Strategy: "auto",
+				GomiDir:  filepath.Join(os.Getenv("HOME"), ".gomi"),
 			},
-			// Default to $XDG_DATA_HOME/Trash for XDG spec
-			TrashDir:     filepath.Join(os.Getenv("HOME"), ".local", "share", "Trash"),
 			HomeFallback: true,
 			Restore: RestoreConfig{
 				Confirm: true,
@@ -381,17 +380,12 @@ func Parse(path string) (Config, error) {
 		return cfg, parsingError{err: err}
 	}
 
-	// If using legacy format, adjust trash dir
-	if cfg.Core.Trash.Strategy == "legacy" && cfg.Core.TrashDir == "" {
-		cfg.Core.TrashDir = filepath.Join(os.Getenv("HOME"), ".gomi")
-	}
-
 	// expand tilda etc
-	trashDir, err := shell.ExpandHome(cfg.Core.TrashDir)
+	gomiDir, err := shell.ExpandHome(cfg.Core.Trash.GomiDir)
 	if err != nil {
 		return cfg, parsingError{err: err}
 	}
-	cfg.Core.TrashDir = trashDir
+	cfg.Core.Trash.GomiDir = gomiDir
 
 	return cfg, nil
 }

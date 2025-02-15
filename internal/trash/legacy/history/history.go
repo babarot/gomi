@@ -16,7 +16,7 @@ import (
 
 const (
 	historyVersion = 1
-	historyFile    = "history.json"
+	Filename       = "history.json"
 )
 
 // History represents the history of deleted files
@@ -56,7 +56,7 @@ func New(home string, c config.History) History {
 	}
 	return History{
 		home:   home,
-		path:   filepath.Join(home, historyFile),
+		path:   filepath.Join(home, Filename),
 		config: c,
 	}
 }

@@ -92,9 +92,9 @@ func Run(v Version) error {
 		TimeFormat:      time.Kitchen,
 		Level:           log.DebugLevel,
 		Formatter: func() log.Formatter {
+			// TODO: fix this
+			// json is no longer valid argument so doesnt work anymore.
 			if strings.ToLower(opt.Meta.Debug) == "json" {
-				// TODO: fix this
-				// json is no longer valid argument so doesnt work anymore.
 				return log.JSONFormatter
 			}
 			return log.TextFormatter
@@ -114,11 +114,11 @@ func Run(v Version) error {
 
 	// Initialize trash configuration
 	trashConfig := trash.Config{
-		Strategy:           trash.Strategy(cfg.Core.Trash.Strategy),
-		HomeTrashDir:       cfg.Core.TrashDir,
+		Strategy: trash.Strategy(cfg.Core.Trash.Strategy),
+		// HomeTrashDir:       cfg.Core.TrashDir,
 		EnableHomeFallback: cfg.Core.HomeFallback,
 		History:            cfg.History,
-		TrashDir:           cfg.Core.TrashDir,
+		GomiDir:            cfg.Core.Trash.GomiDir,
 		RunID:              runID(),
 	}
 

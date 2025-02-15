@@ -50,9 +50,9 @@ type Config struct {
 	// History contains history-related configuration
 	History config.History
 
-	// For backwards compatibility
-	TrashDir string
-	RunID    string
+	// For legacy configuration
+	GomiDir string
+	RunID   string
 }
 
 // NewDefaultConfig creates a new Config with default values
