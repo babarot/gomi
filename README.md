@@ -18,7 +18,6 @@ In a typical CLI, there’s no "trash" folder like in graphical file managers. T
 - Follows the [XDG Trash specification](https://specifications.freedesktop.org/trash-spec/latest/) for modern Linux desktop environments:
   - Supports `$XDG_DATA_HOME/Trash` or `~/.local/share/Trash`
   - Compatible with other applications using the XDG trash
-  - Maintains backward compatibility with legacy format
 - Simple and intuitive restoration process with a user-friendly interface.
 - Compatible with most of the flags available for the `rm` command.
 - Allows easy searching of deleted files using fuzzy search.

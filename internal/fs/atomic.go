@@ -2,6 +2,7 @@ package fs
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -38,7 +39,9 @@ func Move(src, dst string, fallbackCopy bool) error {
 		// If copy succeeds, remove the original
 		if err := os.RemoveAll(src); err != nil {
 			// If we can't remove the source, try to remove the copy
-			_ = os.RemoveAll(dst)
+			if err := os.RemoveAll(dst); err != nil {
+				slog.Error("failed to remove the copy", "path", dst)
+			}
 			return fmt.Errorf("failed to remove source after copy: %w", err)
 		}
 	}

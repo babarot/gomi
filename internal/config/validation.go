@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
@@ -12,12 +13,7 @@ import (
 // validateStrategy validates the trash strategy value
 func validateStrategy(fl validator.FieldLevel) bool {
 	value := strings.ToLower(fl.Field().String())
-	switch value {
-	case "auto", "xdg", "legacy":
-		return true
-	default:
-		return false
-	}
+	return slices.Contains([]string{"auto", "xdg", "legacy"}, value)
 }
 
 // validateAllowEmpty allows empty values for optional fields

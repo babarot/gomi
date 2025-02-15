@@ -47,7 +47,7 @@ func (c *CLI) Restore() error {
 
 	for _, file := range selected {
 		if err := c.restoreFile(file); err != nil {
-			return err
+			return fmt.Errorf("failed to restore file '%s': %w", file.Name, err)
 		}
 	}
 
@@ -65,9 +65,8 @@ func (c *CLI) filterFiles(files []*trash.File) []*trash.File {
 			continue
 		}
 
-		// Add filters here based on configuration
+		// TODO: Add filters here based on configuration
 		// For example: time-based filters, name patterns, etc.
-		// TODO: implement
 
 		filtered = append(filtered, file)
 	}
@@ -77,48 +76,34 @@ func (c *CLI) filterFiles(files []*trash.File) []*trash.File {
 
 // restoreFile handles the restoration of a single file
 func (c *CLI) restoreFile(file *trash.File) error {
-	verbose := c.config.Core.Restore.Verbose
-	// Check if destination exists
 	originalPath := file.OriginalPath
+
+	// Check if the file exists at the original location
 	if _, err := os.Stat(originalPath); err == nil {
-		// File exists at original location, ask for new name
+		// File exists at original location, ask for new name if necessary
 		newName, err := ui.InputFilename(file)
 		if err != nil {
 			if errors.Is(err, ui.ErrInputCanceled) {
-				if verbose {
-					if newName == "" {
-						fmt.Printf("canceled!\n")
-					} else {
-						fmt.Printf("you're inputting %q but it's canceled!\n", newName)
-					}
-				}
+				c.printVerbose("Canceled! No new filename input.\n")
 				return nil
 			}
 			return fmt.Errorf("failed to get new filename: %w", err)
 		}
-		// Update destination path with new name
 		originalPath = filepath.Join(filepath.Dir(originalPath), newName)
 		file.OriginalPath = originalPath
 	}
 
 	// If configured, ask for confirmation
-	if c.config.Core.Restore.Confirm {
-		if !ui.Confirm(fmt.Sprintf("OK to restore? %s", filepath.Base(originalPath))) {
-			if verbose {
-				fmt.Printf("Replied no, canceled!\n")
-			}
-			return nil
-		}
+	if c.config.Core.Restore.Confirm && !ui.Confirm(fmt.Sprintf("OK to restore? %s", filepath.Base(originalPath))) {
+		c.printVerbose("Replied no, canceled!\n")
+		return nil
 	}
 
 	// Check again if destination exists (might have been created while confirming)
 	if _, err := os.Stat(originalPath); err == nil {
-		msg := fmt.Sprintf("Caution! The same name already exists. Even so okay to restore? %s",
-			filepath.Base(originalPath))
+		msg := fmt.Sprintf("Caution! The same name already exists. Even so okay to restore? %s", filepath.Base(originalPath))
 		if !ui.Confirm(msg) {
-			if verbose {
-				fmt.Printf("Replied no, canceled!\n")
-			}
+			c.printVerbose("Replied no, canceled!\n")
 			return nil
 		}
 	}
@@ -128,9 +113,13 @@ func (c *CLI) restoreFile(file *trash.File) error {
 		return fmt.Errorf("failed to restore '%s': %w", file.Name, err)
 	}
 
-	if verbose {
-		fmt.Printf("Restored '%s' to %s\n", file.Name, originalPath)
-	}
-
+	c.printVerbose("Restored '%s' to %s\n", file.Name, originalPath)
 	return nil
+}
+
+// printVerbose logs the message if verbose is true
+func (c *CLI) printVerbose(msg string, args ...any) {
+	if c.config.Core.Restore.Verbose {
+		fmt.Printf(msg, args...)
+	}
 }
