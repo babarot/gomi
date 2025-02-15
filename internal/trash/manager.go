@@ -19,11 +19,11 @@ const (
 	// StrategyLegacy uses legacy (.gomi) format
 	StrategyLegacy Strategy = "legacy"
 
-	// StrategyComposite uses multiple storage backends
-	StrategyComposite Strategy = "composite"
+	// StrategyAuto uses multiple storage backends
+	StrategyAuto Strategy = "auto"
 
 	// StrategyNone disables trash functionality, preventing files from being moved to trash
-	StrategyNone Strategy = "none"
+	StrategyNone Strategy = ""
 )
 
 // Manager handles multiple trash storage implementations
@@ -68,7 +68,11 @@ func NewManager(cfg Config, opts ...ManagerOption) (*Manager, error) {
 		return nil, errors.New("no storage backend configured")
 	}
 
-	m.strategy = determineStrategy(m.storages)
+	// Determine trash strategy automatically if not set
+	if m.strategy == StrategyNone {
+		slog.Debug("determine strategy based on current storages")
+		m.strategy = determineStrategy(m.storages)
+	}
 	slog.Info("trash manager", "strategy", m.strategy)
 
 	return m, nil
@@ -89,7 +93,7 @@ func determineStrategy(storages []Storage) Strategy {
 		}
 	}
 
-	return StrategyComposite
+	return StrategyAuto
 }
 
 // Put moves the file at src path to trash
@@ -135,7 +139,7 @@ func (m *Manager) List() ([]*File, error) {
 
 	for _, storage := range m.storages {
 		files, err := storage.List()
-		slog.Debug("list storage files", "type", storage.Info().Type)
+		slog.Debug("list files", "storage_type", storage.Info().Type)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("failed to list files from %s: %w",
 				storage.Info().Root, err))

@@ -31,10 +31,6 @@ type Core struct {
 	// TrashDir specifies the trash directory location
 	TrashDir string `yaml:"trash_dir" validate:"dirpath|allowEmpty"`
 
-	// UseXDG specifies whether to use XDG trash specification
-	// If false, uses legacy .gomi format
-	UseXDG bool `yaml:"use_xdg"`
-
 	// HomeFallback enables fallback to home trash when external trash fails
 	HomeFallback bool `yaml:"home_fallback"`
 
@@ -134,8 +130,6 @@ func (p parser) getDefaultConfig() Config {
 			Trash: Trash{
 				Strategy: "auto",
 			},
-			// Default to XDG spec if config doesn't exist
-			UseXDG: true,
 			// Default to $XDG_DATA_HOME/Trash for XDG spec
 			TrashDir:     filepath.Join(os.Getenv("HOME"), ".local", "share", "Trash"),
 			HomeFallback: true,
@@ -213,7 +207,7 @@ type configError struct {
 }
 
 func validStrategy(fl validator.FieldLevel) bool {
-	value := strings.ToUpper(fl.Field().String())
+	value := strings.ToLower(fl.Field().String())
 	switch value {
 	case "auto", "xdg", "legacy":
 		return true
@@ -389,7 +383,7 @@ func Parse(path string) (Config, error) {
 	}
 
 	// If using legacy format, adjust trash dir
-	if !cfg.Core.UseXDG && cfg.Core.TrashDir == "" {
+	if cfg.Core.Trash.Strategy == "legacy" && cfg.Core.TrashDir == "" {
 		cfg.Core.TrashDir = filepath.Join(os.Getenv("HOME"), ".gomi")
 	}
 

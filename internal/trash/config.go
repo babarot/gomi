@@ -8,9 +8,22 @@ import (
 	"github.com/babarot/gomi/internal/config"
 )
 
-// Config holds the unified configuration for trash management
+// Config holds the unified configuration for trash management.
+// It maintains a deliberate separation between user-facing strategy (Strategy)
+// and internal implementation details (Type) to provide clear boundaries between
+// configuration intent and actual storage implementation.
 type Config struct {
-	// Type determines which storage implementation to use
+	// Strategy determines which trash specification to use:
+	// - "auto": automatically detect and use both XDG and legacy if available
+	// - "xdg": strictly follow XDG trash specification
+	// - "legacy": use gomi's legacy trash format (~/.gomi)
+	// This represents the user's intended trash management approach.
+	Strategy Strategy
+
+	// Type determines which storage implementation to use.
+	// While Strategy represents the user's intent, Type represents the actual
+	// storage implementation being used. This separation allows for flexible
+	// mapping between user configuration and internal implementation.
 	Type StorageType
 
 	// HomeTrashDir specifies a custom home trash directory
@@ -18,9 +31,6 @@ type Config struct {
 
 	// EnableHomeFallback enables fallback to home trash when external trash fails
 	EnableHomeFallback bool
-
-	// UseXDG enables XDG-compliant trash specification
-	UseXDG bool
 
 	// ForceHomeTrash forces using home trash even for external devices
 	ForceHomeTrash bool
@@ -53,7 +63,7 @@ func NewDefaultConfig() *Config {
 	return &Config{
 		Type:               StorageTypeXDG,
 		EnableHomeFallback: true,
-		UseXDG:             true,
+		Strategy:           StrategyAuto,
 		Verbose:            false,
 	}
 }
@@ -73,40 +83,12 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("failed to get home directory: %w", err)
 		}
 
-		if c.UseXDG {
-			c.HomeTrashDir = filepath.Join(home, ".local", "share", "Trash")
-		} else {
+		if c.Strategy == StrategyLegacy {
 			c.HomeTrashDir = filepath.Join(home, ".gomi")
+		} else {
+			c.HomeTrashDir = filepath.Join(home, ".local", "share", "Trash")
 		}
 	}
 
 	return nil
-}
-
-// WithXDG enables XDG-compliant trash storage
-func (c *Config) WithXDG() *Config {
-	c.Type = StorageTypeXDG
-	c.UseXDG = true
-	return c
-}
-
-// WithLegacy enables legacy trash storage
-func (c *Config) WithLegacy(h config.History) *Config {
-	c.Type = StorageTypeLegacy
-	c.UseXDG = false
-	c.History = h
-	return c
-}
-
-// FromConfig creates a trash Config from a gomi config
-func FromConfig(cfg config.Config) *Config {
-	return &Config{
-		Type:               StorageTypeXDG,
-		HomeTrashDir:       cfg.Core.TrashDir,
-		EnableHomeFallback: cfg.Core.HomeFallback,
-		UseXDG:             cfg.Core.UseXDG,
-		Verbose:            cfg.Core.Verbose,
-		History:            cfg.History,
-		TrashDir:           cfg.Core.TrashDir,
-	}
 }

@@ -111,31 +111,36 @@ func Run(v Version) error {
 
 	// Initialize trash configuration
 	trashConfig := trash.Config{
-		Type:               trash.StorageTypeXDG,
+		Strategy:           trash.Strategy(cfg.Core.Trash.Strategy),
 		HomeTrashDir:       cfg.Core.TrashDir,
 		EnableHomeFallback: cfg.Core.HomeFallback,
-		UseXDG:             cfg.Core.UseXDG,
 		Verbose:            cfg.Core.Verbose,
 		History:            cfg.History,
 		TrashDir:           cfg.Core.TrashDir,
 		RunID:              runID(),
 	}
 
-	if !cfg.Core.UseXDG {
-		trashConfig.Type = trash.StorageTypeLegacy
-	}
-
 	// Initialize storage manager with appropriate implementations
 	var managerOpts []trash.ManagerOption
 
 	// Always add the primary storage based on configuration
-	if cfg.Core.UseXDG {
+	switch trashConfig.Strategy {
+	case trash.StrategyXDG:
+		// Force XDG only
+		managerOpts = append(managerOpts, trash.WithStorage(xdg.NewStorage))
+	case trash.StrategyLegacy:
+		// Force Legacy only
+		managerOpts = append(managerOpts, trash.WithStorage(legacy.NewStorage))
+	case trash.StrategyAuto:
+		// Default to XDG with optional legacy fallback
 		managerOpts = append(managerOpts, trash.WithStorage(xdg.NewStorage))
 		if exist, _ := trash.DetectExistingLegacy(); exist {
 			managerOpts = append(managerOpts, trash.WithStorage(legacy.NewStorage))
 		}
-	} else {
-		managerOpts = append(managerOpts, trash.WithStorage(legacy.NewStorage))
+	default:
+		// Invalid strategy, default to XDG
+		slog.Warn("invalid trash strategy, defaulting to XDG", "strategy", cfg.Core.Trash.Strategy)
+		managerOpts = append(managerOpts, trash.WithStorage(xdg.NewStorage))
 	}
 
 	manager, err := trash.NewManager(trashConfig, managerOpts...)

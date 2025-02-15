@@ -31,7 +31,7 @@ type Storage struct {
 
 // NewStorage creates a new legacy storage instance
 func NewStorage(cfg trash.Config) (trash.Storage, error) {
-	slog.Debug("initialize legacy storage")
+	slog.Info("initialize legacy storage")
 
 	var root string
 	if cfg.HomeTrashDir != "" {
