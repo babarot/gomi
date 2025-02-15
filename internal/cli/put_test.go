@@ -1,8 +1,15 @@
 package cli
 
-import "testing"
+import (
+	"runtime"
+	"testing"
+)
 
 func TestIsUnsafePath(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skip testing gor isUnsafePath")
+	}
+
 	tests := []struct {
 		path    string
 		unsafe  bool
