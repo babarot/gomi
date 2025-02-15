@@ -1,4 +1,5 @@
 //go:build windows
+// +build windows
 
 package xdg
 
@@ -9,8 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
-
-	"github.com/babarot/gomi/internal/trash"
+	"unsafe"
 )
 
 // Windows-specific implementation
@@ -26,7 +26,7 @@ var skipFSTypes = map[string]bool{
 // getMountPoints returns a list of valid mount points that can contain trash directories
 func getMountPoints() ([]string, error) {
 	// On Windows, get logical drives
-	drives, err := syscall.GetLogicalDrives()
+	drives, err := getLogicalDrives()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get logical drives: %w", err)
 	}
@@ -56,26 +56,45 @@ func getMountPoints() ([]string, error) {
 	return points, nil
 }
 
-// getFileSystemType retrieves the filesystem type for a given drive
-func getFileSystemType(drive string) (string, error) {
-	var volumeName [261]uint16
-	var fileSystemName [261]uint16
+// getLogicalDrives retrieves the available logical drives
+func getLogicalDrives() (uint32, error) {
+	// Wrapper for Windows API GetLogicalDrives
+	kernel32 := syscall.NewLazyDLL("kernel32.dll")
+	getLogicalDrivesProc := kernel32.NewProc("GetLogicalDrives")
 
-	err := syscall.GetVolumeInformation(
-		syscall.StringToUTF16Ptr(drive),
-		&volumeName[0],
-		uint32(len(volumeName)),
-		nil,
-		nil,
-		nil,
-		&fileSystemName[0],
-		uint32(len(fileSystemName)),
-	)
-	if err != nil {
-		return "", fmt.Errorf("failed to get volume information: %w", err)
+	drives, _, err := getLogicalDrivesProc.Call()
+	if drives == 0 {
+		return 0, fmt.Errorf("GetLogicalDrives failed: %w", err)
 	}
 
-	return syscall.UTF16ToString(fileSystemName[:]), nil
+	return uint32(drives), nil
+}
+
+// getFileSystemType retrieves the filesystem type for a given drive
+func getFileSystemType(drive string) (string, error) {
+	// Wrapper for Windows API GetVolumeInformation
+	kernel32 := syscall.NewLazyDLL("kernel32.dll")
+	getVolumeInformationProc := kernel32.NewProc("GetVolumeInformationW")
+
+	volumeName := make([]uint16, 261)
+	fileSystemName := make([]uint16, 261)
+
+	r1, _, err := getVolumeInformationProc.Call(
+		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(drive))),
+		uintptr(unsafe.Pointer(&volumeName[0])),
+		uintptr(len(volumeName)),
+		0, // lpVolumeSerialNumber
+		0, // lpMaximumComponentLength
+		0, // lpFileSystemFlags
+		uintptr(unsafe.Pointer(&fileSystemName[0])),
+		uintptr(len(fileSystemName)),
+	)
+
+	if r1 == 0 {
+		return "", fmt.Errorf("GetVolumeInformation failed: %w", err)
+	}
+
+	return syscall.UTF16ToString(fileSystemName), nil
 }
 
 // getMountPoint returns the mount point for the given path on Windows
@@ -146,4 +165,23 @@ func isValidExternalTrash(path string) bool {
 	}
 
 	return true
+}
+
+// createTrashDir creates a trash directory with proper permissions
+func createTrashDir(path string) error {
+	// Create the main trash directory
+	if err := os.MkdirAll(path, 0755); err != nil {
+		return fmt.Errorf("failed to create trash directory: %w", err)
+	}
+
+	// Create standard subdirectories
+	for _, subdir := range []string{"files", "info"} {
+		subdirPath := filepath.Join(path, subdir)
+		if err := os.MkdirAll(subdirPath, 0755); err != nil {
+			return fmt.Errorf("failed to create %s directory: %w", subdir, err)
+		}
+	}
+
+	slog.Debug("created trash directory", "path", path)
+	return nil
 }
