@@ -1,3 +1,5 @@
+//go:build !windows
+
 package xdg
 
 import (
@@ -11,6 +13,8 @@ import (
 	"github.com/babarot/gomi/internal/trash"
 	"github.com/moby/sys/mountinfo"
 )
+
+// Unix/Linux implementation of XDG trash handling
 
 // Skip file systems that can't have trash directories
 var skipFSTypes = map[string]bool{
