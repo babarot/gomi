@@ -21,6 +21,32 @@ core:
     strategy: "auto"  # or "xdg" or "legacy"
 ```
 
+```mermaid
+flowchart TD
+    A[Start] --> B{Strategy?}
+    B -->|StrategyAuto| C{Legacy Exists?}
+    C -->|Yes| D[Enable Both XDG & Legacy]
+    C -->|No| E[XDG Only]
+    B -->|StrategyXDG| F[XDG Only]
+    B -->|StrategyLegacy| G[Legacy Only]
+    B -->|StrategyNone| H[Error]
+    
+    D --> I{Put File}
+    E --> I
+    F --> I
+    G --> I
+    
+    I -->|Same Device| J[Use Current Storage]
+    I -->|Different Device| K{HomeFallback?}
+    K -->|Yes| L[Use Home Trash]
+    K -->|No| M[Error: Cross Device]
+
+    style A fill:#9cf
+    style B fill:#fcf
+    style I fill:#fcc
+    style K fill:#cfc
+```
+
 ### Available Strategies
 
 - **auto**: Automatically detect and use available storage implementations
@@ -39,6 +65,88 @@ core:
   - Recommended only if XDG compliance is not required
 
 ## Storage Architecture
+
+<details><summary>diagram</summary>
+
+```mermaid
+classDiagram
+    class Manager {
+        -storages []Storage
+        -config Config
+        -strategy Strategy
+        +NewManager(cfg Config, opts ...ManagerOption) *Manager
+        +Put(src string) error
+        +List() []*File
+        +Restore(file *File, dst string) error
+        +IsPrimaryStorageAvailable() bool
+    }
+
+    class Storage {
+        <<interface>>
+        +Put(src string) error
+        +Restore(file *File, dst string) error
+        +Remove(file *File) error
+        +List() []*File
+        +Info() *StorageInfo
+    }
+
+    class Strategy {
+        <<enumeration>>
+        StrategyXDG
+        StrategyLegacy
+        StrategyAuto
+        StrategyNone
+    }
+
+    class Config {
+        +Strategy Strategy
+        +HomeTrashDir string
+        +EnableHomeFallback bool
+        +History History
+        +GomiDir string
+    }
+
+    class XDGStorage {
+        -homeTrash *trashLocation
+        -externalTrashes []*trashLocation
+        -config Config
+        +Info() *StorageInfo
+    }
+
+    class LegacyStorage {
+        -root string
+        -config Config
+        -history History
+        +Info() *StorageInfo
+    }
+
+    class File {
+        +Name string
+        +OriginalPath string
+        +TrashPath string
+        +DeletedAt time.Time
+        +storage Storage
+    }
+
+    class StorageInfo {
+        +Location StorageLocation
+        +Trashes []string
+        +Available bool
+        +Type StorageType
+    }
+
+    Manager --> Storage : uses
+    Manager --> Strategy : determines
+    Manager --> Config : configured by
+    Storage <|.. XDGStorage : implements
+    Storage <|.. LegacyStorage : implements
+    XDGStorage --> File : manages
+    LegacyStorage --> File : manages
+    Storage --> StorageInfo : provides
+```
+
+
+</details>
 
 ### Storage Manager
 
