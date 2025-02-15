@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"golang.org/x/sync/errgroup"
@@ -30,6 +31,20 @@ func (c *CLI) Put(args []string) error {
 	for _, arg := range args {
 		arg := arg // Create new instance of arg for goroutine
 		eg.Go(func() error {
+			unsafe, err := isUnsafePath(arg)
+			if err != nil {
+				mu.Lock()
+				failed = append(failed, arg)
+				mu.Unlock()
+				return fmt.Errorf("failed to check path safety: %w", err)
+			}
+			if unsafe {
+				mu.Lock()
+				failed = append(failed, arg)
+				mu.Unlock()
+				return fmt.Errorf("refusing to remove unsafe path: %q", arg)
+			}
+
 			// Get absolute path
 			path, err := filepath.Abs(arg)
 			if err != nil {
@@ -51,15 +66,6 @@ func (c *CLI) Put(args []string) error {
 					fmt.Fprintf(os.Stderr, "skipping %s: no such file or directory\n", arg)
 				}
 				return nil
-			}
-
-			// Check if trying to remove . or ..
-			base := filepath.Base(path)
-			if base == "." || base == ".." {
-				mu.Lock()
-				failed = append(failed, arg)
-				mu.Unlock()
-				return fmt.Errorf("refusing to remove '.' or '..' directory: skipping %q", arg)
 			}
 
 			// Move to trash
@@ -87,11 +93,49 @@ func (c *CLI) Put(args []string) error {
 
 	// Wait for all goroutines to complete
 	if err := eg.Wait(); err != nil {
-		if len(failed) > 0 {
-			return fmt.Errorf("failed to process files %v: %w", failed, err)
-		}
 		return err
 	}
 
+	if len(failed) > 0 {
+		return fmt.Errorf("failed to process files %v", failed)
+	}
+
 	return nil
+}
+
+// isUnsafePath checks if the given path is unsafe to remove
+func isUnsafePath(path string) (bool, error) {
+	// First check the original path before any normalization
+	// This preserves the original input like "." or ".."
+	originalBase := filepath.Base(path)
+	if originalBase == "." || originalBase == ".." {
+		return true, nil
+	}
+
+	// Get absolute path
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return false, fmt.Errorf("failed to get absolute path: %w", err)
+	}
+
+	// Clean the path to check for normalized root paths
+	cleaned := filepath.Clean(abs)
+
+	// Check root path
+	if cleaned == "/" {
+		return true, nil
+	}
+
+	// Check double slashes and similar patterns
+	if strings.HasPrefix(path, "//") {
+		return true, nil
+	}
+
+	slog.Debug("path safety check",
+		"original", path,
+		"originalBase", originalBase,
+		"absolute", abs,
+		"cleaned", cleaned)
+
+	return false, nil
 }
