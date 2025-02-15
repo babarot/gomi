@@ -17,7 +17,7 @@ func (c *CLI) Restore() error {
 	defer slog.Debug("cli.restore finished")
 
 	// Get list of files in trash
-	files, err := c.storage.List()
+	files, err := c.manager.List()
 	if err != nil {
 		return fmt.Errorf("failed to list trash contents: %w", err)
 	}
@@ -124,7 +124,7 @@ func (c *CLI) restoreFile(file *trash.File) error {
 	}
 
 	// Perform the restore
-	if err := c.storage.Restore(file, originalPath); err != nil {
+	if err := c.manager.Restore(file, originalPath); err != nil {
 		return fmt.Errorf("failed to restore '%s': %w", file.Name, err)
 	}
 

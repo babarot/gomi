@@ -31,6 +31,8 @@ type Storage struct {
 
 // NewStorage creates a new legacy storage instance
 func NewStorage(cfg trash.Config) (trash.Storage, error) {
+	slog.Debug("initialize legacy storage")
+
 	var root string
 	if cfg.HomeTrashDir != "" {
 		root = cfg.HomeTrashDir
@@ -57,10 +59,11 @@ func NewStorage(cfg trash.Config) (trash.Storage, error) {
 		return nil, fmt.Errorf("failed to create trash directory: %w", err)
 	}
 
+	// TODO: replace with opne.
 	// Load history
-	if err := s.loadHistory(); err != nil {
-		return nil, fmt.Errorf("failed to load history: %w", err)
-	}
+	// if err := s.loadHistory(); err != nil {
+	// 	return nil, fmt.Errorf("failed to load history: %w", err)
+	// }
 
 	return s, nil
 }
@@ -250,8 +253,4 @@ func (s *Storage) saveHistory() error {
 	}
 
 	return nil
-}
-
-func init() {
-	trash.RegisterStorage(trash.StorageTypeLegacy, NewStorage)
 }

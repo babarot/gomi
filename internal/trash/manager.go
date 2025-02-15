@@ -33,59 +33,50 @@ type Manager struct {
 	strategy Strategy
 }
 
-// NewManager creates a new trash manager with the given configuration
-func NewManager(cfg Config) (*Manager, error) {
+// ManagerOption is a function type for configuring Manager
+type ManagerOption func(*Manager)
+
+// WithStorage adds a new storage implementation to the manager
+func WithStorage(constructor StorageConstructor) ManagerOption {
+	return func(m *Manager) {
+		storage, err := constructor(m.config)
+		if err != nil {
+			slog.Error("failed to initialize storage", "error", err)
+			return
+		}
+		m.storages = append(m.storages, storage)
+	}
+}
+
+// NewManager creates a new trash manager with the given configuration and options
+func NewManager(cfg Config, opts ...ManagerOption) (*Manager, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
 
-	var storages []Storage
-
-	// show implementations when already added by init func
-	slog.Debug("init storage", "imple", storageImplementations)
-
-	// Initialize primary storage
-	primaryStorage, err := NewStorage(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize primary storage: %w", err)
-	}
-	slog.Info("primaryStorage set", "storage", primaryStorage.Info().Type)
-	storages = append(storages, primaryStorage)
-
-	// Initialize secondary storage if legacy exists
-	if legacy, _ := DetectExistingLegacy(); legacy && cfg.Type == StorageTypeXDG {
-		slog.Debug("found legacy storage in XDG enabled")
-		legacyCfg := cfg
-		legacyCfg.Type = StorageTypeLegacy
-		legacyCfg.UseXDG = false
-
-		secondaryStorage, err := NewStorage(legacyCfg)
-		if err != nil {
-			slog.Error("failed to set legacy storage", "error", err)
-		} else {
-			storages = append(storages, secondaryStorage)
-			slog.Debug("secondaryStorage set", "storage", secondaryStorage.Info().Type)
-		}
+	m := &Manager{
+		config:   cfg,
+		storages: make([]Storage, 0),
 	}
 
-	if len(storages) == 0 {
+	// Apply all provided options
+	for _, opt := range opts {
+		opt(m)
+	}
+
+	if len(m.storages) == 0 {
 		return nil, errors.New("no storage backend configured")
 	}
 
-	strategy := determineStrategy(storages)
-	slog.Info("trash manager", "strategy", strategy)
+	m.strategy = determineStrategy(m.storages)
+	slog.Info("trash manager", "strategy", m.strategy)
 
-	return &Manager{
-		storages: storages,
-		config:   cfg,
-		strategy: strategy,
-	}, nil
+	return m, nil
 }
 
 // determineStrategy determines the strategy based on available storages
 func determineStrategy(storages []Storage) Strategy {
 	if len(storages) == 0 {
-		// unreachable
 		return StrategyNone
 	}
 
@@ -140,8 +131,11 @@ func (m *Manager) List() ([]*File, error) {
 	var allFiles []*File
 	var errs []error
 
+	slog.Debug("storage manager list")
+
 	for _, storage := range m.storages {
 		files, err := storage.List()
+		slog.Debug("list storage files", "type", storage.Info().Type)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("failed to list files from %s: %w",
 				storage.Info().Root, err))

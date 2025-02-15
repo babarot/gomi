@@ -9,45 +9,6 @@ import (
 	"time"
 )
 
-// Storage defines the interface for different trash implementations
-type Storage interface {
-	// Put moves the file at src path to trash
-	Put(src string) error
-
-	// Restore restores the given file from trash to its original location
-	// If dst is specified, the file will be restored to that location instead
-	Restore(file *File, dst string) error
-
-	// Remove permanently removes the file from trash
-	Remove(file *File) error
-
-	// List returns a list of all files in trash
-	List() ([]*File, error)
-
-	// Info returns detailed information about the storage
-	Info() *StorageInfo
-}
-
-// StorageConstructor is a function type for creating new Storage instances
-type StorageConstructor func(Config) (Storage, error)
-
-// storageImplementations holds registered Storage implementations
-var storageImplementations = make(map[StorageType]StorageConstructor)
-
-// RegisterStorage registers a new Storage implementation
-func RegisterStorage(typ StorageType, constructor StorageConstructor) {
-	storageImplementations[typ] = constructor
-}
-
-// NewStorage creates a new Storage instance of the specified type
-func NewStorage(cfg Config) (Storage, error) {
-	constructor, ok := storageImplementations[cfg.Type]
-	if !ok {
-		return nil, fmt.Errorf("unknown storage type: %v", cfg.Type)
-	}
-	return constructor(cfg)
-}
-
 // StorageType represents the type of trash storage
 type StorageType int
 
@@ -150,6 +111,28 @@ func (f *File) GetStorage() Storage {
 	return f.storage
 }
 
+// Storage defines the interface for different trash implementations
+type Storage interface {
+	// Put moves the file at src path to trash
+	Put(src string) error
+
+	// Restore restores the given file from trash to its original location
+	// If dst is specified, the file will be restored to that location instead
+	Restore(file *File, dst string) error
+
+	// Remove permanently removes the file from trash
+	Remove(file *File) error
+
+	// List returns a list of all files in trash
+	List() ([]*File, error)
+
+	// Info returns detailed information about the storage
+	Info() *StorageInfo
+}
+
+// StorageConstructor is a function type for creating new Storage instances
+type StorageConstructor func(Config) (Storage, error)
+
 // DetectExistingStorage tries to detect what type of storage is already in use
 func DetectExistingStorage() (StorageType, error) {
 	home, err := os.UserHomeDir()
@@ -171,20 +154,6 @@ func DetectExistingStorage() (StorageType, error) {
 
 	// Default to XDG if no existing storage is found
 	return StorageTypeXDG, nil
-}
-
-// AutoConfigure creates a default configuration based on the environment
-func AutoConfigure() (*Config, error) {
-	storageType, err := DetectExistingStorage()
-	if err != nil {
-		return nil, err
-	}
-
-	cfg := NewDefaultConfig()
-	cfg.Type = storageType
-	cfg.UseXDG = (storageType == StorageTypeXDG)
-
-	return cfg, nil
 }
 
 // DetectExistingLegacy checks if legacy storage exists

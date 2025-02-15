@@ -47,6 +47,8 @@ type trashLocation struct {
 
 // NewStorage creates a new XDG-compliant trash storage
 func NewStorage(cfg trash.Config) (trash.Storage, error) {
+	slog.Debug("initialize xdg storage")
+
 	s := &Storage{config: cfg}
 
 	// Initialize home trash
@@ -211,12 +213,17 @@ func (s *Storage) initHomeTrash() (*trashLocation, error) {
 	if s.config.HomeTrashDir != "" {
 		root = s.config.HomeTrashDir
 	} else {
-		// Default to ~/.local/share/Trash
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get home directory: %w", err)
+		// First try $XDG_DATA_HOME
+		dataDir := os.Getenv("XDG_DATA_HOME")
+		if dataDir == "" {
+			// Fallback to ~/.local/share
+			home, err := os.UserHomeDir()
+			if err != nil {
+				return nil, fmt.Errorf("failed to get home directory: %w", err)
+			}
+			dataDir = filepath.Join(home, ".local", "share")
 		}
-		root = filepath.Join(home, ".local", "share", "Trash")
+		root = filepath.Join(dataDir, "Trash")
 	}
 
 	loc := &trashLocation{
@@ -399,8 +406,4 @@ func (s *Storage) filter(files []*trash.File) []*trash.File {
 		return false
 	})
 	return files
-}
-
-func init() {
-	trash.RegisterStorage(trash.StorageTypeXDG, NewStorage)
 }

@@ -63,7 +63,7 @@ func (c *CLI) Put(args []string) error {
 			}
 
 			// Move to trash
-			err = c.storage.Put(path)
+			err = c.manager.Put(path)
 			if err != nil {
 				if !c.option.Rm.Force {
 					mu.Lock()

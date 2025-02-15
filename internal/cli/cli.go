@@ -10,12 +10,11 @@ import (
 	"sync"
 	"time"
 
-	_ "github.com/babarot/gomi/internal/trash/legacy"
-	_ "github.com/babarot/gomi/internal/trash/xdg"
-
 	"github.com/babarot/gomi/internal/config"
 	"github.com/babarot/gomi/internal/env"
 	"github.com/babarot/gomi/internal/trash"
+	"github.com/babarot/gomi/internal/trash/legacy"
+	"github.com/babarot/gomi/internal/trash/xdg"
 	"github.com/babarot/gomi/internal/utils/debug"
 	"github.com/charmbracelet/log"
 	"github.com/jessevdk/go-flags"
@@ -35,8 +34,7 @@ type MetaOption struct {
 	Debug   string `long:"debug" description:"View debug logs (default: \"full\")" optional-value:"full" optional:"yes" choice:"full" choice:"live"`
 }
 
-// This should be not conflicts with app option
-// https://man7.org/linux/man-pages/man1/rm.1.html
+// RmOption provides compatibility with rm command options
 type RmOption struct {
 	Interactive bool `short:"i" description:"(dummy) prompt before every removal"`
 	Recursive   bool `short:"r" long:"recursive" description:"(dummy) remove directories and their contents recursively"`
@@ -51,9 +49,7 @@ type CLI struct {
 	option  Option
 	config  config.Config
 	runID   string
-	// history history.History
-	// storage core.Storage // Storage implementation (XDG or Legacy)
-	storage *trash.Manager
+	manager *trash.Manager
 }
 
 var runID = sync.OnceValue(func() string {
@@ -95,20 +91,17 @@ func Run(v Version) error {
 		TimeFormat:      time.Kitchen,
 		Level:           log.DebugLevel,
 		Formatter: func() log.Formatter {
-			// TODO: fix this
-			// json is no longer valid argument so doesnt work anymore.
 			if strings.ToLower(opt.Meta.Debug) == "json" {
 				return log.JSONFormatter
 			}
 			return log.TextFormatter
 		}(),
 	})
-
 	logger.SetOutput(w)
 	logger.With("run_id", runID())
 	slog.SetDefault(slog.New(logger))
 
-	defer slog.Debug("main function finished\n\n\n\n")
+	defer slog.Debug("main function finished\n\n\n")
 	slog.Debug("main function started", "version", v.Version, "revision", v.Revision, "buildDate", v.BuildDate)
 
 	cfg, err := config.Parse(opt.Config)
@@ -116,57 +109,46 @@ func Run(v Version) error {
 		return err
 	}
 
-	// Initialize appropriate storage using factory
-	// storageType := trash.StorageTypeXDG
-	// if !cfg.Core.UseXDG {
-	// 	storageType = trash.StorageTypeLegacy
-	// }
-
+	// Initialize trash configuration
 	trashConfig := trash.Config{
 		Type:               trash.StorageTypeXDG,
-		UseXDG:             cfg.Core.UseXDG,
-		EnableHomeFallback: cfg.Core.HomeFallback,
 		HomeTrashDir:       cfg.Core.TrashDir,
+		EnableHomeFallback: cfg.Core.HomeFallback,
+		UseXDG:             cfg.Core.UseXDG,
 		Verbose:            cfg.Core.Verbose,
-		// TODO:
-		TrashDir: cfg.Core.TrashDir,
-		History:  cfg.History,
-		RunID:    runID(),
+		History:            cfg.History,
+		TrashDir:           cfg.Core.TrashDir,
+		RunID:              runID(),
 	}
+
 	if !cfg.Core.UseXDG {
 		trashConfig.Type = trash.StorageTypeLegacy
 	}
-	storageManager, err := trash.NewManager(trashConfig)
+
+	// Initialize storage manager with appropriate implementations
+	var managerOpts []trash.ManagerOption
+
+	// Always add the primary storage based on configuration
+	if cfg.Core.UseXDG {
+		managerOpts = append(managerOpts, trash.WithStorage(xdg.NewStorage))
+		if exist, _ := trash.DetectExistingLegacy(); exist {
+			managerOpts = append(managerOpts, trash.WithStorage(legacy.NewStorage))
+		}
+	} else {
+		managerOpts = append(managerOpts, trash.WithStorage(legacy.NewStorage))
+	}
+
+	manager, err := trash.NewManager(trashConfig, managerOpts...)
 	if err != nil {
 		return fmt.Errorf("failed to initialize storage manager: %w", err)
 	}
-
-	// // Initialize appropriate storage based on configuration
-	// storageConfig := &core.Config{
-	// 	HomeTrashDir:       cfg.Core.TrashDir,
-	// 	EnableHomeFallback: cfg.Core.HomeFallback,
-	// 	Verbose:            cfg.Core.Verbose,
-	// }
-	//
-	// var storage core.Storage
-	// if cfg.Core.UseXDG {
-	// 	storage, err = xdg.NewStorage(storageConfig)
-	// 	// if legacy, _ := trash.DetectLegacy(); legacy {
-	// 	// 	// storage, err = legacy.NewStorage(storageConfig)
-	// 	// }
-	// } else {
-	// 	storage, err = legacy.NewStorage(storageConfig)
-	// }
-	// if err != nil {
-	// 	return fmt.Errorf("failed to initialize storage: %w", err)
-	// }
 
 	cli := CLI{
 		version: v,
 		option:  opt,
 		config:  cfg,
 		runID:   runID(),
-		storage: storageManager,
+		manager: manager,
 	}
 
 	if err := cli.Run(args); err != nil {
