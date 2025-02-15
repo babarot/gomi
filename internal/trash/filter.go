@@ -112,7 +112,7 @@ func rejectByGlobs[T Filterable](items []T, globs []string) []T {
 	return filtered
 }
 
-func rejectBySize[T Filterable](items []T, size config.Size) []T {
+func rejectBySize[T Filterable](items []T, size config.SizeConfig) []T {
 	var filtered []T
 	for _, item := range items {
 		dirSize, err := fs.DirSize(item.GetPath())

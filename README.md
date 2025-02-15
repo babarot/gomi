@@ -78,7 +78,11 @@ curl -fsSL https://gomi.dev/install | PREFIX=~/.local/bin bash
 
 Download the latest precompiled binary from [GitHub Releases][release] and place it in a directory included in your `$PATH`.
 
-### Using [afx](https://github.com/babarot/afx), a CLI Package Manager
+### Using a CLI package manager
+
+[![Packaging status](https://repology.org/badge/vertical-allrepos/gomi.svg?columns=2)](https://repology.org/project/gomi/versions)
+
+### Using [afx](https://github.com/babarot/afx)
 
 "Write a YAML manifest, then run the `install` command.
 

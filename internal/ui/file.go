@@ -83,8 +83,7 @@ func (f File) Browse() (string, error) {
 		return content, errCannotPreview
 	}
 	if fi.IsDir() {
-		input := fmt.Sprintf("cd %s; %s", shellescape.Quote(f.TrashPath), f.dirListCommand)
-		if input == "" {
+		if f.dirListCommand == "" {
 			slog.Debug("preview dir command is not set, fallback to builtin dir func")
 			lines := []string{}
 			dirs, _ := os.ReadDir(f.TrashPath)
@@ -104,6 +103,7 @@ func (f File) Browse() (string, error) {
 			}
 			return strings.Join(lines, "\n"), nil
 		}
+		input := fmt.Sprintf("cd %s; %s", shellescape.Quote(f.TrashPath), f.dirListCommand)
 		slog.Debug("command to list dir", "input", input)
 		out, _, err := shell.RunCommand(input)
 		if err != nil {

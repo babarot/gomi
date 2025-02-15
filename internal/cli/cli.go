@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -48,7 +49,7 @@ type RmOption struct {
 type CLI struct {
 	version Version
 	option  Option
-	config  config.Config
+	config  *config.Config
 	runID   string
 	manager *trash.Manager
 }
@@ -107,9 +108,13 @@ func Run(v Version) error {
 	defer slog.Debug("main function finished\n\n\n")
 	slog.Debug("main function started", "version", v.Version, "revision", v.Revision, "buildDate", v.BuildDate)
 
-	cfg, err := config.Parse(opt.Config)
+	cfg, err := config.Load(opt.Config)
 	if err != nil {
 		return err
+	}
+	if cfg == nil {
+		// NOTE: fallback to default config?
+		return errors.New("panic when parsing config")
 	}
 
 	// Initialize trash configuration
