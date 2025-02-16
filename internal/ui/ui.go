@@ -3,419 +3,111 @@ package ui
 import (
 	"errors"
 	"fmt"
-	"log/slog"
-	"os"
-	"sort"
+	"regexp"
+	"strings"
 
 	"github.com/babarot/gomi/internal/config"
 	"github.com/babarot/gomi/internal/trash"
-	"github.com/babarot/gomi/internal/ui/keys"
-
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/paginator"
-	"github.com/charmbracelet/bubbles/viewport"
+	"github.com/babarot/gomi/internal/ui/confirm"
+	"github.com/babarot/gomi/internal/ui/input"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/fatih/color"
-	"github.com/samber/lo"
+	"github.com/jimschubert/answer/validate"
 )
 
-type ViewType uint8
+var ErrInputCanceled = errors.New("tet")
 
-const (
-	LIST_VIEW ViewType = iota
-	DETAIL_VIEW
-	QUITTING
-)
-
-type ListDensityType uint8
-
-const (
-	Compact ListDensityType = iota
-	Spacious
-)
-
-const (
-	CompactDensityVal  = "compact"
-	SpaciousDensityVal = "spacious"
-)
-
-const (
-	bullet   = "•"
-	ellipsis = "…"
-
-	datefmtRel = "relative"
-	datefmtAbs = "absolute"
-
-	defaultWidth  = 56
-	defaultHeight = 20
-)
-
-var (
-	errCannotPreview = errors.New("cannot preview")
-
-	ErrInputCanceled = errors.New("input is canceled")
-)
-
-type DetailsMsg struct {
-	file File
-}
-
-type GotInventorysMsg struct {
-	files []list.Item
-}
-
-type errorMsg struct {
-	err error
-}
-
-func (e errorMsg) Error() string { return e.err.Error() }
-
-func errorCmd(err error) tea.Cmd {
-	return func() tea.Msg {
-		return errorMsg{err}
-	}
-}
-
-type Model struct {
-	listKeys   *keys.ListKeyMap
-	detailKeys *keys.DetailKeyMap
-
-	viewType      ViewType
-	detailFile    File
-	datefmt       string
-	cannotPreview bool
-
-	files   []File
-	config  config.UI
-	choices []File
-
-	help     help.Model
-	list     list.Model
-	viewport viewport.Model
-
-	err error
-}
-
-var _ list.DefaultItem = (*File)(nil)
-
-type inventoryLoadedMsg struct {
-	files []list.Item
-	err   error
-}
-
-func (m Model) loadInventory() tea.Msg {
-	files := m.files
-	slog.Info("loadInventory starts", "len(files)", len(files))
-
+// RenderList displays an interactive list of files and returns the selected files.
+// Returns nil and no error if the user cancels the operation.
+func RenderList(files []*trash.File, cfg config.UI) ([]*trash.File, error) {
 	if len(files) == 0 {
-		return errorMsg{errors.New("no deleted files found")}
-	}
-	sort.Slice(files, func(i, j int) bool {
-		return files[i].File.DeletedAt.After(files[j].File.DeletedAt)
-	})
-	files = lo.Reject(files, func(f File, index int) bool {
-		_, err := os.Stat(f.File.TrashPath)
-		return os.IsNotExist(err)
-	})
-	items := make([]list.Item, len(files))
-	for i, file := range files {
-		items[i] = file
-	}
-	return inventoryLoadedMsg{files: items}
-}
-
-func (m Model) Init() tea.Cmd {
-	return tea.Batch(
-		m.loadInventory,
-	)
-}
-
-func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	cmds := []tea.Cmd{}
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		slog.Debug("Key pressed", "key", msg.String())
-		switch {
-		case key.Matches(msg, m.listKeys.Quit):
-			m.viewType = QUITTING
-			return m, tea.Quit
-
-		case key.Matches(msg, m.listKeys.Select):
-			if m.list.FilterState() != list.Filtering {
-				item, ok := m.list.SelectedItem().(File)
-				if !ok {
-					break
-				}
-				if item.isSelected() {
-					selectionManager.Remove(item)
-				} else {
-					selectionManager.Add(item)
-				}
-				m.list.CursorDown()
-				if m.viewType == DETAIL_VIEW {
-					cmds = append(cmds, getInventoryDetails(item))
-				}
-			}
-
-		case key.Matches(msg, m.listKeys.DeSelect):
-			if m.list.FilterState() != list.Filtering {
-				item, ok := m.list.SelectedItem().(File)
-				if !ok {
-					break
-				}
-				if item.isSelected() {
-					selectionManager.Remove(item)
-				}
-				m.list.CursorUp()
-				if m.viewType == DETAIL_VIEW {
-					cmds = append(cmds, getInventoryDetails(item))
-				}
-			}
-
-		case key.Matches(msg, m.detailKeys.AtSign):
-			switch m.viewType {
-			case DETAIL_VIEW:
-				switch m.datefmt {
-				case datefmtRel:
-					m.datefmt = datefmtAbs
-				case datefmtAbs:
-					m.datefmt = datefmtRel
-				}
-			}
-
-		case key.Matches(
-			msg, m.detailKeys.PreviewUp, m.detailKeys.PreviewDown,
-			m.detailKeys.HalfPageUp, m.detailKeys.HalfPageDown,
-		):
-			switch m.viewType {
-			case DETAIL_VIEW:
-				var cmd tea.Cmd
-				m.viewport, cmd = m.viewport.Update(msg)
-				cmds = append(cmds, cmd)
-			}
-
-		case key.Matches(msg, m.detailKeys.GotoTop):
-			switch m.viewType {
-			case DETAIL_VIEW:
-				m.viewport.GotoTop()
-			}
-
-		case key.Matches(msg, m.detailKeys.GotoBottom):
-			switch m.viewType {
-			case DETAIL_VIEW:
-				m.viewport.GotoBottom()
-			}
-
-		case key.Matches(msg, m.detailKeys.Prev):
-			switch m.viewType {
-			case DETAIL_VIEW:
-				m.list.CursorUp()
-				file, ok := m.list.SelectedItem().(File)
-				if ok {
-					cmds = append(cmds, getInventoryDetails(file))
-				}
-			}
-
-		case key.Matches(msg, m.detailKeys.Next):
-			switch m.viewType {
-			case DETAIL_VIEW:
-				m.list.CursorDown()
-				file, ok := m.list.SelectedItem().(File)
-				if ok {
-					cmds = append(cmds, getInventoryDetails(file))
-				}
-			}
-
-		case key.Matches(msg, m.detailKeys.Esc):
-			switch m.viewType {
-			case DETAIL_VIEW:
-				m.viewType = LIST_VIEW
-			}
-
-		case key.Matches(msg, m.listKeys.Space):
-			switch m.viewType {
-			case LIST_VIEW:
-				if m.list.FilterState() != list.Filtering {
-					file, ok := m.list.SelectedItem().(File)
-					if ok {
-						cmds = append(cmds, getInventoryDetails(file))
-					}
-				}
-			case DETAIL_VIEW:
-				m.viewType = LIST_VIEW
-			}
-
-		case key.Matches(msg, m.listKeys.Enter):
-			switch m.viewType {
-			case LIST_VIEW:
-				if m.list.FilterState() != list.Filtering {
-					files := selectionManager.items
-					if len(files) == 0 {
-						file, ok := m.list.SelectedItem().(File)
-						if ok {
-							m.choices = append(m.choices, file)
-						}
-					} else {
-						m.choices = files
-					}
-					slog.Debug("key input: enter", slog.Any("selected_files", m.choices))
-					return m, tea.Quit
-				}
-			}
-
-		case key.Matches(msg, m.detailKeys.Help):
-			m.help.ShowAll = !m.help.ShowAll
-		}
-
-	case tea.WindowSizeMsg:
-		m.list.SetWidth(msg.Width)
-
-	case inventoryLoadedMsg:
-		if msg.err != nil {
-			m.err = msg.err
-			return m, tea.Quit
-		}
-		for _, file := range msg.files {
-			m.files = append(m.files, file.(File))
-		}
-		m.list.SetItems(msg.files)
-
-	case DetailsMsg:
-		m.viewType = DETAIL_VIEW
-		m.detailFile = msg.file
-		m.cannotPreview = false
-		m.viewport = m.newViewportModel(msg.file)
-
-	case errorMsg:
-		m.viewType = QUITTING
-		m.err = msg
-		return m, tea.Quit
+		return nil, errors.New("no files to display")
 	}
 
-	var cmd tea.Cmd
-	switch m.viewType {
-	case LIST_VIEW:
-		m.list, cmd = m.list.Update(msg)
-		cmds = append(cmds, cmd)
-	}
-	return m, tea.Batch(cmds...)
-}
+	// Initialize and run the TUI
+	m := New(files, cfg)
+	p := tea.NewProgram(&m)
 
-func (m Model) View() string {
-	defer color.Unset()
-	s := ""
-
-	if m.err != nil {
-		slog.Error("rendering of the view has stopped", "error", m.err)
-		return m.err.Error()
-	}
-
-	switch m.viewType {
-	case LIST_VIEW:
-		s += m.list.View()
-	case DETAIL_VIEW:
-		s += renderDetailed(m)
-		s += "\n" + lipgloss.NewStyle().Margin(1, 2).Render(m.help.View(m.detailKeys))
-	case QUITTING:
-		return s
-	}
-
-	if len(m.choices) > 0 {
-		// do not render when nothing is selected
-		return ""
-	}
-
-	return s
-}
-
-// TODO: remove?
-func getAllInventoryItems(files []File) tea.Msg {
-	result := []list.Item{}
-	for _, file := range files {
-		result = append(result, file)
-	}
-	return GotInventorysMsg{files: result}
-}
-
-func getInventoryDetails(file File) tea.Cmd {
-	return func() tea.Msg {
-		return DetailsMsg{file: file}
-	}
-}
-
-func (m *Model) newViewportModel(file File) viewport.Model {
-	viewportModel := viewport.New(defaultWidth, 15-lipgloss.Height(m.previewHeader()))
-	viewportModel.KeyMap = keys.PreviewKeys
-	content, err := file.Browse()
+	finalModel, err := p.Run()
 	if err != nil {
-		m.cannotPreview = true
-	}
-	viewportModel.SetContent(content)
-	return viewportModel
-}
-
-func RenderList(filteredFiles []*trash.File, cfg config.UI) ([]*trash.File, error) {
-	var items []list.Item
-	var files []File
-	for _, file := range filteredFiles {
-		items = append(items, File{File: file})
-		files = append(files, File{
-			File:            file,
-			dirListCommand:  cfg.Preview.DirectoryCommand,
-			syntaxHighlight: cfg.Preview.SyntaxHighlight,
-			colorscheme:     cfg.Preview.Colorscheme,
-		})
+		return nil, fmt.Errorf("failed to run UI: %w", err)
 	}
 
-	d := NewRestoreDelegate(cfg, files)
-	d.ShortHelpFunc = keys.ListKeys.ShortHelp
-	d.FullHelpFunc = keys.ListKeys.FullHelp
-	l := list.New(items, d, defaultWidth, defaultHeight)
-	switch cfg.Paginator {
-	case "arabic":
-		l.Paginator.Type = paginator.Arabic
-	case "dots":
-		l.Paginator.Type = paginator.Dots
-	default:
-		l.Paginator.Type = paginator.Dots
-	}
-
-	l.Title = ""
-	l.DisableQuitKeybindings()
-	l.SetShowStatusBar(false)
-	l.SetShowTitle(false)
-
-	m := Model{
-		listKeys:   keys.ListKeys,
-		detailKeys: keys.DetailKeys,
-		viewType:   LIST_VIEW,
-		datefmt:    datefmtRel,
-		files:      files,
-		config:     cfg,
-		list:       l,
-		viewport:   viewport.Model{},
-		help:       help.New(),
-	}
-
-	returnModel, err := tea.NewProgram(m).Run()
-	if err != nil {
-		return []*trash.File{}, err
-	}
-
-	choices := returnModel.(Model).choices
-	if returnModel.(Model).viewType == QUITTING {
+	// Check if the user canceled
+	model := finalModel.(Model)
+	if model.Canceled() {
 		if msg := cfg.ExitMessage; msg != "" {
 			fmt.Println(msg)
 		}
-		return []*trash.File{}, nil
+		return nil, nil
 	}
 
-	invFiles := make([]*trash.File, len(choices))
-	for i, file := range choices {
-		invFiles[i] = file.File
+	// Return selected files
+	return model.SelectedFiles(), nil
+}
+
+// Confirm displays a confirmation prompt and returns the user's decision.
+func Confirm(prompt string) bool {
+	m := confirm.New()
+	m.Prompt = prompt
+	m.DefaultValue = confirm.Denied
+	m.Immediately = true
+
+	p := tea.NewProgram(&m)
+	if _, err := p.Run(); err != nil {
+		return false
 	}
-	return invFiles, nil
+
+	return m.Selected().IsAccepted()
+}
+
+// InputFilename prompts the user to input a new filename.
+func InputFilename(file *trash.File) (string, error) {
+	m := input.New()
+	m.Prompt = "New name to avoid to overwrite:"
+	m.Placeholder = file.Name
+	m.Validate = validate.NewValidation().
+		MinLength(1, "min: 1 characters").
+		And(func(input string) error {
+			if strings.ToLower(input) == file.Name {
+				return errors.New("name should be changed")
+			}
+			return nil
+		}).
+		And(func(input string) error {
+			if input == "" {
+				return nil
+			}
+			matched, err := regexp.MatchString(`^[a-zA-Z0-9._-]*$`, input)
+			if err != nil {
+				return fmt.Errorf("regexp failed: %w", err)
+			}
+			if !matched {
+				return errors.New("not valid chars are included")
+			}
+			if onlySpecialChars(input) {
+				return errors.New("using only special characters is not allowed")
+			}
+			return nil
+		}).
+		Build()
+
+	p := tea.NewProgram(&m)
+	if _, err := p.Run(); err != nil {
+		return "", err
+	}
+
+	if m.Canceled() {
+		return m.Value(), ErrInputCanceled
+	}
+	return m.Value(), nil
+}
+
+// onlySpecialChars checks if the input string contains only special characters.
+func onlySpecialChars(input string) bool {
+	for _, char := range input {
+		if char != '.' && char != '_' && char != '-' {
+			return false
+		}
+	}
+	return true
 }
