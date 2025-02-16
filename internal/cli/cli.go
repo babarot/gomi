@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/babarot/gomi/internal/config"
-	"github.com/babarot/gomi/internal/env"
 	"github.com/babarot/gomi/internal/trash"
 	"github.com/babarot/gomi/internal/trash/legacy"
 	"github.com/babarot/gomi/internal/trash/xdg"
 	"github.com/babarot/gomi/internal/utils/debug"
+	"github.com/babarot/gomi/internal/utils/env"
 	"github.com/babarot/gomi/internal/utils/log"
 	"github.com/jessevdk/go-flags"
 	"github.com/rs/xid"
