@@ -31,20 +31,30 @@ type FilterOptions struct {
 
 // Filter applies filtering rules to a slice of items
 func Filter[T Filterable](items []T, opts FilterOptions) []T {
+	slog.Debug("starting filter",
+		"initial_items", len(items),
+		"exclude_files", len(opts.Exclude.Files),
+		"exclude_patterns", len(opts.Exclude.Patterns))
+
 	// Filter by filename exclusions
 	items = rejectByNames(items, opts.Exclude.Files)
+	slog.Debug("after name filtering", "remaining_items", len(items))
 
 	// Filter by patterns
 	items = rejectByPatterns(items, opts.Exclude.Patterns)
+	slog.Debug("after pattern filtering", "remaining_items", len(items))
 
 	// Filter by globs
 	items = rejectByGlobs(items, opts.Exclude.Globs)
+	slog.Debug("after glob filtering", "remaining_items", len(items))
 
 	// Filter by size
 	items = rejectBySize(items, opts.Exclude.Size)
+	slog.Debug("after size filtering", "remaining_items", len(items))
 
 	// Filter by time period
 	items = filterByPeriod(items, opts.Include.Period)
+	slog.Debug("after period filtering", "remaining_items", len(items))
 
 	return items
 }

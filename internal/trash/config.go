@@ -29,8 +29,8 @@ type Config struct {
 	// HomeTrashDir specifies a custom home trash directory
 	HomeTrashDir string
 
-	// EnableHomeFallback enables fallback to home trash when external trash fails
-	EnableHomeFallback bool
+	// HomeFallback enables fallback to home trash when external trash fails
+	HomeFallback bool
 
 	// ForceHomeTrash forces using home trash even for external devices
 	ForceHomeTrash bool
@@ -44,9 +44,6 @@ type Config struct {
 	// UseCompression enables compression for trashed files
 	UseCompression bool
 
-	// HomeFallback enables fallback to home trash when external trash fails
-	HomeFallback bool
-
 	// History contains history-related configuration
 	History config.History
 
@@ -58,9 +55,9 @@ type Config struct {
 // NewDefaultConfig creates a new Config with default values
 func NewDefaultConfig() *Config {
 	return &Config{
-		Strategy:           StrategyAuto,
-		Type:               StorageTypeXDG,
-		EnableHomeFallback: true,
+		Strategy:     StrategyAuto,
+		Type:         StorageTypeXDG,
+		HomeFallback: true,
 	}
 }
 

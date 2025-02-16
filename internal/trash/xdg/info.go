@@ -79,9 +79,6 @@ func NewInfo(r io.Reader) (*TrashInfo, error) {
 			}
 			info.Path = path
 			info.OriginalName = filepath.Base(path)
-			slog.Debug("parse trash info",
-				"path", info.Path,
-				"originalName", info.OriginalName)
 
 		case "DeletionDate":
 			date, err := time.ParseInLocation(timeFormat, value, time.Local)

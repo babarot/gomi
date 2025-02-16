@@ -104,7 +104,8 @@ func (f *File) GetDeletedAt() time.Time {
 // Exists checks if the file still exists in the trash
 func (f *File) Exists() bool {
 	_, err := os.Stat(f.TrashPath)
-	return err == nil
+	exists := err == nil
+	return exists
 }
 
 // RequiresAdmin returns true if administrator privileges are required

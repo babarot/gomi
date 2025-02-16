@@ -126,7 +126,7 @@ func (s *Storage) Put(src string) error {
 
 	// Move file to trash
 	dstPath := filepath.Join(loc.filesDir, trashName)
-	if err := fs.Move(abs, dstPath, s.config.EnableHomeFallback); err != nil {
+	if err := fs.Move(abs, dstPath, s.config.HomeFallback); err != nil {
 		// If move fails, clean up the .trashinfo file
 		os.Remove(infoPath)
 		return trash.NewStorageError("put", src, fmt.Errorf("failed to move file to trash: %w", err))
@@ -147,12 +147,19 @@ func (s *Storage) List() ([]*trash.File, error) {
 
 	// List files from external trashes
 	for _, loc := range s.externalTrashes {
+		slog.Debug("listing external trash",
+			"path", loc.root)
 		extFiles, err := s.listLocation(loc)
 		if err != nil {
-			// Log error but continue with other locations
-			fmt.Fprintf(os.Stderr, "Warning: failed to list external trash %s: %v\n", loc.root, err)
+			// Log warning but continue with other locations
+			slog.Warn("failed to list external trash",
+				"path", loc.root,
+				"error", err)
 			continue
 		}
+		slog.Debug("external trash contents",
+			"path", loc.root,
+			"files", len(extFiles))
 		files = append(files, extFiles...)
 	}
 
@@ -170,7 +177,7 @@ func (s *Storage) Restore(file *trash.File, dst string) error {
 	}
 
 	// Move file back
-	if err := fs.Move(file.TrashPath, dst, s.config.EnableHomeFallback); err != nil {
+	if err := fs.Move(file.TrashPath, dst, s.config.HomeFallback); err != nil {
 		return trash.NewStorageError("restore", dst, err)
 	}
 
@@ -349,7 +356,7 @@ func (s *Storage) selectTrashLocation(path string) (*trashLocation, error) {
 	}
 
 	// If home fallback is enabled, use home trash
-	if s.config.EnableHomeFallback {
+	if s.config.HomeFallback {
 		return s.homeTrash, nil
 	}
 

@@ -103,6 +103,12 @@ func (m *Manager) Put(src string) error {
 		return fmt.Errorf("failed to get absolute path: %w", err)
 	}
 
+	slog.Debug("putting file to trash",
+		"source", src,
+		"absolute_path", path,
+		"strategy", m.strategy,
+		"storages", len(m.storages))
+
 	fi, err := os.Lstat(path)
 	if err != nil {
 		return fmt.Errorf("failed to stat file: %w", err)

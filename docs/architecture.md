@@ -101,7 +101,7 @@ classDiagram
     class Config {
         +Strategy Strategy
         +HomeTrashDir string
-        +EnableHomeFallback bool
+        +HomeFallback bool
         +History History
         +GomiDir string
     }
