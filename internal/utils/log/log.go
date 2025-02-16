@@ -1,212 +1,110 @@
-// Package log provides a structured logger with context support.
 package log
 
 import (
 	"log/slog"
-	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
 
-	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/log"
+	charmlog "github.com/charmbracelet/log"
 )
-
-// Logger is an alias for [slog.Logger].
-type Logger = slog.Logger
 
 var (
-	defaultStylesOnce struct {
-		sync.Once
-		s *log.Styles
-	}
-
-	defaultOnce struct {
-		sync.Once
-		l atomic.Pointer[slog.Logger]
-	}
+	// singleton instances
+	defaultStylesOnce sync.Once
+	defaultStyles     atomic.Pointer[Styles]
+	defaultLoggerOnce sync.Once
+	defaultLogger     atomic.Pointer[slog.Logger]
 )
 
-// DefaultStyles returns the default styles.
-// It applies custom styles to the [log.DefaultStyles].
+// initializeStyles creates and initializes the default styles
+func initializeStyles() *Styles {
+	styles := charmlog.DefaultStyles()
+	for _, ls := range levelStyles {
+		levelStr := strings.ToUpper(LogLevelString(ls.level))
+		if len(levelStr) < ls.maxWidth {
+			levelStr = levelStr + strings.Repeat(" ", ls.maxWidth-len(levelStr))
+		}
+		styles.Levels[ls.level] = ls.style.SetString(levelStr)
+	}
+	return styles
+}
+
+// DefaultStyles returns the initialized styles with all levels including Important
 func DefaultStyles() *Styles {
 	defaultStylesOnce.Do(func() {
-		defaultStylesOnce.s = log.DefaultStyles()
-
-		for _, level := range []struct {
-			Level    Level
-			MaxWidth int
-			Style    lipgloss.Style
-		}{
-			{
-				Level:    DebugLevel,
-				MaxWidth: 5,
-				Style:    lipgloss.NewStyle().Foreground(lipgloss.Color("#808080")), // Gray
-			},
-			{
-				Level:    InfoLevel,
-				MaxWidth: 5,
-				Style:    lipgloss.NewStyle().Foreground(lipgloss.Color("#0000FF")), // Blue
-			},
-			{
-				Level:    WarnLevel,
-				MaxWidth: 5,
-				Style:    lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFF00")), // Yellow
-			},
-			{
-				Level:    ErrorLevel,
-				MaxWidth: 5,
-				Style:    lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")), // Red
-			},
-			{
-				Level:    FatalLevel,
-				MaxWidth: 5,
-				Style: lipgloss.NewStyle().
-					Foreground(lipgloss.Color("#FF0000")).
-					Background(lipgloss.Color("#000000")).
-					Bold(true), // Red on Black, Bold
-			},
-			{
-				Level:    ImportantLevel,
-				MaxWidth: 9,
-				Style: lipgloss.NewStyle().
-					Foreground(lipgloss.Color("#FF5F87")).
-					Background(lipgloss.Color("#3A3A3A")).
-					Bold(true), // Custom Important style
-			},
-		} {
-			levelStr := strings.ToUpper(level.Level.String())
-			// add padding to keep MaxWidth
-			if len(levelStr) < level.MaxWidth {
-				levelStr = levelStr + strings.Repeat(" ", level.MaxWidth-len(levelStr))
-			}
-			defaultStylesOnce.s.Levels[level.Level] = level.Style.SetString(levelStr)
-		}
+		styles := initializeStyles()
+		defaultStyles.Store(styles)
 	})
-
-	return defaultStylesOnce.s
+	return defaultStyles.Load()
 }
 
-// Default returns the default logger.
-func Default() *slog.Logger {
-	defaultOnce.Do(func() {
-		if defaultOnce.l.Load() != nil {
-			return
-		}
-		defaultOnce.l.Store(New(AsDefault()))
-	})
-	return defaultOnce.l.Load()
-}
-
-// handler returns the default logger's handler.
-func handler() *log.Logger {
-	return loggerHandler(Default())
-}
-
-// loggerHandler returns the logger's handler.
-func loggerHandler(l *slog.Logger) *log.Logger {
-	return l.Handler().(*log.Logger)
-}
-
-// DefaultOptions returns the default options.
-func DefaultOptions() *Options {
-	return &Options{
-		LogOptions: &LogOptions{
-			Level: log.InfoLevel,
-		},
-		OutputFunc: nil,
-		Writer:     os.Stderr,
-		Styles:     DefaultStyles(),
-	}
-}
-
-// New creates a new logger with the given options.
+// New creates a new logger with the given options
 func New(opts ...Option) *slog.Logger {
 	o := DefaultOptions()
 	o.Apply(opts...)
 
-	// Create writer if OutputFunc is set
+	// Handle output writer
 	if o.OutputFunc != nil {
 		if w, err := o.OutputFunc(); err == nil {
 			o.Writer = w
-		} else {
-			o.Writer = os.Stderr
 		}
 	}
 
-	handler := log.NewWithOptions(o.Writer, *o.LogOptions)
+	// Create and configure the handler
+	handler := charmlog.NewWithOptions(o.Writer, o.Options)
+	handler.SetStyles(o.Styles) // Always set styles to ensure level definitions
 
-	if o.Styles != nil {
-		handler.SetStyles(o.Styles)
-	}
+	// Create the logger
+	logger := slog.New(handler)
 
-	l := slog.New(handler)
-
+	// Set as default if requested
 	if o.Default {
-		log.SetDefault(handler)
-		slog.SetDefault(l)
-		defaultOnce.l.Store(l)
+		charmlog.SetDefault(handler)
+		slog.SetDefault(logger)
+		defaultLogger.Store(logger)
 	}
 
-	return l
+	return logger
 }
 
-func Debug(msg string, args ...any) {
-	handler().Debug(msg, args...)
+// Default returns the default logger instance
+func Default() *slog.Logger {
+	defaultLoggerOnce.Do(func() {
+		if defaultLogger.Load() == nil {
+			defaultLogger.Store(New(AsDefault()))
+		}
+	})
+	return defaultLogger.Load()
 }
 
-func Debugf(format string, args ...any) {
-	handler().Debugf(format, args...)
+// Reset resets all global state (useful for testing)
+func Reset() {
+	defaultStylesOnce = sync.Once{}
+	defaultStyles.Store(nil)
+	defaultLoggerOnce = sync.Once{}
+	defaultLogger.Store(nil)
 }
 
-func Info(msg string, args ...any) {
-	handler().Info(msg, args...)
+func handler() *charmlog.Logger {
+	return loggerHandler(Default())
 }
 
-func Infof(format string, args ...any) {
-	handler().Infof(format, args...)
+func loggerHandler(l *slog.Logger) *charmlog.Logger {
+	return l.Handler().(*charmlog.Logger)
 }
 
-func Warn(msg string, args ...any) {
-	handler().Warn(msg, args...)
-}
+// Logging methods
+func Debug(msg string, args ...any)     { handler().Debug(msg, args...) }
+func Info(msg string, args ...any)      { handler().Info(msg, args...) }
+func Warn(msg string, args ...any)      { handler().Warn(msg, args...) }
+func Error(msg string, args ...any)     { handler().Error(msg, args...) }
+func Fatal(msg any, args ...any)        { handler().Fatal(msg, args...) }
+func Important(msg string, args ...any) { handler().Log(ImportantLevel, msg, args...) }
 
-func Warnf(format string, args ...any) {
-	handler().Warnf(format, args...)
-}
-
-func Error(msg string, args ...any) {
-	handler().Error(msg, args...)
-}
-
-func Errorf(format string, args ...any) {
-	handler().Errorf(format, args...)
-}
-
-func Fatal(msg any, keyvals ...any) {
-	handler().Fatal(msg, keyvals...)
-}
-
-func Fatalf(format string, args ...any) {
-	handler().Fatalf(format, args...)
-}
-
-func Important(msg string, args ...any) {
-	handler().Log(ImportantLevel, msg, args...)
-}
-
-func Importantf(format string, args ...any) {
-	handler().Logf(ImportantLevel, format, args...)
-}
-
-func Print(msg string, args ...any) {
-	handler().Print(msg, args...)
-}
-
-func Log(level Level, msg string, args ...any) {
-	handler().Log(level, msg, args...)
-}
-
-func Logf(level Level, format string, args ...any) {
-	handler().Logf(level, format, args...)
-}
+func Debugf(format string, args ...any)     { handler().Debugf(format, args...) }
+func Infof(format string, args ...any)      { handler().Infof(format, args...) }
+func Warnf(format string, args ...any)      { handler().Warnf(format, args...) }
+func Errorf(format string, args ...any)     { handler().Errorf(format, args...) }
+func Fatalf(format string, args ...any)     { handler().Fatalf(format, args...) }
+func Importantf(format string, args ...any) { handler().Logf(ImportantLevel, format, args...) }
