@@ -10,6 +10,7 @@ import (
 
 	"github.com/babarot/gomi/internal/fs"
 	"github.com/babarot/gomi/internal/trash"
+	"github.com/babarot/gomi/internal/utils/log"
 )
 
 // Storage implements the trash.Storage interface for XDG trash specification
@@ -44,7 +45,7 @@ type trashLocation struct {
 
 // NewStorage creates a new XDG-compliant trash storage
 func NewStorage(cfg trash.Config) (trash.Storage, error) {
-	slog.Info("initialize xdg storage")
+	slog.Info(log.UnderBold("initialize xdg storage"))
 
 	s := &Storage{config: cfg}
 

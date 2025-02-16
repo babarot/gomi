@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/babarot/gomi/internal/utils/log"
 )
 
 // Strategy represents the trash management strategy
@@ -73,7 +75,7 @@ func NewManager(cfg Config, opts ...ManagerOption) (*Manager, error) {
 		slog.Debug("determine strategy based on current storages")
 		m.strategy = determineStrategy(m.storages)
 	}
-	slog.Info("trash manager", "strategy", m.strategy)
+	slog.Info(log.Highlight("trash manager"), "strategy", m.strategy)
 
 	return m, nil
 }

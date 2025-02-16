@@ -3,11 +3,8 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"os"
-	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
@@ -17,7 +14,7 @@ import (
 	"github.com/babarot/gomi/internal/trash/legacy"
 	"github.com/babarot/gomi/internal/trash/xdg"
 	"github.com/babarot/gomi/internal/utils/debug"
-	"github.com/charmbracelet/log"
+	"github.com/babarot/gomi/internal/utils/log"
 	"github.com/jessevdk/go-flags"
 	"github.com/rs/xid"
 )
@@ -72,38 +69,15 @@ func Run(v Version) error {
 		return err
 	}
 
-	logDir := filepath.Dir(env.GOMI_LOG_PATH)
-	if _, err := os.Stat(logDir); os.IsNotExist(err) {
-		err := os.MkdirAll(logDir, 0755)
-		if err != nil {
-			return err
-		}
-	}
-
-	var w io.Writer
-	if file, err := os.OpenFile(env.GOMI_LOG_PATH, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err == nil {
-		w = file
-	} else {
-		w = os.Stderr
-	}
-
-	logger := log.NewWithOptions(os.Stderr, log.Options{
-		ReportCaller:    true,
-		ReportTimestamp: true,
-		TimeFormat:      time.Kitchen,
-		Level:           log.DebugLevel,
-		Formatter: func() log.Formatter {
-			// TODO: fix this
-			// json is no longer valid argument so doesnt work anymore.
-			if strings.ToLower(opt.Meta.Debug) == "json" {
-				return log.JSONFormatter
-			}
-			return log.TextFormatter
-		}(),
-	})
-	logger.SetOutput(w)
-	logger.With("run_id", runID())
-	slog.SetDefault(slog.New(logger))
+	_ = log.New(
+		log.UseTimeFormat(time.Kitchen),
+		log.UseOutputPath(env.GOMI_LOG_PATH),
+		log.UseDefaultStyles(),
+		log.UseLevel(log.DebugLevel),
+		log.UseReportTimestamp(true),
+		log.UseReportCaller(true),
+		log.AsDefault(), // seamlessly integrate with log/slog
+	)
 
 	defer slog.Debug("main function finished\n\n\n")
 	slog.Debug("main function started", "version", v.Version, "revision", v.Revision, "buildDate", v.BuildDate)
@@ -141,13 +115,13 @@ func Run(v Version) error {
 		// Default to XDG with optional legacy fallback
 		managerOpts = append(managerOpts, trash.WithStorage(xdg.NewStorage))
 		if exist, err := trash.IsExistLegacy(); err != nil {
-			slog.Error("failed to check if legacy storage exists", "error", err)
+			log.Error("failed to check if legacy storage exists", "error", err)
 		} else if exist {
 			managerOpts = append(managerOpts, trash.WithStorage(legacy.NewStorage))
 		}
 	default:
 		// Invalid strategy, default to XDG
-		slog.Warn("invalid trash strategy, defaulting to XDG", "strategy", cfg.Core.Trash.Strategy)
+		log.Warn("invalid trash strategy, defaulting to XDG", "strategy", cfg.Core.Trash.Strategy)
 		managerOpts = append(managerOpts, trash.WithStorage(xdg.NewStorage))
 	}
 
@@ -165,7 +139,7 @@ func Run(v Version) error {
 	}
 
 	if err := cli.Run(args); err != nil {
-		slog.Error("exit", "error", fmt.Errorf("cli.run failed: %w", err))
+		log.Error("exit", "error", fmt.Errorf("cli.run failed: %w", err))
 		return err
 	}
 	return nil

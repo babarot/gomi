@@ -11,6 +11,7 @@ import (
 	"github.com/babarot/gomi/internal/fs"
 	"github.com/babarot/gomi/internal/trash"
 	"github.com/babarot/gomi/internal/trash/legacy/history"
+	"github.com/babarot/gomi/internal/utils/log"
 	"github.com/google/uuid"
 )
 
@@ -31,7 +32,7 @@ type Storage struct {
 
 // NewStorage creates a new legacy storage instance
 func NewStorage(cfg trash.Config) (trash.Storage, error) {
-	slog.Info("initialize legacy storage")
+	slog.Info(log.UnderBold("initialize legacy storage"))
 
 	var root string
 	if cfg.GomiDir != "" {
