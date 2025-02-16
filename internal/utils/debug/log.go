@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/babarot/gomi/internal/env"
+	"github.com/babarot/gomi/internal/utils/env"
 	"github.com/mattn/go-isatty"
 	"github.com/nxadm/tail"
 )

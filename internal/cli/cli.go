@@ -3,21 +3,18 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"os"
-	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/babarot/gomi/internal/config"
-	"github.com/babarot/gomi/internal/env"
 	"github.com/babarot/gomi/internal/trash"
 	"github.com/babarot/gomi/internal/trash/legacy"
 	"github.com/babarot/gomi/internal/trash/xdg"
 	"github.com/babarot/gomi/internal/utils/debug"
-	"github.com/charmbracelet/log"
+	"github.com/babarot/gomi/internal/utils/env"
+	"github.com/babarot/gomi/internal/utils/log"
 	"github.com/jessevdk/go-flags"
 	"github.com/rs/xid"
 )
@@ -72,38 +69,14 @@ func Run(v Version) error {
 		return err
 	}
 
-	logDir := filepath.Dir(env.GOMI_LOG_PATH)
-	if _, err := os.Stat(logDir); os.IsNotExist(err) {
-		err := os.MkdirAll(logDir, 0755)
-		if err != nil {
-			return err
-		}
-	}
-
-	var w io.Writer
-	if file, err := os.OpenFile(env.GOMI_LOG_PATH, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err == nil {
-		w = file
-	} else {
-		w = os.Stderr
-	}
-
-	logger := log.NewWithOptions(os.Stderr, log.Options{
-		ReportCaller:    true,
-		ReportTimestamp: true,
-		TimeFormat:      time.Kitchen,
-		Level:           log.DebugLevel,
-		Formatter: func() log.Formatter {
-			// TODO: fix this
-			// json is no longer valid argument so doesnt work anymore.
-			if strings.ToLower(opt.Meta.Debug) == "json" {
-				return log.JSONFormatter
-			}
-			return log.TextFormatter
-		}(),
-	})
-	logger.SetOutput(w)
-	logger.With("run_id", runID())
-	slog.SetDefault(slog.New(logger))
+	_ = log.New(
+		log.UseLevel(log.DebugLevel),
+		log.UseOutputPath(env.GOMI_LOG_PATH),
+		log.UseTimeFormat(time.Kitchen),
+		log.UseReportTimestamp(true),
+		log.UseReportCaller(true),
+		log.AsDefault(), // seamlessly integrate with log/slog
+	)
 
 	defer slog.Debug("main function finished\n\n\n")
 	slog.Debug("main function started", "version", v.Version, "revision", v.Revision, "buildDate", v.BuildDate)

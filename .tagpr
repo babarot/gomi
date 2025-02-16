@@ -44,4 +44,4 @@
 	minorLabels = release/minor
 	releaseBranch = main
 	vPrefix = true
-	versionFile = VERSION
+	versionFile = VERSION,README.md

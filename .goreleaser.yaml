@@ -79,13 +79,8 @@ scoops:
   - repository:
       owner: babarot
       name: scoop-bucket
-      branch: main
       token: "{{ .Env.SCOOP_GITHUB_TOKEN }}"
     homepage: https://gomi.dev/
-    description: "🗑️ Your UNIX rm command with a safety net!"
+    description: A Safer Alternative to the UNIX rm Command!
     license: MIT
     url_template: "https://github.com/babarot/gomi/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
-    commit_author:
-      name: github-actions
-      email: github-actions@github.com
-    commit_msg_template: "Scoop update for {{ .ProjectName }} version {{ .Tag }}"
