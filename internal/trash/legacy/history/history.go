@@ -183,6 +183,7 @@ func (h History) Filter() []File {
 		Include: h.config.Include,
 		Exclude: h.config.Exclude,
 	}
+	slog.Debug("legacy filter items", "len(files)", len(h.Files))
 	return trash.Filter(h.Files, opts)
 }
 

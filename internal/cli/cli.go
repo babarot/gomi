@@ -70,10 +70,9 @@ func Run(v Version) error {
 	}
 
 	_ = log.New(
-		log.UseTimeFormat(time.Kitchen),
-		log.UseOutputPath(env.GOMI_LOG_PATH),
-		log.UseDefaultStyles(),
 		log.UseLevel(log.DebugLevel),
+		log.UseOutputPath(env.GOMI_LOG_PATH),
+		log.UseTimeFormat(time.Kitchen),
 		log.UseReportTimestamp(true),
 		log.UseReportCaller(true),
 		log.AsDefault(), // seamlessly integrate with log/slog

@@ -108,7 +108,8 @@ type inventoryLoadedMsg struct {
 
 func (m Model) loadInventory() tea.Msg {
 	files := m.files
-	slog.Debug("loadInventory starts", "len(files)", len(files))
+	slog.Info("loadInventory starts", "len(files)", len(files))
+
 	if len(files) == 0 {
 		return errorMsg{errors.New("no deleted files found")}
 	}

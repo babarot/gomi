@@ -369,5 +369,6 @@ func (s *Storage) filter(files []*trash.File) []*trash.File {
 		Include: s.config.History.Include,
 		Exclude: s.config.History.Exclude,
 	}
+	slog.Debug("xdg filter items", "len(files)", len(files))
 	return trash.Filter(files, opts)
 }

@@ -151,7 +151,7 @@ func (m *Manager) List() ([]*File, error) {
 			continue
 		}
 		allFiles = append(allFiles, files...)
-		slog.Debug("list files",
+		slog.Info("list files",
 			"storage_type",
 			storage.Info().Type,
 			"len(files)",
