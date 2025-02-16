@@ -114,13 +114,13 @@ func Run(v Version) error {
 		// Default to XDG with optional legacy fallback
 		managerOpts = append(managerOpts, trash.WithStorage(xdg.NewStorage))
 		if exist, err := trash.IsExistLegacy(); err != nil {
-			log.Error("failed to check if legacy storage exists", "error", err)
+			slog.Error("failed to check if legacy storage exists", "error", err)
 		} else if exist {
 			managerOpts = append(managerOpts, trash.WithStorage(legacy.NewStorage))
 		}
 	default:
 		// Invalid strategy, default to XDG
-		log.Warn("invalid trash strategy, defaulting to XDG", "strategy", cfg.Core.Trash.Strategy)
+		slog.Warn("invalid trash strategy, defaulting to XDG", "strategy", cfg.Core.Trash.Strategy)
 		managerOpts = append(managerOpts, trash.WithStorage(xdg.NewStorage))
 	}
 
@@ -138,7 +138,7 @@ func Run(v Version) error {
 	}
 
 	if err := cli.Run(args); err != nil {
-		log.Error("exit", "error", fmt.Errorf("cli.run failed: %w", err))
+		slog.Error("exit", "error", fmt.Errorf("cli.run failed: %w", err))
 		return err
 	}
 	return nil
