@@ -63,11 +63,11 @@ code {
   border-radius: var(--radius-sm);
 }
 
-code::before {
+code:not(pre code)::before {
   content: "`";
 }
 
-code::after {
+code:not(pre code)::after {
   content: "`";
 }
 
