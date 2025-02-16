@@ -9,12 +9,15 @@ In a typical CLI, there’s no "trash" folder like in graphical file managers. T
 
 ![demo](./docs/demo.gif)
 
-[![Go](https://github.com/babarot/gomi/actions/workflows/build.yaml/badge.svg)](https://github.com/babarot/gomi/actions/workflows/build.yaml)
+<!-- [![Go](https://github.com/babarot/gomi/actions/workflows/build.yaml/badge.svg)](https://github.com/babarot/gomi/actions/workflows/build.yaml) -->
 [![Release](https://github.com/babarot/gomi/actions/workflows/release.yaml/badge.svg)](https://github.com/babarot/gomi/actions/workflows/release.yaml)
 
 ## Features
 
 - Functions like the `rm` command but moves files to the trash instead of permanently deleting them.
+- Follows the [XDG Trash specification](https://specifications.freedesktop.org/trash-spec/latest/) for modern Linux desktop environments:
+  - Supports `$XDG_DATA_HOME/Trash` or `~/.local/share/Trash`
+  - Compatible with other applications using the XDG trash
 - Simple and intuitive restoration process with a user-friendly interface.
 - Compatible with most of the flags available for the `rm` command.
 - Allows easy searching of deleted files using fuzzy search.
@@ -23,6 +26,8 @@ In a typical CLI, there’s no "trash" folder like in graphical file managers. T
   - Customize file content colorization.
   - Define the command to list directory contents.
   - Customize visual styles (e.g., color of selected files).
+
+For detailed information about gomi's architecture and design decisions, see [architecture.md](./docs/architecture.md).
 
 ## Usage
 
@@ -72,7 +77,11 @@ curl -fsSL https://gomi.dev/install | PREFIX=~/.local/bin bash
 
 Download the latest precompiled binary from [GitHub Releases][release] and place it in a directory included in your `$PATH`.
 
-### Using [afx](https://github.com/babarot/afx), a CLI Package Manager
+### Using a CLI package manager
+
+[![Packaging status](https://repology.org/badge/vertical-allrepos/gomi.svg?columns=2)](https://repology.org/project/gomi/versions)
+
+### Using [afx](https://github.com/babarot/afx)
 
 "Write a YAML manifest, then run the `install` command.
 
@@ -135,12 +144,17 @@ Here is an example of the default config:
 
 ```yaml
 core:
-  trash_dir: ~/.gomi  # Path to store trashed files. Can be changed to another location.
-                      # Supports environment variable expansion like $HOME or ~.
-                      # If empty, defaults to ~/.gomi.
+  trash:
+    strategy: "auto"   # or "xdg" or "legacy"
+                       # Strategy determines which trash specification to use.
+
+    gomi_dir: ~/.gomi  # Path to store trashed files. Can be changed to another location.
+                       # Supports environment variable expansion like $HOME or ~.
+                       # If empty, defaults to ~/.gomi.
+                       # This config is only available on "legacy", "auto" trash strategy
   restore:
-    confirm: false    # If true, prompts for confirmation before restoring (yes/no)
-    verbose: true     # If true, displays detailed restoration information
+    confirm: false     # If true, prompts for confirmation before restoring (yes/no)
+    verbose: true      # If true, displays detailed restoration information
 
 ui:
   density: spacious # or compact

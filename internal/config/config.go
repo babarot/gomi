@@ -1,3 +1,5 @@
+// Package config provides configuration management for the application.
+// It handles loading, validation, and access to application settings.
 package config
 
 import (
@@ -6,313 +8,262 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"regexp"
 	"strings"
 
-	"github.com/MakeNowJust/heredoc/v2"
-	"github.com/babarot/gomi/internal/env"
-	"github.com/babarot/gomi/internal/shell"
+	"github.com/babarot/gomi/internal/utils/shell"
 	"github.com/go-playground/validator/v10"
-	"github.com/muesli/reflow/indent"
 	"gopkg.in/yaml.v2"
 )
 
-var validate *validator.Validate
-
+// Config represents the root configuration structure that holds all application settings.
 type Config struct {
 	Core    Core    `yaml:"core"`
 	UI      UI      `yaml:"ui"`
 	History History `yaml:"history"`
 }
 
+// Core contains core application settings that affect fundamental behaviors.
 type Core struct {
-	TrashDir string  `yaml:"trash_dir" validate:"dirpath|allowEmpty"`
-	Restore  Restore `yaml:"restore"`
+	// Trash contains trash management configuration
+	Trash TrashConfig `yaml:"trash"`
+
+	// TODO: HomeFallback enables fallback to home trash when external trash fails
+	// HomeFallback bool `yaml:"home_fallback"`
+
+	// Restore contains restore-specific settings
+	Restore RestoreConfig `yaml:"restore"`
+
+	// Deprecated
+	TrashDir string `yaml:"trash_dir" validate:"deprecated"`
 }
 
-type UI struct {
-	Density     string        `yaml:"density" validate:"required,oneof=compact spacious"`
-	Style       styleConfig   `yaml:"style"`
-	ExitMessage string        `yaml:"exit_message"`
-	Preview     previewConfig `yaml:"preview"`
-	Paginator   string        `yaml:"paginator_type" validate:"required,oneof=dots arabic"`
+// TrashConfig holds trash-specific settings for managing deleted files
+type TrashConfig struct {
+	// Strategy determines which trash implementation to use:
+	// - "auto": automatically detect and use both XDG and legacy if available
+	// - "xdg": strictly follow XDG trash specification
+	// - "legacy": use gomi's legacy trash format
+	Strategy string `yaml:"strategy" validate:"validStrategy|allowEmpty"`
+
+	// GomiDir specifies the trash directory for legacy mode
+	GomiDir string `yaml:"gomi_dir" validate:"dirpath|allowEmpty"`
 }
 
-type History struct {
-	Include includeConfig `yaml:"include"`
-	Exclude excludeConfig `yaml:"exclude"`
-}
-
-type Restore struct {
-	Verbose bool `yaml:"verbose"`
+// RestoreConfig defines settings for file restoration behavior
+type RestoreConfig struct {
+	// Confirm asks for confirmation before restoring
 	Confirm bool `yaml:"confirm"`
+
+	// Verbose enables detailed output during restore
+	Verbose bool `yaml:"verbose"`
 }
 
-type includeConfig struct {
-	Period int `yaml:"within_days"`
+// UI holds all user interface related configurations
+type UI struct {
+	// Density controls the compactness of the UI (compact or spacious)
+	Density string `yaml:"density" validate:"omitempty,oneof=compact spacious"`
+
+	// Style contains UI styling configuration
+	Style StyleConfig `yaml:"style"`
+
+	// ExitMessage is displayed when the application exits
+	ExitMessage string `yaml:"exit_message"`
+
+	// Preview configures file preview behavior
+	Preview PreviewConfig `yaml:"preview"`
+
+	// Paginator specifies the type of pagination (dots or arabic)
+	Paginator string `yaml:"paginator_type" validate:"omitempty,oneof=dots arabic"`
 }
 
-type excludeConfig struct {
-	Files    []string `yaml:"files"`
-	Patterns []string `yaml:"patterns"`
-	Globs    []string `yaml:"globs"`
-	Size     size     `yaml:"size"`
+// StyleConfig defines the visual styling of the UI
+type StyleConfig struct {
+	ListView   ListViewConfig   `yaml:"list_view"`
+	DetailView DetailViewConfig `yaml:"detail_view"`
 }
 
-type size struct {
-	Min string `yaml:"min" validate:"validSize|allowEmpty"`
-	Max string `yaml:"max" validate:"validSize|allowEmpty"`
+// ListViewConfig configures the file list view
+type ListViewConfig struct {
+	IndentOnSelect bool   `yaml:"indent_on_select"`
+	Cursor         string `yaml:"cursor" validate:"validColorCode|allowEmpty"`
+	Selected       string `yaml:"selected" validate:"validColorCode|allowEmpty"`
 }
 
-type previewConfig struct {
-	SyntaxHighlight  bool   `yaml:"syntax_highlight"`
-	Colorscheme      string `yaml:"colorscheme"`
+// DetailViewConfig configures the detailed file view
+type DetailViewConfig struct {
+	Border      string            `yaml:"border" validate:"validColorCode|allowEmpty"`
+	InfoPane    InfoPaneConfig    `yaml:"info_pane"`
+	PreviewPane PreviewPaneConfig `yaml:"preview_pane"`
+}
+
+// InfoPaneConfig configures the information panel styles
+type InfoPaneConfig struct {
+	DeletedFrom ColorConfig `yaml:"deleted_from"`
+	DeletedAt   ColorConfig `yaml:"deleted_at"`
+}
+
+// PreviewPaneConfig configures the file preview panel
+type PreviewPaneConfig struct {
+	Border string      `yaml:"border" validate:"validColorCode|allowEmpty"`
+	Size   ColorConfig `yaml:"size"`
+	Scroll ColorConfig `yaml:"scroll"`
+}
+
+// ColorConfig defines foreground and background colors
+type ColorConfig struct {
+	Foreground string `yaml:"fg" validate:"validColorCode|allowEmpty"`
+	Background string `yaml:"bg" validate:"validColorCode|allowEmpty"`
+}
+
+// PreviewConfig configures file preview behavior
+type PreviewConfig struct {
+	// SyntaxHighlight enables syntax highlighting in preview
+	SyntaxHighlight bool `yaml:"syntax_highlight"`
+
+	// Colorscheme specifies the syntax highlighting theme
+	Colorscheme string `yaml:"colorscheme"`
+
+	// DirectoryCommand is the command used to list directory contents
 	DirectoryCommand string `yaml:"directory_command"`
 }
 
-type styleConfig struct {
-	ListView   ListView   `yaml:"list_view"`
-	DetailView DetailView `yaml:"detail_view"`
+// History configures history management and filtering
+type History struct {
+	Include IncludeConfig `yaml:"include"`
+	Exclude ExcludeConfig `yaml:"exclude"`
 }
 
-type ListView struct {
-	IndentOnSelect bool   `yaml:"indent_on_select"`
-	Cursor         string `yaml:"cursor"`
-	Selected       string `yaml:"selected"`
+// IncludeConfig specifies which files to include in history
+type IncludeConfig struct {
+	// Period specifies how many days of history to include
+	Period int `yaml:"within_days"`
 }
 
-type DetailView struct {
-	Border      string      `yaml:"border"`
-	InfoPane    infoPane    `yaml:"info_pane"`
-	PreviewPane previewPane `yaml:"preview_pane"`
+// ExcludeConfig specifies which files to exclude from history
+type ExcludeConfig struct {
+	// Files lists specific filenames to exclude
+	Files []string `yaml:"files"`
+
+	// Patterns lists regex patterns to exclude
+	Patterns []string `yaml:"patterns"`
+
+	// Globs lists glob patterns to exclude
+	Globs []string `yaml:"globs"`
+
+	// Size specifies size-based exclusions
+	Size SizeConfig `yaml:"size"`
 }
 
-type infoPane struct {
-	DeletedFrom color `yaml:"deleted_from"`
-	DeletedAt   color `yaml:"deleted_at"`
+// SizeConfig specifies size-based filtering
+type SizeConfig struct {
+	// Min is the minimum file size (e.g., "10MB")
+	Min string `yaml:"min" validate:"validSize|allowEmpty"`
+
+	// Max is the maximum file size (e.g., "1GB")
+	Max string `yaml:"max" validate:"validSize|allowEmpty"`
 }
 
-type previewPane struct {
-	Border string `yaml:"border"`
-	Size   color  `yaml:"size"`
-	Scroll color  `yaml:"scroll"`
-}
-
-type color struct {
-	Foreground string `yaml:"fg"`
-	Background string `yaml:"bg"`
-}
-
-type configError struct {
-	configPath string
-	configDir  string
-	parser     parser
-	err        error
-}
-
-type parser struct{}
-
-func validSize(fl validator.FieldLevel) bool {
-	value := strings.ToUpper(fl.Field().String())
-	re := regexp.MustCompile(`^\d+(KB|MB|GB|TB|PB)$`)
-	return re.MatchString(value)
-}
-
-func allowEmpty(fl validator.FieldLevel) bool {
-	str := fl.Field().String()
-	return strings.TrimSpace(str) == "" || fl.Parent().FieldByName(fl.StructFieldName()).IsValid()
-}
-
-func (p parser) getDefaultConfig() Config {
-	return Config{
-		Core: Core{
-			TrashDir: filepath.Join(os.Getenv("HOME"), ".gomi"),
-			Restore: Restore{
-				Verbose: true,
-				Confirm: true,
-			},
-		},
-		UI: UI{
-			Density:     "spacious", // or compact
-			ExitMessage: "bye!",
-			Preview: previewConfig{
-				SyntaxHighlight:  true,
-				Colorscheme:      "nord",
-				DirectoryCommand: "ls -GF -1 -A --color=always",
-			},
-			Paginator: "dots", // or arabic
-			Style: styleConfig{
-				ListView: ListView{
-					IndentOnSelect: true,
-					Cursor:         "#AD58B4", // Purple
-					Selected:       "#5FB458", // Green
-				},
-				DetailView: DetailView{
-					Border: "#EEEEDD",
-					InfoPane: infoPane{
-						DeletedFrom: color{
-							Foreground: "#EEEEEE",
-							Background: "#1C1C1C",
-						},
-						DeletedAt: color{
-							Foreground: "#EEEEEE",
-							Background: "#1C1C1C",
-						},
-					},
-					PreviewPane: previewPane{
-						Border: "#3C3C3C",
-						Size: color{
-							Foreground: "#EEEEDD",
-							Background: "#3C3C3C",
-						},
-						Scroll: color{
-							Foreground: "#EEEEDD",
-							Background: "#3C3C3C",
-						},
-					},
-				},
-			},
-		},
-		History: History{
-			Include: includeConfig{
-				Period: 365,
-			},
-			Exclude: excludeConfig{
-				Files: []string{
-					// In macOS, .DS_Store is a file that stores custom attributes of its
-					// containing folder, such as folder view options, icon positions,
-					// and other visual information
-					".DS_Store",
-				},
-				Patterns: []string{},
-				Globs:    []string{},
-				Size: size{
-					Min: "0KB",
-					Max: "10GB",
-				},
-			},
-		},
-	}
-}
-
-func (p parser) getDefaultConfigContents() string {
-	defaultConfig := p.getDefaultConfig()
-	content, _ := yaml.Marshal(defaultConfig)
-	return string(content)
-}
-
-func (e configError) Error() string {
-	return heredoc.Docf(`
-		Couldn't find the "%s" config file.
-		Please try again after creating it or specifying a valid config path.
-		The recommended config path is %s (default).
-		Example YAML file contents:
-		---
-		%s
-		---
-		Original error:
-		%s
-		`,
-		e.configPath,
-		env.GOMI_CONFIG_PATH,
-		e.parser.getDefaultConfigContents(),
-		indent.String(e.err.Error(), 2),
-	)
-}
-
-func (p parser) createConfigFile(path string) error {
-	// Ensure directory exists
-	if err := p.ensureDirExists(filepath.Dir(path)); err != nil {
-		return err
-	}
-
-	// Create the config file if missing
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		slog.Warn("creating config file as it does not exist", "config-file", path)
-		newConfigFile, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
+// Load loads the configuration from the specified path.
+// If path is empty, it uses the default configuration path.
+func Load(path string) (*Config, error) {
+	if path == "" {
+		var err error
+		path, err = DefaultConfigPath()
 		if err != nil {
-			return err
-		}
-		defer newConfigFile.Close()
-
-		// Write default config contents
-		if err := p.writeConfigFileContents(newConfigFile); err != nil {
-			return err
+			return nil, fmt.Errorf("failed to get default config path: %w", err)
 		}
 	}
+	slog.Debug("config path found", "config-path", path)
 
-	return nil
-}
-
-func (p parser) ensureDirExists(dirPath string) error {
-	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
-		slog.Warn("creating directory as it does not exist", "dir", dirPath)
-		if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (p parser) writeConfigFileContents(file *os.File) error {
-	_, err := file.WriteString(p.getDefaultConfigContents())
-	return err
-}
-
-func (p parser) ensureConfigFile() (string, error) {
-	path := env.GOMI_CONFIG_PATH
-
-	// Ensure directory exists before creating file
-	if err := p.ensureDirExists(filepath.Dir(path)); err != nil {
-		return "", err
-	}
-
-	// Create file if missing
-	if err := p.createConfigFile(path); err != nil {
-		return "", configError{
-			parser:    p,
-			configDir: filepath.Dir(path),
-			err:       err,
-		}
-	}
-
-	return path, nil
-}
-
-type parsingError struct {
-	err error
-}
-
-func (e parsingError) Error() string {
-	return fmt.Sprintf("failed to parse config: %v", e.err)
-}
-
-func (p parser) readConfigFile(path string) (Config, error) {
-	var cfg Config
-	data, err := os.ReadFile(path)
+	// Ensure config file exists
+	cfg, err := ensureConfig(path)
 	if err != nil {
-		return cfg, configError{
-			configPath: path,
-			configDir:  filepath.Dir(path),
-			parser:     p,
-			err:        err,
-		}
+		return nil, err
 	}
 
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return cfg, err
+	// Load and parse config
+	if err := cfg.load(path); err != nil {
+		return nil, err
 	}
 
-	if err := validate.Struct(cfg); err != nil {
-		for _, err := range err.(validator.ValidationErrors) {
-			return cfg, fmt.Errorf("validation error: Field %s, %q is invalid\n", err.Field(), err.Value())
-		}
+	// Validate config
+	if err := cfg.validate(); err != nil {
+		return nil, err
 	}
+
+	// Expand paths and environment variables
+	if err := cfg.expandPaths(); err != nil {
+		return nil, err
+	}
+
+	slog.Debug("config successfully loaded")
 	return cfg, nil
 }
 
-func initParser() parser {
-	validate = validator.New()
+// DefaultConfigPath returns the default configuration file path following XDG spec
+func DefaultConfigPath() (string, error) {
+	configDir := os.Getenv("XDG_CONFIG_HOME")
+	if configDir == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", fmt.Errorf("failed to get home directory: %w", err)
+		}
+		configDir = filepath.Join(home, ".config")
+	} else {
+		slog.Debug("config follows XDG", "XDG_CONFIG_HOME", configDir)
+	}
+	return filepath.Join(configDir, "gomi", "config.yaml"), nil
+}
+
+// load reads and parses the configuration file
+func (c *Config) load(path string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("failed to read config file: %w", err)
+	}
+
+	if err := yaml.Unmarshal(data, c); err != nil {
+		return fmt.Errorf("failed to parse config file: %w", err)
+	}
+
+	slog.Debug("config unmarshaled into struct")
+	return nil
+}
+
+// ensureConfig ensures the config file exists, creating it with defaults if missing
+func ensureConfig(path string) (*Config, error) {
+	// Check if file exists
+	if _, err := os.Stat(path); err == nil {
+		return &Config{}, nil
+	}
+
+	// Create config directory if needed
+	configDir := filepath.Dir(path)
+	if err := os.MkdirAll(configDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create config directory: %w", err)
+	}
+
+	// Create default config
+	cfg := NewDefaultConfig()
+
+	// Write default config
+	data, err := yaml.Marshal(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal default config: %w", err)
+	}
+
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		return nil, fmt.Errorf("failed to write default config: %w", err)
+	}
+
+	slog.Debug("ensure config")
+	return cfg, nil
+}
+
+// validate performs configuration validation
+func (c *Config) validate() error {
+	validate := validator.New()
+
 	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		name := strings.Split(fld.Tag.Get("yaml"), ",")[0]
 		if name == "-" {
@@ -321,40 +272,36 @@ func initParser() parser {
 		return name
 	})
 
-	_ = validate.RegisterValidation("validSize", validSize)
-	_ = validate.RegisterValidation("allowEmpty", allowEmpty)
+	// Register custom validators
+	_ = validate.RegisterValidation("validStrategy", validateStrategy)
+	_ = validate.RegisterValidation("allowEmpty", validateAllowEmpty)
+	_ = validate.RegisterValidation("validSize", validateSize)
+	_ = validate.RegisterValidation("validColorCode", validateColorCode)
+	_ = validate.RegisterValidation("deprecated", validateDeprecated)
 
-	return parser{}
+	if err := validate.Struct(c); err != nil {
+		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+			for _, err := range validationErrors {
+				return fmt.Errorf("validation error: Field %s, %q is invalid", err.Field(), err.Value())
+			}
+		}
+		return fmt.Errorf("unexpected validation error: %w", err)
+	}
+
+	slog.Debug("config validate done")
+	return nil
 }
 
-func Parse(path string) (Config, error) {
-	parser := initParser()
-
-	var cfg Config
-	var err error
-	var configPath string
-
-	if path == "" {
-		configPath, err = parser.ensureConfigFile()
+// expandPaths expands all file paths in the configuration
+func (c *Config) expandPaths() error {
+	// Expand GomiDir path
+	if c.Core.Trash.GomiDir != "" {
+		expanded, err := shell.ExpandHome(c.Core.Trash.GomiDir)
 		if err != nil {
-			return cfg, parsingError{err: err}
+			return fmt.Errorf("failed to expand GomiDir path: %w", err)
 		}
-	} else {
-		configPath = path
-	}
-	slog.Debug("config file found", "config-file", configPath)
-
-	cfg, err = parser.readConfigFile(configPath)
-	if err != nil {
-		return cfg, parsingError{err: err}
+		c.Core.Trash.GomiDir = expanded
 	}
 
-	// expand tilda etc
-	trashDir, err := shell.ExpandHome(cfg.Core.TrashDir)
-	if err != nil {
-		return cfg, parsingError{err: err}
-	}
-	cfg.Core.TrashDir = trashDir
-
-	return cfg, nil
+	return nil
 }

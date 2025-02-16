@@ -63,6 +63,14 @@ code {
   border-radius: var(--radius-sm);
 }
 
+code::before {
+  content: "`";
+}
+
+code::after {
+  content: "`";
+}
+
 /* Hero Section */
 .hero {
   background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
@@ -169,6 +177,12 @@ code {
 .feature p {
   font-family: var(--font-hack);
   color: var(--text-secondary);
+}
+
+.feature a {
+  font-family: var(--font-hack);
+  text-decoration: none;
+  color: var(--success);
 }
 
 /* Installation Section */

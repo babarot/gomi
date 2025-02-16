@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/babarot/gomi/internal/history"
-	"github.com/babarot/gomi/internal/shell"
-	"github.com/babarot/gomi/internal/utils"
+	"github.com/babarot/gomi/internal/fs"
+	"github.com/babarot/gomi/internal/trash"
+	"github.com/babarot/gomi/internal/utils/shell"
 
 	"al.essio.dev/pkg/shellescape"
 	"github.com/alecthomas/chroma"
@@ -24,7 +24,7 @@ import (
 )
 
 type File struct {
-	history.File
+	*trash.File
 
 	dirListCommand  string
 	syntaxHighlight bool
@@ -36,20 +36,20 @@ func (f File) isSelected() bool {
 }
 
 func (f File) Description() string {
-	_, err := os.Stat(f.File.To)
+	_, err := os.Stat(f.File.TrashPath)
 	if os.IsNotExist(err) {
-		return "(already might have been deleted)"
+		return "(already might have been deleted or unmounted)"
 	}
 
 	return fmt.Sprintf("%s %s %s",
-		humanize.Time(f.File.Timestamp),
+		humanize.Time(f.File.DeletedAt),
 		bullet,
-		filepath.Dir(f.File.From),
+		filepath.Dir(f.File.OriginalPath),
 	)
 }
 
 func (f File) Title() string {
-	fi, err := os.Stat(f.File.To)
+	fi, err := os.Stat(f.File.TrashPath)
 	if err != nil {
 		return f.File.Name + "?"
 	}
@@ -65,7 +65,7 @@ func (f File) FilterValue() string {
 
 func (f File) Size() string {
 	var sizeStr string
-	size, err := utils.DirSize(f.To)
+	size, err := fs.DirSize(f.TrashPath)
 	if err != nil {
 		sizeStr = "(cannot be calculated)"
 	} else {
@@ -77,17 +77,16 @@ func (f File) Size() string {
 func (f File) Browse() (string, error) {
 	var content string
 
-	fi, err := os.Stat(f.To)
+	fi, err := os.Lstat(f.TrashPath)
 	if err != nil {
-		slog.Debug("no such file", "file", f.To)
+		slog.Debug("no such file", "file", f.TrashPath)
 		return content, errCannotPreview
 	}
 	if fi.IsDir() {
-		input := fmt.Sprintf("cd %s; %s", shellescape.Quote(f.To), f.dirListCommand)
-		if input == "" {
+		if f.dirListCommand == "" {
 			slog.Debug("preview dir command is not set, fallback to builtin dir func")
 			lines := []string{}
-			dirs, _ := os.ReadDir(f.To)
+			dirs, _ := os.ReadDir(f.TrashPath)
 			for _, dir := range dirs {
 				info, _ := dir.Info()
 				name := dir.Name()
@@ -104,6 +103,7 @@ func (f File) Browse() (string, error) {
 			}
 			return strings.Join(lines, "\n"), nil
 		}
+		input := fmt.Sprintf("cd %s; %s", shellescape.Quote(f.TrashPath), f.dirListCommand)
 		slog.Debug("command to list dir", "input", input)
 		out, _, err := shell.RunCommand(input)
 		if err != nil {
@@ -111,20 +111,17 @@ func (f File) Browse() (string, error) {
 		}
 		return out, err
 	}
-	mtype, err := mimetype.DetectFile(f.To)
+	mtype, err := mimetype.DetectFile(f.TrashPath)
 	if err != nil {
 		return content, err
 	}
-	switch {
-	case
-		mtype.Is("text/plain"),
-		mtype.Parent().Is("text/plain"):
-		// can preview
-	default:
+	if mtype.Is("text/plain") || (mtype.Parent() != nil && mtype.Parent().Is("text/plain")) {
+		// ok
+	} else {
 		slog.Debug("cannot preview", "mimetype", mtype.String())
 		return content, errCannotPreview
 	}
-	fp, err := os.Open(f.To)
+	fp, err := os.Open(f.TrashPath)
 	if err != nil {
 		return content, errCannotPreview
 	}
