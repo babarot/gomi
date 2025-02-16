@@ -1,5 +1,7 @@
 # Changelog
 
+## [v1.4.2](https://github.com/babarot/gomi/compare/v1.4.1...v1.4.2) - 2025-02-16
+
 ## [v1.4.1](https://github.com/babarot/gomi/compare/v1.4.0...v1.4.1) - 2025-02-16
 ### Refactorings
 - Revise log system by @babarot in https://github.com/babarot/gomi/pull/70
