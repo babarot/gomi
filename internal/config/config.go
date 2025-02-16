@@ -27,11 +27,14 @@ type Core struct {
 	// Trash contains trash management configuration
 	Trash TrashConfig `yaml:"trash"`
 
-	// HomeFallback enables fallback to home trash when external trash fails
-	HomeFallback bool `yaml:"home_fallback"`
+	// TODO: HomeFallback enables fallback to home trash when external trash fails
+	// HomeFallback bool `yaml:"home_fallback"`
 
 	// Restore contains restore-specific settings
 	Restore RestoreConfig `yaml:"restore"`
+
+	// Deprecated
+	TrashDir string `yaml:"trash_dir" validate:"deprecated"`
 }
 
 // TrashConfig holds trash-specific settings for managing deleted files
@@ -274,6 +277,7 @@ func (c *Config) validate() error {
 	_ = validate.RegisterValidation("allowEmpty", validateAllowEmpty)
 	_ = validate.RegisterValidation("validSize", validateSize)
 	_ = validate.RegisterValidation("validColorCode", validateColorCode)
+	_ = validate.RegisterValidation("deprecated", validateDeprecated)
 
 	if err := validate.Struct(c); err != nil {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {

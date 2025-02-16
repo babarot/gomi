@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -57,4 +58,43 @@ func expandPath(path string) (string, error) {
 	}
 
 	return abs, nil
+}
+
+// Deprecation contains metadata about field deprecation
+type Deprecation struct {
+	DeprecatedAt time.Time
+	RemovalDate  time.Time
+	Alternative  string
+	StrictMode   bool
+}
+
+// validateDeprecated implements the deprecated field validation
+func validateDeprecated(fl validator.FieldLevel) bool {
+	deprecatedInfo := map[string]Deprecation{
+		"trash_dir": {
+			DeprecatedAt: time.Date(2024, 2, 15, 0, 0, 0, 0, time.UTC),
+			RemovalDate:  time.Date(2024, 2, 15, 0, 0, 0, 0, time.UTC),
+			Alternative:  "trash.gomi_dir",
+			StrictMode:   true, // make error
+		},
+	}
+
+	if fl.Field().String() == "" {
+		return true
+	}
+
+	name := fl.FieldName()
+	info, exists := deprecatedInfo[name]
+	if !exists {
+		printWarningDeprecated(name, nil)
+		return true
+	}
+
+	if info.StrictMode {
+		printErrorDeprecated(name, info)
+		return false
+	}
+
+	printWarningDeprecated(name, &info)
+	return true
 }

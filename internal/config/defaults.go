@@ -16,7 +16,7 @@ func NewDefaultConfig() *Config {
 				Strategy: "auto",
 				GomiDir:  filepath.Join(homedir, ".gomi"),
 			},
-			HomeFallback: true,
+			// TODO: HomeFallback: true,
 			Restore: RestoreConfig{
 				Confirm: true,
 				Verbose: true,

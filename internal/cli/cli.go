@@ -119,11 +119,11 @@ func Run(v Version) error {
 
 	// Initialize trash configuration
 	trashConfig := trash.Config{
-		Strategy:     trash.Strategy(cfg.Core.Trash.Strategy),
-		HomeFallback: cfg.Core.HomeFallback,
-		History:      cfg.History,
-		GomiDir:      cfg.Core.Trash.GomiDir,
-		RunID:        runID(),
+		Strategy: trash.Strategy(cfg.Core.Trash.Strategy),
+		// TODO: HomeFallback: cfg.Core.HomeFallback,
+		History: cfg.History,
+		GomiDir: cfg.Core.Trash.GomiDir,
+		RunID:   runID(),
 	}
 
 	// Initialize storage manager with appropriate implementations
