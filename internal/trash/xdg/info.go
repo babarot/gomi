@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/babarot/gomi/internal/fs"
 	"github.com/babarot/gomi/internal/trash"
+	"github.com/babarot/gomi/internal/utils/fs"
 )
 
 const (

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/babarot/gomi/internal/config"
-	"github.com/babarot/gomi/internal/fs"
+	"github.com/babarot/gomi/internal/utils/fs"
 	"github.com/docker/go-units"
 	"github.com/gobwas/glob"
 	"github.com/k1LoW/duration"

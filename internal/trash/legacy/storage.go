@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/babarot/gomi/internal/fs"
 	"github.com/babarot/gomi/internal/trash"
 	"github.com/babarot/gomi/internal/trash/legacy/history"
+	"github.com/babarot/gomi/internal/utils/fs"
 	"github.com/babarot/gomi/internal/utils/log"
 	"github.com/google/uuid"
 )
