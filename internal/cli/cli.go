@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
+	"runtime"
 	"sync"
 	"time"
 
@@ -69,6 +71,21 @@ func Run(v Version) error {
 		return err
 	}
 
+	// On Windows, the shell does not expand wildcards,
+	// so the application must handle them.
+	if runtime.GOOS == "windows" {
+		expanded := make([]string, 0, len(args))
+		for _, arg := range args {
+			matches, err := filepath.Glob(arg)
+			if err == nil && len(matches) > 0 {
+				expanded = append(expanded, matches...)
+			} else {
+				expanded = append(expanded, arg)
+			}
+		}
+		args = expanded
+	}
+
 	_ = log.New(
 		log.UseLevel(log.DebugLevel),
 		log.UseOutputPath(env.GOMI_LOG_PATH),
@@ -92,11 +109,11 @@ func Run(v Version) error {
 
 	// Initialize trash configuration
 	trashConfig := trash.Config{
-		Strategy: trash.Strategy(cfg.Core.Trash.Strategy),
-		// TODO: HomeFallback: cfg.Core.HomeFallback,
-		History: cfg.History,
-		GomiDir: cfg.Core.Trash.GomiDir,
-		RunID:   runID(),
+		Strategy:     trash.Strategy(cfg.Core.Trash.Strategy),
+		HomeFallback: cfg.Core.HomeFallback,
+		History:      cfg.History,
+		GomiDir:      cfg.Core.Trash.GomiDir,
+		RunID:        runID(),
 	}
 
 	// Initialize storage manager with appropriate implementations
