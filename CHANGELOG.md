@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.4.3](https://github.com/babarot/gomi/compare/v1.4.2...v1.4.3) - 2025-02-17
+### New Features
+- Add toggle between trash and original path display in detail view by @babarot in https://github.com/babarot/gomi/pull/76
+### Others
+- Add windows wildcard support by @babarot in https://github.com/babarot/gomi/pull/75
+
 ## [v1.4.2](https://github.com/babarot/gomi/compare/v1.4.1...v1.4.2) - 2025-02-16
 
 ## [v1.4.1](https://github.com/babarot/gomi/compare/v1.4.0...v1.4.1) - 2025-02-16
