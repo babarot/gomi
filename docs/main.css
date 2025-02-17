@@ -179,7 +179,18 @@ code:not(pre code)::after {
   color: var(--text-secondary);
 }
 
-.feature a {
+.feature a:not(.github) {
+  text-decoration: none;
+  border-bottom: 1px dotted var(--text-primary);
+  padding-bottom: 1px;
+}
+
+.feature a:not(.github):link,
+.feature a:not(.github):visited {
+  color: var(--text-primary);
+}
+
+.feature a.github {
   font-family: var(--font-hack);
   text-decoration: none;
   color: var(--success);
