@@ -69,6 +69,11 @@ func (m Model) renderFooter() string {
 func (m Model) renderDeletedFrom() string {
 	file := m.detailFile
 	text := filepath.Dir(file.OriginalPath)
+	title := "Deleted From"
+	if !m.locationOrigin {
+		title = "Trash Path"
+		text = filepath.Dir(file.TrashPath)
+	}
 	w := wordwrap.NewWriter(46)
 	w.Breakpoints = []rune{'/', '.'}
 	w.KeepNewlines = false
@@ -77,7 +82,7 @@ func (m Model) renderDeletedFrom() string {
 	return styles.DeletedFromSection(m.config).Render(
 		lipgloss.JoinVertical(
 			lipgloss.Left,
-			styles.DeletedFromTitle(m.config).MarginBottom(1).Render("Deleted From"),
+			styles.DeletedFromTitle(m.config).MarginBottom(1).Render(title),
 			lipgloss.NewStyle().Render(w.String())),
 	)
 }
