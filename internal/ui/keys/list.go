@@ -48,6 +48,6 @@ var ListKeys = &ListKeyMap{
 	),
 	Space: key.NewBinding(
 		key.WithKeys(" "),
-		key.WithHelp("space", "info"),
+		key.WithHelp("space", "detail"),
 	),
 }

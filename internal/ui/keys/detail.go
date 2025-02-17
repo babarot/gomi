@@ -81,12 +81,12 @@ var DetailKeys = &DetailKeyMap{
 	),
 	AtSign: key.NewBinding(
 		key.WithKeys("@"),
-		key.WithHelp("@", "datefmt"),
+		key.WithHelp("@", "info"),
 	),
-	GotoTop:      key.NewBinding(key.WithKeys("g"), key.WithHelp("g", "go to start")),
-	GotoBottom:   key.NewBinding(key.WithKeys("G"), key.WithHelp("G", "go to end")),
-	HalfPageUp:   key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "½ page up")),
-	HalfPageDown: key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "½ page down")),
+	GotoTop:      key.NewBinding(key.WithKeys("g"), key.WithHelp("g", "jump to top")),
+	GotoBottom:   key.NewBinding(key.WithKeys("G"), key.WithHelp("G", "jump to bottom")),
+	HalfPageUp:   key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "half page up")),
+	HalfPageDown: key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "half page down")),
 }
 
 var PreviewKeys = viewport.KeyMap{

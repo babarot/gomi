@@ -83,10 +83,11 @@ type Model struct {
 	listKeys   *keys.ListKeyMap
 	detailKeys *keys.DetailKeyMap
 
-	viewType      ViewType
-	detailFile    File
-	datefmt       string
-	cannotPreview bool
+	viewType       ViewType
+	detailFile     File
+	datefmt        string
+	cannotPreview  bool
+	locationOrigin bool
 
 	files   []File
 	config  config.UI
@@ -184,6 +185,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				case datefmtAbs:
 					m.datefmt = datefmtRel
 				}
+				m.locationOrigin = !m.locationOrigin
 			}
 
 		case key.Matches(
@@ -245,6 +247,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 				}
 			case DETAIL_VIEW:
+				// TODO: create another cmd (e.g. show list cmd)
+				m.locationOrigin = true
+				m.datefmt = datefmtRel
 				m.viewType = LIST_VIEW
 			}
 
@@ -389,15 +394,16 @@ func RenderList(filteredFiles []*trash.File, cfg config.UI) ([]*trash.File, erro
 	l.SetShowTitle(false)
 
 	m := Model{
-		listKeys:   keys.ListKeys,
-		detailKeys: keys.DetailKeys,
-		viewType:   LIST_VIEW,
-		datefmt:    datefmtRel,
-		files:      files,
-		config:     cfg,
-		list:       l,
-		viewport:   viewport.Model{},
-		help:       help.New(),
+		listKeys:       keys.ListKeys,
+		detailKeys:     keys.DetailKeys,
+		viewType:       LIST_VIEW,
+		datefmt:        datefmtRel,
+		locationOrigin: true,
+		files:          files,
+		config:         cfg,
+		list:           l,
+		viewport:       viewport.Model{},
+		help:           help.New(),
 	}
 
 	returnModel, err := tea.NewProgram(m).Run()
