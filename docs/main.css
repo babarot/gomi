@@ -6,6 +6,7 @@
   --bg-tertiary: #1f2335;
   --text-primary: #c0caf5;
   --text-secondary: #9aa5ce;
+  --text-tertiary: #393d4e; /* #4f5262 */
   --accent: #7aa2f7;
   --accent-secondary: #bb9af7;
   --success: #9ece6a;
@@ -180,13 +181,22 @@ code:not(pre code)::after {
 }
 
 .feature a:not(.github) {
-  text-decoration: none;
-  border-bottom: 1px dotted var(--text-primary);
-  padding-bottom: 1px;
+  /* text-decoration: none; */
+  /* border-bottom: 1px dotted var(--text-tertiary); */
+  /* padding-bottom: 1px; */
+
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: var(--text-tertiary);
+  text-underline-offset: 5px;
 }
 
 .feature a:not(.github):link,
 .feature a:not(.github):visited {
+  color: var(--text-secondary);
+}
+
+.feature a:not(.github):hover {
   color: var(--text-primary);
 }
 
