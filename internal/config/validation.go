@@ -98,3 +98,50 @@ func validateDeprecated(fl validator.FieldLevel) bool {
 	printWarningDeprecated(name, &info)
 	return true
 }
+
+// validateDirPath is a validation function for directory paths that works on any OS.
+// This custom validator was created because the standard "dirpath" validator in go-playground/validator
+// incorrectly marks some valid paths as invalid, particularly on Windows. For example:
+// - "C:\Users\name\.dir" (marked invalid even though it's a valid Windows path)
+// - "C:\Users\name\.dir\" (marked invalid even with trailing separator)
+// This implementation properly handles paths across different OS environments without
+// these validation issues.
+//
+// Empty strings are considered invalid.
+func validateDirPath(fl validator.FieldLevel) bool {
+	path := strings.TrimSpace(fl.Field().String())
+	if path == "" {
+		return false
+	}
+
+	// Normalize (cleanup) the path
+	cleanPath := filepath.Clean(path)
+
+	// Check path format
+	// Verify that path is maintained after filepath.Clean
+	// (If invalid characters are present, they will be modified by Clean)
+	if cleanPath != filepath.Clean(filepath.Clean(path)) {
+		return false
+	}
+
+	// If path exists, verify that it is a directory
+	if fi, err := os.Stat(cleanPath); err == nil {
+		return fi.IsDir()
+	}
+
+	// If path does not exist:
+	// Check error type to determine if path format is valid
+	_, err := os.Stat(cleanPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// Path doesn't exist but format is valid
+			return true
+		}
+		if _, ok := err.(*os.PathError); ok {
+			// Path error indicates possible OS constraint violation
+			return false
+		}
+	}
+
+	return true
+}

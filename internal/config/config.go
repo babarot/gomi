@@ -27,8 +27,8 @@ type Core struct {
 	// Trash contains trash management configuration
 	Trash TrashConfig `yaml:"trash"`
 
-	// TODO: HomeFallback enables fallback to home trash when external trash fails
-	// HomeFallback bool `yaml:"home_fallback"`
+	// HomeFallback enables fallback to home trash when external trash fails
+	HomeFallback bool `yaml:"home_fallback"`
 
 	// Restore contains restore-specific settings
 	Restore RestoreConfig `yaml:"restore"`
@@ -46,7 +46,7 @@ type TrashConfig struct {
 	Strategy string `yaml:"strategy" validate:"validStrategy|allowEmpty"`
 
 	// GomiDir specifies the trash directory for legacy mode
-	GomiDir string `yaml:"gomi_dir" validate:"dirpath|allowEmpty"`
+	GomiDir string `yaml:"gomi_dir" validate:"omitempty,validDirPath"`
 }
 
 // RestoreConfig defines settings for file restoration behavior
@@ -278,6 +278,7 @@ func (c *Config) validate() error {
 	_ = validate.RegisterValidation("validSize", validateSize)
 	_ = validate.RegisterValidation("validColorCode", validateColorCode)
 	_ = validate.RegisterValidation("deprecated", validateDeprecated)
+	_ = validate.RegisterValidation("validDirPath", validateDirPath)
 
 	if err := validate.Struct(c); err != nil {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
