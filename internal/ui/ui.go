@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/babarot/gomi/internal/config"
 	"github.com/babarot/gomi/internal/trash"
@@ -27,6 +28,7 @@ type ViewType uint8
 const (
 	LIST_VIEW ViewType = iota
 	DETAIL_VIEW
+	CONFIRM_VIEW
 	QUITTING
 )
 
@@ -80,6 +82,8 @@ func errorCmd(err error) tea.Cmd {
 }
 
 type Model struct {
+	trashManager *trash.Manager
+
 	listKeys   *keys.ListKeyMap
 	detailKeys *keys.DetailKeyMap
 
@@ -93,6 +97,8 @@ type Model struct {
 	config  config.UI
 	choices []File
 
+	styles dialogStyles
+
 	help     help.Model
 	list     list.Model
 	viewport viewport.Model
@@ -100,9 +106,35 @@ type Model struct {
 	err error
 }
 
+type dialogStyles struct {
+	dialog lipgloss.Style
+}
+
+func initStyles() dialogStyles {
+	s := dialogStyles{}
+	s.dialog = lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("205")).
+		Foreground(lipgloss.Color("205")).
+		Bold(true).
+		Padding(1, 0).
+		BorderTop(true).
+		BorderLeft(true).
+		BorderRight(true).
+		BorderBottom(true).
+		Width(defaultWidth - 4)
+
+	return s
+}
+
 var _ list.DefaultItem = (*File)(nil)
 
 type inventoryLoadedMsg struct {
+	files []list.Item
+	err   error
+}
+
+type refreshFilesMsg struct {
 	files []list.Item
 	err   error
 }
@@ -136,8 +168,31 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmds := []tea.Cmd{}
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		switch m.viewType {
+		case CONFIRM_VIEW:
+			switch msg.String() {
+			case "y", "Y":
+				slog.Debug("replied yes to delete permanently")
+				m.viewType = LIST_VIEW
+				files := selectionManager.items
+				if len(files) > 0 {
+					return m, m.deletePermanentlyCmd(files...)
+				}
+				file, ok := m.list.SelectedItem().(File)
+				if ok {
+					return m, m.deletePermanentlyCmd(file)
+				}
+			case "n", "N":
+				slog.Debug("replied no to delete permanently")
+				m.viewType = LIST_VIEW
+			default:
+				slog.Debug("waiting for reply to delete permanently")
+			}
+		}
+
 		slog.Debug("Key pressed", "key", msg.String())
 		switch {
 		case key.Matches(msg, m.listKeys.Quit):
@@ -233,21 +288,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, m.detailKeys.Esc):
 			switch m.viewType {
+			case LIST_VIEW:
+				selectionManager = &SelectionManager{items: []File{}}
 			case DETAIL_VIEW:
 				m.viewType = LIST_VIEW
 			}
 
 		case key.Matches(msg, m.listKeys.Delete):
 			switch m.viewType {
-			case LIST_VIEW:
+			case LIST_VIEW, DETAIL_VIEW:
 				if m.list.FilterState() != list.Filtering {
-					file, ok := m.list.SelectedItem().(File)
-					if ok {
-						cmds = append(cmds, getInventoryDetails(file))
-					}
-					if err := os.Remove(file.File.TrashPath); err != nil {
-						return m, errorCmd(err)
-					}
+					m.viewType = CONFIRM_VIEW
+					slog.Debug("pressed delete key", "state", CONFIRM_VIEW)
 				}
 			}
 
@@ -297,8 +349,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.err = msg.err
 			return m, tea.Quit
 		}
-		for _, file := range msg.files {
-			m.files = append(m.files, file.(File))
+		m.list.SetItems(msg.files)
+
+	case refreshFilesMsg:
+		if msg.err != nil {
+			m.err = msg.err
+			return m, tea.Quit
 		}
 		m.list.SetItems(msg.files)
 
@@ -338,6 +394,46 @@ func (m Model) View() string {
 	case DETAIL_VIEW:
 		s += renderDetailed(m)
 		s += "\n" + lipgloss.NewStyle().Margin(1, 2).Render(m.help.View(m.detailKeys))
+	case CONFIRM_VIEW:
+		maxWidth := defaultWidth - 6 // border (2) + padding (2) + buffer (2)
+
+		var selected string
+		files := selectionManager.items
+		if len(files) > 0 {
+			selected = strings.Join(lo.Map(files, func(f File, index int) string {
+				return "'" + f.Title() + "'"
+			}), ", ")
+		} else {
+			file := m.list.SelectedItem().(File)
+			files = append(files, file)
+			selected = "'" + file.Title() + "'"
+		}
+		if len(selected) > maxWidth {
+			switch len(files) {
+			case 1:
+				selected = fmt.Sprintf("%s %s", (files[0].Title())[0:maxWidth-len(" Delete   ?")], ellipsis)
+			default:
+				selected = fmt.Sprintf("%d files", len(files))
+			}
+		}
+		dialog := lipgloss.JoinVertical(lipgloss.Center,
+			" Delete "+selected+" ?",
+			"",
+			"(y/n)",
+		)
+
+		dialog = m.styles.dialog.Render(dialog)
+		lines := strings.Split(m.list.View(), "\n")
+		dialogLines := strings.Split(dialog, "\n")
+
+		startLine := (len(lines) - len(dialogLines)) / 2
+
+		for i, dialogLine := range dialogLines {
+			paddedLine := lipgloss.NewStyle().Width(defaultWidth).Align(lipgloss.Center).Render(dialogLine)
+			lines[startLine+i] = paddedLine
+		}
+		return strings.Join(lines, "\n")
+
 	case QUITTING:
 		return s
 	}
@@ -376,7 +472,7 @@ func (m *Model) newViewportModel(file File) viewport.Model {
 	return viewportModel
 }
 
-func RenderList(filteredFiles []*trash.File, cfg config.UI) ([]*trash.File, error) {
+func RenderList(manager *trash.Manager, filteredFiles []*trash.File, cfg config.UI) ([]*trash.File, error) {
 	var items []list.Item
 	var files []File
 	for _, file := range filteredFiles {
@@ -408,6 +504,7 @@ func RenderList(filteredFiles []*trash.File, cfg config.UI) ([]*trash.File, erro
 	l.SetShowTitle(false)
 
 	m := Model{
+		trashManager:   manager,
 		listKeys:       keys.ListKeys,
 		detailKeys:     keys.DetailKeys,
 		viewType:       LIST_VIEW,
@@ -417,6 +514,7 @@ func RenderList(filteredFiles []*trash.File, cfg config.UI) ([]*trash.File, erro
 		config:         cfg,
 		list:           l,
 		viewport:       viewport.Model{},
+		styles:         initStyles(),
 		help:           help.New(),
 	}
 
@@ -433,9 +531,39 @@ func RenderList(filteredFiles []*trash.File, cfg config.UI) ([]*trash.File, erro
 		return []*trash.File{}, nil
 	}
 
-	invFiles := make([]*trash.File, len(choices))
+	trashFiles := make([]*trash.File, len(choices))
 	for i, file := range choices {
-		invFiles[i] = file.File
+		trashFiles[i] = file.File
 	}
-	return invFiles, nil
+	return trashFiles, nil
+}
+
+func deletePermanently(files ...File) error {
+	for _, file := range files {
+		if err := os.Remove(file.TrashPath); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (m Model) deletePermanentlyCmd(files ...File) tea.Cmd {
+	return func() tea.Msg {
+		for _, file := range files {
+			slog.Debug("permanently delete", "file", file.TrashPath)
+			if err := m.trashManager.Remove(file.File); err != nil {
+				return refreshFilesMsg{err: err}
+			}
+		}
+		origin := m.files
+		origin = lo.Reject(origin, func(f File, index int) bool {
+			_, err := os.Stat(f.File.TrashPath)
+			return os.IsNotExist(err)
+		})
+		items := make([]list.Item, len(origin))
+		for i, file := range origin {
+			items[i] = file
+		}
+		return refreshFilesMsg{files: items}
+	}
 }
