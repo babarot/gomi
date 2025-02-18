@@ -10,6 +10,7 @@ import (
 	"github.com/babarot/gomi/internal/config"
 	"github.com/babarot/gomi/internal/trash"
 	"github.com/babarot/gomi/internal/ui/keys"
+	"github.com/fatih/color"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -18,32 +19,8 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/fatih/color"
 	"github.com/samber/lo"
 )
-
-type ViewType uint8
-
-const (
-	LIST_VIEW ViewType = iota
-	DETAIL_VIEW
-	CONFIRM_VIEW
-	QUITTING
-)
-
-func (v ViewType) String() string {
-	switch v {
-	case LIST_VIEW:
-		return "list view"
-	case DETAIL_VIEW:
-		return "detail view"
-	case CONFIRM_VIEW:
-		return "confirm view"
-	case QUITTING:
-		return "quit"
-	}
-	return "unknown"
-}
 
 type ListDensityType uint8
 
@@ -61,10 +38,7 @@ const (
 	bullet   = "•"
 	ellipsis = "…"
 
-	datefmtRel = "relative"
-	datefmtAbs = "absolute"
-
-	defaultWidth  = 56
+	defaultWidth  = 66 // 56
 	defaultHeight = 26
 )
 
@@ -76,10 +50,6 @@ var (
 
 type DetailsMsg struct {
 	file File
-}
-
-type GotInventorysMsg struct {
-	files []list.Item
 }
 
 type errorMsg struct {
@@ -96,20 +66,15 @@ func errorCmd(err error) tea.Cmd {
 
 type Model struct {
 	trashManager *trash.Manager
+	state        *ViewState
 
 	listKeys   *keys.ListKeyMap
 	detailKeys *keys.DetailKeyMap
 
-	viewType       ViewType
-	prevViewType   ViewType
-	detailFile     File
-	datefmt        string
-	cannotPreview  bool
-	locationOrigin bool
-
-	files   []File
-	config  config.UI
-	choices []File
+	detailFile File
+	files      []File
+	config     config.UI
+	choices    []File
 
 	styles dialogStyles
 
@@ -186,183 +151,27 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch m.viewType {
+		switch m.state.current {
 		case CONFIRM_VIEW:
-			slog.Debug("view type", "current", m.viewType, "prev", m.prevViewType)
-			switch msg.String() {
-			case "y", "Y":
-				slog.Debug("replied yes to delete permanently")
-				m.setViewType(m.prevViewType) // go back previous view after reply
-				files := selectionManager.items
-				if len(files) > 0 {
-					return m, m.deletePermanentlyCmd(files...)
-				}
-				file, ok := m.list.SelectedItem().(File)
-				if ok {
-					return m, m.deletePermanentlyCmd(file)
-				}
-				return m, nil
-			case "n", "N":
-				slog.Debug("replied no to delete permanently")
-				m.setViewType(m.prevViewType) // go back previous view after reply
-				return m, nil
-			case "ctrl+c", "q":
-				m.setViewType(QUITTING)
-				return m, tea.Quit
-			default:
-				slog.Debug("waiting for reply to delete permanently")
-				return m, nil
-			}
+			return m.handleConfirmViewKeyPress(msg)
+		default:
+			return m.handleDefaultKeyPress(msg)
 		}
 
-		slog.Debug("Key pressed", "key", msg.String())
-		switch {
-		case key.Matches(msg, m.listKeys.Quit):
-			m.setViewType(QUITTING)
+	case refreshFilesMsg:
+		if msg.err != nil {
+			m.err = msg.err
 			return m, tea.Quit
-
-		case key.Matches(msg, m.listKeys.Select):
-			if m.list.FilterState() != list.Filtering {
-				item, ok := m.list.SelectedItem().(File)
-				if !ok {
-					break
-				}
-				if item.isSelected() {
-					selectionManager.Remove(item)
-				} else {
-					selectionManager.Add(item)
-				}
-				m.list.CursorDown()
-				if m.viewType == DETAIL_VIEW {
-					cmds = append(cmds, getInventoryDetails(item))
-				}
-			}
-
-		case key.Matches(msg, m.listKeys.DeSelect):
-			if m.list.FilterState() != list.Filtering {
-				item, ok := m.list.SelectedItem().(File)
-				if !ok {
-					break
-				}
-				if item.isSelected() {
-					selectionManager.Remove(item)
-				}
-				m.list.CursorUp()
-				if m.viewType == DETAIL_VIEW {
-					cmds = append(cmds, getInventoryDetails(item))
-				}
-			}
-
-		case key.Matches(msg, m.detailKeys.AtSign):
-			switch m.viewType {
-			case DETAIL_VIEW:
-				switch m.datefmt {
-				case datefmtRel:
-					m.datefmt = datefmtAbs
-				case datefmtAbs:
-					m.datefmt = datefmtRel
-				}
-				m.locationOrigin = !m.locationOrigin
-			}
-
-		case key.Matches(
-			msg, m.detailKeys.PreviewUp, m.detailKeys.PreviewDown,
-			m.detailKeys.HalfPageUp, m.detailKeys.HalfPageDown,
-		):
-			switch m.viewType {
-			case DETAIL_VIEW:
-				var cmd tea.Cmd
-				m.viewport, cmd = m.viewport.Update(msg)
-				cmds = append(cmds, cmd)
-			}
-
-		case key.Matches(msg, m.detailKeys.GotoTop):
-			switch m.viewType {
-			case DETAIL_VIEW:
-				m.viewport.GotoTop()
-			}
-
-		case key.Matches(msg, m.detailKeys.GotoBottom):
-			switch m.viewType {
-			case DETAIL_VIEW:
-				m.viewport.GotoBottom()
-			}
-
-		case key.Matches(msg, m.detailKeys.Prev):
-			switch m.viewType {
-			case DETAIL_VIEW:
-				m.list.CursorUp()
-				file, ok := m.list.SelectedItem().(File)
-				if ok {
-					cmds = append(cmds, getInventoryDetails(file))
-				}
-			}
-
-		case key.Matches(msg, m.detailKeys.Next):
-			switch m.viewType {
-			case DETAIL_VIEW:
-				slog.Debug("key press in next!")
-				m.list.CursorDown()
-				file, ok := m.list.SelectedItem().(File)
-				if ok {
-					cmds = append(cmds, getInventoryDetails(file))
-				}
-			}
-
-		case key.Matches(msg, m.detailKeys.Esc):
-			switch m.viewType {
-			case LIST_VIEW:
-				selectionManager = &SelectionManager{items: []File{}}
-			case DETAIL_VIEW:
-				m.setViewType(LIST_VIEW)
-			}
-
-		case key.Matches(msg, m.listKeys.Delete):
-			switch m.viewType {
-			case LIST_VIEW, DETAIL_VIEW:
-				if m.list.FilterState() != list.Filtering {
-					m.setViewType(CONFIRM_VIEW)
-					slog.Debug("pressed delete key", "state", CONFIRM_VIEW)
-				}
-			}
-
-		case key.Matches(msg, m.listKeys.Space):
-			switch m.viewType {
-			case LIST_VIEW:
-				if m.list.FilterState() != list.Filtering {
-					file, ok := m.list.SelectedItem().(File)
-					if ok {
-						cmds = append(cmds, getInventoryDetails(file))
-					}
-				}
-			case DETAIL_VIEW:
-				// TODO: create another cmd (e.g. show list cmd)
-				m.locationOrigin = true
-				m.datefmt = datefmtRel
-				m.setViewType(LIST_VIEW)
-			}
-
-		case key.Matches(msg, m.listKeys.Enter):
-			switch m.viewType {
-			case LIST_VIEW:
-				if m.list.FilterState() != list.Filtering {
-					files := selectionManager.items
-					if len(files) == 0 {
-						file, ok := m.list.SelectedItem().(File)
-						if ok {
-							m.choices = append(m.choices, file)
-						}
-					} else {
-						m.choices = files
-					}
-					slog.Debug("key input: enter", slog.Any("selected_files", m.choices))
-					return m, tea.Quit
-				}
-			}
-
-		case key.Matches(msg, m.detailKeys.Help):
-			m.help.ShowAll = !m.help.ShowAll
 		}
+		m.list.SetItems(msg.files)
+		return m, nil
+
+	case DetailsMsg:
+		m.state.SetView(DETAIL_VIEW)
+		m.detailFile = msg.file
+		m.state.preview.available = false // reset everytime
+		m.viewport = m.newViewportModel(msg.file)
+		return m, nil
 
 	case tea.WindowSizeMsg:
 		m.list.SetWidth(msg.Width)
@@ -374,31 +183,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.list.SetItems(msg.files)
 
-	case refreshFilesMsg:
-		if msg.err != nil {
-			m.err = msg.err
-			return m, tea.Quit
-		}
-		m.list.SetItems(msg.files)
-
-	case DetailsMsg:
-		m.setViewType(DETAIL_VIEW)
-		m.detailFile = msg.file
-		m.cannotPreview = false
-		m.viewport = m.newViewportModel(msg.file)
-
 	case errorMsg:
-		m.setViewType(QUITTING)
+		m.state.SetView(QUITTING)
 		m.err = msg
 		return m, tea.Quit
 	}
 
-	var cmd tea.Cmd
-	switch m.viewType {
-	case LIST_VIEW:
-		m.list, cmd = m.list.Update(msg)
-		cmds = append(cmds, cmd)
-	}
 	return m, tea.Batch(cmds...)
 }
 
@@ -414,7 +204,7 @@ func (m Model) View() string {
 		return ""
 	}
 
-	switch m.viewType {
+	switch m.state.current {
 	case LIST_VIEW:
 		return m.list.View()
 
@@ -434,15 +224,6 @@ func (m Model) View() string {
 	}
 }
 
-// TODO: remove?
-func getAllInventoryItems(files []File) tea.Msg {
-	result := []list.Item{}
-	for _, file := range files {
-		result = append(result, file)
-	}
-	return GotInventorysMsg{files: result}
-}
-
 func getInventoryDetails(file File) tea.Cmd {
 	return func() tea.Msg {
 		return DetailsMsg{file: file}
@@ -454,7 +235,8 @@ func (m *Model) newViewportModel(file File) viewport.Model {
 	viewportModel.KeyMap = keys.PreviewKeys
 	content, err := file.Browse()
 	if err != nil {
-		m.cannotPreview = true
+		slog.Warn("file.Browse returned error", "content", err)
+		m.state.preview.available = true
 	}
 	viewportModel.SetContent(content)
 	return viewportModel
@@ -499,18 +281,16 @@ func RenderList(manager *trash.Manager, filteredFiles []*trash.File, c *config.C
 	l.SetShowTitle(false)
 
 	m := Model{
-		trashManager:   manager,
-		listKeys:       keys.ListKeys,
-		detailKeys:     keys.DetailKeys,
-		viewType:       LIST_VIEW,
-		datefmt:        datefmtRel,
-		locationOrigin: true,
-		files:          files,
-		config:         cfg,
-		list:           l,
-		viewport:       viewport.Model{},
-		styles:         initStyles(cfg.Style),
-		help:           help.New(),
+		state:        NewViewState(),
+		trashManager: manager,
+		listKeys:     keys.ListKeys,
+		detailKeys:   keys.DetailKeys,
+		files:        files,
+		config:       cfg,
+		list:         l,
+		viewport:     viewport.Model{},
+		styles:       initStyles(cfg.Style),
+		help:         help.New(),
 	}
 
 	returnModel, err := tea.NewProgram(m).Run()
@@ -519,7 +299,7 @@ func RenderList(manager *trash.Manager, filteredFiles []*trash.File, c *config.C
 	}
 
 	choices := returnModel.(Model).choices
-	if returnModel.(Model).viewType == QUITTING {
+	if returnModel.(Model).state.current == QUITTING {
 		if msg := cfg.ExitMessage; msg != "" {
 			fmt.Println(msg)
 		}
@@ -554,7 +334,170 @@ func (m Model) deletePermanentlyCmd(files ...File) tea.Cmd {
 	}
 }
 
-func (m *Model) setViewType(newType ViewType) {
-	m.prevViewType = m.viewType
-	m.viewType = newType
+func (m Model) handleConfirmViewKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "y", "Y":
+		m.state.SetView(m.state.previous)
+		files := selectionManager.items
+		if len(files) > 0 {
+			return m, m.deletePermanentlyCmd(files...)
+		}
+		if file, ok := m.list.SelectedItem().(File); ok {
+			return m, m.deletePermanentlyCmd(file)
+		}
+		return m, nil
+
+	case "n", "N":
+		m.state.SetView(m.state.previous)
+		return m, nil
+
+	case "ctrl+c", "q":
+		m.state.SetView(QUITTING)
+		return m, tea.Quit
+	}
+	return m, nil
+}
+
+func (m Model) handleDefaultKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
+
+	slog.Debug("Key pressed", "key", msg.String())
+	switch {
+	case key.Matches(msg, m.listKeys.Quit):
+		m.state.SetView(QUITTING)
+		return m, tea.Quit
+
+	case key.Matches(msg, m.listKeys.Select):
+		if m.list.FilterState() != list.Filtering {
+			item, ok := m.list.SelectedItem().(File)
+			if !ok {
+				break
+			}
+			if item.isSelected() {
+				selectionManager.Remove(item)
+			} else {
+				selectionManager.Add(item)
+			}
+			m.list.CursorDown()
+			if m.state.current == DETAIL_VIEW {
+				cmds = append(cmds, getInventoryDetails(item))
+			}
+		}
+
+	case key.Matches(msg, m.listKeys.DeSelect):
+		if m.list.FilterState() != list.Filtering {
+			item, ok := m.list.SelectedItem().(File)
+			if !ok {
+				break
+			}
+			if item.isSelected() {
+				selectionManager.Remove(item)
+			}
+			m.list.CursorUp()
+			if m.state.current == DETAIL_VIEW {
+				cmds = append(cmds, getInventoryDetails(item))
+			}
+		}
+
+	case key.Matches(msg, m.detailKeys.AtSign):
+		if m.state.current == DETAIL_VIEW {
+			m.state.ToggleDateFormat()
+			m.state.ToggleOriginPath()
+		}
+
+	case key.Matches(msg, m.detailKeys.PreviewUp, m.detailKeys.PreviewDown,
+		m.detailKeys.HalfPageUp, m.detailKeys.HalfPageDown):
+		if m.state.current == DETAIL_VIEW {
+			var cmd tea.Cmd
+			m.viewport, cmd = m.viewport.Update(msg)
+			cmds = append(cmds, cmd)
+		}
+
+	case key.Matches(msg, m.detailKeys.GotoTop):
+		if m.state.current == DETAIL_VIEW {
+			m.viewport.GotoTop()
+		}
+
+	case key.Matches(msg, m.detailKeys.GotoBottom):
+		if m.state.current == DETAIL_VIEW {
+			m.viewport.GotoBottom()
+		}
+
+	case key.Matches(msg, m.detailKeys.Prev):
+		if m.state.current == DETAIL_VIEW {
+			m.list.CursorUp()
+			file, ok := m.list.SelectedItem().(File)
+			if ok {
+				cmds = append(cmds, getInventoryDetails(file))
+			}
+		}
+
+	case key.Matches(msg, m.detailKeys.Next):
+		if m.state.current == DETAIL_VIEW {
+			m.list.CursorDown()
+			file, ok := m.list.SelectedItem().(File)
+			if ok {
+				cmds = append(cmds, getInventoryDetails(file))
+			}
+		}
+
+	case key.Matches(msg, m.detailKeys.Esc):
+		switch m.state.current {
+		case LIST_VIEW:
+			selectionManager = &SelectionManager{items: []File{}}
+		case DETAIL_VIEW:
+			m.state.SetView(LIST_VIEW)
+		}
+
+	case key.Matches(msg, m.listKeys.Delete):
+		if m.state.current == LIST_VIEW || m.state.current == DETAIL_VIEW {
+			if m.list.FilterState() != list.Filtering {
+				m.state.SetView(CONFIRM_VIEW)
+				slog.Debug("pressed delete key", "state", CONFIRM_VIEW)
+			}
+		}
+
+	case key.Matches(msg, m.listKeys.Space):
+		switch m.state.current {
+		case LIST_VIEW:
+			if m.list.FilterState() != list.Filtering {
+				file, ok := m.list.SelectedItem().(File)
+				if ok {
+					cmds = append(cmds, getInventoryDetails(file))
+				}
+			}
+		case DETAIL_VIEW:
+			m.state.detail.showOrigin = true
+			m.state.detail.dateFormat = DateFormatRelative
+			m.state.SetView(LIST_VIEW)
+		}
+
+	case key.Matches(msg, m.listKeys.Enter):
+		if m.state.current == LIST_VIEW {
+			if m.list.FilterState() != list.Filtering {
+				files := selectionManager.items
+				if len(files) == 0 {
+					file, ok := m.list.SelectedItem().(File)
+					if ok {
+						m.choices = append(m.choices, file)
+					}
+				} else {
+					m.choices = files
+				}
+				slog.Debug("key input: enter", slog.Any("selected_files", m.choices))
+				return m, tea.Quit
+			}
+		}
+
+	case key.Matches(msg, m.detailKeys.Help):
+		m.help.ShowAll = !m.help.ShowAll
+	}
+
+	var cmd tea.Cmd
+	if m.state.current == LIST_VIEW {
+		m.list, cmd = m.list.Update(msg)
+		cmds = append(cmds, cmd)
+	}
+
+	return m, tea.Batch(cmds...)
 }

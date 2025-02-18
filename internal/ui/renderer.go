@@ -17,6 +17,7 @@ import (
 	"github.com/samber/lo"
 )
 
+// renderDetailed method update
 func renderDetailed(m Model) string {
 	return lipgloss.JoinVertical(lipgloss.Left,
 		m.renderHeader(),
@@ -68,11 +69,12 @@ func (m Model) renderFooter() string {
 	return lipgloss.JoinHorizontal(lipgloss.Center, line)
 }
 
+// renderDeletedFrom method update
 func (m Model) renderDeletedFrom() string {
 	file := m.detailFile
 	text := filepath.Dir(file.OriginalPath)
 	title := "Deleted From"
-	if !m.locationOrigin {
+	if !m.state.detail.showOrigin {
 		title = "Trash Path"
 		text = filepath.Dir(file.TrashPath)
 	}
@@ -89,11 +91,12 @@ func (m Model) renderDeletedFrom() string {
 	)
 }
 
+// renderDeletedAt method update
 func (m Model) renderDeletedAt() string {
 	file := m.detailFile
 	var ts string
-	switch m.datefmt {
-	case datefmtAbs:
+	switch m.state.detail.dateFormat {
+	case DateFormatAbsolute:
 		ts = file.DeletedAt.Format(time.DateTime)
 	default:
 		ts = humanize.Time(file.DeletedAt)
@@ -115,7 +118,7 @@ func (m Model) previewHeader() string {
 
 func (m Model) previewFooter() string {
 	color := m.config.Style.DetailView.PreviewPane.Border
-	if m.cannotPreview {
+	if m.state.preview.available {
 		return lipgloss.NewStyle().Foreground(lipgloss.Color(color)).Render(strings.Repeat("─", defaultWidth))
 	}
 	info := styles.Scroll(m.config).Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
@@ -123,9 +126,10 @@ func (m Model) previewFooter() string {
 	return lipgloss.NewStyle().Foreground(lipgloss.Color(color)).Render(lipgloss.JoinHorizontal(lipgloss.Center, line, info))
 }
 
+// renderPreview method update
 func (m Model) renderPreview() string {
 	content := m.viewport.View()
-	if m.cannotPreview {
+	if m.state.preview.available {
 		mtype, _ := mimetype.DetectFile(m.detailFile.TrashPath)
 		verticalMarginHeight := lipgloss.Height(m.previewHeader())
 		content = lipgloss.Place(defaultWidth, 15-verticalMarginHeight,
@@ -142,6 +146,7 @@ func (m Model) renderPreview() string {
 	)
 }
 
+// renderDeleteConfirmation method update
 func (m Model) renderDeleteConfirmation() string {
 	dialogMaxWidth := defaultWidth - 6 // border (2) + padding (2) + buffer (2)
 	_, displayText, isSingleTarget := m.prepareDeleteTarget(dialogMaxWidth)
@@ -195,9 +200,10 @@ func (m Model) formatDeleteConfirmation(target string, isSingleTarget bool) stri
 	)
 }
 
+// renderDialogOverList method update
 func (m Model) renderDialogOverList(dialogContent string) string {
 	var baseView string
-	switch m.prevViewType {
+	switch m.state.previous {
 	case LIST_VIEW:
 		baseView = m.list.View()
 	case DETAIL_VIEW:
