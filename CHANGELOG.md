@@ -1,5 +1,7 @@
 # Changelog
 
+## [v1.4.4](https://github.com/babarot/gomi/compare/v1.4.3...v1.4.4) - 2025-02-18
+
 ## [v1.4.3](https://github.com/babarot/gomi/compare/v1.4.2...v1.4.3) - 2025-02-17
 ### New Features
 - Add toggle between trash and original path display in detail view by @babarot in https://github.com/babarot/gomi/pull/76

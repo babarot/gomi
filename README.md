@@ -93,7 +93,7 @@ github:
   repo: gomi
   release:
     name: gomi
-    tag: v1.4.3
+    tag: v1.4.4
   command:
     link:
     - from: gomi
