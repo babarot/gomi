@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"os"
 	"sort"
-	"strings"
 
 	"github.com/babarot/gomi/internal/config"
 	"github.com/babarot/gomi/internal/trash"
@@ -52,7 +51,7 @@ const (
 	datefmtAbs = "absolute"
 
 	defaultWidth  = 56
-	defaultHeight = 20
+	defaultHeight = 26
 )
 
 var (
@@ -110,18 +109,19 @@ type dialogStyles struct {
 	dialog lipgloss.Style
 }
 
-func initStyles() dialogStyles {
+func initStyles(fg string) dialogStyles {
 	s := dialogStyles{}
 	s.dialog = lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("205")).
-		Foreground(lipgloss.Color("205")).
+		BorderForeground(lipgloss.Color(fg)).
+		Foreground(lipgloss.Color(fg)).
 		Bold(true).
-		Padding(1, 0).
+		Padding(1, 1).
 		BorderTop(true).
 		BorderLeft(true).
 		BorderRight(true).
 		BorderBottom(true).
+		Align(lipgloss.Center).
 		Width(defaultWidth - 4)
 
 	return s
@@ -188,8 +188,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "n", "N":
 				slog.Debug("replied no to delete permanently")
 				m.viewType = LIST_VIEW
+			case "ctrl+c", "q":
+				m.viewType = QUITTING
+				return m, tea.Quit
 			default:
 				slog.Debug("waiting for reply to delete permanently")
+				return m, nil
 			}
 		}
 
@@ -381,69 +385,34 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) View() string {
 	defer color.Unset()
-	s := ""
 
 	if m.err != nil {
 		slog.Error("rendering of the view has stopped", "error", m.err)
 		return m.err.Error()
 	}
 
-	switch m.viewType {
-	case LIST_VIEW:
-		s += m.list.View()
-	case DETAIL_VIEW:
-		s += renderDetailed(m)
-		s += "\n" + lipgloss.NewStyle().Margin(1, 2).Render(m.help.View(m.detailKeys))
-	case CONFIRM_VIEW:
-		maxWidth := defaultWidth - 6 // border (2) + padding (2) + buffer (2)
-
-		var selected string
-		files := selectionManager.items
-		if len(files) > 0 {
-			selected = strings.Join(lo.Map(files, func(f File, index int) string {
-				return "'" + f.Title() + "'"
-			}), ", ")
-		} else {
-			file := m.list.SelectedItem().(File)
-			files = append(files, file)
-			selected = "'" + file.Title() + "'"
-		}
-		if len(selected) > maxWidth {
-			switch len(files) {
-			case 1:
-				selected = fmt.Sprintf("%s %s", (files[0].Title())[0:maxWidth-len(" Delete   ?")], ellipsis)
-			default:
-				selected = fmt.Sprintf("%d files", len(files))
-			}
-		}
-		dialog := lipgloss.JoinVertical(lipgloss.Center,
-			" Delete "+selected+" ?",
-			"",
-			"(y/n)",
-		)
-
-		dialog = m.styles.dialog.Render(dialog)
-		lines := strings.Split(m.list.View(), "\n")
-		dialogLines := strings.Split(dialog, "\n")
-
-		startLine := (len(lines) - len(dialogLines)) / 2
-
-		for i, dialogLine := range dialogLines {
-			paddedLine := lipgloss.NewStyle().Width(defaultWidth).Align(lipgloss.Center).Render(dialogLine)
-			lines[startLine+i] = paddedLine
-		}
-		return strings.Join(lines, "\n")
-
-	case QUITTING:
-		return s
-	}
-
 	if len(m.choices) > 0 {
-		// do not render when nothing is selected
 		return ""
 	}
 
-	return s
+	switch m.viewType {
+	case LIST_VIEW:
+		return m.list.View()
+
+	case DETAIL_VIEW:
+		detailView := renderDetailed(m)
+		helpView := lipgloss.NewStyle().Margin(1, 2).Render(m.help.View(m.detailKeys))
+		return detailView + "\n" + helpView
+
+	case CONFIRM_VIEW:
+		return m.renderDeleteConfirmation()
+
+	case QUITTING:
+		return ""
+
+	default:
+		return ""
+	}
 }
 
 // TODO: remove?
@@ -514,7 +483,7 @@ func RenderList(manager *trash.Manager, filteredFiles []*trash.File, cfg config.
 		config:         cfg,
 		list:           l,
 		viewport:       viewport.Model{},
-		styles:         initStyles(),
+		styles:         initStyles(cfg.Style.DeletionDialog),
 		help:           help.New(),
 	}
 
@@ -536,15 +505,6 @@ func RenderList(manager *trash.Manager, filteredFiles []*trash.File, cfg config.
 		trashFiles[i] = file.File
 	}
 	return trashFiles, nil
-}
-
-func deletePermanently(files ...File) error {
-	for _, file := range files {
-		if err := os.Remove(file.TrashPath); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (m Model) deletePermanentlyCmd(files ...File) tea.Cmd {

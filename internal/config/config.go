@@ -78,8 +78,9 @@ type UI struct {
 
 // StyleConfig defines the visual styling of the UI
 type StyleConfig struct {
-	ListView   ListViewConfig   `yaml:"list_view"`
-	DetailView DetailViewConfig `yaml:"detail_view"`
+	ListView       ListViewConfig   `yaml:"list_view"`
+	DetailView     DetailViewConfig `yaml:"detail_view"`
+	DeletionDialog string           `yaml:"deletion_dialog" validate:"validColorCode|allowEmpty"`
 }
 
 // ListViewConfig configures the file list view
@@ -196,6 +197,9 @@ func Load(path string) (*Config, error) {
 		return nil, err
 	}
 
+	// Set default value if empty
+	cfg.setDefault()
+
 	slog.Debug("config successfully loaded")
 	return cfg, nil
 }
@@ -305,4 +309,12 @@ func (c *Config) expandPaths() error {
 	}
 
 	return nil
+}
+
+func (c *Config) setDefault() {
+	// Set color for deletion confirmation dialog
+	// Since deletion is a potentially destructive operation, use a distinctive color to emphasize caution
+	if c.UI.Style.DeletionDialog == "" {
+		c.UI.Style.DeletionDialog = "205"
+	}
 }

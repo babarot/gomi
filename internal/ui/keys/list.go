@@ -3,13 +3,13 @@ package keys
 import "github.com/charmbracelet/bubbles/key"
 
 type ListKeyMap struct {
-	Quit      key.Binding
-	Enter     key.Binding
-	Space     key.Binding
-	Select    key.Binding
-	DeSelect  key.Binding
-	Delete    key.Binding
-	DeleteYes key.Binding
+	Quit     key.Binding
+	Enter    key.Binding
+	Space    key.Binding
+	Select   key.Binding
+	DeSelect key.Binding
+	Delete   key.Binding
+	Esc      key.Binding
 }
 
 func (k ListKeyMap) ShortHelp() []key.Binding {
@@ -24,6 +24,7 @@ func (k ListKeyMap) FullHelp() [][]key.Binding {
 	keys := append(
 		k.ShortHelp(),
 		k.DeSelect,
+		k.Esc,
 		k.Delete,
 		k.Quit,
 	)
@@ -55,9 +56,10 @@ var ListKeys = &ListKeyMap{
 	),
 	Delete: key.NewBinding(
 		key.WithKeys("D"),
-		key.WithHelp("shift+d", "delete"),
+		key.WithHelp("D", "delete"),
 	),
-	DeleteYes: key.NewBinding(
-		key.WithKeys("y", "Y"),
+	Esc: key.NewBinding(
+		key.WithKeys("esc"),
+		key.WithHelp("esc", "reset"),
 	),
 }

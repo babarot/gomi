@@ -60,6 +60,7 @@ func NewDefaultConfig() *Config {
 						},
 					},
 				},
+				DeletionDialog: "#FF007F",
 			},
 		},
 		History: History{
