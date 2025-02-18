@@ -104,7 +104,7 @@ func (f File) Browse() (string, error) {
 			return strings.Join(lines, "\n"), nil
 		}
 		input := fmt.Sprintf("cd %s; %s", shellescape.Quote(f.TrashPath), f.dirListCommand)
-		slog.Debug("command to list dir", "input", input)
+		slog.Debug("run ls-like command", "input", input)
 		out, _, err := shell.RunCommand(input)
 		if err != nil {
 			slog.Error("command failed", "command", input, "error", err)
