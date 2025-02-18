@@ -196,8 +196,14 @@ func (m Model) formatDeleteConfirmation(target string, isSingleTarget bool) stri
 }
 
 func (m Model) renderDialogOverList(dialogContent string) string {
-	baseList := m.list.View()
-	listLines := strings.Split(baseList, "\n")
+	var baseView string
+	switch m.prevViewType {
+	case LIST_VIEW:
+		baseView = m.list.View()
+	case DETAIL_VIEW:
+		baseView = renderDetailed(m)
+	}
+	listLines := strings.Split(baseView, "\n")
 	dialogLines := strings.Split(dialogContent, "\n")
 
 	dialogStartLine := (len(listLines) - len(dialogLines)) / 2

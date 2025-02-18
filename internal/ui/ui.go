@@ -31,6 +31,20 @@ const (
 	QUITTING
 )
 
+func (v ViewType) String() string {
+	switch v {
+	case LIST_VIEW:
+		return "list view"
+	case DETAIL_VIEW:
+		return "detail view"
+	case CONFIRM_VIEW:
+		return "confirm view"
+	case QUITTING:
+		return "quit"
+	}
+	return "unknown"
+}
+
 type ListDensityType uint8
 
 const (
@@ -87,6 +101,7 @@ type Model struct {
 	detailKeys *keys.DetailKeyMap
 
 	viewType       ViewType
+	prevViewType   ViewType
 	detailFile     File
 	datefmt        string
 	cannotPreview  bool
@@ -173,10 +188,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch m.viewType {
 		case CONFIRM_VIEW:
+			slog.Debug("view type", "current", m.viewType, "prev", m.prevViewType)
 			switch msg.String() {
 			case "y", "Y":
 				slog.Debug("replied yes to delete permanently")
-				m.viewType = LIST_VIEW
+				m.setViewType(m.prevViewType) // go back previous view after reply
 				files := selectionManager.items
 				if len(files) > 0 {
 					return m, m.deletePermanentlyCmd(files...)
@@ -185,11 +201,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if ok {
 					return m, m.deletePermanentlyCmd(file)
 				}
+				return m, nil
 			case "n", "N":
 				slog.Debug("replied no to delete permanently")
-				m.viewType = LIST_VIEW
+				m.setViewType(m.prevViewType) // go back previous view after reply
+				return m, nil
 			case "ctrl+c", "q":
-				m.viewType = QUITTING
+				m.setViewType(QUITTING)
 				return m, tea.Quit
 			default:
 				slog.Debug("waiting for reply to delete permanently")
@@ -200,7 +218,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		slog.Debug("Key pressed", "key", msg.String())
 		switch {
 		case key.Matches(msg, m.listKeys.Quit):
-			m.viewType = QUITTING
+			m.setViewType(QUITTING)
 			return m, tea.Quit
 
 		case key.Matches(msg, m.listKeys.Select):
@@ -283,6 +301,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.detailKeys.Next):
 			switch m.viewType {
 			case DETAIL_VIEW:
+				slog.Debug("key press in next!")
 				m.list.CursorDown()
 				file, ok := m.list.SelectedItem().(File)
 				if ok {
@@ -295,14 +314,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case LIST_VIEW:
 				selectionManager = &SelectionManager{items: []File{}}
 			case DETAIL_VIEW:
-				m.viewType = LIST_VIEW
+				m.setViewType(LIST_VIEW)
 			}
 
 		case key.Matches(msg, m.listKeys.Delete):
 			switch m.viewType {
 			case LIST_VIEW, DETAIL_VIEW:
 				if m.list.FilterState() != list.Filtering {
-					m.viewType = CONFIRM_VIEW
+					m.setViewType(CONFIRM_VIEW)
 					slog.Debug("pressed delete key", "state", CONFIRM_VIEW)
 				}
 			}
@@ -320,7 +339,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// TODO: create another cmd (e.g. show list cmd)
 				m.locationOrigin = true
 				m.datefmt = datefmtRel
-				m.viewType = LIST_VIEW
+				m.setViewType(LIST_VIEW)
 			}
 
 		case key.Matches(msg, m.listKeys.Enter):
@@ -363,13 +382,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.list.SetItems(msg.files)
 
 	case DetailsMsg:
-		m.viewType = DETAIL_VIEW
+		m.setViewType(DETAIL_VIEW)
 		m.detailFile = msg.file
 		m.cannotPreview = false
 		m.viewport = m.newViewportModel(msg.file)
 
 	case errorMsg:
-		m.viewType = QUITTING
+		m.setViewType(QUITTING)
 		m.err = msg
 		return m, tea.Quit
 	}
@@ -526,4 +545,9 @@ func (m Model) deletePermanentlyCmd(files ...File) tea.Cmd {
 		}
 		return refreshFilesMsg{files: items}
 	}
+}
+
+func (m *Model) setViewType(newType ViewType) {
+	m.prevViewType = m.viewType
+	m.viewType = newType
 }
