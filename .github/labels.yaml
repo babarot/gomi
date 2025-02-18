@@ -29,6 +29,17 @@
   description: Denotes a PR that introduces potentially breaking changes that require user action.
   color: 425df5
 
+# platform/
+- name: platform/windows
+  description: Windows operating system related issues and features.
+  color: f8e58c
+- name: platform/linux
+  description: Linux operating system related issues and features.
+  color: f8e58c
+- name: platform/macos
+  description: macOS operating system related issues and features.
+  color: f8e58c
+
 # release/ - which version to be released
 - name: release/major
   description: Indicates major version to bump up next when creating release PR.
