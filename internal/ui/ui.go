@@ -27,8 +27,23 @@ type ViewType uint8
 const (
 	LIST_VIEW ViewType = iota
 	DETAIL_VIEW
+	CONFIRM_VIEW
 	QUITTING
 )
+
+func (v ViewType) String() string {
+	switch v {
+	case LIST_VIEW:
+		return "list view"
+	case DETAIL_VIEW:
+		return "detail view"
+	case CONFIRM_VIEW:
+		return "confirm view"
+	case QUITTING:
+		return "quit"
+	}
+	return "unknown"
+}
 
 type ListDensityType uint8
 
@@ -50,7 +65,7 @@ const (
 	datefmtAbs = "absolute"
 
 	defaultWidth  = 56
-	defaultHeight = 20
+	defaultHeight = 26
 )
 
 var (
@@ -80,10 +95,13 @@ func errorCmd(err error) tea.Cmd {
 }
 
 type Model struct {
+	trashManager *trash.Manager
+
 	listKeys   *keys.ListKeyMap
 	detailKeys *keys.DetailKeyMap
 
 	viewType       ViewType
+	prevViewType   ViewType
 	detailFile     File
 	datefmt        string
 	cannotPreview  bool
@@ -93,6 +111,8 @@ type Model struct {
 	config  config.UI
 	choices []File
 
+	styles dialogStyles
+
 	help     help.Model
 	list     list.Model
 	viewport viewport.Model
@@ -100,9 +120,36 @@ type Model struct {
 	err error
 }
 
+type dialogStyles struct {
+	dialog lipgloss.Style
+}
+
+func initStyles(c config.StyleConfig) dialogStyles {
+	s := dialogStyles{}
+	s.dialog = lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color(c.DeletionDialog)).
+		Foreground(lipgloss.Color(c.DeletionDialog)).
+		Bold(true).
+		Padding(1, 1).
+		BorderTop(true).
+		BorderLeft(true).
+		BorderRight(true).
+		BorderBottom(true).
+		Align(lipgloss.Center).
+		Width(defaultWidth - 4)
+
+	return s
+}
+
 var _ list.DefaultItem = (*File)(nil)
 
 type inventoryLoadedMsg struct {
+	files []list.Item
+	err   error
+}
+
+type refreshFilesMsg struct {
 	files []list.Item
 	err   error
 }
@@ -136,12 +183,42 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmds := []tea.Cmd{}
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		switch m.viewType {
+		case CONFIRM_VIEW:
+			slog.Debug("view type", "current", m.viewType, "prev", m.prevViewType)
+			switch msg.String() {
+			case "y", "Y":
+				slog.Debug("replied yes to delete permanently")
+				m.setViewType(m.prevViewType) // go back previous view after reply
+				files := selectionManager.items
+				if len(files) > 0 {
+					return m, m.deletePermanentlyCmd(files...)
+				}
+				file, ok := m.list.SelectedItem().(File)
+				if ok {
+					return m, m.deletePermanentlyCmd(file)
+				}
+				return m, nil
+			case "n", "N":
+				slog.Debug("replied no to delete permanently")
+				m.setViewType(m.prevViewType) // go back previous view after reply
+				return m, nil
+			case "ctrl+c", "q":
+				m.setViewType(QUITTING)
+				return m, tea.Quit
+			default:
+				slog.Debug("waiting for reply to delete permanently")
+				return m, nil
+			}
+		}
+
 		slog.Debug("Key pressed", "key", msg.String())
 		switch {
 		case key.Matches(msg, m.listKeys.Quit):
-			m.viewType = QUITTING
+			m.setViewType(QUITTING)
 			return m, tea.Quit
 
 		case key.Matches(msg, m.listKeys.Select):
@@ -224,6 +301,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.detailKeys.Next):
 			switch m.viewType {
 			case DETAIL_VIEW:
+				slog.Debug("key press in next!")
 				m.list.CursorDown()
 				file, ok := m.list.SelectedItem().(File)
 				if ok {
@@ -233,8 +311,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, m.detailKeys.Esc):
 			switch m.viewType {
+			case LIST_VIEW:
+				selectionManager = &SelectionManager{items: []File{}}
 			case DETAIL_VIEW:
-				m.viewType = LIST_VIEW
+				m.setViewType(LIST_VIEW)
+			}
+
+		case key.Matches(msg, m.listKeys.Delete):
+			switch m.viewType {
+			case LIST_VIEW, DETAIL_VIEW:
+				if m.list.FilterState() != list.Filtering {
+					m.setViewType(CONFIRM_VIEW)
+					slog.Debug("pressed delete key", "state", CONFIRM_VIEW)
+				}
 			}
 
 		case key.Matches(msg, m.listKeys.Space):
@@ -250,7 +339,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// TODO: create another cmd (e.g. show list cmd)
 				m.locationOrigin = true
 				m.datefmt = datefmtRel
-				m.viewType = LIST_VIEW
+				m.setViewType(LIST_VIEW)
 			}
 
 		case key.Matches(msg, m.listKeys.Enter):
@@ -283,19 +372,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.err = msg.err
 			return m, tea.Quit
 		}
-		for _, file := range msg.files {
-			m.files = append(m.files, file.(File))
+		m.list.SetItems(msg.files)
+
+	case refreshFilesMsg:
+		if msg.err != nil {
+			m.err = msg.err
+			return m, tea.Quit
 		}
 		m.list.SetItems(msg.files)
 
 	case DetailsMsg:
-		m.viewType = DETAIL_VIEW
+		m.setViewType(DETAIL_VIEW)
 		m.detailFile = msg.file
 		m.cannotPreview = false
 		m.viewport = m.newViewportModel(msg.file)
 
 	case errorMsg:
-		m.viewType = QUITTING
+		m.setViewType(QUITTING)
 		m.err = msg
 		return m, tea.Quit
 	}
@@ -311,29 +404,34 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) View() string {
 	defer color.Unset()
-	s := ""
 
 	if m.err != nil {
 		slog.Error("rendering of the view has stopped", "error", m.err)
 		return m.err.Error()
 	}
 
-	switch m.viewType {
-	case LIST_VIEW:
-		s += m.list.View()
-	case DETAIL_VIEW:
-		s += renderDetailed(m)
-		s += "\n" + lipgloss.NewStyle().Margin(1, 2).Render(m.help.View(m.detailKeys))
-	case QUITTING:
-		return s
-	}
-
 	if len(m.choices) > 0 {
-		// do not render when nothing is selected
 		return ""
 	}
 
-	return s
+	switch m.viewType {
+	case LIST_VIEW:
+		return m.list.View()
+
+	case DETAIL_VIEW:
+		detailView := renderDetailed(m)
+		helpView := lipgloss.NewStyle().Margin(1, 2).Render(m.help.View(m.detailKeys))
+		return detailView + "\n" + helpView
+
+	case CONFIRM_VIEW:
+		return m.renderDeleteConfirmation()
+
+	case QUITTING:
+		return ""
+
+	default:
+		return ""
+	}
 }
 
 // TODO: remove?
@@ -362,7 +460,8 @@ func (m *Model) newViewportModel(file File) viewport.Model {
 	return viewportModel
 }
 
-func RenderList(filteredFiles []*trash.File, cfg config.UI) ([]*trash.File, error) {
+func RenderList(manager *trash.Manager, filteredFiles []*trash.File, c *config.Config) ([]*trash.File, error) {
+	cfg := c.UI
 	var items []list.Item
 	var files []File
 	for _, file := range filteredFiles {
@@ -376,6 +475,12 @@ func RenderList(filteredFiles []*trash.File, cfg config.UI) ([]*trash.File, erro
 	}
 
 	d := NewRestoreDelegate(cfg, files)
+
+	if !c.Core.Delete.Disable {
+		keys.ListKeys.AddDeleteKey()
+		keys.DetailKeys.AddDeleteKey()
+	}
+
 	d.ShortHelpFunc = keys.ListKeys.ShortHelp
 	d.FullHelpFunc = keys.ListKeys.FullHelp
 	l := list.New(items, d, defaultWidth, defaultHeight)
@@ -394,6 +499,7 @@ func RenderList(filteredFiles []*trash.File, cfg config.UI) ([]*trash.File, erro
 	l.SetShowTitle(false)
 
 	m := Model{
+		trashManager:   manager,
 		listKeys:       keys.ListKeys,
 		detailKeys:     keys.DetailKeys,
 		viewType:       LIST_VIEW,
@@ -403,6 +509,7 @@ func RenderList(filteredFiles []*trash.File, cfg config.UI) ([]*trash.File, erro
 		config:         cfg,
 		list:           l,
 		viewport:       viewport.Model{},
+		styles:         initStyles(cfg.Style),
 		help:           help.New(),
 	}
 
@@ -419,9 +526,35 @@ func RenderList(filteredFiles []*trash.File, cfg config.UI) ([]*trash.File, erro
 		return []*trash.File{}, nil
 	}
 
-	invFiles := make([]*trash.File, len(choices))
+	trashFiles := make([]*trash.File, len(choices))
 	for i, file := range choices {
-		invFiles[i] = file.File
+		trashFiles[i] = file.File
 	}
-	return invFiles, nil
+	return trashFiles, nil
+}
+
+func (m Model) deletePermanentlyCmd(files ...File) tea.Cmd {
+	return func() tea.Msg {
+		for _, file := range files {
+			slog.Debug("permanently delete", "file", file.TrashPath)
+			if err := m.trashManager.Remove(file.File); err != nil {
+				return refreshFilesMsg{err: err}
+			}
+		}
+		origin := m.files
+		origin = lo.Reject(origin, func(f File, index int) bool {
+			_, err := os.Stat(f.File.TrashPath)
+			return os.IsNotExist(err)
+		})
+		items := make([]list.Item, len(origin))
+		for i, file := range origin {
+			items[i] = file
+		}
+		return refreshFilesMsg{files: items}
+	}
+}
+
+func (m *Model) setViewType(newType ViewType) {
+	m.prevViewType = m.viewType
+	m.viewType = newType
 }

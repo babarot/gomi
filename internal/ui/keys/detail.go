@@ -12,6 +12,7 @@ type DetailKeyMap struct {
 	Esc    key.Binding
 	Quit   key.Binding
 	AtSign key.Binding
+	Delete key.Binding
 
 	// Preview
 	GotoTop      key.Binding
@@ -23,6 +24,8 @@ type DetailKeyMap struct {
 
 	Help      key.Binding
 	HelpClose key.Binding
+
+	showDelete bool
 }
 
 func (k DetailKeyMap) ShortHelp() []key.Binding {
@@ -35,8 +38,14 @@ func (k DetailKeyMap) ShortHelp() []key.Binding {
 }
 
 func (k DetailKeyMap) FullHelp() [][]key.Binding {
+	first := []key.Binding{
+		k.Next, k.Prev, k.Space, k.Esc, k.AtSign,
+	}
+	if k.showDelete {
+		first = append(first, k.Delete)
+	}
 	return [][]key.Binding{
-		{k.Next, k.Prev, k.Space, k.Esc, k.AtSign},
+		first,
 		{k.PreviewUp, k.PreviewDown, k.HalfPageUp, k.HalfPageDown, k.GotoTop, k.GotoBottom},
 		{k.HelpClose, k.Quit},
 	}
@@ -94,4 +103,12 @@ var PreviewKeys = viewport.KeyMap{
 	Down:         key.NewBinding(key.WithKeys("j", "down")),
 	HalfPageUp:   key.NewBinding(key.WithKeys("u")),
 	HalfPageDown: key.NewBinding(key.WithKeys("d")),
+}
+
+func (k *DetailKeyMap) AddDeleteKey() {
+	k.showDelete = true
+	k.Delete = key.NewBinding(
+		key.WithKeys("D"),
+		key.WithHelp("D", "delete"),
+	)
 }
