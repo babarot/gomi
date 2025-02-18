@@ -460,7 +460,8 @@ func (m *Model) newViewportModel(file File) viewport.Model {
 	return viewportModel
 }
 
-func RenderList(manager *trash.Manager, filteredFiles []*trash.File, cfg config.UI) ([]*trash.File, error) {
+func RenderList(manager *trash.Manager, filteredFiles []*trash.File, c *config.Config) ([]*trash.File, error) {
+	cfg := c.UI
 	var items []list.Item
 	var files []File
 	for _, file := range filteredFiles {
@@ -474,6 +475,12 @@ func RenderList(manager *trash.Manager, filteredFiles []*trash.File, cfg config.
 	}
 
 	d := NewRestoreDelegate(cfg, files)
+
+	if !c.Core.Delete.Disable {
+		keys.ListKeys.AddDeleteKey()
+		keys.DetailKeys.AddDeleteKey()
+	}
+
 	d.ShortHelpFunc = keys.ListKeys.ShortHelp
 	d.FullHelpFunc = keys.ListKeys.FullHelp
 	l := list.New(items, d, defaultWidth, defaultHeight)

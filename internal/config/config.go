@@ -32,6 +32,7 @@ type Core struct {
 
 	// Restore contains restore-specific settings
 	Restore RestoreConfig `yaml:"restore"`
+	Delete  DeleteConfig  `yaml:"delete"`
 
 	// Deprecated
 	TrashDir string `yaml:"trash_dir" validate:"deprecated"`
@@ -56,6 +57,11 @@ type RestoreConfig struct {
 
 	// Verbose enables detailed output during restore
 	Verbose bool `yaml:"verbose"`
+}
+
+// DeleteConfig defines settings for file permanent deletion behavior
+type DeleteConfig struct {
+	Disable bool `yaml:"disable"`
 }
 
 // UI holds all user interface related configurations

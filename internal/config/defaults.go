@@ -21,6 +21,9 @@ func NewDefaultConfig() *Config {
 				Confirm: true,
 				Verbose: true,
 			},
+			Delete: DeleteConfig{
+				Disable: false,
+			},
 		},
 		UI: UI{
 			Density: "spacious",
