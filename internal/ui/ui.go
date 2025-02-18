@@ -109,12 +109,12 @@ type dialogStyles struct {
 	dialog lipgloss.Style
 }
 
-func initStyles(fg string) dialogStyles {
+func initStyles(c config.StyleConfig) dialogStyles {
 	s := dialogStyles{}
 	s.dialog = lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color(fg)).
-		Foreground(lipgloss.Color(fg)).
+		BorderForeground(lipgloss.Color(c.DeletionDialog)).
+		Foreground(lipgloss.Color(c.DeletionDialog)).
 		Bold(true).
 		Padding(1, 1).
 		BorderTop(true).
@@ -483,7 +483,7 @@ func RenderList(manager *trash.Manager, filteredFiles []*trash.File, cfg config.
 		config:         cfg,
 		list:           l,
 		viewport:       viewport.Model{},
-		styles:         initStyles(cfg.Style.DeletionDialog),
+		styles:         initStyles(cfg.Style),
 		help:           help.New(),
 	}
 
