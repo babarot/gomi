@@ -40,16 +40,14 @@ type DetailStyles struct {
 
 // InfoStyles contains styles for information display
 type InfoStyles struct {
-	DeletedFrom struct {
-		Title   lipgloss.Style
-		Content lipgloss.Style
-		Section lipgloss.Style
-	}
-	DeletedAt struct {
-		Title   lipgloss.Style
-		Content lipgloss.Style
-		Section lipgloss.Style
-	}
+	DeletedFrom DeletedInfoStyle
+	DeletedAt   DeletedInfoStyle
+}
+
+type DeletedInfoStyle struct {
+	Title   lipgloss.Style
+	Content lipgloss.Style
+	Section lipgloss.Style
 }
 
 // PreviewStyles contains styles for preview pane
@@ -122,53 +120,52 @@ func New(cfg config.UI) *Styles {
 		Selected: lipgloss.NewStyle().
 			Foreground(lipgloss.AdaptiveColor{Light: "#000000", Dark: "#000000"}).
 			Background(lipgloss.AdaptiveColor{Light: cfg.Style.ListView.Selected, Dark: cfg.Style.ListView.Selected}),
-	}
-
-	s.Detail.Info.DeletedFrom.Title = lipgloss.NewStyle().
-		Padding(0, 1).
-		Background(lipgloss.Color(cfg.Style.DetailView.InfoPane.DeletedFrom.Background)).
-		Foreground(lipgloss.Color(cfg.Style.DetailView.InfoPane.DeletedFrom.Foreground)).
-		Bold(true).
-		Transform(strings.ToUpper)
-
-	s.Detail.Info.DeletedFrom.Content = lipgloss.NewStyle().
-		Padding(0, 1)
-
-	s.Detail.Info.DeletedFrom.Section = lipgloss.NewStyle().
-		BorderStyle(lipgloss.HiddenBorder()).
-		Padding(0, 1)
-
-	s.Detail.Info.DeletedAt.Title = lipgloss.NewStyle().
-		Padding(0, 1).
-		Background(lipgloss.Color(cfg.Style.DetailView.InfoPane.DeletedAt.Background)).
-		Foreground(lipgloss.Color(cfg.Style.DetailView.InfoPane.DeletedAt.Foreground)).
-		Bold(true).
-		Transform(strings.ToUpper)
-
-	s.Detail.Info.DeletedAt.Content = lipgloss.NewStyle().
-		Padding(0, 1)
-
-	s.Detail.Info.DeletedAt.Section = lipgloss.NewStyle().
-		BorderStyle(lipgloss.HiddenBorder()).
-		Padding(0, 1)
-
-	s.Detail.Preview = PreviewStyles{
-		Border: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(cfg.Style.DetailView.PreviewPane.Border)),
-		Size: lipgloss.NewStyle().
-			Padding(0, 1, 0, 1).
-			Foreground(lipgloss.Color(cfg.Style.DetailView.PreviewPane.Size.Foreground)).
-			Background(lipgloss.Color(cfg.Style.DetailView.PreviewPane.Size.Background)),
-		Scroll: lipgloss.NewStyle().
-			Padding(0, 1, 0, 1).
-			Foreground(lipgloss.Color(cfg.Style.DetailView.PreviewPane.Scroll.Foreground)).
-			Background(lipgloss.Color(cfg.Style.DetailView.PreviewPane.Scroll.Background)),
-		Error: PreviewErrorStyles{
-			Title: lipgloss.NewStyle().
-				Foreground(lipgloss.ANSIColor(termenv.ANSIBrightBlack)),
-			Content: lipgloss.NewStyle().
-				Bold(true).
-				Transform(strings.ToUpper),
+		Info: InfoStyles{
+			DeletedFrom: DeletedInfoStyle{
+				Title: lipgloss.NewStyle().
+					Padding(0, 1).
+					Background(lipgloss.Color(cfg.Style.DetailView.InfoPane.DeletedFrom.Background)).
+					Foreground(lipgloss.Color(cfg.Style.DetailView.InfoPane.DeletedFrom.Foreground)).
+					Bold(true).
+					Transform(strings.ToUpper),
+				Content: lipgloss.NewStyle().
+					Padding(0, 1),
+				Section: lipgloss.NewStyle().
+					BorderStyle(lipgloss.HiddenBorder()).
+					Padding(0, 1),
+			},
+			DeletedAt: DeletedInfoStyle{
+				Title: lipgloss.NewStyle().
+					Padding(0, 1).
+					Background(lipgloss.Color(cfg.Style.DetailView.InfoPane.DeletedAt.Background)).
+					Foreground(lipgloss.Color(cfg.Style.DetailView.InfoPane.DeletedAt.Foreground)).
+					Bold(true).
+					Transform(strings.ToUpper),
+				Content: lipgloss.NewStyle().
+					Padding(0, 1),
+				Section: lipgloss.NewStyle().
+					BorderStyle(lipgloss.HiddenBorder()).
+					Padding(0, 1),
+			},
+		},
+		Preview: PreviewStyles{
+			Border: lipgloss.NewStyle().
+				Foreground(lipgloss.Color(cfg.Style.DetailView.PreviewPane.Border)),
+			Size: lipgloss.NewStyle().
+				Padding(0, 1, 0, 1).
+				Foreground(lipgloss.Color(cfg.Style.DetailView.PreviewPane.Size.Foreground)).
+				Background(lipgloss.Color(cfg.Style.DetailView.PreviewPane.Size.Background)),
+			Scroll: lipgloss.NewStyle().
+				Padding(0, 1, 0, 1).
+				Foreground(lipgloss.Color(cfg.Style.DetailView.PreviewPane.Scroll.Foreground)).
+				Background(lipgloss.Color(cfg.Style.DetailView.PreviewPane.Scroll.Background)),
+			Error: PreviewErrorStyles{
+				Title: lipgloss.NewStyle().
+					Foreground(lipgloss.ANSIColor(termenv.ANSIBrightBlack)),
+				Content: lipgloss.NewStyle().
+					Bold(true).
+					Transform(strings.ToUpper),
+			},
 		},
 	}
 
