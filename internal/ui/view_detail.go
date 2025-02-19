@@ -65,7 +65,7 @@ func (m Model) renderDeletedAt() string {
 func (m Model) renderPreview() string {
 	content := m.viewport.View()
 
-	if m.state.preview.available {
+	if !m.state.preview.available {
 		mtype, _ := mimetype.DetectFile(m.detailFile.TrashPath)
 		content = m.styles.RenderErrorPreview(
 			ErrCannotPreview.Error(),
@@ -93,9 +93,9 @@ func (m Model) previewHeader() string {
 
 // previewFooter renders the footer of the preview section
 func (m Model) previewFooter() string {
-	if m.state.preview.available {
+	if !m.state.preview.available {
 		return m.styles.RenderPreviewFrame(
-			"",
+			"", // do not show percentage if cannot preview
 			false,
 			defaultWidth,
 		)

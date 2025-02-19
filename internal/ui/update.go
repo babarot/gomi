@@ -39,7 +39,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case ShowDetailMsg:
 		m.state.SetView(DETAIL_VIEW)
 		m.detailFile = msg.file
-		m.state.preview.available = false
+		m.state.preview.available = true
 		m.viewport = m.newViewportModel(msg.file)
 		return m, nil
 

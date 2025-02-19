@@ -58,7 +58,7 @@ func (m *Model) newViewportModel(file File) viewport.Model {
 	content, err := file.Browse()
 	if err != nil {
 		slog.Warn("file.Browse returned error", "content", err)
-		m.state.preview.available = true
+		m.state.preview.available = false
 	}
 	viewportModel.SetContent(content)
 	return viewportModel

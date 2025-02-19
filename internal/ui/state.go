@@ -64,7 +64,7 @@ func NewViewState() *ViewState {
 			dateFormat: DateFormatRelative,
 		},
 		preview: preview{
-			available: false,
+			available: true,
 		},
 	}
 }

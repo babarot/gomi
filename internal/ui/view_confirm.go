@@ -8,22 +8,6 @@ import (
 	"github.com/samber/lo"
 )
 
-// // renderDeleteConfirmation renders the delete confirmation dialog overlay
-// func (m Model) renderDeleteConfirmation() string {
-// 	var baseView string
-// 	switch m.state.previous {
-// 	case LIST_VIEW:
-// 		baseView = m.list.View()
-// 	case DETAIL_VIEW:
-// 		baseView = m.detailView()
-// 	}
-//
-// 	_, displayText, isSingleTarget := m.prepareDeleteTarget()
-// 	dialogContent := m.formatDeleteConfirmation(displayText, isSingleTarget)
-//
-// 	return m.renderDialogOverBase(baseView, dialogContent)
-// }
-
 // confirmView renders the delete confirmation dialog
 func (m Model) confirmView() string {
 	var baseView string
