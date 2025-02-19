@@ -10,6 +10,7 @@ import (
 	"github.com/babarot/gomi/internal/config"
 	"github.com/babarot/gomi/internal/trash"
 	"github.com/babarot/gomi/internal/ui/keys"
+	"github.com/babarot/gomi/internal/ui/styles"
 	"github.com/fatih/color"
 
 	"github.com/charmbracelet/bubbles/help"
@@ -76,7 +77,7 @@ type Model struct {
 	config     config.UI
 	choices    []File
 
-	styles dialogStyles
+	styles *styles.Styles
 
 	help     help.Model
 	list     list.Model
@@ -289,7 +290,7 @@ func RenderList(manager *trash.Manager, filteredFiles []*trash.File, c *config.C
 		config:       cfg,
 		list:         l,
 		viewport:     viewport.Model{},
-		styles:       initStyles(cfg.Style),
+		styles:       styles.New(cfg),
 		help:         help.New(),
 	}
 
