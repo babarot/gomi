@@ -6,16 +6,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/dustin/go-humanize"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/muesli/reflow/wordwrap"
-	"github.com/muesli/termenv"
 )
 
-// renderDetailed renders the detail view of a file
-func renderDetailed(m Model) string {
-	return lipgloss.JoinVertical(lipgloss.Left,
+// detailView renders the detail view of a file
+func (m Model) detailView() string {
+	return m.styles.Detail.View(
 		m.renderHeader(),
 		m.renderDeletedFrom(),
 		m.renderDeletedAt(),
@@ -69,11 +67,9 @@ func (m Model) renderDeletedAt() string {
 
 func (m Model) previewHeader() string {
 	return m.styles.RenderPreviewFrame(
-		"",
-		// m.viewport.Width,
-		defaultWidth,
-		true,
 		m.detailFile.Size(),
+		true,
+		defaultWidth,
 	)
 }
 
@@ -81,35 +77,28 @@ func (m Model) previewFooter() string {
 	if m.state.preview.available {
 		return m.styles.RenderPreviewFrame(
 			"",
-			defaultWidth,
 			false,
-			"",
+			defaultWidth,
 		)
 	}
 	return m.styles.RenderPreviewFrame(
-		"",
-		// m.viewport.Width,
-		defaultWidth,
-		false,
 		fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100),
+		false,
+		defaultWidth,
 	)
 }
 
 // renderPreview renders the preview section
 func (m Model) renderPreview() string {
 	content := m.viewport.View()
+
 	if m.state.preview.available {
 		mtype, _ := mimetype.DetectFile(m.detailFile.TrashPath)
-		verticalMarginHeight := lipgloss.Height(m.previewHeader())
-
-		errorContent := lipgloss.NewStyle().Bold(true).Transform(strings.ToUpper).Render(errCannotPreview.Error())
-		mimeInfo := lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(termenv.ANSIBrightBlack)).Render("(" + mtype.String() + ")")
-
-		content = lipgloss.Place(defaultWidth, 15-verticalMarginHeight,
-			lipgloss.Center, lipgloss.Center,
-			errorContent+"\n\n\n"+mimeInfo,
-			lipgloss.WithWhitespaceChars("`"),
-			lipgloss.WithWhitespaceForeground(lipgloss.ANSIColor(termenv.ANSIBrightBlack)),
+		content = m.styles.RenderErrorPreview(
+			errCannotPreview.Error(),
+			mtype.String(),
+			defaultWidth,
+			defaultHeight-11-1, // info pane height (11)+ preview border (1)
 		)
 	}
 

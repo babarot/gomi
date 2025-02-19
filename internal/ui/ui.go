@@ -210,7 +210,7 @@ func (m Model) View() string {
 		return m.list.View()
 
 	case DETAIL_VIEW:
-		detailView := renderDetailed(m)
+		detailView := m.detailView()
 		helpView := lipgloss.NewStyle().Margin(1, 2).Render(m.help.View(m.detailKeys))
 		return detailView + "\n" + helpView
 

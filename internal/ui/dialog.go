@@ -15,7 +15,7 @@ func (m Model) renderDeleteConfirmation() string {
 	case LIST_VIEW:
 		baseView = m.list.View()
 	case DETAIL_VIEW:
-		baseView = renderDetailed(m)
+		baseView = m.detailView()
 	}
 
 	_, displayText, isSingleTarget := m.prepareDeleteTarget()

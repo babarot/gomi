@@ -5,6 +5,7 @@ import (
 
 	"github.com/babarot/gomi/internal/config"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/termenv"
 )
 
 // Package styles provides unified styling for the UI components
@@ -29,6 +30,7 @@ type ListStyles struct {
 
 // DetailStyles contains styles for detail view
 type DetailStyles struct {
+	View     func(sections ...string) string
 	Title    lipgloss.Style
 	Selected lipgloss.Style
 	Border   lipgloss.Style
@@ -55,6 +57,12 @@ type PreviewStyles struct {
 	Border lipgloss.Style
 	Size   lipgloss.Style
 	Scroll lipgloss.Style
+	Error  PreviewErrorStyles
+}
+
+type PreviewErrorStyles struct {
+	Title   lipgloss.Style
+	Content lipgloss.Style
 }
 
 // DialogStyles contains styles for dialogs
@@ -101,6 +109,9 @@ func New(cfg config.UI) *Styles {
 	}
 
 	s.Detail = DetailStyles{
+		View: func(sections ...string) string {
+			return lipgloss.JoinVertical(lipgloss.Left, sections...)
+		},
 		Border: lipgloss.NewStyle().
 			BorderStyle(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color(cfg.Style.DetailView.Border)),
@@ -152,6 +163,13 @@ func New(cfg config.UI) *Styles {
 			Padding(0, 1, 0, 1).
 			Foreground(lipgloss.Color(cfg.Style.DetailView.PreviewPane.Scroll.Foreground)).
 			Background(lipgloss.Color(cfg.Style.DetailView.PreviewPane.Scroll.Background)),
+		Error: PreviewErrorStyles{
+			Title: lipgloss.NewStyle().
+				Foreground(lipgloss.ANSIColor(termenv.ANSIBrightBlack)),
+			Content: lipgloss.NewStyle().
+				Bold(true).
+				Transform(strings.ToUpper),
+		},
 	}
 
 	s.Dialog = DialogStyles{
@@ -229,6 +247,19 @@ func (s *Styles) RenderDetailTitle(title string, width int, selected bool) strin
 	return lipgloss.JoinHorizontal(lipgloss.Center, renderedTitle, line)
 }
 
+func (s *Styles) RenderErrorPreview(errorMsg, mime string, width, height int) string {
+	title := s.Detail.Preview.Error.Content.Render(errorMsg)
+	content := s.Detail.Preview.Error.Title.Render("(" + mime + ")")
+
+	return lipgloss.Place(
+		width, height,
+		lipgloss.Center, lipgloss.Center,
+		title+"\n\n\n"+content,
+		lipgloss.WithWhitespaceChars("`"),
+		lipgloss.WithWhitespaceForeground(lipgloss.ANSIColor(termenv.ANSIBrightBlack)),
+	)
+}
+
 func (s *Styles) RenderDeletedFrom(title, content string) string {
 	return s.Detail.Info.DeletedFrom.Section.Render(
 		lipgloss.JoinVertical(
@@ -250,17 +281,22 @@ func (s *Styles) RenderDeletedAt(title, content string) string {
 }
 
 // RenderPreviewFrame renders the preview frame with size or scroll info
-func (s *Styles) RenderPreviewFrame(content string, width int, showSize bool, info string) string {
+func (s *Styles) RenderPreviewFrame(content string, isSize bool, width int) string {
 	var infoStyle lipgloss.Style
-	if showSize {
+	if isSize {
 		infoStyle = s.Detail.Preview.Size
 	} else {
 		infoStyle = s.Detail.Preview.Scroll
 	}
 
-	renderedInfo := infoStyle.Render(info)
-	line := s.Detail.Preview.Border.Render(strings.Repeat("─", width-lipgloss.Width(renderedInfo)))
-	return lipgloss.JoinHorizontal(lipgloss.Center, line, renderedInfo)
+	if content == "" {
+		line := s.Detail.Preview.Border.Render(strings.Repeat("─", width))
+		return lipgloss.JoinHorizontal(lipgloss.Center, line)
+	}
+
+	content = infoStyle.Render(content)
+	line := s.Detail.Preview.Border.Render(strings.Repeat("─", width-lipgloss.Width(content)))
+	return lipgloss.JoinHorizontal(lipgloss.Center, line, content)
 }
 
 func (s *Styles) RenderDialog(content string) string {
