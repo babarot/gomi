@@ -30,7 +30,7 @@ const (
 	ellipsis = "…"
 
 	defaultWidth  = 66
-	defaultHeight = 26
+	defaultHeight = 30
 )
 
 // Common errors

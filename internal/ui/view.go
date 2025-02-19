@@ -1,9 +1,7 @@
 package ui
 
 import (
-	"fmt"
 	"log/slog"
-	"strings"
 
 	"github.com/babarot/gomi/internal/ui/keys"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -49,52 +47,11 @@ func (m Model) View() string {
 	}
 }
 
-// renderHeader renders the header section with the current file title
-func (m Model) renderHeader() string {
-	return m.styles.RenderDetailTitle(
-		m.detailFile.Title(),
-		defaultWidth,
-		m.detailFile.isSelected(),
-	)
-}
-
-// renderFooter renders the footer section
-func (m Model) renderFooter() string {
-	return m.styles.Dialog.Separator.Render(
-		strings.Repeat("─", defaultWidth),
-	)
-}
-
-// previewHeader renders the header of the preview section
-func (m Model) previewHeader() string {
-	return m.styles.RenderPreviewFrame(
-		m.detailFile.Size(),
-		true,
-		defaultWidth,
-	)
-}
-
-// previewFooter renders the footer of the preview section
-func (m Model) previewFooter() string {
-	if m.state.preview.available {
-		return m.styles.RenderPreviewFrame(
-			"",
-			false,
-			defaultWidth,
-		)
-	}
-	return m.styles.RenderPreviewFrame(
-		fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100),
-		false,
-		defaultWidth,
-	)
-}
-
 // newViewportModel creates a new viewport model for file preview
 func (m *Model) newViewportModel(file File) viewport.Model {
 	viewportModel := viewport.New(
 		defaultWidth,
-		15-lipgloss.Height(m.previewHeader()),
+		defaultHeight-11-1, // info pane height (11) + preview border (1)
 	)
 	viewportModel.KeyMap = keys.PreviewKeys
 

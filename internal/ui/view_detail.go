@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -18,6 +19,15 @@ func (m Model) detailView() string {
 		m.renderDeletedAt(),
 		m.renderPreview(),
 		m.renderFooter(),
+	)
+}
+
+// renderHeader renders the header section with the current file title
+func (m Model) renderHeader() string {
+	return m.styles.RenderDetailTitle(
+		m.detailFile.Title(),
+		defaultWidth,
+		m.detailFile.isSelected(),
 	)
 }
 
@@ -69,5 +79,37 @@ func (m Model) renderPreview() string {
 		m.previewHeader(),
 		content,
 		m.previewFooter(),
+	)
+}
+
+// previewHeader renders the header of the preview section
+func (m Model) previewHeader() string {
+	return m.styles.RenderPreviewFrame(
+		m.detailFile.Size(),
+		true,
+		defaultWidth,
+	)
+}
+
+// previewFooter renders the footer of the preview section
+func (m Model) previewFooter() string {
+	if m.state.preview.available {
+		return m.styles.RenderPreviewFrame(
+			"",
+			false,
+			defaultWidth,
+		)
+	}
+	return m.styles.RenderPreviewFrame(
+		fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100),
+		false,
+		defaultWidth,
+	)
+}
+
+// renderFooter renders the footer section
+func (m Model) renderFooter() string {
+	return m.styles.Dialog.Separator.Render(
+		strings.Repeat("─", defaultWidth),
 	)
 }
