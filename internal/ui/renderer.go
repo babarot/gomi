@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"log/slog"
 	"path/filepath"
 	"strings"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/muesli/reflow/wordwrap"
 	"github.com/muesli/termenv"
+	"github.com/samber/lo"
 )
 
 func renderDetailed(m Model) string {
@@ -138,4 +140,81 @@ func (m Model) renderPreview() string {
 		content,
 		m.previewFooter(),
 	)
+}
+
+func (m Model) renderDeleteConfirmation() string {
+	dialogMaxWidth := defaultWidth - 6 // border (2) + padding (2) + buffer (2)
+	_, displayText, isSingleTarget := m.prepareDeleteTarget(dialogMaxWidth)
+	dialogContent := m.formatDeleteConfirmation(displayText, isSingleTarget)
+	return m.renderDialogOverList(dialogContent)
+}
+
+func (m Model) prepareDeleteTarget(maxWidth int) ([]File, string, bool) {
+	files := selectionManager.items
+	if len(files) == 0 {
+		// single target on cursor line
+		file := m.list.SelectedItem().(File)
+		return []File{file}, "'" + file.Title() + "'", true
+	}
+
+	// from selectionManager
+	quotedNames := strings.Join(
+		lo.Map(files, func(f File, index int) string {
+			return "'" + f.Title() + "'"
+		}),
+		", ")
+
+	isSingleTarget := len(files) == 1
+	if len(files) > 1 && len(quotedNames) > maxWidth {
+		return files, fmt.Sprintf("%d files", len(files)), true
+	}
+
+	slog.Debug("length", "len(quotedNames)", len(quotedNames), "maxWidth", maxWidth)
+	return files, quotedNames, isSingleTarget
+}
+
+func (m Model) formatDeleteConfirmation(target string, isSingleTarget bool) string {
+	var contents []string
+	if isSingleTarget {
+		contents = []string{
+			"Are you sure you want to",
+			"completely delete " + target + "?",
+			"",
+			"(y/n)",
+		}
+	} else {
+		contents = []string{
+			"Are you sure you want to completely delete ",
+			target + " ?",
+			"",
+			"(y/n)",
+		}
+	}
+	return m.styles.dialog.Render(
+		lipgloss.JoinVertical(lipgloss.Center, contents...),
+	)
+}
+
+func (m Model) renderDialogOverList(dialogContent string) string {
+	var baseView string
+	switch m.prevViewType {
+	case LIST_VIEW:
+		baseView = m.list.View()
+	case DETAIL_VIEW:
+		baseView = renderDetailed(m)
+	}
+	listLines := strings.Split(baseView, "\n")
+	dialogLines := strings.Split(dialogContent, "\n")
+
+	dialogStartLine := (len(listLines) - len(dialogLines)) / 2
+
+	for i, line := range dialogLines {
+		centeredLine := lipgloss.NewStyle().
+			Width(defaultWidth).
+			Align(lipgloss.Center).
+			Render(line)
+		listLines[dialogStartLine+i] = centeredLine
+	}
+
+	return strings.Join(listLines, "\n")
 }

@@ -156,6 +156,9 @@ core:
     confirm: false     # If true, prompts for confirmation before restoring (yes/no)
     verbose: true      # If true, displays detailed restoration information
 
+  delete:
+    disable: false     # Disable permanent deletion feature
+
 ui:
   density: spacious # or compact
   preview:
@@ -184,6 +187,7 @@ ui:
         scroll:
           fg: "#EEEEDD"
           bg: "#3C3C3C"
+    deletion_dialog: "#FF007F" # pink
   exit_message: bye!   # Customizable exit message
   paginator_type: dots # or arabic
 

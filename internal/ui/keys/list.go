@@ -8,6 +8,10 @@ type ListKeyMap struct {
 	Space    key.Binding
 	Select   key.Binding
 	DeSelect key.Binding
+	Delete   key.Binding
+	Esc      key.Binding
+
+	showDelete bool
 }
 
 func (k ListKeyMap) ShortHelp() []key.Binding {
@@ -22,8 +26,12 @@ func (k ListKeyMap) FullHelp() [][]key.Binding {
 	keys := append(
 		k.ShortHelp(),
 		k.DeSelect,
-		k.Quit,
+		k.Esc,
 	)
+	if k.showDelete {
+		keys = append(keys, k.Delete)
+	}
+	keys = append(keys, k.Quit)
 	return [][]key.Binding{
 		keys,
 	}
@@ -31,7 +39,7 @@ func (k ListKeyMap) FullHelp() [][]key.Binding {
 
 var ListKeys = &ListKeyMap{
 	Quit: key.NewBinding(
-		key.WithKeys("ctrl+c"),
+		key.WithKeys("ctrl+c", "q"),
 		key.WithHelp("ctrl+c", "quit"),
 	),
 	Select: key.NewBinding(
@@ -50,4 +58,16 @@ var ListKeys = &ListKeyMap{
 		key.WithKeys(" "),
 		key.WithHelp("space", "detail"),
 	),
+	Esc: key.NewBinding(
+		key.WithKeys("esc"),
+		key.WithHelp("esc", "reset"),
+	),
+}
+
+func (k *ListKeyMap) AddDeleteKey() {
+	k.showDelete = true
+	k.Delete = key.NewBinding(
+		key.WithKeys("D"),
+		key.WithHelp("D", "delete"),
+	)
 }
