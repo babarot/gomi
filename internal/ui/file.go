@@ -80,7 +80,7 @@ func (f File) Browse() (string, error) {
 	fi, err := os.Lstat(f.TrashPath)
 	if err != nil {
 		slog.Debug("no such file", "file", f.TrashPath)
-		return content, errCannotPreview
+		return content, ErrCannotPreview
 	}
 	if fi.IsDir() {
 		if f.dirListCommand == "" {
@@ -119,11 +119,11 @@ func (f File) Browse() (string, error) {
 		// ok
 	} else {
 		slog.Debug("cannot preview", "mimetype", mtype.String())
-		return content, errCannotPreview
+		return content, ErrCannotPreview
 	}
 	fp, err := os.Open(f.TrashPath)
 	if err != nil {
-		return content, errCannotPreview
+		return content, ErrCannotPreview
 	}
 	defer fp.Close()
 	var fileContent strings.Builder

@@ -8,8 +8,24 @@ import (
 	"github.com/samber/lo"
 )
 
-// renderDeleteConfirmation renders the delete confirmation dialog overlay
-func (m Model) renderDeleteConfirmation() string {
+// // renderDeleteConfirmation renders the delete confirmation dialog overlay
+// func (m Model) renderDeleteConfirmation() string {
+// 	var baseView string
+// 	switch m.state.previous {
+// 	case LIST_VIEW:
+// 		baseView = m.list.View()
+// 	case DETAIL_VIEW:
+// 		baseView = m.detailView()
+// 	}
+//
+// 	_, displayText, isSingleTarget := m.prepareDeleteTarget()
+// 	dialogContent := m.formatDeleteConfirmation(displayText, isSingleTarget)
+//
+// 	return m.renderDialogOverBase(baseView, dialogContent)
+// }
+
+// confirmView renders the delete confirmation dialog
+func (m Model) confirmView() string {
 	var baseView string
 	switch m.state.previous {
 	case LIST_VIEW:
@@ -20,10 +36,11 @@ func (m Model) renderDeleteConfirmation() string {
 
 	_, displayText, isSingleTarget := m.prepareDeleteTarget()
 	dialogContent := m.formatDeleteConfirmation(displayText, isSingleTarget)
+
 	return m.renderDialogOverBase(baseView, dialogContent)
 }
 
-// prepareDeleteTarget prepares the text to display in the confirmation dialog
+// prepareDeleteTarget prepares target files information for confirmation
 func (m Model) prepareDeleteTarget() ([]File, string, bool) {
 	files := selectionManager.items
 	if len(files) == 0 {
@@ -73,7 +90,7 @@ func (m Model) formatDeleteConfirmation(target string, isSingleTarget bool) stri
 	)
 }
 
-// renderDialogOverBase renders the dialog box centered over the base view
+// renderDialogOverBase renders dialog box centered over base view
 func (m Model) renderDialogOverBase(baseView, dialogContent string) string {
 	listLines := strings.Split(baseView, "\n")
 	dialogLines := strings.Split(dialogContent, "\n")

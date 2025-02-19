@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -20,19 +19,6 @@ func (m Model) detailView() string {
 		m.renderPreview(),
 		m.renderFooter(),
 	)
-}
-
-// renderHeader renders the header section of the detail view
-func (m Model) renderHeader() string {
-	return m.styles.RenderDetailTitle(
-		m.detailFile.Title(),
-		defaultWidth,
-		m.detailFile.isSelected(),
-	)
-}
-
-func (m Model) renderFooter() string {
-	return m.styles.Dialog.Separator.Render(strings.Repeat("─", defaultWidth))
 }
 
 // renderDeletedFrom renders the section showing where the file was deleted from
@@ -65,40 +51,17 @@ func (m Model) renderDeletedAt() string {
 	return m.styles.RenderDeletedAt("Deleted At", ts)
 }
 
-func (m Model) previewHeader() string {
-	return m.styles.RenderPreviewFrame(
-		m.detailFile.Size(),
-		true,
-		defaultWidth,
-	)
-}
-
-func (m Model) previewFooter() string {
-	if m.state.preview.available {
-		return m.styles.RenderPreviewFrame(
-			"",
-			false,
-			defaultWidth,
-		)
-	}
-	return m.styles.RenderPreviewFrame(
-		fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100),
-		false,
-		defaultWidth,
-	)
-}
-
-// renderPreview renders the preview section
+// renderPreview renders the preview section of the file
 func (m Model) renderPreview() string {
 	content := m.viewport.View()
 
 	if m.state.preview.available {
 		mtype, _ := mimetype.DetectFile(m.detailFile.TrashPath)
 		content = m.styles.RenderErrorPreview(
-			errCannotPreview.Error(),
+			ErrCannotPreview.Error(),
 			mtype.String(),
 			defaultWidth,
-			defaultHeight-11-1, // info pane height (11)+ preview border (1)
+			defaultHeight-11-1, // info pane height (11) + preview border (1)
 		)
 	}
 
