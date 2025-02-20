@@ -32,6 +32,8 @@ func init() {
 			configDir = filepath.Join(homeDir, defaultXDGConfigDirname)
 		}
 		GOMI_CONFIG_PATH = filepath.Join(configDir, "gomi", "config.yaml")
+	} else {
+		GOMI_CONFIG_PATH = os.Getenv("GOMI_CONFIG_PATH")
 	}
 
 	if e := os.Getenv("GOMI_LOG_PATH"); e == "" {
@@ -44,5 +46,7 @@ func init() {
 			dataDir = filepath.Join(homeDir, defaultXDGDataDirname)
 		}
 		GOMI_LOG_PATH = filepath.Join(dataDir, "gomi", "debug.log")
+	} else {
+		GOMI_LOG_PATH = os.Getenv("GOMI_LOG_PATH")
 	}
 }
