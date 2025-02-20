@@ -250,7 +250,12 @@ func (m Model) updateConfirmView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	case key.Matches(msg, m.keyMap.Confirm.No):
 		m.state.SetView(m.state.previous)
-		return m, nil
+		// Forcibly restructure a current window by sending WindowSizeMsg
+		return m, func() tea.Msg {
+			return tea.WindowSizeMsg{
+				Width: m.list.Width(),
+			}
+		}
 
 	case key.Matches(msg, m.keyMap.Common.Quit):
 		m.state.SetView(QUITTING)

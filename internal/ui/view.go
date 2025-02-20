@@ -24,24 +24,26 @@ func (m Model) View() string {
 		return ""
 	}
 
+	var view string
+	var keyMap keys.KeyMap
+
 	// Render different views based on current state
 	switch m.state.current {
 	case LIST_VIEW:
-		listView := m.list.View()
-		helpView := lipgloss.NewStyle().
-			Margin(1, 2).
-			Render(m.help.View(m.keyMap.AsListKeyMap()))
-		return listView + "\n" + helpView
-
+		view = m.list.View()
+		keyMap = m.keyMap.AsListKeyMap()
 	case DETAIL_VIEW:
-		detailView := m.detailView()
-		helpView := lipgloss.NewStyle().
-			Margin(1, 2).
-			Render(m.help.View(m.keyMap.AsDetailKeyMap()))
-		return detailView + "\n" + helpView
+		view = m.detailView()
+		keyMap = m.keyMap.AsDetailKeyMap()
 
 	case CONFIRM_VIEW:
-		return m.confirmView()
+		view = m.confirmView()
+		switch m.state.previous {
+		case LIST_VIEW:
+			keyMap = m.keyMap.AsListKeyMap()
+		case DETAIL_VIEW:
+			keyMap = m.keyMap.AsDetailKeyMap()
+		}
 
 	case QUITTING:
 		return ""
@@ -49,6 +51,14 @@ func (m Model) View() string {
 	default:
 		return ""
 	}
+
+	if view != "" {
+		helpView := lipgloss.NewStyle().
+			Margin(1, 2).
+			Render(m.help.View(keyMap))
+		view += "\n" + helpView
+	}
+	return view
 }
 
 // newViewportModel creates a new viewport model for file preview
