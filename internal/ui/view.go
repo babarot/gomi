@@ -27,13 +27,17 @@ func (m Model) View() string {
 	// Render different views based on current state
 	switch m.state.current {
 	case LIST_VIEW:
-		return m.list.View()
+		listView := m.list.View()
+		helpView := lipgloss.NewStyle().
+			Margin(1, 2).
+			Render(m.help.View(m.keyMap.AsListKeyMap()))
+		return listView + "\n" + helpView
 
 	case DETAIL_VIEW:
 		detailView := m.detailView()
 		helpView := lipgloss.NewStyle().
 			Margin(1, 2).
-			Render(m.help.View(m.detailKeys))
+			Render(m.help.View(m.keyMap.AsDetailKeyMap()))
 		return detailView + "\n" + helpView
 
 	case CONFIRM_VIEW:

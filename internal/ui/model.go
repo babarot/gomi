@@ -20,8 +20,7 @@ type Model struct {
 	state *ViewState
 
 	// Key mappings
-	listKeys   *keys.ListKeyMap
-	detailKeys *keys.DetailKeyMap
+	keyMap *keys.KeyMap
 
 	// Current detail view file if any
 	detailFile File
@@ -35,9 +34,7 @@ type Model struct {
 	help     help.Model
 	list     list.Model
 	viewport viewport.Model
-
-	// UI styles
-	styles *styles.Styles
+	styles   *styles.Styles
 
 	// Error state if any
 	err error
@@ -59,15 +56,21 @@ func NewModel(manager *trash.Manager, files []*trash.File, cfg *config.Config) M
 		})
 	}
 
+	// Initialize key map
+	keyMap := keys.NewKeyMap(keys.KeyMapConfig{
+		DeleteEnabled: !cfg.Core.Delete.Disable,
+	})
+
 	// Initialize list delegate
 	delegate := NewRestoreDelegate(cfg.UI, fileList)
-	delegate.ShortHelpFunc = keys.ListKeys.ShortHelp
-	delegate.FullHelpFunc = keys.ListKeys.FullHelp
+	delegate.ShortHelpFunc = keyMap.AsListKeyMap().ShortHelp
+	delegate.FullHelpFunc = keyMap.AsListKeyMap().FullHelp
 
 	// Create and configure list
 	l := list.New(items, delegate, defaultWidth, defaultHeight)
 	l.SetShowStatusBar(false)
 	l.SetShowTitle(false)
+	l.SetShowHelp(false) // do not use default help of list model
 	l.DisableQuitKeybindings()
 
 	// Set paginator type based on config
@@ -78,17 +81,11 @@ func NewModel(manager *trash.Manager, files []*trash.File, cfg *config.Config) M
 		l.Paginator.Type = paginator.Dots
 	}
 
-	if !cfg.Core.Delete.Disable {
-		keys.ListKeys.AddDeleteKey()
-		keys.DetailKeys.AddDeleteKey()
-	}
-
 	// Return fully initialized model
 	return Model{
 		trashManager: manager,
 		state:        NewViewState(),
-		listKeys:     keys.ListKeys,
-		detailKeys:   keys.DetailKeys,
+		keyMap:       keyMap,
 		files:        fileList,
 		config:       cfg.UI,
 		list:         l,

@@ -74,18 +74,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // updateListView handles updates specific to the list view
 func (m Model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch {
-	case key.Matches(msg, m.listKeys.Quit):
+	case key.Matches(msg, m.keyMap.Common.Quit):
 		m.state.SetView(QUITTING)
 		return m, tea.Quit
 
-	case key.Matches(msg, m.listKeys.Delete):
+	case m.keyMap.List.Delete != nil && key.Matches(msg, *m.keyMap.List.Delete):
 		if m.list.FilterState() != list.Filtering {
 			m.state.SetView(CONFIRM_VIEW)
 			slog.Debug("pressed delete key", "state", CONFIRM_VIEW)
 		}
 		return m, nil
 
-	case key.Matches(msg, m.listKeys.Select):
+	case key.Matches(msg, m.keyMap.List.Select):
 		if m.list.FilterState() != list.Filtering {
 			item, ok := m.list.SelectedItem().(File)
 			if !ok {
@@ -100,7 +100,7 @@ func (m Model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
-	case key.Matches(msg, m.listKeys.DeSelect):
+	case key.Matches(msg, m.keyMap.List.DeSelect):
 		if m.list.FilterState() != list.Filtering {
 			item, ok := m.list.SelectedItem().(File)
 			if !ok {
@@ -113,7 +113,7 @@ func (m Model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
-	case key.Matches(msg, m.listKeys.Space):
+	case key.Matches(msg, m.keyMap.List.Space):
 		if m.list.FilterState() != list.Filtering {
 			file, ok := m.list.SelectedItem().(File)
 			if ok {
@@ -122,14 +122,14 @@ func (m Model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
-	case key.Matches(msg, m.listKeys.Esc):
+	case key.Matches(msg, m.keyMap.List.Esc):
 		if m.list.FilterState() != list.Filtering {
 			selectionManager = &SelectionManager{items: []File{}}
 		}
 		// DO NOT RETURN HERE
 		// to allow to update default list navigation
 
-	case key.Matches(msg, m.listKeys.Enter):
+	case key.Matches(msg, m.keyMap.List.Enter):
 		if m.list.FilterState() != list.Filtering {
 			files := selectionManager.items
 			if len(files) == 0 {
@@ -150,6 +150,11 @@ func (m Model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		// DO NOT RETURN HERE
 		// to allow to update default list navigation
+
+	case key.Matches(msg, m.keyMap.Common.Help):
+		// do not use default help of list model
+		m.help.ShowAll = !m.help.ShowAll
+		return m, nil
 	}
 
 	// Handle default list navigation
@@ -161,40 +166,40 @@ func (m Model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 // updateDetailView handles updates specific to the detail view
 func (m Model) updateDetailView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch {
-	case key.Matches(msg, m.detailKeys.Quit):
+	case key.Matches(msg, m.keyMap.Common.Quit):
 		m.state.SetView(QUITTING)
 		return m, tea.Quit
 
-	case key.Matches(msg, m.detailKeys.Delete):
+	case m.keyMap.Detail.Delete != nil && key.Matches(msg, *m.keyMap.Detail.Delete):
 		if m.list.FilterState() != list.Filtering {
 			m.state.SetView(CONFIRM_VIEW)
 			slog.Debug("pressed delete key", "state", CONFIRM_VIEW)
 		}
 		return m, nil
 
-	case key.Matches(msg, m.detailKeys.AtSign):
+	case key.Matches(msg, m.keyMap.Detail.AtSign):
 		m.state.ToggleDateFormat()
 		m.state.ToggleOriginPath()
 		return m, nil
 
 	case key.Matches(msg,
-		m.detailKeys.PreviewUp,
-		m.detailKeys.PreviewDown,
-		m.detailKeys.HalfPageUp,
-		m.detailKeys.HalfPageDown):
+		m.keyMap.Detail.PreviewUp,
+		m.keyMap.Detail.PreviewDown,
+		m.keyMap.Detail.HalfPageUp,
+		m.keyMap.Detail.HalfPageDown):
 		var cmd tea.Cmd
 		m.viewport, cmd = m.viewport.Update(msg)
 		return m, cmd
 
-	case key.Matches(msg, m.detailKeys.GotoTop):
+	case key.Matches(msg, m.keyMap.Detail.GotoTop):
 		m.viewport.GotoTop()
 		return m, nil
 
-	case key.Matches(msg, m.detailKeys.GotoBottom):
+	case key.Matches(msg, m.keyMap.Detail.GotoBottom):
 		m.viewport.GotoBottom()
 		return m, nil
 
-	case key.Matches(msg, m.detailKeys.Prev):
+	case key.Matches(msg, m.keyMap.Detail.Prev):
 		m.list.CursorUp()
 		file, ok := m.list.SelectedItem().(File)
 		if ok {
@@ -202,7 +207,7 @@ func (m Model) updateDetailView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
-	case key.Matches(msg, m.detailKeys.Next):
+	case key.Matches(msg, m.keyMap.Detail.Next):
 		m.list.CursorDown()
 		file, ok := m.list.SelectedItem().(File)
 		if ok {
@@ -210,19 +215,20 @@ func (m Model) updateDetailView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
-	case key.Matches(msg, m.detailKeys.Esc):
+	case key.Matches(msg, m.keyMap.Detail.Esc):
 		m.state.SetView(LIST_VIEW)
 		return m, nil
 
-	case key.Matches(msg, m.detailKeys.Space):
+	case key.Matches(msg, m.keyMap.Detail.Space):
 		m.state.detail.showOrigin = true
 		m.state.detail.dateFormat = DateFormatRelative
 		m.state.SetView(LIST_VIEW)
 		return m, nil
 
-	case key.Matches(msg, m.detailKeys.Help):
+	case key.Matches(msg, m.keyMap.Common.Help):
 		m.help.ShowAll = !m.help.ShowAll
 		return m, nil
+
 	}
 
 	return m, nil
@@ -230,8 +236,8 @@ func (m Model) updateDetailView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 // updateConfirmView handles updates specific to the confirmation dialog
 func (m Model) updateConfirmView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.String() {
-	case "y", "Y":
+	switch {
+	case key.Matches(msg, m.keyMap.Confirm.Yes):
 		m.state.SetView(m.state.previous)
 		files := selectionManager.items
 		if len(files) > 0 {
@@ -242,11 +248,11 @@ func (m Model) updateConfirmView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
-	case "n", "N":
+	case key.Matches(msg, m.keyMap.Confirm.No):
 		m.state.SetView(m.state.previous)
 		return m, nil
 
-	case "ctrl+c", "q":
+	case key.Matches(msg, m.keyMap.Common.Quit):
 		m.state.SetView(QUITTING)
 		return m, tea.Quit
 	}
