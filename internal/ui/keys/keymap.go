@@ -198,59 +198,6 @@ func NewKeyMap(cfg KeyMapConfig) *KeyMap {
 	return km
 }
 
-/*
-// Helper methods for getting grouped keys
-
-// CommonKeys returns all common key bindings
-func (k KeyMap) CommonKeys() []key.Binding {
-	return []key.Binding{k.Common.Quit, k.Common.Help}
-}
-
-// ListKeys returns all list view key bindings including common keys
-func (k KeyMap) ListKeys() []key.Binding {
-	keys := []key.Binding{
-		// Common keys
-		k.Common.Quit,
-		k.Common.Help,
-		// List specific keys
-		k.List.Space,
-		k.List.Esc,
-		k.List.Select,
-		k.List.DeSelect,
-		k.List.Enter,
-	}
-	if k.List.Delete != nil {
-		keys = append(keys, *k.List.Delete)
-	}
-	return keys
-}
-
-// DetailKeys returns all detail view key bindings including common keys
-func (k KeyMap) DetailKeys() []key.Binding {
-	keys := []key.Binding{
-		// Common keys
-		k.Common.Quit,
-		k.Common.Help,
-		// Detail specific keys
-		k.List.Space,
-		k.List.Esc,
-		k.Detail.PreviewUp,
-		k.Detail.PreviewDown,
-		k.Detail.HalfPageUp,
-		k.Detail.HalfPageDown,
-		k.Detail.Next,
-		k.Detail.Prev,
-		k.Detail.GotoTop,
-		k.Detail.GotoBottom,
-		k.Detail.AtSign,
-	}
-	if k.Detail.Delete != nil {
-		keys = append(keys, *k.Detail.Delete)
-	}
-	return keys
-}
-*/
-
 // Help interface implementations
 
 // ShortHelp returns condensed help view
@@ -322,8 +269,16 @@ func (k KeyMap) AsDetailKeyMap() KeyMap {
 	}
 	newMap.fullHelp = func() [][]key.Binding {
 		bindings := [][]key.Binding{
-			{k.Detail.Next, k.Detail.Prev, k.Detail.Space, k.Detail.Esc, k.List.Select, k.List.DeSelect},
-			{k.Detail.PreviewUp, k.Detail.PreviewDown, k.Detail.HalfPageUp, k.Detail.HalfPageDown, k.Detail.GotoTop, k.Detail.GotoBottom},
+			{
+				k.Detail.Next, k.Detail.Prev,
+				k.Detail.Space, k.Detail.Esc,
+				k.List.Select, k.List.DeSelect,
+			},
+			{
+				k.Detail.PreviewUp, k.Detail.PreviewDown,
+				k.Detail.HalfPageUp, k.Detail.HalfPageDown,
+				k.Detail.GotoTop, k.Detail.GotoBottom,
+			},
 			{k.Detail.AtSign, k.Common.Quit, DefaultKeyMapListCloseFullHelp},
 		}
 		if k.Detail.Delete != nil {

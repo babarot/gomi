@@ -58,7 +58,7 @@ func NewModel(manager *trash.Manager, files []*trash.File, cfg *config.Config) M
 
 	// Initialize key map
 	keyMap := keys.NewKeyMap(keys.KeyMapConfig{
-		DeleteEnabled: !cfg.Core.Delete.Disable,
+		DeleteEnabled: cfg.Core.PermanentDelete.Enable,
 	})
 
 	// Initialize list delegate

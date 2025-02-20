@@ -156,8 +156,11 @@ core:
     confirm: false     # If true, prompts for confirmation before restoring (yes/no)
     verbose: true      # If true, displays detailed restoration information
 
-  delete:
-    disable: false     # Disable permanent deletion feature
+  permanent_delete:
+    enable: false      # If true, enables permanent deletion of files from trash.
+                       # When enabled, files can be deleted permanently using the 'D' key.
+                       # This operation is irreversible and bypasses the trash.
+                       # Default is false for safety.
 
 ui:
   density: spacious # or compact
