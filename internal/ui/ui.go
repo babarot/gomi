@@ -2,6 +2,7 @@ package ui
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/babarot/gomi/internal/config"
 	"github.com/babarot/gomi/internal/trash"
@@ -66,8 +67,9 @@ func Render(manager *trash.Manager, files []*trash.File, cfg *config.Config) ([]
 	finalModel := result.(Model)
 	if finalModel.state.current == QUITTING {
 		if msg := cfg.UI.ExitMessage; msg != "" {
-			return nil, nil
+			fmt.Println(msg)
 		}
+		return nil, nil
 	}
 
 	// Convert UI files back to trash files

@@ -12,8 +12,11 @@ import (
 
 // Update handles all UI state updates based on incoming messages
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	cmds := []tea.Cmd{}
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		slog.Debug("Key pressed", "key", msg.String())
 		// Handle view-specific key updates
 		switch m.state.current {
 		case LIST_VIEW:
@@ -26,7 +29,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.WindowSizeMsg:
 		m.list.SetWidth(msg.Width)
-		return m, nil
+		return m, tea.Batch(cmds...)
 
 	case FileListUpdatedMsg:
 		if msg.err != nil {
@@ -34,14 +37,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 		m.list.SetItems(msg.files)
-		return m, nil
+		return m, tea.Batch(cmds...)
 
 	case ShowDetailMsg:
 		m.state.SetView(DETAIL_VIEW)
 		m.detailFile = msg.file
 		m.state.preview.available = true
 		m.viewport = m.newViewportModel(msg.file)
-		return m, nil
+		return m, tea.Batch(cmds...)
 
 	case FileListLoadedMsg:
 		if msg.err != nil {
@@ -49,7 +52,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 		m.list.SetItems(msg.files)
-		return m, nil
+		return m, tea.Batch(cmds...)
 
 	case errorMsg:
 		m.state.SetView(QUITTING)
@@ -57,7 +60,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	}
 
-	return m, nil
+	// update default list always
+	slog.Debug("update default list")
+	var listCmd tea.Cmd
+	m.list, listCmd = m.list.Update(msg)
+	if listCmd != nil {
+		cmds = append(cmds, listCmd)
+	}
+
+	return m, tea.Batch(cmds...)
 }
 
 // updateListView handles updates specific to the list view
@@ -112,8 +123,11 @@ func (m Model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case key.Matches(msg, m.listKeys.Esc):
-		selectionManager = &SelectionManager{items: []File{}}
-		return m, nil
+		if m.list.FilterState() != list.Filtering {
+			selectionManager = &SelectionManager{items: []File{}}
+		}
+		// DO NOT RETURN HERE
+		// to allow to update default list navigation
 
 	case key.Matches(msg, m.listKeys.Enter):
 		if m.list.FilterState() != list.Filtering {
@@ -134,7 +148,8 @@ func (m Model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			)
 			return m, tea.Quit
 		}
-		return m, nil
+		// DO NOT RETURN HERE
+		// to allow to update default list navigation
 	}
 
 	// Handle default list navigation
