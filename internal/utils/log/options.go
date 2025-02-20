@@ -3,6 +3,8 @@ package log
 import (
 	"io"
 	"os"
+  "fmt"
+  "path/filepath"
 
 	charmlog "github.com/charmbracelet/log"
 )
@@ -61,6 +63,12 @@ func UseOutputPath(path string) Option {
 		if path == "" {
 			return os.Stderr, nil
 		}
+    // If the error location's directory does not exist, create it
+    if _, err := os.Stat(filepath.Dir(path)); os.IsNotExist(err) {
+      if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+        return nil, fmt.Errorf("failed to create log file's directory: %w", err)
+      }
+    }
 		return os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	})
 }
