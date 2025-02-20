@@ -3,14 +3,31 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
 
 	"github.com/babarot/gomi/internal/trash"
-	"github.com/babarot/gomi/internal/ui/input"
+	"github.com/babarot/gomi/internal/ui/components/confirm"
+	"github.com/babarot/gomi/internal/ui/components/input"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jimschubert/answer/validate"
 )
+
+func Confirm(prompt string) bool {
+	m := confirm.New()
+	m.Prompt = prompt
+	m.DefaultValue = confirm.Denied
+	m.Immediately = true
+
+	p := tea.NewProgram(&m)
+	if _, err := p.Run(); err != nil {
+		slog.Error("confirm failed", "error", err)
+		return false
+	}
+
+	return m.Selected().IsAccepted()
+}
 
 func InputFilename(file *trash.File) (string, error) {
 	m := input.New()
