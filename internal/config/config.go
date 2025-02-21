@@ -20,15 +20,13 @@ type Config struct {
 	Core    Core    `yaml:"core"`
 	UI      UI      `yaml:"ui"`
 	History History `yaml:"history"`
+	Logging Logging `yaml:"logging"`
 }
 
 // Core contains core application settings that affect fundamental behaviors.
 type Core struct {
 	// Trash contains trash management configuration
 	Trash TrashConfig `yaml:"trash"`
-
-	// HomeFallback enables fallback to home trash when external trash fails
-	HomeFallback bool `yaml:"home_fallback"`
 
 	// Restore contains restore-specific settings
 	Restore RestoreConfig `yaml:"restore"`
@@ -48,6 +46,9 @@ type TrashConfig struct {
 	// - "legacy": use gomi's legacy trash format
 	Strategy string `yaml:"strategy" validate:"validStrategy|allowEmpty"`
 
+	// HomeFallback enables fallback to home trash when external trash fails
+	HomeFallback bool `yaml:"home_fallback"`
+
 	// GomiDir specifies the trash directory for legacy mode
 	GomiDir string `yaml:"gomi_dir" validate:"omitempty,validDirPath"`
 }
@@ -64,6 +65,17 @@ type RestoreConfig struct {
 // PermanentDeleteConfig defines settings for file permanent deletion behavior
 type PermanentDeleteConfig struct {
 	Enable bool `yaml:"enable"`
+}
+
+type Logging struct {
+	Enabled  bool           `yaml:"enabled"`
+	Level    string         `yaml:"level" validate:"omitempty,oneof=debug info warn error"`
+	Rotation RotationConfig `yaml:"rotation"`
+}
+
+type RotationConfig struct {
+	MaxSize  string `yaml:"max_size" validate:"omitempty,validSize"`
+	MaxFiles int    `yaml:"max_files" validate:"omitempty,gte=0"`
 }
 
 // UI holds all user interface related configurations

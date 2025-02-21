@@ -17,7 +17,7 @@ type Version struct {
 	BuildDate string
 }
 
-func (v Version) Print() string {
+func (v Version) String() string {
 	var s strings.Builder
 	switch v.Version {
 	case "unset", "unknown", "develop":

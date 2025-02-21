@@ -446,7 +446,7 @@ code:not(pre code)::after {
   /* Installation code block */
   .code-container .code pre,
   .code-container .code code {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     line-height: 1.4;
     padding-left: 0.5rem;
   }
@@ -455,7 +455,7 @@ code:not(pre code)::after {
   .cli-demo pre,
   .cli-demo .command,
   .cli-demo .output {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     line-height: 1.4;
     padding-left: 0.5rem;
     padding-right: 0.5rem;
@@ -495,7 +495,7 @@ code:not(pre code)::after {
   .cli-demo pre,
   .cli-demo .command,
   .cli-demo .output {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     padding-left: 0.75rem;
   }
 }

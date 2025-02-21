@@ -1,54 +1,19 @@
 package log
 
 import (
+	"fmt"
 	"log/slog"
-	"strings"
 	"sync"
-	"sync/atomic"
 
 	charmlog "github.com/charmbracelet/log"
 )
 
-var (
-	// singleton instances
-	defaultStylesOnce sync.Once
-	defaultStyles     atomic.Pointer[Styles]
-	defaultLoggerOnce sync.Once
-	defaultLogger     atomic.Pointer[slog.Logger]
-)
-
-// initializeStyles creates and initializes the default styles
-func initializeStyles() *Styles {
-	styles := charmlog.DefaultStyles()
-	for _, ls := range levelStyles {
-		levelStr := strings.ToUpper(LogLevelString(ls.level))
-		if len(levelStr) < ls.maxWidth {
-			levelStr = levelStr + strings.Repeat(" ", ls.maxWidth-len(levelStr))
-		}
-		styles.Levels[ls.level] = ls.style.SetString(levelStr)
-	}
-	return styles
-}
-
-// DefaultStyles returns the initialized styles with all levels including Important
-func DefaultStyles() *Styles {
-	defaultStylesOnce.Do(func() {
-		styles := initializeStyles()
-		defaultStyles.Store(styles)
-	})
-	return defaultStyles.Load()
-}
-
 // New creates a new logger with the given options
-func New(opts ...Option) *slog.Logger {
+func New(opts ...Option) (*slog.Logger, error) {
 	o := DefaultOptions()
-	o.Apply(opts...)
-
-	// Handle output writer
-	if o.OutputFunc != nil {
-		if w, err := o.OutputFunc(); err == nil {
-			o.Writer = w
-		}
+	// Apply options and handle potential errors
+	if err := o.Apply(opts...); err != nil {
+		return nil, fmt.Errorf("failed to apply options: %w", err)
 	}
 
 	// Create and configure the handler
@@ -65,14 +30,15 @@ func New(opts ...Option) *slog.Logger {
 		defaultLogger.Store(logger)
 	}
 
-	return logger
+	return logger, nil
 }
 
 // Default returns the default logger instance
 func Default() *slog.Logger {
+	l, _ := New(AsDefault())
 	defaultLoggerOnce.Do(func() {
 		if defaultLogger.Load() == nil {
-			defaultLogger.Store(New(AsDefault()))
+			defaultLogger.Store(l)
 		}
 	})
 	return defaultLogger.Load()
