@@ -124,7 +124,10 @@ func (m Model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	case key.Matches(msg, m.keyMap.List.Esc):
 		if m.list.FilterState() != list.Filtering {
-			selectionManager = &SelectionManager{items: []File{}}
+			if len(selectionManager.items) > 0 {
+				selectionManager = &SelectionManager{items: []File{}}
+				return m, nil
+			}
 		}
 		// DO NOT RETURN HERE
 		// to allow to update default list navigation
