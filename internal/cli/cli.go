@@ -113,18 +113,25 @@ func Run(v Version) error {
 func (c CLI) Run(args []string) error {
 	switch {
 	case c.option.Meta.Version:
-		fmt.Fprint(os.Stdout, c.version.Print())
+		fmt.Fprint(os.Stdout, c.version)
 		return nil
+
+	case c.option.Meta.Debug != "":
+		if !c.config.Logging.Enabled {
+			return fmt.Errorf("logging is not enabled in config")
+		}
+		return debug.Logs(
+			os.Stdout,
+			env.GOMI_LOG_PATH,
+			c.option.Meta.Debug == debug.LiveMode,
+		)
 
 	case c.option.Restore:
 		return c.Restore()
 
-	case c.option.Meta.Debug != "":
-		return debug.Logs(os.Stdout, &c.config.Logging, c.option.Meta.Debug == "live")
-
-	default:
-		return c.Put(args)
 	}
+
+	return c.Put(args)
 }
 
 // parseOptions parses and returns command line options

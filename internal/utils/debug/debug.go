@@ -2,42 +2,36 @@ package debug
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"os"
 
-	"github.com/babarot/gomi/internal/config"
-	"github.com/babarot/gomi/internal/utils/env"
 	"github.com/mattn/go-isatty"
 	"github.com/nxadm/tail"
 )
 
-// TailLogs displays logs either by showing existing content or following new entries
-func Logs(w io.Writer, cfg *config.LoggingConfig, live bool) error {
+const (
+	LiveMode string = "live"
+	FullMode string = "full"
+)
+
+var (
+	ErrLogFileNotFound = errors.New("no log file exists yet")
+)
+
+func Logs(w io.Writer, path string, live bool) error {
 	if live {
-		return tailLiveLogs(w, cfg)
+		return tailLiveLogs(w, path)
 	}
-	return showExistingLogs(w, cfg)
+	return showExistingLogs(w, path)
 }
 
 // tailLiveLogs follows log entries in real-time
-func tailLiveLogs(w io.Writer, cfg *config.LoggingConfig) error {
-	// For live mode without logging enabled, return error
-	if !cfg.Enabled {
-		return fmt.Errorf("logging is not enabled in config: enable logging in config for live debugging")
-	}
-
-	shouldFollow := isatty.IsTerminal(os.Stdout.Fd())
-	tailConfig := tail.Config{
-		ReOpen: shouldFollow,
-		Follow: shouldFollow,
-		Poll:   true,
-		Logger: tail.DiscardingLogger,
-		Location: &tail.SeekInfo{
-			Offset: 0,
-			Whence: io.SeekEnd,
-		},
+func tailLiveLogs(w io.Writer, path string) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return ErrLogFileNotFound
 	}
 
 	// Create a channel to notify when tail starts
@@ -50,10 +44,21 @@ func tailLiveLogs(w io.Writer, cfg *config.LoggingConfig) error {
 		slog.Info("Live tail started")
 	}()
 
-	t, err := tail.TailFile(env.GOMI_LOG_PATH, tailConfig)
+	shouldFollow := isatty.IsTerminal(os.Stdout.Fd())
+
+	t, err := tail.TailFile(path, tail.Config{
+		ReOpen: shouldFollow,
+		Follow: shouldFollow,
+		Poll:   true,
+		Logger: tail.DiscardingLogger,
+		Location: &tail.SeekInfo{
+			Offset: 0,
+			Whence: io.SeekEnd,
+		},
+	})
 	if err != nil {
 		if os.IsNotExist(err) {
-			return fmt.Errorf("log file does not exist: try running some commands with logging enabled")
+			return ErrLogFileNotFound
 		}
 		return err
 	}
@@ -69,15 +74,12 @@ func tailLiveLogs(w io.Writer, cfg *config.LoggingConfig) error {
 }
 
 // showExistingLogs displays the current content of the log file
-func showExistingLogs(w io.Writer, cfg *config.LoggingConfig) error {
-	if _, err := os.Stat(env.GOMI_LOG_PATH); os.IsNotExist(err) {
-		if !cfg.Enabled {
-			return fmt.Errorf("logging is not enabled in config: enable logging to create log files")
-		}
-		return fmt.Errorf("no log file exists yet: try running some commands first")
+func showExistingLogs(w io.Writer, path string) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return ErrLogFileNotFound
 	}
 
-	f, err := os.Open(env.GOMI_LOG_PATH)
+	f, err := os.Open(path)
 	if err != nil {
 		return err
 	}
