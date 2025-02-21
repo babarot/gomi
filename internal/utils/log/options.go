@@ -7,15 +7,17 @@ import (
 	"path/filepath"
 
 	charmlog "github.com/charmbracelet/log"
+	"github.com/docker/go-units"
 )
 
 // Options represents logger configuration options
 type Options struct {
 	charmlog.Options // embed Options instead of pointer
-	Writer           io.Writer
-	Styles           *Styles
-	Default          bool
-	OutputFunc       func() (io.Writer, error)
+
+	Writer     io.Writer
+	Styles     *Styles
+	Default    bool
+	OutputFunc func() (io.Writer, error)
 
 	// Log rotation settings
 	RotationEnabled  bool
@@ -37,32 +39,52 @@ func DefaultOptions() *Options {
 }
 
 // Apply applies the given options
-func (o *Options) Apply(opts ...Option) {
+func (o *Options) Apply(opts ...Option) error {
+	// Apply all options first
 	for _, opt := range opts {
 		opt(o)
 	}
 
-	// If rotation is enabled and path is set, create rotate writer
-	if o.RotationEnabled && o.OutputFunc != nil {
-		if writer, err := o.createRotateWriter(); err == nil {
-			o.Writer = writer
+	// If rotation is enabled, validate and setup rotation
+	if o.RotationEnabled {
+		if err := o.setupRotation(); err != nil {
+			return fmt.Errorf("failed to setup rotation: %w", err)
 		}
 	}
+
+	return nil
 }
 
-// createRotateWriter creates a new rotate writer based on current options
-func (o *Options) createRotateWriter() (io.Writer, error) {
-	w, err := o.OutputFunc()
-	if err != nil {
-		return nil, err
+func (o *Options) setupRotation() error {
+	var w io.Writer
+	var err error
+
+	// Get the writer either from OutputFunc or from the already set Writer
+	if o.OutputFunc != nil {
+		w, err = o.OutputFunc()
+		if err != nil {
+			return fmt.Errorf("failed to get output writer: %w", err)
+		}
+	} else if o.Writer != nil {
+		w = o.Writer
+	} else {
+		return fmt.Errorf("rotation enabled but no output specified")
 	}
 
+	// Check if the writer is a file
 	file, ok := w.(*os.File)
 	if !ok {
-		return nil, fmt.Errorf("output must be a file for rotation")
+		return fmt.Errorf("rotation can only be enabled for file output")
 	}
 
-	return newRotateWriter(file.Name(), o.RotationMaxSize, o.RotationMaxFiles)
+	// Create rotate writer
+	rw, err := newRotateWriter(file.Name(), o.RotationMaxSize, o.RotationMaxFiles)
+	if err != nil {
+		return fmt.Errorf("failed to create rotate writer: %w", err)
+	}
+
+	o.Writer = rw
+	return nil
 }
 
 type Option func(*Options)
@@ -100,9 +122,18 @@ func UseOutputPath(path string) Option {
 	})
 }
 
-// EnableRotation enables log rotation with the specified settings
+// EnableRotation enables log rotation with the specified settings.
+// If the settings are invalid (empty or zero), rotation will be silently disabled.
 func EnableRotation(maxSize string, maxFiles int) Option {
 	return func(o *Options) {
+		// Skip rotation if maxSize is empty or invalid
+		if maxSize == "" {
+			return
+		}
+		if size, err := units.FromHumanSize(maxSize); err != nil || size <= 0 {
+			return
+		}
+
 		o.RotationEnabled = true
 		o.RotationMaxSize = maxSize
 		o.RotationMaxFiles = maxFiles

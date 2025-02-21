@@ -1,6 +1,7 @@
 package log
 
 import (
+	"fmt"
 	"log/slog"
 	"sync"
 
@@ -8,15 +9,11 @@ import (
 )
 
 // New creates a new logger with the given options
-func New(opts ...Option) *slog.Logger {
+func New(opts ...Option) (*slog.Logger, error) {
 	o := DefaultOptions()
-	o.Apply(opts...)
-
-	// Handle output writer
-	if o.OutputFunc != nil {
-		if w, err := o.OutputFunc(); err == nil {
-			o.Writer = w
-		}
+	// Apply options and handle potential errors
+	if err := o.Apply(opts...); err != nil {
+		return nil, fmt.Errorf("failed to apply options: %w", err)
 	}
 
 	// Create and configure the handler
@@ -33,14 +30,15 @@ func New(opts ...Option) *slog.Logger {
 		defaultLogger.Store(logger)
 	}
 
-	return logger
+	return logger, nil
 }
 
 // Default returns the default logger instance
 func Default() *slog.Logger {
+	l, _ := New(AsDefault())
 	defaultLoggerOnce.Do(func() {
 		if defaultLogger.Load() == nil {
-			defaultLogger.Store(New(AsDefault()))
+			defaultLogger.Store(l)
 		}
 	})
 	return defaultLogger.Load()

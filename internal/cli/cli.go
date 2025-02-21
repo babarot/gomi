@@ -189,7 +189,11 @@ func setLogger(cfg *config.Config) error {
 		log.AsDefault(), // seamlessly integrate with log/slog
 	)
 
-	_ = log.New(opts...)
+	_, err := log.New(opts...)
+	if err != nil {
+		return fmt.Errorf("failed to initialize logger: %w", err)
+	}
+
 	return nil
 }
 
