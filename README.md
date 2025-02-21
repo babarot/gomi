@@ -161,12 +161,6 @@ core:
                        # When enabled, files can be deleted permanently using the 'D' key.
                        # This operation is irreversible and bypasses the trash.
                        # Default is false for safety.
-  logging:
-    enabled: false     # Enable/disable logging
-    level: info        # Available levels: debug, info, warn, error
-    rotation:
-      max_size: 10MB   # Maximum size of each log file
-      max_files: 3     # Number of old log files to retain
 
 ui:
   density: spacious # or compact
@@ -214,6 +208,12 @@ history:
       min: 0KB       # Exclude empty files
       max: 10GB      # Exclude files larger than 10GB
 
+logging:
+  enabled: false     # Enable/disable logging
+  level: info        # Available levels: debug, info, warn, error
+  rotation:
+    max_size: 10MB   # Maximum size of each log file
+    max_files: 3     # Number of old log files to retain
 ```
 
 ## Debugging
@@ -231,9 +231,8 @@ gomi --debug=live
 The behavior of the debug feature can be configured in `~/.config/gomi/config.yaml`:
 
 ```yaml
-core:
-  logging:
-    enabled: true # Enable logging functionality
+logging:
+  enabled: true # Enable logging functionality
 ```
 
 The `--debug` flag has two modes:

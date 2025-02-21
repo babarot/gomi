@@ -17,9 +17,10 @@ import (
 
 // Config represents the root configuration structure that holds all application settings.
 type Config struct {
-	Core    Core    `yaml:"core"`
-	UI      UI      `yaml:"ui"`
-	History History `yaml:"history"`
+	Core    Core          `yaml:"core"`
+	UI      UI            `yaml:"ui"`
+	History History       `yaml:"history"`
+	Logging LoggingConfig `yaml:"logging"`
 }
 
 // Core contains core application settings that affect fundamental behaviors.
@@ -35,9 +36,6 @@ type Core struct {
 
 	// PermanentDelete contains permanent deletion feature settings
 	PermanentDelete PermanentDeleteConfig `yaml:"permanent_delete"`
-
-	// Logging
-	Logging LoggingConfig `yaml:"logging"`
 
 	// Deprecated
 	TrashDir string `yaml:"trash_dir" validate:"deprecated"`

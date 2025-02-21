@@ -24,14 +24,6 @@ func NewDefaultConfig() *Config {
 			PermanentDelete: PermanentDeleteConfig{
 				Enable: false,
 			},
-			Logging: LoggingConfig{
-				Enabled: true,
-				Level:   "debug",
-				Rotation: RotationConfig{
-					MaxSize:  "10MB",
-					MaxFiles: 3,
-				},
-			},
 		},
 		UI: UI{
 			Density: "spacious",
@@ -88,6 +80,14 @@ func NewDefaultConfig() *Config {
 					Min: "0KB",
 					Max: "10GB",
 				},
+			},
+		},
+		Logging: LoggingConfig{
+			Enabled: true,
+			Level:   "debug",
+			Rotation: RotationConfig{
+				MaxSize:  "10MB",
+				MaxFiles: 3,
 			},
 		},
 	}

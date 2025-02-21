@@ -119,7 +119,7 @@ func (c CLI) Run(args []string) error {
 		return c.Restore()
 
 	case c.option.Meta.Debug != "":
-		return debug.Logs(os.Stdout, &c.config.Core.Logging, c.option.Meta.Debug == "live")
+		return debug.Logs(os.Stdout, &c.config.Logging, c.option.Meta.Debug == "live")
 
 	default:
 		return c.Put(args)
@@ -168,15 +168,15 @@ func expandWindowsPaths(args []string) []string {
 func setLogger(cfg *config.Config) error {
 	var logWriter io.Writer = io.Discard
 
-	if cfg.Core.Logging.Enabled {
-		writer, err := log.NewRotateWriter(&cfg.Core.Logging)
+	if cfg.Logging.Enabled {
+		writer, err := log.NewRotateWriter(&cfg.Logging)
 		if err != nil {
 			return err
 		}
 		logWriter = writer
 	}
 
-	logLevel := determineLogLevel(cfg.Core.Logging.Level)
+	logLevel := determineLogLevel(cfg.Logging.Level)
 
 	_ = log.New(
 		log.UseLevel(logLevel),
