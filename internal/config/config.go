@@ -69,13 +69,13 @@ type PermanentDeleteConfig struct {
 
 type LoggingConfig struct {
 	Enabled  bool           `yaml:"enabled"`
-	Level    string         `yaml:"level" validate:"oneof=debug info warn error"`
+	Level    string         `yaml:"level" validate:"omitempty,oneof=debug info warn error"`
 	Rotation RotationConfig `yaml:"rotation"`
 }
 
 type RotationConfig struct {
-	MaxSize  string `yaml:"max_size" validate:"validSize|allowEmpty"`
-	MaxFiles int    `yaml:"max_files" validate:"gte=0"`
+	MaxSize  string `yaml:"max_size" validate:"omitempty,validSize"`
+	MaxFiles int    `yaml:"max_files" validate:"omitempty,gte=0"`
 }
 
 // UI holds all user interface related configurations

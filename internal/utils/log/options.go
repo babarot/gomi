@@ -16,6 +16,11 @@ type Options struct {
 	Styles           *Styles
 	Default          bool
 	OutputFunc       func() (io.Writer, error)
+
+	// Log rotation settings
+	RotationEnabled  bool
+	RotationMaxSize  string
+	RotationMaxFiles int
 }
 
 // DefaultOptions returns the default logger options
@@ -36,6 +41,28 @@ func (o *Options) Apply(opts ...Option) {
 	for _, opt := range opts {
 		opt(o)
 	}
+
+	// If rotation is enabled and path is set, create rotate writer
+	if o.RotationEnabled && o.OutputFunc != nil {
+		if writer, err := o.createRotateWriter(); err == nil {
+			o.Writer = writer
+		}
+	}
+}
+
+// createRotateWriter creates a new rotate writer based on current options
+func (o *Options) createRotateWriter() (io.Writer, error) {
+	w, err := o.OutputFunc()
+	if err != nil {
+		return nil, err
+	}
+
+	file, ok := w.(*os.File)
+	if !ok {
+		return nil, fmt.Errorf("output must be a file for rotation")
+	}
+
+	return newRotateWriter(file.Name(), o.RotationMaxSize, o.RotationMaxFiles)
 }
 
 type Option func(*Options)
@@ -71,6 +98,15 @@ func UseOutputPath(path string) Option {
 		}
 		return os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	})
+}
+
+// EnableRotation enables log rotation with the specified settings
+func EnableRotation(maxSize string, maxFiles int) Option {
+	return func(o *Options) {
+		o.RotationEnabled = true
+		o.RotationMaxSize = maxSize
+		o.RotationMaxFiles = maxFiles
+	}
 }
 
 func UseReportCaller(report bool) Option {

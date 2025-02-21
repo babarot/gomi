@@ -16,6 +16,7 @@ import (
 	"github.com/babarot/gomi/internal/trash/legacy"
 	"github.com/babarot/gomi/internal/trash/xdg"
 	"github.com/babarot/gomi/internal/utils/debug"
+	"github.com/babarot/gomi/internal/utils/env"
 	"github.com/babarot/gomi/internal/utils/log"
 	"github.com/jessevdk/go-flags"
 	"github.com/rs/xid"
@@ -166,27 +167,29 @@ func expandWindowsPaths(args []string) []string {
 
 // setLogger sets up the logging system based on configuration
 func setLogger(cfg *config.Config) error {
-	var logWriter io.Writer = io.Discard
+	var opts []log.Option
 
 	if cfg.Logging.Enabled {
-		writer, err := log.NewRotateWriter(&cfg.Logging)
-		if err != nil {
-			return err
-		}
-		logWriter = writer
+		opts = append(opts,
+			log.UseOutputPath(env.GOMI_LOG_PATH),
+			log.EnableRotation(
+				cfg.Logging.Rotation.MaxSize,
+				cfg.Logging.Rotation.MaxFiles,
+			),
+		)
+	} else {
+		opts = append(opts, log.UseOutput(io.Discard))
 	}
 
-	logLevel := determineLogLevel(cfg.Logging.Level)
-
-	_ = log.New(
-		log.UseLevel(logLevel),
-		log.UseOutput(logWriter),
+	opts = append(opts,
+		log.UseLevel(determineLogLevel(cfg.Logging.Level)),
 		log.UseTimeFormat(time.Kitchen),
 		log.UseReportTimestamp(true),
 		log.UseReportCaller(true),
 		log.AsDefault(), // seamlessly integrate with log/slog
 	)
 
+	_ = log.New(opts...)
 	return nil
 }
 

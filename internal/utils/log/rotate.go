@@ -9,40 +9,36 @@ import (
 	"sync"
 	"time"
 
-	"github.com/babarot/gomi/internal/config"
-	"github.com/babarot/gomi/internal/utils/env"
 	"github.com/docker/go-units"
 )
 
-// RotateWriter provides a thread-safe file writer with log rotation capabilities
+// rotateWriter provides a thread-safe file writer with log rotation capabilities
 // It manages log file size and maintains a maximum number of backup log files
-type RotateWriter struct {
+type rotateWriter struct {
 	// mu is a read-write mutex to ensure thread-safe file operations
 	// It allows multiple concurrent reads but exclusive write access
 	mu       sync.RWMutex
 	file     *os.File
+	path     string
 	size     int64
 	maxSize  int64
 	maxFiles int
-	path     string
 }
 
-// NewRotateWriter creates a new RotateWriter with the specified logging configuration
+// newRotateWriter creates a new rotateWriter with the specified logging configuration
 // It initializes the writer with max file size and max number of backup files
-func NewRotateWriter(cfg *config.LoggingConfig) (*RotateWriter, error) {
-	// Convert human-readable size to bytes
-	maxSize, err := units.FromHumanSize(cfg.Rotation.MaxSize)
+func newRotateWriter(path, maxSize string, maxFiles int) (*rotateWriter, error) {
+	size, err := units.FromHumanSize(maxSize)
 	if err != nil {
 		return nil, fmt.Errorf("invalid max size format: %w", err)
 	}
 
-	w := &RotateWriter{
-		maxSize:  maxSize,
-		maxFiles: cfg.Rotation.MaxFiles,
-		path:     env.GOMI_LOG_PATH,
+	w := &rotateWriter{
+		path:     path,
+		maxSize:  size,
+		maxFiles: maxFiles,
 	}
 
-	// Open the initial log file
 	if err := w.openFile(); err != nil {
 		return nil, err
 	}
@@ -52,7 +48,7 @@ func NewRotateWriter(cfg *config.LoggingConfig) (*RotateWriter, error) {
 
 // Write implements the io.Writer interface
 // It writes data to the log file and handles log rotation when the file size exceeds the maximum
-func (w *RotateWriter) Write(p []byte) (n int, err error) {
+func (w *rotateWriter) Write(p []byte) (n int, err error) {
 	// Acquire an exclusive lock to ensure thread-safe write operations
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -73,7 +69,7 @@ func (w *RotateWriter) Write(p []byte) (n int, err error) {
 }
 
 // Close closes the current log file
-func (w *RotateWriter) Close() error {
+func (w *rotateWriter) Close() error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if w.file != nil {
@@ -84,7 +80,7 @@ func (w *RotateWriter) Close() error {
 
 // openFile creates or opens the log file in append mode
 // It ensures the log directory exists and sets the initial file size
-func (w *RotateWriter) openFile() error {
+func (w *rotateWriter) openFile() error {
 	// Create the log directory if it doesn't exist
 	if err := os.MkdirAll(filepath.Dir(w.path), 0755); err != nil {
 		return fmt.Errorf("failed to create log directory: %w", err)
@@ -116,7 +112,7 @@ func (w *RotateWriter) openFile() error {
 
 // rotate handles log file rotation
 // It creates a timestamped backup of the current log file and removes old backup files
-func (w *RotateWriter) rotate() error {
+func (w *rotateWriter) rotate() error {
 	// Close the current file if it's open
 	if w.file != nil {
 		w.file.Close()
@@ -125,7 +121,7 @@ func (w *RotateWriter) rotate() error {
 	// Create a timestamped backup filename
 	timestamp := time.Now().Format("20060102-150405")
 	backupPath := fmt.Sprintf("%s.%s", w.path, timestamp)
-	
+
 	// Rename the current log file to the backup path
 	if err := os.Rename(w.path, backupPath); err != nil && !os.IsNotExist(err) {
 		return err
@@ -142,7 +138,7 @@ func (w *RotateWriter) rotate() error {
 
 // removeOldFiles removes excess backup log files
 // It keeps only the most recent files up to the configured maximum
-func (w *RotateWriter) removeOldFiles() error {
+func (w *rotateWriter) removeOldFiles() error {
 	// Skip if no file limit is set
 	if w.maxFiles <= 0 {
 		return nil
