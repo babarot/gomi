@@ -13,10 +13,10 @@ func NewDefaultConfig() *Config {
 		Core: Core{
 			Trash: TrashConfig{
 				// Default to composite strategy
-				Strategy: "auto",
-				GomiDir:  filepath.Join(homedir, ".gomi"),
+				Strategy:     "auto",
+				HomeFallback: true,
+				GomiDir:      filepath.Join(homedir, ".gomi"),
 			},
-			HomeFallback: true,
 			Restore: RestoreConfig{
 				Confirm: true,
 				Verbose: true,
@@ -82,7 +82,7 @@ func NewDefaultConfig() *Config {
 				},
 			},
 		},
-		Logging: LoggingConfig{
+		Logging: Logging{
 			Enabled: true,
 			Level:   "debug",
 			Rotation: RotationConfig{

@@ -224,7 +224,7 @@ func determineLogLevel(level string) log.Level {
 func newTrashManager(cfg *config.Config) (*trash.Manager, error) {
 	trashConfig := trash.Config{
 		Strategy:     trash.Strategy(cfg.Core.Trash.Strategy),
-		HomeFallback: cfg.Core.HomeFallback,
+		HomeFallback: cfg.Core.Trash.HomeFallback,
 		History:      cfg.History,
 		GomiDir:      cfg.Core.Trash.GomiDir,
 		RunID:        runID(), // for backward compatibility (legacy strategy)

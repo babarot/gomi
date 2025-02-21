@@ -1,6 +1,5 @@
 # 🗑️ A Safer Alternative to the UNIX `rm` Command!
 
-
 <a href="https://gomi.dev"><img align="left" width="96px" src="./docs/favicon/web-app-manifest-512x512.png" alt="image"/></a>
 
 `gomi` (meaning "trash" in Japanese) is a simple CLI tool written in Go that adds trash can functionality to the command line.
@@ -9,11 +8,21 @@ In a typical CLI, there’s no "trash" folder like in graphical file managers. T
 
 ![demo](./docs/demo.gif)
 
-<!-- [![Go](https://github.com/babarot/gomi/actions/workflows/build.yaml/badge.svg)](https://github.com/babarot/gomi/actions/workflows/build.yaml) -->
 [![Release](https://github.com/babarot/gomi/actions/workflows/release.yaml/badge.svg)](https://github.com/babarot/gomi/actions/workflows/release.yaml)
 
 ## Features
 
+- 🔄 Familiar syntax - works just like rm command but with a safety net
+- 🎯 [XDG Trash spec](https://specifications.freedesktop.org/trash-spec/latest/) compliant - integrates perfectly with your desktop environment
+- 👀 Beautiful TUI for browsing and restoring deleted files
+- ⚡️ Blazing fast with concurrent operations
+- 🖥️ Cross-platform support (Linux, macOS, Windows)
+- 🎨 Syntax highlighting for previewing trashed files
+- 🔍 Powerful search and filtering capabilities
+- 💽 Multi-Volume Support - Handle file deletions across multiple mount points effortlessly
+- ⚙️  Rich Configuration - Customize everything from file filters and color schemes to preview options and UI density
+
+<!--
 - Functions like the `rm` command but moves files to the trash instead of permanently deleting them.
 - Follows the [XDG Trash specification](https://specifications.freedesktop.org/trash-spec/latest/) for modern Linux desktop environments:
   - Supports `$XDG_DATA_HOME/Trash` or `~/.local/share/Trash`
@@ -26,6 +35,7 @@ In a typical CLI, there’s no "trash" folder like in graphical file managers. T
   - Customize file content colorization.
   - Define the command to list directory contents.
   - Customize visual styles (e.g., color of selected files).
+-->
 
 For detailed information about gomi's architecture and design decisions, see [architecture.md](./docs/architecture.md).
 
@@ -83,7 +93,7 @@ Download the latest precompiled binary from [GitHub Releases][release] and place
 
 ### Using [afx](https://github.com/babarot/afx)
 
-"Write a YAML manifest, then run the `install` command.
+Write a YAML manifest, then run the `install` command.
 
 ```yaml
 github:
@@ -143,25 +153,35 @@ You can customize `gomi`'s behavior and appearance with a YAML configuration fil
 Here is an example of the default config:
 
 ```yaml
+# Controls the core functionality of gomi's trash operations.
+# Includes settings for trash directory strategy (XDG or legacy),
+# restoration behavior, and permanent deletion features.
+# These settings directly affect how files are handled.
 core:
   trash:
-    strategy: "auto"   # or "xdg" or "legacy"
-                       # Strategy determines which trash specification to use.
+    strategy: auto      # or "xdg" or "legacy"
+                        # Strategy determines which trash specification to use.
 
-    gomi_dir: ~/.gomi  # Path to store trashed files. Can be changed to another location.
-                       # Supports environment variable expansion like $HOME or ~.
-                       # If empty, defaults to ~/.gomi.
-                       # This config is only available on "legacy", "auto" trash strategy
+    gomi_dir: ~/.gomi   # Path to store trashed files. Can be changed to another location.
+                        # Supports environment variable expansion like $HOME or ~.
+                        # If empty, defaults to ~/.gomi.
+                        # This config is only available on "legacy", "auto" trash strategy
+
+    home_fallback: true # If true, fallbacks to home trash when external trash fails
+
   restore:
-    confirm: false     # If true, prompts for confirmation before restoring (yes/no)
-    verbose: true      # If true, displays detailed restoration information
+    confirm: false      # If true, prompts for confirmation before restoring (yes/no)
+    verbose: true       # If true, displays detailed restoration information
 
   permanent_delete:
-    enable: false      # If true, enables permanent deletion of files from trash.
-                       # When enabled, files can be deleted permanently using the 'D' key.
-                       # This operation is irreversible and bypasses the trash.
-                       # Default is false for safety.
+    enable: false       # If true, enables permanent deletion of files from trash.
+                        # When enabled, files can be deleted permanently using the 'D' key.
+                        # This operation is irreversible and bypasses the trash.
+                        # Default is false for safety.
 
+# Customizes the interactive interface used during file restoration.
+# Provides detailed customization of colors, layouts, and preview features.
+# Controls how files and directories are displayed in both list and detail views.
 ui:
   density: spacious # or compact
   preview:
@@ -194,6 +214,11 @@ ui:
   exit_message: bye!   # Customizable exit message
   paginator_type: dots # or arabic
 
+# Configures which files appear in the restoration list.
+# Note: While all trash operations are recorded in history,
+# these settings only control file visibility when browsing the trash (`gomi -b`).
+# Provides filtering options by age, patterns, size, etc.,
+# to help manage large trash directories.
 history:
   include:
     within_days: 100 # Only show files deleted in the last 100 days
@@ -208,6 +233,10 @@ history:
       min: 0KB       # Exclude empty files
       max: 10GB      # Exclude files larger than 10GB
 
+# Enables debugging and operation logging for gomi.
+# When enabled, records all operations including file movements,
+# restorations, and encountered errors.
+# Includes rotation settings to manage log file sizes and retention.
 logging:
   enabled: false     # Enable/disable logging
   level: info        # Available levels: debug, info, warn, error
@@ -228,23 +257,23 @@ gomi --debug
 gomi --debug=live
 ```
 
-The behavior of the debug feature can be configured in `~/.config/gomi/config.yaml`:
-
-```yaml
-logging:
-  enabled: true # Enable logging functionality
-```
-
 The `--debug` flag has two modes:
 
 - Full-view mode (without `=live`, or with `=full`)
-  - Shows the entire content of the existing log file
+  - Shows the entire content of the existing log file.
 - Live-view mode (with `=live`)
   - Follows and displays new log entries in real-time, similar to `tail -f`.
-  - While running `gomi --debug=live`, you can open another terminal and execute `gomi` commands to monitor live log updates. This feature is invaluable for troubleshooting and tracking `gomi`'s actions in real-time.
+  - While running `gomi --debug=live`, you can open another terminal and execute `gomi` commands to monitor live log updates.
+  - This feature is invaluable for troubleshooting and tracking `gomi`'s actions in real-time.
 
 > [!NOTE]
 > To use any debug features, logging must be enabled in the configuration file. The `--debug` flag only displays logs; it does not enable logging by itself.
+> 
+> ```yaml
+> logging:
+>   enabled: true # Enable logging functionality
+> ```
+
 
 ## Related
 
