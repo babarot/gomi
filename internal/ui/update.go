@@ -19,11 +19,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		slog.Debug("Key pressed", "key", msg.String())
 		// Handle view-specific key updates
 		switch m.state.current {
-		case LIST_VIEW:
+		case ListView:
 			return m.updateListView(msg)
-		case DETAIL_VIEW:
+		case DetailView:
 			return m.updateDetailView(msg)
-		case CONFIRM_VIEW:
+		case ConfirmView:
 			return m.updateConfirmView(msg)
 		}
 
@@ -40,7 +40,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 
 	case ShowDetailMsg:
-		m.state.SetView(DETAIL_VIEW)
+		m.state.SetView(DetailView)
 		m.detailFile = msg.file
 		m.state.preview.available = true
 		m.viewport = m.newViewportModel(msg.file)
@@ -55,7 +55,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 
 	case errorMsg:
-		m.state.SetView(QUITTING)
+		m.state.SetView(Quitting)
 		m.err = msg
 		return m, tea.Quit
 	}
@@ -75,13 +75,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch {
 	case key.Matches(msg, m.keyMap.Common.Quit):
-		m.state.SetView(QUITTING)
+		m.state.SetView(Quitting)
 		return m, tea.Quit
 
 	case m.keyMap.List.Delete != nil && key.Matches(msg, *m.keyMap.List.Delete):
 		if m.list.FilterState() != list.Filtering {
-			m.state.SetView(CONFIRM_VIEW)
-			slog.Debug("pressed delete key", "state", CONFIRM_VIEW)
+			m.state.SetView(ConfirmView)
+			slog.Debug("pressed delete key", "state", ConfirmView)
 		}
 		return m, nil
 
@@ -167,13 +167,13 @@ func (m Model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m Model) updateDetailView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch {
 	case key.Matches(msg, m.keyMap.Common.Quit):
-		m.state.SetView(QUITTING)
+		m.state.SetView(Quitting)
 		return m, tea.Quit
 
 	case m.keyMap.Detail.Delete != nil && key.Matches(msg, *m.keyMap.Detail.Delete):
 		if m.list.FilterState() != list.Filtering {
-			m.state.SetView(CONFIRM_VIEW)
-			slog.Debug("pressed delete key", "state", CONFIRM_VIEW)
+			m.state.SetView(ConfirmView)
+			slog.Debug("pressed delete key", "state", ConfirmView)
 		}
 		return m, nil
 
@@ -216,13 +216,13 @@ func (m Model) updateDetailView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case key.Matches(msg, m.keyMap.Detail.Esc):
-		m.state.SetView(LIST_VIEW)
+		m.state.SetView(ListView)
 		return m, nil
 
 	case key.Matches(msg, m.keyMap.Detail.Space):
 		m.state.detail.showOrigin = true
 		m.state.detail.dateFormat = DateFormatRelative
-		m.state.SetView(LIST_VIEW)
+		m.state.SetView(ListView)
 		return m, nil
 
 	case key.Matches(msg, m.keyMap.Common.Help):
@@ -258,7 +258,7 @@ func (m Model) updateConfirmView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 
 	case key.Matches(msg, m.keyMap.Common.Quit):
-		m.state.SetView(QUITTING)
+		m.state.SetView(Quitting)
 		return m, tea.Quit
 	}
 

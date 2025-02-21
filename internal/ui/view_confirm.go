@@ -12,9 +12,9 @@ import (
 func (m Model) confirmView() string {
 	var baseView string
 	switch m.state.previous {
-	case LIST_VIEW:
+	case ListView:
 		baseView = m.list.View()
-	case DETAIL_VIEW:
+	case DetailView:
 		baseView = m.detailView()
 	}
 

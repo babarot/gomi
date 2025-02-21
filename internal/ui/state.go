@@ -10,21 +10,21 @@ import (
 type ViewType uint8
 
 const (
-	LIST_VIEW ViewType = iota
-	DETAIL_VIEW
-	CONFIRM_VIEW
-	QUITTING
+	ListView ViewType = iota
+	DetailView
+	ConfirmView
+	Quitting
 )
 
 func (v ViewType) String() string {
 	switch v {
-	case LIST_VIEW:
+	case ListView:
 		return "list view"
-	case DETAIL_VIEW:
+	case DetailView:
 		return "detail view"
-	case CONFIRM_VIEW:
+	case ConfirmView:
 		return "confirm view"
-	case QUITTING:
+	case Quitting:
 		return "quit"
 	}
 	return "unknown"
@@ -57,8 +57,8 @@ type preview struct {
 // NewViewState creates a new ViewState with default values
 func NewViewState() *ViewState {
 	return &ViewState{
-		current:  LIST_VIEW,
-		previous: LIST_VIEW,
+		current:  ListView,
+		previous: ListView,
 		detail: detail{
 			showOrigin: true,
 			dateFormat: DateFormatRelative,

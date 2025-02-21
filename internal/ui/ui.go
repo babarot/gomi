@@ -65,7 +65,7 @@ func Render(manager *trash.Manager, files []*trash.File, cfg *config.Config) ([]
 
 	// Process results
 	finalModel := result.(Model)
-	if finalModel.state.current == QUITTING {
+	if finalModel.state.current == Quitting {
 		if msg := cfg.UI.ExitMessage; msg != "" {
 			fmt.Println(msg)
 		}

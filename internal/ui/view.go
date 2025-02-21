@@ -29,23 +29,23 @@ func (m Model) View() string {
 
 	// Render different views based on current state
 	switch m.state.current {
-	case LIST_VIEW:
+	case ListView:
 		view = m.list.View()
 		keyMap = m.keyMap.AsListKeyMap()
-	case DETAIL_VIEW:
+	case DetailView:
 		view = m.detailView()
 		keyMap = m.keyMap.AsDetailKeyMap()
 
-	case CONFIRM_VIEW:
+	case ConfirmView:
 		view = m.confirmView()
 		switch m.state.previous {
-		case LIST_VIEW:
+		case ListView:
 			keyMap = m.keyMap.AsListKeyMap()
-		case DETAIL_VIEW:
+		case DetailView:
 			keyMap = m.keyMap.AsDetailKeyMap()
 		}
 
-	case QUITTING:
+	case Quitting:
 		return ""
 
 	default:
