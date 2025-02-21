@@ -2,42 +2,10 @@ package log
 
 import (
 	"log/slog"
-	"strings"
 	"sync"
-	"sync/atomic"
 
 	charmlog "github.com/charmbracelet/log"
 )
-
-var (
-	// singleton instances
-	defaultStylesOnce sync.Once
-	defaultStyles     atomic.Pointer[Styles]
-	defaultLoggerOnce sync.Once
-	defaultLogger     atomic.Pointer[slog.Logger]
-)
-
-// initializeStyles creates and initializes the default styles
-func initializeStyles() *Styles {
-	styles := charmlog.DefaultStyles()
-	for _, ls := range levelStyles {
-		levelStr := strings.ToUpper(LogLevelString(ls.level))
-		if len(levelStr) < ls.maxWidth {
-			levelStr = levelStr + strings.Repeat(" ", ls.maxWidth-len(levelStr))
-		}
-		styles.Levels[ls.level] = ls.style.SetString(levelStr)
-	}
-	return styles
-}
-
-// DefaultStyles returns the initialized styles with all levels including Important
-func DefaultStyles() *Styles {
-	defaultStylesOnce.Do(func() {
-		styles := initializeStyles()
-		defaultStyles.Store(styles)
-	})
-	return defaultStyles.Load()
-}
 
 // New creates a new logger with the given options
 func New(opts ...Option) *slog.Logger {
