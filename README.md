@@ -161,6 +161,12 @@ core:
                        # When enabled, files can be deleted permanently using the 'D' key.
                        # This operation is irreversible and bypasses the trash.
                        # Default is false for safety.
+  logging:
+    enabled: false     # Enable/disable logging
+    level: info        # Available levels: debug, info, warn, error
+    rotation:
+      max_size: 10MB   # Maximum size of each log file
+      max_files: 3     # Number of old log files to retain
 
 ui:
   density: spacious # or compact
@@ -215,15 +221,31 @@ history:
 Gain deeper insights into `gomi`'s operations by using the `--debug` flag:
 
 ```bash
+# Show existing log file content
 gomi --debug
+
+# Follow new log entries in real-time (requires logging enabled)
+gomi --debug=live
 ```
 
-This command streams log output in real-time, similar to `tail -f`. While running `gomi --debug`, you can open another terminal and execute `gomi` commands to monitor live log updates. This feature is invaluable for troubleshooting and tracking `gomi`'s actions in real-time.
+The behavior of the debug feature can be configured in `~/.config/gomi/config.yaml`:
 
-The `--debug` flag supports two modes:
+```yaml
+core:
+  logging:
+    enabled: true # Enable logging functionality
+```
 
-- `--debug=full`: Displays the entire log file from the beginning, outputting its contents to `stdout`. After showing the complete log history, it continues to follow and display new log entries in real-time.
-- `--debug=live`: Skips the initial log file content and immediately begins displaying new log entries as they are written, providing a live stream of ongoing activity.
+The `--debug` flag has two modes:
+
+- Full-view mode (without `=live`, or with `=full`)
+  - Shows the entire content of the existing log file
+- Live-view mode (with `=live`)
+  - Follows and displays new log entries in real-time, similar to `tail -f`.
+  - While running `gomi --debug=live`, you can open another terminal and execute `gomi` commands to monitor live log updates. This feature is invaluable for troubleshooting and tracking `gomi`'s actions in real-time.
+
+> [!NOTE]
+> To use any debug features, logging must be enabled in the configuration file. The `--debug` flag only displays logs; it does not enable logging by itself.
 
 ## Related
 

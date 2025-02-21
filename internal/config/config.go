@@ -36,6 +36,9 @@ type Core struct {
 	// PermanentDelete contains permanent deletion feature settings
 	PermanentDelete PermanentDeleteConfig `yaml:"permanent_delete"`
 
+	// Logging
+	Logging LoggingConfig `yaml:"logging"`
+
 	// Deprecated
 	TrashDir string `yaml:"trash_dir" validate:"deprecated"`
 }
@@ -64,6 +67,17 @@ type RestoreConfig struct {
 // PermanentDeleteConfig defines settings for file permanent deletion behavior
 type PermanentDeleteConfig struct {
 	Enable bool `yaml:"enable"`
+}
+
+type LoggingConfig struct {
+	Enabled  bool           `yaml:"enabled"`
+	Level    string         `yaml:"level" validate:"oneof=debug info warn error"`
+	Rotation RotationConfig `yaml:"rotation"`
+}
+
+type RotationConfig struct {
+	MaxSize  string `yaml:"max_size" validate:"validSize|allowEmpty"`
+	MaxFiles int    `yaml:"max_files" validate:"gte=0"`
 }
 
 // UI holds all user interface related configurations

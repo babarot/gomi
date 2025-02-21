@@ -3,6 +3,7 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -15,7 +16,6 @@ import (
 	"github.com/babarot/gomi/internal/trash/legacy"
 	"github.com/babarot/gomi/internal/trash/xdg"
 	"github.com/babarot/gomi/internal/utils/debug"
-	"github.com/babarot/gomi/internal/utils/env"
 	"github.com/babarot/gomi/internal/utils/log"
 	"github.com/jessevdk/go-flags"
 	"github.com/rs/xid"
@@ -31,7 +31,7 @@ type Option struct {
 
 type MetaOption struct {
 	Version bool   `short:"V" long:"version" description:"Show version"`
-	Debug   string `long:"debug" description:"View debug logs (default: \"full\")" optional-value:"full" optional:"yes" choice:"full" choice:"live"`
+	Debug   string `long:"debug" description:"View debug logs" optional-value:"full" optional:"yes" choice:"full" choice:"live"`
 }
 
 // RmOption provides compatibility with rm command options
@@ -86,18 +86,6 @@ func Run(v Version) error {
 		args = expanded
 	}
 
-	_ = log.New(
-		log.UseLevel(log.DebugLevel),
-		log.UseOutputPath(env.GOMI_LOG_PATH),
-		log.UseTimeFormat(time.Kitchen),
-		log.UseReportTimestamp(true),
-		log.UseReportCaller(true),
-		log.AsDefault(), // seamlessly integrate with log/slog
-	)
-
-	defer slog.Debug("main function finished\n\n\n")
-	slog.Debug("main function started", "version", v.Version, "revision", v.Revision, "buildDate", v.BuildDate)
-
 	cfg, err := config.Load(opt.Config)
 	if err != nil {
 		return err
@@ -106,6 +94,42 @@ func Run(v Version) error {
 		// NOTE: fallback to default config?
 		return errors.New("panic when parsing config")
 	}
+
+	var logWriter io.Writer = io.Discard
+	if cfg.Core.Logging.Enabled {
+		writer, err := log.NewRotateWriter(&cfg.Core.Logging)
+		if err != nil {
+			return err
+		}
+		logWriter = writer
+		defer writer.Close()
+	}
+
+	// Set log level based on config
+	logLevel := log.InfoLevel
+	switch cfg.Core.Logging.Level {
+	case "debug":
+		logLevel = log.DebugLevel
+	case "info":
+		logLevel = log.InfoLevel
+	case "warn":
+		logLevel = log.WarnLevel
+	case "error":
+		logLevel = log.ErrorLevel
+	}
+
+	// Initialize logger
+	_ = log.New(
+		log.UseLevel(logLevel),
+		log.UseOutput(logWriter),
+		log.UseTimeFormat(time.Kitchen),
+		log.UseReportTimestamp(true),
+		log.UseReportCaller(true),
+		log.AsDefault(), // seamlessly integrate with log/slog
+	)
+
+	defer slog.Debug("main function finished\n\n\n")
+	slog.Debug("main function started", "version", v.Version, "revision", v.Revision, "buildDate", v.BuildDate)
 
 	// Initialize trash configuration
 	trashConfig := trash.Config{
@@ -170,13 +194,10 @@ func (c CLI) Run(args []string) error {
 	case c.option.Restore:
 		return c.Restore()
 
+	case c.option.Meta.Debug != "":
+		return debug.Logs(os.Stdout, &c.config.Core.Logging, c.option.Meta.Debug == "live")
+
 	default:
-		switch c.option.Meta.Debug {
-		case "live":
-			return debug.Logs(os.Stdout, true)
-		case "full":
-			return debug.Logs(os.Stdout, false)
-		}
 		return c.Put(args)
 	}
 }
