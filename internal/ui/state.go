@@ -79,9 +79,9 @@ func (v *ViewState) SetView(newView ViewType) {
 func (v *ViewState) ToggleDateFormat() {
 	if v.detail.dateFormat == DateFormatRelative {
 		v.detail.dateFormat = DateFormatAbsolute
-	} else {
-		v.detail.dateFormat = DateFormatRelative
+		return
 	}
+	v.detail.dateFormat = DateFormatRelative
 }
 
 // ToggleOriginPath switches between showing origin and trash paths
@@ -91,10 +91,8 @@ func (v *ViewState) ToggleOriginPath() {
 
 // FormatDate formats the given time according to the current date format
 func (v *ViewState) FormatDate(t time.Time) string {
-	switch v.detail.dateFormat {
-	case DateFormatAbsolute:
+	if v.detail.dateFormat == DateFormatAbsolute {
 		return t.Format(time.DateTime)
-	default:
-		return humanize.Time(t)
 	}
+	return humanize.Time(t)
 }

@@ -8,8 +8,6 @@ import (
 	"github.com/muesli/termenv"
 )
 
-// Package styles provides unified styling for the UI components
-
 // Styles holds all UI styles for consistent theming
 type Styles struct {
 	List    ListStyles

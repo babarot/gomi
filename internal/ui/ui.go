@@ -34,6 +34,11 @@ const (
 	defaultHeight = 30
 )
 
+const (
+	PaginatorDots   = "dots"
+	PaginatorArabic = "arabic"
+)
+
 // Common errors
 var (
 	ErrCannotPreview = errors.New("cannot preview")

@@ -75,7 +75,7 @@ func NewModel(manager *trash.Manager, files []*trash.File, cfg *config.Config) M
 
 	// Set paginator type based on config
 	switch cfg.UI.Paginator {
-	case "arabic":
+	case PaginatorArabic:
 		l.Paginator.Type = paginator.Arabic
 	default:
 		l.Paginator.Type = paginator.Dots
