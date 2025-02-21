@@ -44,17 +44,19 @@ func NewRotateWriter(cfg *config.LoggingConfig) (*RotateWriter, error) {
 
 func (w *RotateWriter) Write(p []byte) (n int, err error) {
 	w.mu.Lock()
-	defer w.mu.Unlock()
 
 	writeLen := int64(len(p))
 	if w.size+writeLen > w.maxSize {
+		w.mu.Unlock()
 		if err := w.rotate(); err != nil {
 			return 0, err
 		}
+		w.mu.Lock()
 	}
 
 	n, err = w.file.Write(p)
 	w.size += int64(n)
+	w.mu.Unlock()
 	return n, err
 }
 

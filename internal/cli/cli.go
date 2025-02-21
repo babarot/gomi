@@ -58,32 +58,14 @@ var runID = sync.OnceValue(func() string {
 	return id
 })
 
+// Run is the main entry point for the CLI
 func Run(v Version) error {
-	var opt Option
-	parser := flags.NewParser(&opt, flags.Default)
-	parser.Name = v.AppName
-	parser.Usage = "[-b | files...]"
-	args, err := parser.Parse()
+	opt, args, err := parseOptions(v)
 	if err != nil {
-		if flags.WroteHelp(err) {
-			return nil
-		}
 		return err
 	}
-
-	// On Windows, the shell does not expand wildcards,
-	// so the application must handle them.
-	if runtime.GOOS == "windows" {
-		expanded := make([]string, 0, len(args))
-		for _, arg := range args {
-			matches, err := filepath.Glob(arg)
-			if err == nil && len(matches) > 0 {
-				expanded = append(expanded, matches...)
-			} else {
-				expanded = append(expanded, arg)
-			}
-		}
-		args = expanded
+	if opt == nil {
+		return nil // help was shown
 	}
 
 	cfg, err := config.Load(opt.Config)
@@ -95,84 +77,25 @@ func Run(v Version) error {
 		return errors.New("panic when parsing config")
 	}
 
-	var logWriter io.Writer = io.Discard
-	if cfg.Core.Logging.Enabled {
-		writer, err := log.NewRotateWriter(&cfg.Core.Logging)
-		if err != nil {
-			return err
-		}
-		logWriter = writer
-		defer writer.Close()
+	if err := setLogger(cfg); err != nil {
+		return err
 	}
 
-	// Set log level based on config
-	logLevel := log.InfoLevel
-	switch cfg.Core.Logging.Level {
-	case "debug":
-		logLevel = log.DebugLevel
-	case "info":
-		logLevel = log.InfoLevel
-	case "warn":
-		logLevel = log.WarnLevel
-	case "error":
-		logLevel = log.ErrorLevel
-	}
-
-	// Initialize logger
-	_ = log.New(
-		log.UseLevel(logLevel),
-		log.UseOutput(logWriter),
-		log.UseTimeFormat(time.Kitchen),
-		log.UseReportTimestamp(true),
-		log.UseReportCaller(true),
-		log.AsDefault(), // seamlessly integrate with log/slog
-	)
-
-	defer slog.Debug("main function finished\n\n\n")
-	slog.Debug("main function started", "version", v.Version, "revision", v.Revision, "buildDate", v.BuildDate)
-
-	// Initialize trash configuration
-	trashConfig := trash.Config{
-		Strategy:     trash.Strategy(cfg.Core.Trash.Strategy),
-		HomeFallback: cfg.Core.HomeFallback,
-		History:      cfg.History,
-		GomiDir:      cfg.Core.Trash.GomiDir,
-		RunID:        runID(),
-	}
-
-	// Initialize storage manager with appropriate implementations
-	var managerOpts []trash.ManagerOption
-
-	// Always add the primary storage based on configuration
-	switch trashConfig.Strategy {
-	case trash.StrategyXDG:
-		// Force XDG only
-		managerOpts = append(managerOpts, trash.WithStorage(xdg.NewStorage))
-	case trash.StrategyLegacy:
-		// Force Legacy only
-		managerOpts = append(managerOpts, trash.WithStorage(legacy.NewStorage))
-	case trash.StrategyAuto:
-		// Default to XDG with optional legacy fallback
-		managerOpts = append(managerOpts, trash.WithStorage(xdg.NewStorage))
-		if exist, err := trash.IsExistLegacy(); err != nil {
-			slog.Error("failed to check if legacy storage exists", "error", err)
-		} else if exist {
-			managerOpts = append(managerOpts, trash.WithStorage(legacy.NewStorage))
-		}
-	default:
-		// Invalid strategy, default to XDG
-		slog.Warn("invalid trash strategy, defaulting to XDG", "strategy", cfg.Core.Trash.Strategy)
-		managerOpts = append(managerOpts, trash.WithStorage(xdg.NewStorage))
-	}
-
-	manager, err := trash.NewManager(trashConfig, managerOpts...)
+	manager, err := newTrashManager(cfg)
 	if err != nil {
-		return fmt.Errorf("failed to initialize storage manager: %w", err)
+		return err
 	}
+
+	// Log startup information
+	slog.Debug("main function started",
+		"version", v.Version,
+		"revision", v.Revision,
+		"buildDate", v.BuildDate)
+	defer slog.Debug("main function finished")
 
 	cli := CLI{
 		version: v,
-		option:  opt,
+		option:  *opt,
 		config:  cfg,
 		runID:   runID(),
 		manager: manager,
@@ -182,6 +105,7 @@ func Run(v Version) error {
 		slog.Error("exit", "error", fmt.Errorf("cli.run failed: %w", err))
 		return err
 	}
+
 	return nil
 }
 
@@ -200,4 +124,124 @@ func (c CLI) Run(args []string) error {
 	default:
 		return c.Put(args)
 	}
+}
+
+// parseOptions parses and returns command line options
+func parseOptions(v Version) (*Option, []string, error) {
+	var opt Option
+	parser := flags.NewParser(&opt, flags.Default)
+	parser.Name = v.AppName
+	parser.Usage = "[-b | files...]"
+
+	args, err := parser.Parse()
+	if err != nil {
+		if flags.WroteHelp(err) {
+			return nil, nil, nil
+		}
+		return nil, nil, err
+	}
+
+	// On Windows, the shell does not expand wildcards,
+	// so the application must handle them.
+	if runtime.GOOS == "windows" {
+		args = expandWindowsPaths(args)
+	}
+
+	return &opt, args, nil
+}
+
+// expandWindowsPaths expands file paths with wildcards on Windows
+func expandWindowsPaths(args []string) []string {
+	expanded := make([]string, 0, len(args))
+	for _, arg := range args {
+		matches, err := filepath.Glob(arg)
+		if err == nil && len(matches) > 0 {
+			expanded = append(expanded, matches...)
+		} else {
+			expanded = append(expanded, arg)
+		}
+	}
+	return expanded
+}
+
+// setLogger sets up the logging system based on configuration
+func setLogger(cfg *config.Config) error {
+	var logWriter io.Writer = io.Discard
+	if cfg.Core.Logging.Enabled {
+		writer, err := log.NewRotateWriter(&cfg.Core.Logging)
+		if err != nil {
+			return err
+		}
+		logWriter = writer
+	}
+
+	logLevel := determineLogLevel(cfg.Core.Logging.Level)
+
+	_ = log.New(
+		log.UseLevel(logLevel),
+		log.UseOutput(logWriter),
+		log.UseTimeFormat(time.Kitchen),
+		log.UseReportTimestamp(true),
+		log.UseReportCaller(true),
+		log.AsDefault(), // seamlessly integrate with log/slog
+	)
+
+	return nil
+}
+
+// determineLogLevel converts string log level to log.Level
+func determineLogLevel(level string) log.Level {
+	switch level {
+	case "debug":
+		return log.DebugLevel
+	case "info":
+		return log.InfoLevel
+	case "warn":
+		return log.WarnLevel
+	case "error":
+		return log.ErrorLevel
+	default:
+		return log.DebugLevel
+	}
+}
+
+// newTrashManager creates and configures the trash manager
+func newTrashManager(cfg *config.Config) (*trash.Manager, error) {
+	trashConfig := trash.Config{
+		Strategy:     trash.Strategy(cfg.Core.Trash.Strategy),
+		HomeFallback: cfg.Core.HomeFallback,
+		History:      cfg.History,
+		GomiDir:      cfg.Core.Trash.GomiDir,
+		RunID:        runID(), // for backward compatibility (legacy strategy)
+	}
+
+	var opts []trash.ManagerOption
+
+	switch strategy := trashConfig.Strategy; strategy {
+	case trash.StrategyXDG:
+		// Force XDG only
+		opts = append(opts, trash.WithStorage(xdg.NewStorage))
+
+	case trash.StrategyLegacy:
+		// Force Legacy only
+		opts = append(opts, trash.WithStorage(legacy.NewStorage))
+
+	case trash.StrategyAuto:
+		// Default to XDG with optional legacy fallback
+		opts = append(opts, trash.WithStorage(xdg.NewStorage))
+		if exist, err := trash.IsExistLegacy(); err == nil && exist {
+			opts = append(opts, trash.WithStorage(legacy.NewStorage))
+		}
+
+	default:
+		slog.Warn("invalid trash strategy, defaulting to XDG", "strategy", strategy)
+		opts = append(opts, trash.WithStorage(xdg.NewStorage))
+	}
+
+	manager, err := trash.NewManager(trashConfig, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize storage manager: %w", err)
+	}
+
+	return manager, nil
 }
