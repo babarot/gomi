@@ -30,10 +30,6 @@ func Logs(w io.Writer, path string, live bool) error {
 
 // tailLiveLogs follows log entries in real-time
 func tailLiveLogs(w io.Writer, path string) error {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return ErrLogFileNotFound
-	}
-
 	// Create a channel to notify when tail starts
 	started := make(chan struct{})
 
