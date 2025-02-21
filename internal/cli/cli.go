@@ -167,6 +167,7 @@ func expandWindowsPaths(args []string) []string {
 // setLogger sets up the logging system based on configuration
 func setLogger(cfg *config.Config) error {
 	var logWriter io.Writer = io.Discard
+
 	if cfg.Core.Logging.Enabled {
 		writer, err := log.NewRotateWriter(&cfg.Core.Logging)
 		if err != nil {
