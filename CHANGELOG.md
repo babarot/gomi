@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.5.0](https://github.com/babarot/gomi/compare/v1.4.3...v1.5.0) - 2025-02-21
+### New Features
+- Add Permanent Deletion Feature with Confirmation Dialog   by @babarot in https://github.com/babarot/gomi/pull/79
+### Refactorings
+- Large-scale Code Refactoring for Better Architecture by @babarot in https://github.com/babarot/gomi/pull/81
+### Others
+- Create missing log path by @kariudo in https://github.com/babarot/gomi/pull/80
+
 ## [v1.4.3](https://github.com/babarot/gomi/compare/v1.4.2...v1.4.3) - 2025-02-17
 ### New Features
 - Add toggle between trash and original path display in detail view by @babarot in https://github.com/babarot/gomi/pull/76
