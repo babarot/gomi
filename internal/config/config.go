@@ -32,7 +32,9 @@ type Core struct {
 
 	// Restore contains restore-specific settings
 	Restore RestoreConfig `yaml:"restore"`
-	Delete  DeleteConfig  `yaml:"delete"`
+
+	// PermanentDelete contains permanent deletion feature settings
+	PermanentDelete PermanentDeleteConfig `yaml:"permanent_delete"`
 
 	// Deprecated
 	TrashDir string `yaml:"trash_dir" validate:"deprecated"`
@@ -59,9 +61,9 @@ type RestoreConfig struct {
 	Verbose bool `yaml:"verbose"`
 }
 
-// DeleteConfig defines settings for file permanent deletion behavior
-type DeleteConfig struct {
-	Disable bool `yaml:"disable"`
+// PermanentDeleteConfig defines settings for file permanent deletion behavior
+type PermanentDeleteConfig struct {
+	Enable bool `yaml:"enable"`
 }
 
 // UI holds all user interface related configurations

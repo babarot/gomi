@@ -21,8 +21,8 @@ func NewDefaultConfig() *Config {
 				Confirm: true,
 				Verbose: true,
 			},
-			Delete: DeleteConfig{
-				Disable: false,
+			PermanentDelete: PermanentDeleteConfig{
+				Enable: false,
 			},
 		},
 		UI: UI{
