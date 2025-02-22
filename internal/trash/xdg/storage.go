@@ -371,3 +371,27 @@ func (s *Storage) filter(files []*trash.File) []*trash.File {
 	slog.Debug("xdg filter items", "len(files)", len(files))
 	return trash.Filter(files, opts)
 }
+
+func FindAllTrashDirectories() ([]string, error) {
+	var trashDirs []string
+
+	s := &Storage{}
+	homeTrash, err := s.initHomeTrash()
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize home trash: %w", err)
+	}
+
+	if homeTrash != nil {
+		trashDirs = append(trashDirs, homeTrash.root)
+	}
+
+	if err := s.scanExternalTrashes(); err != nil {
+		return nil, fmt.Errorf("failed to scan external trashes: %w", err)
+	}
+
+	for _, ext := range s.externalTrashes {
+		trashDirs = append(trashDirs, ext.root)
+	}
+
+	return trashDirs, nil
+}

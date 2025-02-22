@@ -19,6 +19,8 @@ func Confirm(prompt string) bool {
 	m.Prompt = prompt
 	m.DefaultValue = confirm.Denied
 	m.Rendering = confirm.ImmediateInput
+	m.AcceptedDecisionText = "Yes"
+	m.DeniedDecisionText = "No"
 
 	p := tea.NewProgram(&m)
 	if _, err := p.Run(); err != nil {
