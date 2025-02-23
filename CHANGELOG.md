@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.5.1](https://github.com/babarot/gomi/compare/v1.5.0...v1.5.1) - 2025-02-23
+### New Features
+- Add Log Rotation feature by @babarot in https://github.com/babarot/gomi/pull/82
+
 ## [v1.5.0](https://github.com/babarot/gomi/compare/v1.4.3...v1.5.0) - 2025-02-21
 ### New Features
 - Add Permanent Deletion Feature with Confirmation Dialog   by @babarot in https://github.com/babarot/gomi/pull/79
