@@ -180,7 +180,7 @@ func (c *CLI) permanentlyDeleteByTimeRange(durations []time.Duration) error {
 	fmt.Println()
 	// WARNING: Files will be permanently deleted and CANNOT be recovered. Are you absolutely sure?
 	fmt.Printf("%s\n", color.New(color.FgHiRed).Sprint("WARNING: This operation is permanent and cannot be undone!"))
-	if !ui.Confirm("Do you really want to permanently delete these files?") {
+	if !ui.ConfirmYes("Do you really want to permanently delete these files?") {
 		fmt.Println("Operation canceled.")
 		return nil
 	}

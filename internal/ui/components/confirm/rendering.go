@@ -178,17 +178,17 @@ func (i *inputRenderer) Init() tea.Cmd {
 	} else {
 		var s strings.Builder
 		if i.m.DefaultValue == Accepted {
-			s.WriteString(strings.ToUpper(i.m.AcceptedDecisionText))
+			s.WriteString(strings.ToUpper(i.m.AcceptedInputText))
 		} else {
-			s.WriteString(i.m.AcceptedDecisionText)
+			s.WriteString(i.m.AcceptedInputText)
 		}
 
 		s.WriteString("/")
 
 		if i.m.DefaultValue == Denied {
-			s.WriteString(strings.ToUpper(i.m.DeniedDecisionText))
+			s.WriteString(strings.ToUpper(i.m.DeniedInputText))
 		} else {
-			s.WriteString(i.m.DeniedDecisionText)
+			s.WriteString(i.m.DeniedInputText)
 		}
 
 		input.Placeholder = s.String()
