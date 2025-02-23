@@ -64,7 +64,7 @@ func (c *CLI) Prune(args []string) error {
 				}
 				durations = append(durations, duration)
 			}
-			return c.pruneDurationOverFiles(durations)
+			return c.permanentlyDeleteByAge(durations)
 		}
 	}
 
@@ -114,8 +114,8 @@ func findOrphanedMetadata(trashDir string) ([]OrphanedFile, error) {
 	return orphanedFiles, nil
 }
 
-// pruneDurationOverFiles removes files that are older than the specified durations
-func (c *CLI) pruneDurationOverFiles(durations []time.Duration) error {
+// permanentlyDeleteByAge removes files that are older than the specified durations
+func (c *CLI) permanentlyDeleteByAge(durations []time.Duration) error {
 	if len(durations) == 0 {
 		return nil
 	}
@@ -162,6 +162,7 @@ func (c *CLI) pruneDurationOverFiles(durations []time.Duration) error {
 
 	green := color.New(color.FgHiGreen).SprintfFunc()
 	white := color.New(color.FgWhite).SprintfFunc()
+	red := color.New(color.FgHiRed).SprintfFunc()
 
 	fmt.Printf("%s %s %s\n",
 		green("%-20s", "Deleted At"),
@@ -189,6 +190,14 @@ func (c *CLI) pruneDurationOverFiles(durations []time.Duration) error {
 
 	if !ui.Confirm(fmt.Sprintf("Are you sure you want to remove these %d files?", len(targetFiles))) {
 		fmt.Println("Pruning canceled.")
+		return nil
+	}
+
+	// WARNING: Files will be permanently deleted and CANNOT be recovered. Are you absolutely sure?
+	fmt.Println()
+	fmt.Printf("%s\n", red("WARNING: This operation is permanent and cannot be undone!"))
+	if !ui.Confirm("Do you really want to permanently delete these files?") {
+		fmt.Println("Operation canceled.")
 		return nil
 	}
 
