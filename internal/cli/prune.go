@@ -11,6 +11,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/babarot/gomi/internal/trash"
 	"github.com/babarot/gomi/internal/trash/xdg"
 	"github.com/babarot/gomi/internal/ui"
 	"github.com/dustin/go-humanize"
@@ -20,7 +21,6 @@ import (
 // OrphanedFile represents an orphaned metadata file with additional details
 type OrphanedFile struct {
 	Path          string
-	Size          int64
 	DeletedAt     time.Time
 	OriginalPath  string
 	TrashInfoPath string
@@ -29,9 +29,6 @@ type OrphanedFile struct {
 var (
 	ErrInvalidArgument = errors.New("prune requires an argument (e.g., orphans)")
 )
-
-// PruneFunc represents a function that performs a pruning operation
-type PruneFunc func() error
 
 // Prune handles the pruning of trash contents
 // It processes multiple subcommands for cleaning up the trash
@@ -43,39 +40,31 @@ func (c *CLI) Prune(args []string) error {
 		return ErrInvalidArgument
 	}
 
-	// Collect durations separately from other prune operations
-	var durations []time.Duration
-	var pruneFuncs []PruneFunc
-
-	// First pass: collect all operations and durations
 	for _, arg := range args {
-		switch arg {
-		case "orphans":
-			pruneFuncs = append(pruneFuncs, c.pruneOrphans)
-		case "":
-			return ErrInvalidArgument
-		default:
-			duration, err := parseDuration(arg)
-			if err != nil {
-				slog.Error("failed to parse duration", "error", err)
-				return fmt.Errorf("unknown prune arguments: %s", arg)
+		// Check if orphans is present anywhere in the arguments
+		if arg == "orphans" {
+			if len(args) > 1 {
+				return errors.New("orphans argument does not accept additional arguments")
 			}
-			slog.Debug("parse duration", "duration", duration, "arg", arg)
-			durations = append(durations, duration)
+			return c.pruneOrphans()
 		}
 	}
 
-	// If we have any durations, add a single function to handle all of them
-	if len(durations) > 0 {
-		pruneFuncs = append(pruneFuncs, func() error {
+	for _, arg := range args {
+		switch arg {
+		case "":
+			return ErrInvalidArgument
+		default:
+			// Try to parse as durations
+			var durations []time.Duration
+			for _, arg := range args {
+				duration, err := parseDuration(arg)
+				if err != nil {
+					return fmt.Errorf("invalid duration argument '%s': %w", arg, err)
+				}
+				durations = append(durations, duration)
+			}
 			return c.pruneDurationOverFiles(durations)
-		})
-	}
-
-	// Execute collected functions
-	for _, fn := range pruneFuncs {
-		if err := fn(); err != nil {
-			return err
 		}
 	}
 
@@ -126,7 +115,6 @@ func findOrphanedMetadata(trashDir string) ([]OrphanedFile, error) {
 }
 
 // pruneDurationOverFiles removes files that are older than the specified durations
-// It processes multiple durations and logs the min/max values for debugging
 func (c *CLI) pruneDurationOverFiles(durations []time.Duration) error {
 	if len(durations) == 0 {
 		return nil
@@ -144,20 +132,92 @@ func (c *CLI) pruneDurationOverFiles(durations []time.Duration) error {
 		}
 	}
 
-	// Log duration ranges for debugging
-	slog.Debug("processing duration-based pruning",
-		"min_duration", minDuration.String(),
-		"max_duration", maxDuration.String(),
-		"duration_count", len(durations),
-	)
+	slog.Debug("Get all files from trash")
+	files, err := c.manager.List()
+	if err != nil {
+		return fmt.Errorf("failed to list trash contents: %w", err)
+	}
 
-	// TODO: Implement the actual pruning logic here
-	// The function should consider all specified durations when deciding what to prune
+	// Filter files based on duration(s)
+	var targetFiles []*trash.File
+	for _, file := range files {
+		age := time.Since(file.DeletedAt)
+		if len(durations) == 1 {
+			// Single duration: get files older than duration
+			if age > maxDuration {
+				targetFiles = append(targetFiles, file)
+			}
+		} else {
+			// Multiple durations: get files between min and max duration
+			if age >= minDuration && age <= maxDuration {
+				targetFiles = append(targetFiles, file)
+			}
+		}
+	}
+
+	if len(targetFiles) == 0 {
+		fmt.Println("No matching files found.")
+		return nil
+	}
+
+	green := color.New(color.FgHiGreen).SprintfFunc()
+	white := color.New(color.FgWhite).SprintfFunc()
+
+	fmt.Printf("%s %s %s\n",
+		green("%-20s", "Deleted At"),
+		green("%-18s", ""),
+		green("%-30s", "Path"))
+
+	for _, file := range targetFiles {
+		fmt.Printf("%s %s %s\n",
+			white("%-20s", file.DeletedAt.Format("2006-01-02 15:04:05")),
+			white("%-18s", "("+humanize.Time(file.DeletedAt)+")"),
+			white("%-30s", file.Name))
+	}
+	fmt.Println()
+
+	// Print files that will be removed
+	if len(durations) == 1 {
+		days := int(maxDuration.Hours() / 24)
+		fmt.Printf("Found %d files that are older than %d days.\n\n", len(targetFiles), days)
+	} else {
+		minDays := int(minDuration.Hours() / 24)
+		maxDays := int(maxDuration.Hours() / 24)
+		fmt.Printf("Found %d files that were moved to trash between %d and %d days ago.\n\n",
+			len(targetFiles), minDays, maxDays)
+	}
+
+	if !ui.Confirm(fmt.Sprintf("Are you sure you want to remove these %d files?", len(targetFiles))) {
+		fmt.Println("Pruning canceled.")
+		return nil
+	}
+
+	// Remove files
+	var failedRemovals []string
+	for _, file := range targetFiles {
+		slog.Debug("removing trash file", "file", file.OriginalPath)
+		if err := c.manager.Remove(file); err != nil {
+			slog.Error("failed to remove file", "file", file.Name, "error", err)
+			failedRemovals = append(failedRemovals, file.Name)
+		}
+	}
+
+	if len(failedRemovals) > 0 {
+		fmt.Printf("Failed to remove %d files:\n", len(failedRemovals))
+		for _, file := range failedRemovals {
+			fmt.Println("-", file)
+		}
+		return fmt.Errorf("some files could not be removed")
+	}
+
+	fmt.Printf("Successfully removed %d files.\n", len(targetFiles))
 	return nil
 }
 
 // pruneOrphans removes metadata files without corresponding trashed files
 func (c *CLI) pruneOrphans() error {
+	slog.Debug("pruning orphaned trashinfo")
+
 	trashDirs, err := xdg.FindAllTrashDirectories()
 	if err != nil {
 		return fmt.Errorf("failed to get trash dirs: %w", err)
@@ -165,12 +225,12 @@ func (c *CLI) pruneOrphans() error {
 
 	var orphanedFiles []OrphanedFile
 	for _, trashDir := range trashDirs {
+		slog.Debug("pruning orphaned trashinfo", "trashDir", trashDir)
 		files, err := findOrphanedMetadata(trashDir)
 		if err != nil {
 			slog.Error("failed to find orphaned metadata in trash dir", "dir", trashDir, "error", err)
 			continue
 		}
-
 		orphanedFiles = append(orphanedFiles, files...)
 	}
 
@@ -179,11 +239,11 @@ func (c *CLI) pruneOrphans() error {
 		return nil
 	}
 
-	printOrphanedFilesTable(orphanedFiles)
-
 	// Confirm deletion unless forced
 	if !c.option.Rm.Force {
-		if !ui.Ask(fmt.Sprintf("Are you sure you want to remove %d orphaned metadata files?", len(orphanedFiles))) {
+		slog.Debug("show orphaned trashinfo", "files", orphanedFiles)
+		printOrphanedFilesTable(orphanedFiles)
+		if !ui.Confirm(fmt.Sprintf("Are you sure you want to remove %d orphaned metadata files?", len(orphanedFiles))) {
 			fmt.Println("Pruning canceled.")
 			return nil
 		}
@@ -192,6 +252,7 @@ func (c *CLI) pruneOrphans() error {
 	// Remove orphaned files
 	var failedRemovals []string
 	for _, file := range orphanedFiles {
+		slog.Debug("removing orphaned trashinfo", "file", file.TrashInfoPath)
 		if err := os.Remove(file.TrashInfoPath); err != nil {
 			slog.Error("failed to remove orphaned metadata file", "file", file.TrashInfoPath, "error", err)
 			failedRemovals = append(failedRemovals, file.TrashInfoPath)
@@ -201,13 +262,12 @@ func (c *CLI) pruneOrphans() error {
 	if len(failedRemovals) > 0 {
 		fmt.Printf("Failed to remove %d files:\n", len(failedRemovals))
 		for _, file := range failedRemovals {
-			fmt.Println(file)
+			fmt.Println("-", file)
 		}
 		return fmt.Errorf("some orphaned metadata files could not be removed")
 	}
 
 	fmt.Printf("Successfully removed %d orphaned metadata files.\n", len(orphanedFiles))
-
 	return nil
 }
 
@@ -216,22 +276,14 @@ func printOrphanedFilesTable(files []OrphanedFile) {
 	green := color.New(color.FgHiGreen).SprintfFunc()
 	white := color.New(color.FgWhite).SprintfFunc()
 
-	// fmt.Printf("Found %d orphaned metadata files:\n\n", len(files))
-	fmt.Printf("%s %s %s\n",
+	fmt.Printf("%s %s\n",
 		green("%-20s", "Deleted At"),
-		green("%-10s", "Size"),
 		green("%-30s", "Path"),
 	)
 
 	for _, file := range files {
-		info, err := os.Stat(file.TrashInfoPath)
-		if err != nil {
-			continue
-		}
-
-		fmt.Printf("%s %s %s\n",
+		fmt.Printf("%s %s\n",
 			white("%-20s", file.DeletedAt.Format("2006-01-02 15:04:05")),
-			white("%-10s", humanize.Bytes(uint64(info.Size()))),
 			white("%-30s", file.TrashInfoPath),
 		)
 	}
@@ -270,9 +322,15 @@ func parseTrashInfoFile(path string) (OrphanedFile, error) {
 }
 
 var unitMap = map[string]string{
+	"h":      "h",
+	"hour":   "h",
+	"hours":  "h",
 	"d":      "d",
 	"day":    "d",
 	"days":   "d",
+	"w":      "w",
+	"week":   "w",
+	"weeks":  "w",
 	"m":      "m",
 	"month":  "m",
 	"months": "m",
@@ -316,9 +374,12 @@ func parseDuration(input string) (time.Duration, error) {
 	}
 
 	unitDurations := map[string]time.Duration{
+		"h": 1 * time.Hour,
 		"d": 24 * time.Hour,
+		"w": 7 * 24 * time.Hour,
 		"m": 30 * 24 * time.Hour,
 		"y": 365 * 24 * time.Hour,
 	}
+
 	return time.Duration(num) * unitDurations[mappedUnit], nil
 }
