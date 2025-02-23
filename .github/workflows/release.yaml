@@ -25,7 +25,7 @@ jobs:
         id: run-tagpr
       - name: Check for changelog
         if: steps.run-tagpr.outputs.pull_request != ''
-        uses: babarot/changelog-empty-check-action@9cffefe7a90c29dbe005ee0d6e8d0a9b95900eda # v0.0.15
+        uses: babarot/changelog-empty-check-action@fe9c86c22d8922dae42375b064ce0851daa25004 # v0.0.16
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           label-name: changelog/missing
@@ -33,10 +33,8 @@ jobs:
           warning-message: |
             ## 🚨 Not Mergeable: Changelog Update Required
             This is a release PR, waiting to be merged when a new release is ready.
-            However, there are currently no changes that would be reflected in the Changelog
-            —meaning there are no updates significant enough to justify a new release.
-            As a result, this PR is in a waiting state.
-            Once a meaningful update is made and the Changelog is updated accordingly, this PR can be merged.
+            However, there are currently no changes that would be reflected in the Changelog—meaning there are no updates significant enough to justify a new release.
+            As a result, this PR is in a waiting state. Once a meaningful update is made and the Changelog is updated accordingly, this PR can be merged.
           success-message: |
             ## ✅ Mergeable: Changelog Updated
             New changes have been added and reflected in the Changelog, making this release PR ready to be merged.
