@@ -25,7 +25,7 @@ jobs:
         id: run-tagpr
       - name: Check for changelog
         if: steps.run-tagpr.outputs.pull_request != ''
-        uses: babarot/changelog-empty-check-action@fe9c86c22d8922dae42375b064ce0851daa25004 # v0.0.16
+        uses: babarot/changelog-empty-check-action@d76c23d5d734c5e72877d184a15d272bc39cef4b # v0.0.19
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           label-name: changelog/missing
