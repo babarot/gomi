@@ -25,10 +25,10 @@ jobs:
         id: run-tagpr
       - name: Check for changelog
         if: steps.run-tagpr.outputs.pull_request != ''
-        uses: babarot/changelog-empty-check-action@v1
+        uses: babarot/changelog-empty-check-action@9cffefe7a90c29dbe005ee0d6e8d0a9b95900eda # v0.0.15
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          label-name: changelog-missing
+          label-name: changelog/missing
           pull-request-number: ${{ fromJSON(steps.run-tagpr.outputs.pull_request).number }}
           warning-message: |
             This is a release PR, waiting to be merged when a new release is ready.

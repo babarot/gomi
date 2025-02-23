@@ -1,4 +1,4 @@
-no-update-changelog:
+changelog/skip:
 - all:
   - changed-files:
     - all-globs-to-all-files: '!**/*.go'

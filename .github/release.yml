@@ -2,7 +2,7 @@ changelog:
   exclude:
     labels:
       - tagpr
-      - no-update-changelog
+      - changelog/skip
   categories:
     - title: Breaking Changes
       labels:
