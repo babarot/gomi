@@ -29,6 +29,19 @@ func Confirm(prompt string) bool {
 	return m.Selected().IsAccepted()
 }
 
+func ConfirmYes(prompt string) bool {
+	m := confirm.NewYesValidation()
+	m.Prompt = prompt
+
+	p, err := tea.NewProgram(&m).Run()
+	if err != nil {
+		slog.Error("confirmYes failed", "error", err)
+		return false
+	}
+
+	return p.(*confirm.YesValidationModel).IsAccepted()
+}
+
 func InputFilename(file *trash.File) (string, error) {
 	m := input.New()
 	m.Prompt = "New name to avoid to overwrite:"
