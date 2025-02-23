@@ -1,4 +1,4 @@
-package cli
+package fs
 
 import (
 	"runtime"
@@ -30,7 +30,7 @@ func TestIsUnsafePath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
-			unsafe, err := isUnsafePath(tt.path)
+			unsafe, err := IsUnsafePath(tt.path)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("isUnsafePath() error = %v, wantErr %v", err, tt.wantErr)
 				return

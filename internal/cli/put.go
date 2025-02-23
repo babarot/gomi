@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/babarot/gomi/internal/utils/fs"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -85,7 +86,7 @@ func (c *CLI) processFile(arg string, failed *syncStringSlice) error {
 	}
 
 	// Check path safety
-	unsafe, err := isUnsafePath(expandedPath)
+	unsafe, err := fs.IsUnsafePath(expandedPath)
 	if err != nil {
 		failed.Append(arg)
 		return fmt.Errorf("failed to check path safety: %w", err)
@@ -194,34 +195,4 @@ func (s *syncStringSlice) Get() []string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return append([]string(nil), s.items...)
-}
-
-// isUnsafePath checks if the given path is unsafe to remove
-func isUnsafePath(path string) (bool, error) {
-	// First check the original path before any normalization
-	// This preserves the original input like "." or ".."
-	originalBase := filepath.Base(path)
-	if originalBase == "." || originalBase == ".." {
-		return true, nil
-	}
-
-	// Clean the path to check for normalized root paths
-	cleaned := filepath.Clean(path)
-
-	// Check root path
-	if cleaned == "/" {
-		return true, nil
-	}
-
-	// Check double slashes and similar patterns
-	if strings.HasPrefix(path, "//") {
-		return true, nil
-	}
-
-	slog.Debug("path safety check",
-		"original", path,
-		"originalBase", originalBase,
-		"cleaned", cleaned)
-
-	return false, nil
 }

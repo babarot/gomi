@@ -58,7 +58,7 @@ func Filter[T Filterable](items []T, opts FilterOptions) []T {
 	slog.Debug("after glob filtering", "len(items)", len(items))
 
 	// Filter by size
-	items = rejectBySize(items, opts.Exclude.Size)
+	items = rejectBySize(items, opts.Exclude.Size, nil)
 	slog.Debug("after size filtering", "len(items)", len(items))
 
 	// Filter by time period
@@ -131,10 +131,17 @@ func rejectByGlobs[T Filterable](items []T, globs []string) []T {
 	return filtered
 }
 
-func rejectBySize[T Filterable](items []T, size config.SizeConfig) []T {
+func rejectBySize[T Filterable](
+	items []T,
+	size config.SizeConfig,
+	dirSizeFunc func(string) (int64, error),
+) []T {
+	if dirSizeFunc == nil {
+		dirSizeFunc = fs.DirSize
+	}
 	var filtered []T
 	for _, item := range items {
-		dirSize, err := fs.DirSize(item.GetPath())
+		dirSize, err := dirSizeFunc(item.GetPath())
 		if err != nil {
 			continue // Skip items we can't size
 		}
