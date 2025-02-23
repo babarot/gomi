@@ -4,6 +4,7 @@
   --bg-primary: #1a1b26;
   --bg-secondary: #24283b;
   --bg-tertiary: #1f2335;
+  --bg-demo: #1a1a25;
   --text-primary: #c0caf5;
   --text-secondary: #9aa5ce;
   --text-tertiary: #393d4e; /* #4f5262 */
@@ -121,7 +122,7 @@ code:not(pre code)::after {
 .demo-container {
   max-width: 800px;
   margin: 0 auto;
-  background: var(--bg-primary);
+  background: var(--bg-demo);
   border-radius: var(--radius-lg);
   padding: var(--space-sm);
   border: var(--border-default);
