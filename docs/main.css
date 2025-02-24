@@ -559,3 +559,42 @@ code:not(pre code)::after {
   }
 }
 */
+
+@media (max-width: 480px) {
+  .code {
+    padding: var(--space-sm);
+  }
+
+  .code pre {
+    overflow-y: hidden;
+    overflow-x: auto;
+    white-space: pre;
+    -webkit-overflow-scrolling: touch;
+    font-size: 0.9rem;
+    padding-right: 2.5rem;
+    padding-bottom: 8px; /* Add padding for scrollbar space */
+    margin-bottom: -8px; /* Offset padding to maintain box size */
+    height: calc(100% - 8px); /* Reserve space for scrollbar */
+  }
+
+  /* Scrollbar styles */
+  .code pre::-webkit-scrollbar {
+    height: 4px; /* Thinner scrollbar */
+    background-color: transparent;
+  }
+
+  .code pre::-webkit-scrollbar-thumb {
+    background-color: var(--text-tertiary);
+    border-radius: 2px;
+  }
+
+  .code pre::-webkit-scrollbar-track {
+    background-color: var(--bg-secondary);
+    border-radius: 2px;
+  }
+
+  .copy-button {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+}
