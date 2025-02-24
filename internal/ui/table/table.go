@@ -2,6 +2,7 @@ package table
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -17,19 +18,47 @@ type FileEntry interface {
 	GetDeletedAt() time.Time
 }
 
-func PrintFiles[T FileEntry](files []T, showRelativeTime bool) {
+type SortOrder int
+
+const (
+	SortDesc SortOrder = iota
+	SortAsc
+)
+
+type PrintOptions struct {
+	ShowRelativeTime bool
+	Order            SortOrder
+}
+
+func PrintFiles[T FileEntry](files []T, opts PrintOptions) {
+	// Make a copy to avoid modifying the original slice
+	sortedFiles := make([]T, len(files))
+	copy(sortedFiles, files)
+
+	// Sort the files
+	sort.Slice(sortedFiles, func(i, j int) bool {
+		switch opts.Order {
+		case SortAsc:
+			return sortedFiles[i].GetDeletedAt().Before(sortedFiles[j].GetDeletedAt())
+		default: // SortDesc
+			return sortedFiles[i].GetDeletedAt().After(sortedFiles[j].GetDeletedAt())
+		}
+	})
+
 	green := color.New(color.FgHiGreen).SprintfFunc()
 	white := color.New(color.FgWhite).SprintfFunc()
 
+	// Print header
 	fmt.Printf("%s %s %s\n",
 		green("%-20s", "Deleted At"),
 		green("%-18s", ""),
 		green("%-30s", "Path"),
 	)
 
-	for _, file := range files {
+	// Print sorted files
+	for _, file := range sortedFiles {
 		var middleColumn string
-		if showRelativeTime {
+		if opts.ShowRelativeTime {
 			middleColumn = "(" + humanize.Time(file.GetDeletedAt()) + ")"
 		}
 

@@ -167,7 +167,10 @@ func (c *CLI) permanentlyDeleteByTimeRange(durations []time.Duration) error {
 		return nil
 	}
 
-	table.PrintFiles(filesToDelete, true)
+	table.PrintFiles(filesToDelete, table.PrintOptions{
+		ShowRelativeTime: true,
+		Order:            table.SortDesc,
+	})
 	printDeletionSummary(filesToDelete, newestAge, oldestAge, len(durations) == 1)
 
 	// First confirmation
@@ -253,7 +256,10 @@ func (c *CLI) removeOrphanedMetadata() error {
 	// Confirm deletion unless forced
 	if !c.option.Rm.Force {
 		slog.Debug("show orphaned trashinfo", "files", orphanedFiles)
-		table.PrintFiles(orphanedFiles, true)
+		table.PrintFiles(orphanedFiles, table.PrintOptions{
+			ShowRelativeTime: true,
+			Order:            table.SortDesc,
+		})
 		if !ui.Confirm(fmt.Sprintf("Are you sure you want to remove %d orphaned metadata files?", len(orphanedFiles))) {
 			fmt.Println("Operation canceled.")
 			return nil
