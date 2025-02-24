@@ -10,17 +10,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-/*
- This file contains code originally sourced from jimschubert/answer
- The original code is licensed under the Apache License 2.0.
- Changes have been made to this code to suit personal requirements.
- See LICENSE file for more details on the original licensing.
-
- What has been changed in the code for clarity:
- - Added a feature to immediately check if the input is "Yes" or "No"
-   after a letter is entered, without requiring additional confirmation.
-*/
-
 type rendering interface {
 	tea.Model
 }
@@ -226,36 +215,18 @@ func (i *inputRenderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var c tea.Cmd
 	i.text, c = i.text.Update(msg)
 
-	isLetter := func(s string) bool {
-		return !strings.ContainsFunc(s, func(r rune) bool {
-			return !unicode.IsLetter(r)
-		})
-	}
-
-	makeDone := func() {
-		switch k := strings.ToLower(i.text.Value()); {
-		case strings.HasPrefix(k, strings.ToLower(i.m.AcceptedDecisionText)):
-			i.m.SetDecision(Accepted)
-		case strings.HasPrefix(k, strings.ToLower(i.m.DeniedDecisionText)):
-			i.m.SetDecision(Denied)
-		}
-		i.m.done = true
-	}
-
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
 		case msg.Type == tea.KeyEnter:
-			makeDone()
-			return i, tea.Quit
-		case isLetter(msg.Type.String()):
-			// check if one input is Yes/No immediately
-			// after inputting something letter.
-			// (added by @babarot)
-			if i.m.Immediately {
-				makeDone()
-				return i, tea.Quit
+			switch k := strings.ToLower(i.text.Value()); {
+			case strings.HasPrefix(k, strings.ToLower(i.m.AcceptedDecisionText)):
+				i.m.SetDecision(Accepted)
+			case strings.HasPrefix(k, strings.ToLower(i.m.DeniedDecisionText)):
+				i.m.SetDecision(Denied)
 			}
+			i.m.done = true
+			return i, tea.Quit
 		}
 	}
 
@@ -287,5 +258,105 @@ func (i *inputRenderer) View() string {
 
 	b.WriteString(i.text.View())
 
+	return b.String()
+}
+
+type immediateRenderer struct {
+	m    *Model
+	text textinput.Model
+}
+
+func (i *immediateRenderer) Init() tea.Cmd {
+	input := textinput.New()
+	if i.m.Placeholder != "" {
+		input.Placeholder = i.m.Placeholder
+	} else {
+		var s strings.Builder
+		if i.m.DefaultValue == Accepted {
+			s.WriteString(strings.ToUpper(i.m.AcceptedDecisionText))
+		} else {
+			s.WriteString(i.m.AcceptedDecisionText)
+		}
+		s.WriteString("/")
+		if i.m.DefaultValue == Denied {
+			s.WriteString(strings.ToUpper(i.m.DeniedDecisionText))
+		} else {
+			s.WriteString(i.m.DeniedDecisionText)
+		}
+		input.Placeholder = s.String()
+	}
+
+	if strings.HasSuffix(i.m.Prompt, " ") {
+		input.Prompt = i.m.Prompt
+	} else {
+		input.Prompt = i.m.Prompt + " "
+	}
+
+	input.PromptStyle = i.m.Styles.Prompt
+	input.PlaceholderStyle = i.m.Styles.Placeholder
+	input.TextStyle = i.m.Styles.Text
+	input.CharLimit = len(i.m.AcceptedDecisionText)
+	if len(i.m.DeniedDecisionText) > input.CharLimit {
+		input.CharLimit = len(i.m.DeniedDecisionText)
+	}
+	input.Focus()
+	i.text = input
+	return nil
+}
+
+func (i *immediateRenderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	isLetter := func(s string) bool {
+		return !strings.ContainsFunc(s, func(r rune) bool {
+			return !unicode.IsLetter(r)
+		})
+	}
+
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch {
+		case msg.Type == tea.KeyCtrlC, msg.Type == tea.KeyEsc:
+			i.m.SetDecision(Denied)
+			i.m.done = true
+			return i.m, tea.Quit
+		default:
+			if isLetter(msg.String()) {
+				switch strings.ToLower(msg.String()) {
+				case strings.ToLower(string(i.m.AcceptedDecisionText[0])):
+					i.m.SetDecision(Accepted)
+					i.m.done = true
+					return i.m, tea.Quit
+				case strings.ToLower(string(i.m.DeniedDecisionText[0])):
+					i.m.SetDecision(Denied)
+					i.m.done = true
+					return i.m, tea.Quit
+				}
+			}
+		}
+	}
+	return i.m, nil
+}
+
+func (i *immediateRenderer) View() string {
+	var b strings.Builder
+	if i.m.PromptPrefix != "" {
+		promptPrefixRender := i.m.Styles.PromptPrefix.Inline(true).Render
+		b.WriteString(promptPrefixRender(i.m.PromptPrefix))
+		if !strings.HasSuffix(i.m.PromptPrefix, " ") {
+			b.WriteString(promptPrefixRender(" "))
+		}
+	}
+
+	if i.m.done {
+		if i.m.Prompt != "" {
+			promptRender := i.m.Styles.Prompt.Inline(true).Render
+			b.WriteString(promptRender(i.m.Prompt))
+			b.WriteString(promptRender(" "))
+		}
+		b.WriteString(i.m.Value())
+		b.WriteRune('\n')
+		return b.String()
+	}
+
+	b.WriteString(i.text.View())
 	return b.String()
 }

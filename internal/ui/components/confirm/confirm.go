@@ -6,17 +6,6 @@ import (
 	"github.com/jimschubert/answer/colors"
 )
 
-/*
- This file contains code originally sourced from jimschubert/answer
- The original code is licensed under the Apache License 2.0.
- Changes have been made to this code to suit personal requirements.
- See LICENSE file for more details on the original licensing.
-
- What has been changed in the code for clarity:
- - Added a feature to immediately check if the input is "Yes" or "No"
-   after a letter is entered, without requiring additional confirmation.
-*/
-
 // Decision is an enumeration of decisions available in the confirmation bubble
 type Decision int
 
@@ -84,6 +73,9 @@ const (
 	// ➤Y
 	//  N
 	VerticalSelection
+
+	// ImmediateInput defines rendering as immediate confirmation on single key press
+	ImmediateInput
 )
 
 // Styles holds relevant styles used for rendering
@@ -114,10 +106,6 @@ type Model struct {
 	// DeniedDecisionText is the text to display to a user which they will select for Denied confirmations
 	DeniedDecisionText string
 
-	// Immediately allows the evaluation is done immediately upon input, without waiting for the Enter key
-	// (added by @babarot)
-	Immediately bool
-
 	// ChooserIndicator is a rune displayed to the user for HorizontalSelection or VerticalSelection rendering
 	ChooserIndicator rune
 
@@ -144,7 +132,6 @@ func New() Model {
 		PromptPrefix:         "? ",
 		AcceptedDecisionText: "y",
 		DeniedDecisionText:   "n",
-		Immediately:          false,
 		ChooserIndicator:     '➤',
 		Styles: Styles{
 			PromptPrefix:     lipgloss.NewStyle().Foreground(lipgloss.Color(colors.PromptPrefix)),
@@ -205,6 +192,8 @@ func (m *Model) Init() tea.Cmd {
 		m.renderer = &inputRenderer{m: m}
 	case HorizontalSelection, VerticalSelection:
 		m.renderer = &selectionRenderer{m: m}
+	case ImmediateInput:
+		m.renderer = &immediateRenderer{m: m}
 	}
 	return m.renderer.Init()
 }

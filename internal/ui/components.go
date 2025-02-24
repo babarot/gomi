@@ -18,7 +18,7 @@ func Confirm(prompt string) bool {
 	m := confirm.New()
 	m.Prompt = prompt
 	m.DefaultValue = confirm.Denied
-	m.Immediately = true
+	m.Rendering = confirm.ImmediateInput
 
 	p := tea.NewProgram(&m)
 	if _, err := p.Run(); err != nil {
