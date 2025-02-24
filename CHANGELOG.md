@@ -1,5 +1,14 @@
 # Changelog
 
+## [v1.6.0](https://github.com/babarot/gomi/compare/v1.5.1...v1.6.0) - 2025-02-24
+### New Features
+- Add `--prune` option for trash management by @babarot in https://github.com/babarot/gomi/pull/88
+### Refactorings
+- Add tests  by @babarot in https://github.com/babarot/gomi/pull/86
+- Add immediate renderer instead of using immediately flag by @babarot in https://github.com/babarot/gomi/pull/87
+### Others
+- Add strict YES validation to confirm prompt by @babarot in https://github.com/babarot/gomi/pull/85
+
 ## [v1.5.1](https://github.com/babarot/gomi/compare/v1.5.0...v1.5.1) - 2025-02-23
 ### New Features
 - Add Log Rotation feature by @babarot in https://github.com/babarot/gomi/pull/82
