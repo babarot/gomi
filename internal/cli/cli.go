@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -31,8 +32,17 @@ type Option struct {
 }
 
 type MetaOption struct {
-	Version bool   `short:"V" long:"version" description:"Show version"`
-	Debug   string `long:"debug" description:"View debug logs" optional-value:"full" optional:"yes" choice:"full" choice:"live"`
+	Version bool      `short:"V" long:"version" description:"Show version"`
+	Debug   string    `long:"debug" description:"View debug logs" optional-value:"full" optional:"yes" choice:"full" choice:"live"`
+	Prune   PruneArgs `long:"prune" description:"Prunes trash by removing orphaned metadata and items older than a specified duration (e.g., 30d,orphans)"`
+}
+
+type PruneArgs []string
+
+func (s *PruneArgs) UnmarshalFlag(value string) error {
+	values := strings.Split(value, ",")
+	*s = append(*s, values...)
+	return nil
 }
 
 // RmOption provides compatibility with rm command options
@@ -125,6 +135,9 @@ func (c CLI) Run(args []string) error {
 			env.GOMI_LOG_PATH,
 			c.option.Meta.Debug == debug.LiveMode,
 		)
+
+	case len(c.option.Meta.Prune) > 0:
+		return c.Prune(c.option.Meta.Prune)
 
 	case c.option.Restore:
 		return c.Restore()

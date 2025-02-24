@@ -106,6 +106,12 @@ type Model struct {
 	// DeniedDecisionText is the text to display to a user which they will select for Denied confirmations
 	DeniedDecisionText string
 
+	// AcceptedInputText is the text that user can input for acceptance (e.g. "y")
+	AcceptedInputText string
+
+	// DeniedInputText is the text that user can input for denial (e.g. "n")
+	DeniedInputText string
+
 	// ChooserIndicator is a rune displayed to the user for HorizontalSelection or VerticalSelection rendering
 	ChooserIndicator rune
 
@@ -130,8 +136,10 @@ type Model struct {
 func New() Model {
 	m := Model{
 		PromptPrefix:         "? ",
-		AcceptedDecisionText: "y",
-		DeniedDecisionText:   "n",
+		AcceptedDecisionText: "Yes",
+		DeniedDecisionText:   "No",
+		AcceptedInputText:    "y",
+		DeniedInputText:      "n",
 		ChooserIndicator:     '➤',
 		Styles: Styles{
 			PromptPrefix:     lipgloss.NewStyle().Foreground(lipgloss.Color(colors.PromptPrefix)),

@@ -91,7 +91,7 @@ Download the latest precompiled binary from [GitHub Releases][release] and place
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/gomi.svg?columns=2)](https://repology.org/project/gomi/versions)
 
-### Using [afx](https://github.com/babarot/afx)
+#### Using [afx](https://github.com/babarot/afx)
 
 Write a YAML manifest, then run the `install` command.
 
@@ -115,20 +115,20 @@ github:
 afx install
 ```
 
-### Using [Homebrew](https://brew.sh/)
+#### Using [Homebrew](https://brew.sh/)
 
 ```bash
 brew install gomi
 ```
 
-### Using [Scoop](https://scoop.sh/)
+#### Using [Scoop](https://scoop.sh/)
 
 ```bash
 scoop bucket add babarot https://github.com/babarot/scoop-bucket
 scoop install gomi
 ```
 
-### Using [AUR](https://aur.archlinux.org/gomi.git)
+#### Using [AUR](https://aur.archlinux.org/gomi.git)
 
 You can install `gomi` using an AUR helper:
 
@@ -245,6 +245,84 @@ logging:
     max_files: 3     # Number of old log files to retain
 ```
 
+## Pruning Trash Files
+
+The `--prune` option allows you to manage your trash contents by permanently removing files based on various criteria.
+
+### Basic Usage
+
+```bash
+gomi --prune=<argument>
+```
+
+### Use Cases
+
+#### 1. Remove Orphaned Metadata Files
+
+Orphaned metadata refers to `.trashinfo` files that have lost their corresponding data files in the trash. In the XDG trash specification, each trashed file has two components:
+- The actual file data (stored in `files/`)
+- A metadata file (stored in `info/` with `.trashinfo` extension) containing information about when and where the file was deleted from
+
+When the data file is lost but the metadata file remains, it becomes "orphaned". This can happen due to:
+- Manual deletion of files from the trash
+- System crashes during trash operations
+- Disk errors or file system corruption
+
+To clean up these orphaned metadata files:
+```bash
+gomi --prune=orphans
+```
+
+This command identifies and removes orphaned `.trashinfo` files to maintain trash consistency.
+
+#### 2. Remove Files Older Than Specified Duration
+Remove files that were moved to trash before the specified duration:
+
+```bash
+gomi --prune=1y     # Remove files older than 1 year
+gomi --prune=6m     # Remove files older than 6 months
+gomi --prune=30d    # Remove files older than 30 days
+gomi --prune=1w     # Remove files older than 1 week
+```
+
+#### 3. Remove Files Within a Time Range
+Remove files that were moved to trash within a specific time range:
+
+```bash
+gomi --prune=2m,3m  # Remove files trashed between 2 and 3 months ago
+gomi --prune=0d,1d  # Remove files trashed today (0-1 day ago)
+gomi --prune=1w,2w  # Remove files trashed between 1 and 2 weeks ago
+```
+
+### Duration Format
+
+The following duration units are supported:
+- `h`, `hour`, `hours` (hours)
+- `d`, `day`, `days` (days)
+- `w`, `week`, `weeks` (weeks)
+- `m`, `month`, `months` (months)
+- `y`, `year`, `years` (years)
+
+### Additional Notes
+
+- Arguments can be specified with either commas or separate `--prune` flags:
+  ```bash
+  gomi --prune=1d,7d          # Using comma
+  gomi --prune=1d --prune=7d  # Using multiple flags (same result)
+  ```
+
+
+- When more than two durations are specified, gomi uses the shortest and longest durations as the range:
+  ```bash
+  gomi --prune=0d,1d,3d   # Treats as 0d,3d (today to 3 days ago)
+  gomi --prune=2w,3d,1m   # Treats as 3d,1m (3 days to 1 month ago)
+  ```
+
+    The order of arguments doesn't matter - gomi will always use the most recent (shortest duration) and oldest (longest duration) as the time range boundaries.
+
+- The `orphans` argument cannot be combined with duration arguments.
+- This operation permanently deletes files and cannot be undone. Double confirmation will be required before deletion.
+
 ## Debugging
 
 Gain deeper insights into `gomi`'s operations by using the `--debug` flag:
@@ -273,7 +351,6 @@ The `--debug` flag has two modes:
 > logging:
 >   enabled: true # Enable logging functionality
 > ```
-
 
 ## Related
 
