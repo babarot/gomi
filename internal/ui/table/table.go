@@ -2,11 +2,13 @@ package table
 
 import (
 	"fmt"
+	"os"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/dustin/go-humanize"
-	"github.com/fatih/color"
+	"github.com/olekukonko/tablewriter"
 )
 
 const (
@@ -45,29 +47,40 @@ func PrintFiles[T FileEntry](files []T, opts PrintOptions) {
 		}
 	})
 
-	green := color.New(color.FgHiGreen).SprintfFunc()
-	white := color.New(color.FgWhite).SprintfFunc()
+	// Initialize table
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Deleted At", "Path"})
 
-	// Print header
-	fmt.Printf("%s %s %s\n",
-		green("%-20s", "Deleted At"),
-		green("%-18s", ""),
-		green("%-30s", "Path"),
-	)
+	// Configure table appearance
+	table.SetBorder(false)
+	table.SetColumnSeparator("")
+	table.SetHeaderLine(false)
+	table.SetRowLine(false)
+	table.SetAutoWrapText(false)
+	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
 
-	// Print sorted files
+	// Set column colors
+	green := tablewriter.Colors{tablewriter.Bold, 92} // bright green (FgHiGreen)
+	white := tablewriter.Colors{tablewriter.Bold, 37} // white (FgWhite)
+	table.SetHeaderColor(green, green)
+	table.SetColumnColor(white, white)
+
+	// Add rows
 	for _, file := range sortedFiles {
-		var middleColumn string
+		deletedAt := file.GetDeletedAt().Format(timeFormat)
 		if opts.ShowRelativeTime {
-			middleColumn = "(" + humanize.Time(file.GetDeletedAt()) + ")"
+			deletedAt += fmt.Sprintf("  (%s)", humanize.Time(file.GetDeletedAt()))
 		}
 
-		fmt.Printf("%s %s %s\n",
-			white("%-20s", file.GetDeletedAt().Format(timeFormat)),
-			white("%-18s", middleColumn),
-			white("%-30s", file.GetName()),
-		)
+		row := []string{
+			deletedAt,
+			file.GetName(),
+		}
+		table.Append(row)
 	}
 
-	fmt.Println()
+	// Add padding between columns
+	table.SetColumnSeparator(strings.Repeat(" ", 2))
+	table.Render()
 }

@@ -26,6 +26,7 @@ require (
 	github.com/muesli/reflow v0.3.0
 	github.com/muesli/termenv v0.15.2
 	github.com/nxadm/tail v1.4.11
+	github.com/olekukonko/tablewriter v0.0.5
 	github.com/otiai10/copy v1.14.1
 	github.com/rs/xid v1.6.0
 	github.com/samber/lo v1.49.1
