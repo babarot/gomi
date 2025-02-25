@@ -32,6 +32,11 @@
   description: Denotes a PR that introduces potentially breaking changes that require user action.
   color: 425df5
 
+
+- name: area/website
+  description: Changes related to the project's website and documentation
+  color: 7ed6df
+
 # platform/
 - name: platform/windows
   description: Windows operating system related issues and features.

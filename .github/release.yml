@@ -19,6 +19,9 @@ changelog:
     - title: Refactorings
       labels:
         - kind/cleanup
+    - title: Website Updates
+      labels:
+        - area/website
     - title: Others
       labels:
         - "*"
