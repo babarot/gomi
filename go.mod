@@ -12,6 +12,7 @@ require (
 	github.com/charmbracelet/x/ansi v0.8.0
 	github.com/docker/go-units v0.5.0
 	github.com/dustin/go-humanize v1.0.1
+	github.com/eliukblau/pixterm v1.3.2
 	github.com/fatih/color v1.18.0
 	github.com/gabriel-vasile/mimetype v1.4.8
 	github.com/go-playground/validator/v10 v10.25.0
@@ -38,6 +39,7 @@ require (
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
+	github.com/disintegration/imaging v1.6.2 // indirect
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
@@ -56,6 +58,7 @@ require (
 	github.com/sahilm/fuzzy v0.1.1 // indirect
 	golang.org/x/crypto v0.32.0 // indirect
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0 // indirect
+	golang.org/x/image v0.20.0 // indirect
 	golang.org/x/net v0.34.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
