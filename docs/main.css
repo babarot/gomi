@@ -688,8 +688,8 @@ code:not(pre code)::after {
 }
 
 .carousel-button-container {
-  /* margin-top: var(--space-lg); */
-  padding-top: var(--space-md);
+  margin-top: var(--space-lg);
+  /* padding-top: var(--space-md); */
   position: relative;
 }
 
