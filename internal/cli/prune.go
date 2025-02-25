@@ -36,9 +36,10 @@ type OrphanedFile struct {
 	DeletedAt     time.Time
 	OriginalPath  string
 	TrashInfoPath string
+	TrashInfoName string
 }
 
-func (o OrphanedFile) GetName() string         { return o.TrashInfoPath }
+func (o OrphanedFile) GetName() string         { return o.TrashInfoName }
 func (o OrphanedFile) GetDeletedAt() time.Time { return o.DeletedAt }
 
 // Prune handles the pruning of trash contents
@@ -318,5 +319,6 @@ func parseTrashInfoFile(path string) (OrphanedFile, error) {
 		DeletedAt:     deletedAt,
 		OriginalPath:  originalPath,
 		TrashInfoPath: path,
+		TrashInfoName: filepath.Base(path),
 	}, nil
 }
