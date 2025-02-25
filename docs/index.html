@@ -33,7 +33,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Custom Styles -->
-    <link rel="stylesheet" href="main.css?v=20250224">
+    <link rel="stylesheet" href="main.css">
   </head>
   <body>
     <main>
@@ -51,7 +51,7 @@
         <h2 class="demo-heading">Safety First, Always</h2>
         <p class="demo-description">Never worry about accidentally deleting important files again. gomi moves them to trash instead of permanent deletion, giving you peace of mind while working in the command line.</p>
         <div class="demo-container">
-          <img src="demo-mini.gif"
+          <img src="demo/main.gif"
           alt="gomi CLI demonstration"
           class="demo-gif"
           loading="lazy">
@@ -70,16 +70,6 @@
               <h3>🔄 Quick Recovery</h3>
               <p>Made a mistake? No problem. Quickly restore files to their original location with a simple <code>gomi --restore</code> command. Includes an intuitive interface for browsing and selecting files to restore.</p>
             </article>
-            <!--
-            <article class="feature">
-              <h3>⚙️ Rich Configuration</h3>
-              <p>Tailor gomi to your workflow with extensive YAML configuration. Customize everything from file filters and color schemes to preview options and UI density. Your CLI, your rules.</p>
-            </article>
-            <article class="feature">
-              <h3>💽 Multi-Volume Support</h3>
-              <p>Handle file deletions across multiple mount points effortlessly. gomi intelligently manages trash operations on different volumes, providing a consistent and reliable file removal experience.</p>
-            </article>
-            -->
             <article class="feature">
               <h3>🗑️ XDG Trash Spec</h3>
               <p>Fully compatible with the <a href="https://specifications.freedesktop.org/trash-spec/latest/">XDG Trash specification</a>. Integrates seamlessly with other trash management tools like <a class="github" href="https://github.com/andreafrancia/trash-cli">trash-cli</a>, ensuring consistent file handling across different tools.</p>
@@ -119,6 +109,39 @@
         </a>
       </section>
     </main>
+
+    <section class="carousel-section">
+      <h2>See gomi in Action</h2>
+      <div class="carousel-container">
+        <div class="carousel">
+          <div class="carousel-slide">
+            <img src="demo/debug.gif" alt="gomi mode debugging" class="carousel-image" loading="lazy">
+          </div>
+          <div class="carousel-slide active">
+            <img src="demo/delete.gif" alt="gomi demo permanent-delete" class="carousel-image" loading="lazy">
+          </div>
+          <div class="carousel-slide">
+            <img src="demo/prune.gif" alt="gomi demo pruning" class="carousel-image" loading="lazy">
+          </div>
+        </div>
+
+        <div class="carousel-controls">
+          <div class="carousel-indicators">
+            <button class="indicator active" data-slide="0" aria-label="Show first slide"></button>
+            <button class="indicator" data-slide="1" aria-label="Show second slide"></button>
+            <button class="indicator" data-slide="2" aria-label="Show third slide"></button>
+          </div>
+          <button class="carousel-prev" aria-label="Previous slide">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <button class="carousel-next" aria-label="Next slide">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <div class="carousel-footer-spacer"></div>
 
     <!-- Footer -->
     <footer class="footer">
@@ -172,14 +195,6 @@
       </div>
     </footer>
 
-    <!-- <a href="https://github.com/babarot/gomi" -->
-    <!--   class="floating-icon" -->
-    <!--   target="_blank" -->
-    <!--   rel="noopener noreferrer" -->
-    <!--   aria-label="View on GitHub"> -->
-    <!--   <img src="favicon/web-app-manifest-192x192.png" alt="gomuk" width="48" height="48"> -->
-    <!-- </a> -->
-
     <!-- Scripts -->
     <script>
       function copyInstallCommand() {
@@ -195,6 +210,61 @@
           }, 3000);
         });
       }
+      document.addEventListener('DOMContentLoaded', function() {
+        const carousel = document.querySelector('.carousel');
+        const slides = document.querySelectorAll('.carousel-slide');
+        const indicators = document.querySelectorAll('.indicator');
+        const prevButton = document.querySelector('.carousel-prev');
+        const nextButton = document.querySelector('.carousel-next');
+        let currentSlide = 0;
+        let interval;
+
+        // Function to show a specific slide
+        function showSlide(index) {
+          // Remove active class from all slides and indicators
+          slides.forEach(slide => slide.classList.remove('active'));
+          indicators.forEach(indicator => indicator.classList.remove('active'));
+
+          // Add active class to current slide and indicator
+          slides[index].classList.add('active');
+          indicators[index].classList.add('active');
+
+          currentSlide = index;
+        }
+
+        // Function to show next slide
+        function nextSlide() {
+          let next = currentSlide + 1;
+          if (next >= slides.length) {
+            next = 0;
+          }
+          showSlide(next);
+        }
+
+        // Function to show previous slide
+        function prevSlide() {
+          let prev = currentSlide - 1;
+          if (prev < 0) {
+            prev = slides.length - 1;
+          }
+          showSlide(prev);
+        }
+
+        prevButton.addEventListener('click', () => {
+          prevSlide();
+        });
+
+        nextButton.addEventListener('click', () => {
+          nextSlide();
+        });
+
+        // Event listeners for indicators
+        indicators.forEach((indicator, index) => {
+          indicator.addEventListener('click', () => {
+            showSlide(index);
+          });
+        });
+      });
     </script>
   </body>
 </html>

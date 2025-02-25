@@ -30,8 +30,8 @@ const (
 	bullet   = "•"
 	ellipsis = "…"
 
-	defaultWidth  = 66
-	defaultHeight = 30
+	defaultWidth  = 66 // 56
+	defaultHeight = 30 // 26
 )
 
 const (

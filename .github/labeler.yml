@@ -1,4 +1,10 @@
-changelog/skip:
-- all:
+area/website:
   - changed-files:
-    - all-globs-to-all-files: '!**/*.go'
+    - any-glob-to-any-file: 'docs/**'
+
+changelog/skip:
+  - all:
+    - changed-files:
+      - all-globs-to-all-files:
+        - '!**/*.go'
+        - '!docs/**'
