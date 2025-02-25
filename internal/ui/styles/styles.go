@@ -70,12 +70,14 @@ type DialogStyles struct {
 
 // ConfirmStyles contains styles for confirmation prompts
 type ConfirmStyles struct {
-	Prompt     lipgloss.Style
-	Text       lipgloss.Style
-	Indicator  lipgloss.Style
-	Prefix     lipgloss.Style
-	Error      lipgloss.Style
-	Suggestion lipgloss.Style
+	Prompt      lipgloss.Style
+	Text        lipgloss.Style
+	Indicator   lipgloss.Style
+	Prefix      lipgloss.Style
+	Success     lipgloss.Style
+	Error       lipgloss.Style
+	Suggestion  lipgloss.Style
+	Placeholder lipgloss.Style
 }
 
 // New creates a new Styles instance with the provided configuration
@@ -194,11 +196,15 @@ func New(cfg config.UI) *Styles {
 			Foreground(lipgloss.Color(cfg.Style.ListView.Selected)),
 		Prefix: lipgloss.NewStyle().
 			Foreground(lipgloss.Color(cfg.Style.ListView.Cursor)),
+		Success: lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#00FF00")),
 		Error: lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#FF0000")),
 		Suggestion: lipgloss.NewStyle().
 			Foreground(lipgloss.AdaptiveColor{Light: "#A49FA5", Dark: "#777777"}).
 			Italic(true),
+		Placeholder: lipgloss.NewStyle().
+			Foreground(lipgloss.AdaptiveColor{Light: "#A49FA5", Dark: "#777777"}),
 	}
 
 	return s
