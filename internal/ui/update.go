@@ -80,8 +80,21 @@ func (m Model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	case m.keyMap.List.Delete != nil && key.Matches(msg, *m.keyMap.List.Delete):
 		if m.list.FilterState() != list.Filtering {
+			files := selectionManager.items
+			switch len(files) {
+			case 0:
+				file, ok := m.list.SelectedItem().(File)
+				if !ok {
+					slog.Warn("cannot get file on cursor")
+					return m, nil
+				}
+				m.state.SetConfirmState(ConfirmStateYesNo, []File{file})
+			case 1:
+				m.state.SetConfirmState(ConfirmStateYesNo, files)
+			default:
+				m.state.SetConfirmState(ConfirmStateTypeYES, files)
+			}
 			m.state.SetView(ConfirmView)
-			slog.Debug("pressed delete key", "state", ConfirmView)
 		}
 		return m, nil
 
@@ -239,12 +252,67 @@ func (m Model) updateDetailView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 // updateConfirmView handles updates specific to the confirmation dialog
 func (m Model) updateConfirmView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	files := selectionManager.items
+
+	// Branch processing based on ConfirmState
+	if m.state.confirmation.state == ConfirmStateTypeYES {
+		return m.handleTypeYesConfirmation(msg, files)
+	} else {
+		return m.handleYesNoConfirmation(msg, files)
+	}
+}
+
+// Handle YES typing confirmation mode
+func (m Model) handleTypeYesConfirmation(msg tea.KeyMsg, files []File) (tea.Model, tea.Cmd) {
+	switch msg.Type {
+	case tea.KeyBackspace:
+		m.state.BackspaceYesInput()
+	case tea.KeyEnter:
+		if m.state.IsYesComplete() {
+			// Execute deletion if complete YES has been entered
+			m.state.SetView(m.state.previous)
+			if len(files) > 0 {
+				return m, deletePermanentlyCmd(&m, files...)
+			}
+			return m, nil
+		}
+	case tea.KeyEsc: // Cancel
+		m.state.SetView(m.state.previous)
+		// Forcibly restructure a current window by sending WindowSizeMsg
+		return m, func() tea.Msg {
+			return tea.WindowSizeMsg{
+				Width: m.list.Width(),
+			}
+		}
+	default:
+		// Character input processing
+		char := msg.String()
+		if len(char) == 1 {
+			m.state.UpdateYesInput(char)
+
+			// You can automatically confirm when YES is completed
+			if m.state.IsYesComplete() {
+				// Uncomment to enable auto-confirmation
+				//
+				// m.state.SetView(m.state.previous)
+				// return m, deletePermanentlyCmd(&m, files...)
+				//
+				// This branch is intentionally empty
+				slog.Debug("YES completed but auto-confirmation is disabled")
+			}
+		}
+	}
+	return m, nil
+}
+
+// Handle standard Yes/No confirmation mode
+func (m Model) handleYesNoConfirmation(msg tea.KeyMsg, files []File) (tea.Model, tea.Cmd) {
 	switch {
 	case key.Matches(msg, m.keyMap.Confirm.Yes):
+		// Immediately delete for single file
 		m.state.SetView(m.state.previous)
-		files := selectionManager.items
-		if len(files) > 0 {
-			return m, deletePermanentlyCmd(&m, files...)
+		if len(files) == 1 {
+			return m, deletePermanentlyCmd(&m, files[0])
 		}
 		if file, ok := m.list.SelectedItem().(File); ok {
 			return m, deletePermanentlyCmd(&m, file)

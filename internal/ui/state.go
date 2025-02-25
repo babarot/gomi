@@ -39,10 +39,11 @@ const (
 )
 
 type ViewState struct {
-	current  ViewType
-	previous ViewType
-	detail   detail
-	preview  preview
+	current      ViewType
+	previous     ViewType
+	detail       detail
+	preview      preview
+	confirmation confirmation
 }
 
 type detail struct {
@@ -53,6 +54,19 @@ type detail struct {
 type preview struct {
 	available bool
 }
+type confirmation struct {
+	state    ConfirmState
+	files    []File
+	yesInput string
+}
+
+// ConfirmState represents the confirmation dialog state
+type ConfirmState string
+
+const (
+	ConfirmStateYesNo   ConfirmState = "yn"
+	ConfirmStateTypeYES ConfirmState = "yes"
+)
 
 // NewViewState creates a new ViewState with default values
 func NewViewState() *ViewState {
@@ -65,6 +79,9 @@ func NewViewState() *ViewState {
 		},
 		preview: preview{
 			available: true,
+		},
+		confirmation: confirmation{
+			state: ConfirmStateYesNo,
 		},
 	}
 }
@@ -95,4 +112,46 @@ func (v *ViewState) FormatDate(t time.Time) string {
 		return t.Format(time.DateTime)
 	}
 	return humanize.Time(t)
+}
+
+// SetConfirmState sets the confirmation dialog state
+func (v *ViewState) SetConfirmState(state ConfirmState, files []File) {
+	v.confirmation.state = state
+	v.confirmation.files = files
+	v.confirmation.yesInput = "" // reset input
+}
+
+// UpdateYesInput updates the YES input state
+func (v *ViewState) UpdateYesInput(char string) {
+	switch len(v.confirmation.yesInput) {
+	case 0:
+		if char == "Y" {
+			v.confirmation.yesInput += char
+		}
+	case 1:
+		if char == "E" {
+			v.confirmation.yesInput += char
+		}
+	case 2:
+		if char == "S" {
+			v.confirmation.yesInput += char
+		}
+	}
+}
+
+// IsYesComplete checks if the complete "YES" has been entered
+func (v *ViewState) IsYesComplete() bool {
+	return v.confirmation.yesInput == "YES"
+}
+
+// ClearYesInput clears the YES input
+func (v *ViewState) ClearYesInput() {
+	v.confirmation.yesInput = ""
+}
+
+// BackspaceYesInput removes the last character from YES input
+func (v *ViewState) BackspaceYesInput() {
+	if len(v.confirmation.yesInput) > 0 {
+		v.confirmation.yesInput = v.confirmation.yesInput[:len(v.confirmation.yesInput)-1]
+	}
 }
