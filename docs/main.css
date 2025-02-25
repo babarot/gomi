@@ -590,6 +590,42 @@ code:not(pre code)::after {
   position: relative;
 }
 
+/* Carousel Title Animation */
+#carousel-title {
+  transition: opacity 0.3s ease, transform 0.4s ease;
+}
+
+/* Optional: Add a smooth fade effect when changing titles */
+.title-change {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* Adjust the carousel section spacing for better title display */
+.carousel-section h2 {
+  min-height: 2.5rem; /* Ensures consistent height during title changes */
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-xs);
+  position: relative;
+}
+
+/* Add a subtle underline animation */
+.carousel-section h2:after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: var(--accent);
+  transform: translateX(-50%);
+  transition: width 0.4s ease;
+}
+
+.carousel-section h2.active:after {
+  width: 100px;
+}
+
 /* Prev/Next Buttons */
 .carousel-prev,
 .carousel-next {
@@ -651,6 +687,23 @@ code:not(pre code)::after {
   background: var(--accent-secondary);
 }
 
+.carousel-button-container {
+  /* margin-top: var(--space-lg); */
+  padding-top: var(--space-md);
+  position: relative;
+}
+
+/* .carousel-button-container:before { */
+/*   content: ''; */
+/*   position: absolute; */
+/*   top: 0; */
+/*   left: 50%; */
+/*   transform: translateX(-50%); */
+/*   width: 150px; */
+/*   height: 1px; */
+/*   background: rgba(255,255,255,0.1); */
+/* } */
+
 /* Responsive Styles */
 @media (max-width: 768px) {
   .carousel-section h2 {
@@ -685,3 +738,4 @@ code:not(pre code)::after {
     height: 8px;
   }
 }
+

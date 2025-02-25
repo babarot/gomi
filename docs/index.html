@@ -100,28 +100,21 @@
 <span class="command">$ gomi --restore</span>
 <span class="output">Restored example.txt to original location</span></pre>
         </div>
-
-        <a href="https://github.com/babarot/gomi"
-          class="button"
-          target="_blank"
-          rel="noopener noreferrer">
-          EXPLORE ON GITHUB
-        </a>
       </section>
     </main>
 
     <section class="carousel-section">
-      <h2>See gomi in Action</h2>
+      <h2 id="carousel-title">See gomi in Action</h2>
       <div class="carousel-container">
         <div class="carousel">
-          <div class="carousel-slide">
-            <img src="demo/debug.gif" alt="gomi mode debugging" class="carousel-image" loading="lazy">
+          <div class="carousel-slide active" data-title="Live Debugging in Action">
+            <img src="demo/debug.gif" alt="gomi mode debugging" class="carousel-image">
           </div>
-          <div class="carousel-slide active">
-            <img src="demo/delete.gif" alt="gomi demo permanent-delete" class="carousel-image" loading="lazy">
+          <div class="carousel-slide" data-title="Permanent File Deletion Interface">
+            <img src="demo/delete.gif" alt="gomi demo permanent-delete" class="carousel-image">
           </div>
-          <div class="carousel-slide">
-            <img src="demo/prune.gif" alt="gomi demo pruning" class="carousel-image" loading="lazy">
+          <div class="carousel-slide" data-title="Trash Management and Pruning">
+            <img src="demo/prune.gif" alt="gomi demo pruning" class="carousel-image">
           </div>
         </div>
 
@@ -138,6 +131,15 @@
             <i class="fas fa-chevron-right"></i>
           </button>
         </div>
+      </div>
+
+      <div class="carousel-button-container">
+        <a href="https://github.com/babarot/gomi"
+          class="button"
+          target="_blank"
+          rel="noopener noreferrer">
+          EXPLORE ON GITHUB
+        </a>
       </div>
     </section>
 
@@ -216,23 +218,55 @@
         const indicators = document.querySelectorAll('.indicator');
         const prevButton = document.querySelector('.carousel-prev');
         const nextButton = document.querySelector('.carousel-next');
+        const carouselTitle = document.getElementById('carousel-title');
         let currentSlide = 0;
         let interval;
 
-        // Function to show a specific slide
-        function showSlide(index) {
-          // Remove active class from all slides and indicators
-          slides.forEach(slide => slide.classList.remove('active'));
-          indicators.forEach(indicator => indicator.classList.remove('active'));
+        // Touch event variables
+        let touchStartX = 0;
+        let touchEndX = 0;
+        const minSwipeDistance = 50; // Minimum distance for a swipe to trigger a slide change
 
-          // Add active class to current slide and indicator
-          slides[index].classList.add('active');
-          indicators[index].classList.add('active');
-
-          currentSlide = index;
+        // Preload all images
+        function preloadImages() {
+          slides.forEach(slide => {
+            const img = slide.querySelector('img');
+            if (img) {
+              // Remove loading="lazy" to force loading
+              img.removeAttribute('loading');
+              // Create image object for preloading
+              const preloadImg = new Image();
+              preloadImg.src = img.src;
+            }
+          });
         }
 
-        // Function to show next slide
+        // Slide display function with title change animation
+        function showSlide(index) {
+          // Fade out title
+          carouselTitle.classList.add('title-change');
+
+          setTimeout(() => {
+            // Remove active state from current slide
+            slides[currentSlide].classList.remove('active');
+            indicators[currentSlide].classList.remove('active');
+
+            // Activate new slide
+            slides[index].classList.add('active');
+            indicators[index].classList.add('active');
+
+            // Update title
+            const title = slides[index].getAttribute('data-title');
+            carouselTitle.textContent = title || 'See gomi in Action';
+
+            // Fade in title
+            carouselTitle.classList.remove('title-change');
+            carouselTitle.classList.add('active');
+
+            currentSlide = index;
+          }, 300);
+        }
+
         function nextSlide() {
           let next = currentSlide + 1;
           if (next >= slides.length) {
@@ -241,7 +275,6 @@
           showSlide(next);
         }
 
-        // Function to show previous slide
         function prevSlide() {
           let prev = currentSlide - 1;
           if (prev < 0) {
@@ -250,20 +283,65 @@
           showSlide(prev);
         }
 
-        prevButton.addEventListener('click', () => {
-          prevSlide();
-        });
+        // Touch event handlers
+        function handleTouchStart(e) {
+          touchStartX = e.touches[0].clientX;
+        }
 
-        nextButton.addEventListener('click', () => {
-          nextSlide();
-        });
+        function handleTouchMove(e) {
+          touchEndX = e.touches[0].clientX;
+        }
 
-        // Event listeners for indicators
+        function handleTouchEnd() {
+          const swipeDistance = touchEndX - touchStartX;
+
+          if (Math.abs(swipeDistance) > minSwipeDistance) {
+            if (swipeDistance > 0) {
+              // Swiped right, go to previous slide
+              prevSlide();
+            } else {
+              // Swiped left, go to next slide
+              nextSlide();
+            }
+          }
+
+          // Reset touch coordinates
+          touchStartX = 0;
+          touchEndX = 0;
+        }
+
+        // Event listeners for buttons and indicators
+        prevButton.addEventListener('click', prevSlide);
+        nextButton.addEventListener('click', nextSlide);
+
         indicators.forEach((indicator, index) => {
           indicator.addEventListener('click', () => {
             showSlide(index);
           });
         });
+
+        // Touch event listeners
+        carousel.addEventListener('touchstart', handleTouchStart, { passive: true });
+        carousel.addEventListener('touchmove', handleTouchMove, { passive: true });
+        carousel.addEventListener('touchend', handleTouchEnd);
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowLeft') {
+            prevSlide();
+          } else if (e.key === 'ArrowRight') {
+            nextSlide();
+          }
+        });
+
+        // Preload images on page load
+        preloadImages();
+
+        // Activate first slide (without animation)
+        slides[0].classList.add('active');
+        indicators[0].classList.add('active');
+        carouselTitle.textContent = slides[0].getAttribute('data-title') || 'See gomi in Action';
+        carouselTitle.classList.add('active');
       });
     </script>
   </body>
