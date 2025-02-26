@@ -4,6 +4,11 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"image"
+	imgcolor "image/color"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -19,6 +24,7 @@ import (
 	"github.com/alecthomas/chroma/quick"
 	"github.com/alecthomas/chroma/styles"
 	"github.com/dustin/go-humanize"
+	"github.com/eliukblau/pixterm/pkg/ansimage"
 	"github.com/fatih/color"
 	"github.com/gabriel-vasile/mimetype"
 )
@@ -115,6 +121,12 @@ func (f File) Browse() (string, error) {
 	if err != nil {
 		return content, err
 	}
+	if isImageFile(mtype.String()) {
+		slog.Debug("file is an image, trying to preview", "mimetype", mtype.String())
+		// Preview the image to match the height of the preview panel
+		// defaultHeight(30) - 11 - 1 = 18, adjusting to a height of 18
+		return f.previewImage(f.TrashPath, defaultWidth, 18)
+	}
 	if mtype.Is("text/plain") || (mtype.Parent() != nil && mtype.Parent().Is("text/plain")) {
 		// ok
 	} else {
@@ -164,4 +176,55 @@ func (f File) colorize(content string) (string, error) {
 		return "", err
 	}
 	return buf.String(), nil
+}
+
+// isImageFile checks whether the given MIME type is an image
+func isImageFile(mimeType string) bool {
+	return strings.HasPrefix(mimeType, "image/")
+}
+
+// previewImage converts an image file for terminal display
+func (f File) previewImage(path string, maxWidth, maxHeight int) (string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return "", fmt.Errorf("failed to open image: %w", err)
+	}
+	defer file.Close()
+
+	img, _, err := image.Decode(file)
+	if err != nil {
+		return "", fmt.Errorf("failed to decode image: %w", err)
+	}
+
+	// Get the original image dimensions.
+	bounds := img.Bounds()
+	origWidth, origHeight := bounds.Dx(), bounds.Dy()
+	slog.Debug("reading image",
+		"path", path,
+		"width", origWidth,
+		"height", origHeight,
+	)
+
+	// Set the background color to transparent.
+	bgColor := imgcolor.RGBA{0, 0, 0, 0}
+	height := max(defaultHeight, maxHeight*2+2)
+
+	pix, err := ansimage.NewScaledFromImage(
+		img,
+		height,
+		maxWidth,
+		bgColor,
+		ansimage.ScaleModeFit,
+		ansimage.NoDithering,
+	)
+	if err != nil {
+		return "", fmt.Errorf("failed to create ANSI image: %w", err)
+	}
+
+	// Get the ANSI image as a string.
+	ansiStr := pix.Render()
+	// Append image information, but keep it concise
+	info := fmt.Sprintf("\nImage: %dx%d pixels", origWidth, origHeight)
+
+	return ansiStr + info, nil
 }
