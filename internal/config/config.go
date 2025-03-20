@@ -51,6 +51,9 @@ type TrashConfig struct {
 
 	// GomiDir specifies the trash directory for legacy mode
 	GomiDir string `yaml:"gomi_dir" validate:"omitempty,validDirPath"`
+
+	// List of forbidden paths that cannot be moved to trash
+	ForbiddenPaths []string `yaml:"forbidden_paths"`
 }
 
 // RestoreConfig defines settings for file restoration behavior
