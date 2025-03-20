@@ -13,29 +13,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// List of forbidden paths that cannot be moved to trash
-var forbiddenPaths = []string{
-	// Default trash-related paths
-	"$HOME/.local/share/Trash",
-	"$HOME/.trash",
-	"$XDG_DATA_HOME/Trash",
-	"/tmp/Trash",
-	"/var/tmp/Trash",
-
-	// gomi dir
-	"$HOME/.gomi",
-
-	// Critical system directories
-	"/",
-	"/etc",
-	"/usr",
-	"/var",
-	"/bin",
-	"/sbin",
-	"/lib",
-	"/lib64",
-}
-
 // Put moves files to trash
 func (c *CLI) Put(args []string) error {
 	slog.Debug("cli.put started")
@@ -80,7 +57,7 @@ func (c *CLI) processFile(arg string, failed *syncStringSlice) error {
 	}
 
 	// Check for forbidden paths
-	if isForbiddenPath(expandedPath) {
+	if c.isForbiddenPath(expandedPath) {
 		failed.Append(arg)
 		return fmt.Errorf("refusing to remove forbidden path: %q", arg)
 	}
@@ -161,10 +138,10 @@ func expandPath(path string) (string, error) {
 }
 
 // isForbiddenPath checks if the given path is in the forbidden paths list
-func isForbiddenPath(path string) bool {
+func (c *CLI) isForbiddenPath(path string) bool {
 	path = filepath.Clean(path)
 
-	for _, forbiddenPath := range forbiddenPaths {
+	for _, forbiddenPath := range c.config.Core.Trash.ForbiddenPaths {
 		// Expand forbidden path with environment variables
 		expandedForbiddenPath := os.ExpandEnv(forbiddenPath)
 		expandedForbiddenPath = filepath.Clean(expandedForbiddenPath)

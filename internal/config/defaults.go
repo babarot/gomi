@@ -16,6 +16,25 @@ func NewDefaultConfig() *Config {
 				Strategy:     "auto",
 				HomeFallback: true,
 				GomiDir:      filepath.Join(homedir, ".gomi"),
+				ForbiddenPaths: []string{
+					// Default trash-related paths
+					"$HOME/.local/share/Trash",
+					"$HOME/.trash",
+					"$XDG_DATA_HOME/Trash",
+					"/tmp/Trash",
+					"/var/tmp/Trash",
+					// gomi dir
+					"$HOME/.gomi",
+					// Critical system directories
+					"/",
+					"/etc",
+					"/usr",
+					"/var",
+					"/bin",
+					"/sbin",
+					"/lib",
+					"/lib64",
+				},
 			},
 			Restore: RestoreConfig{
 				Confirm: true,
