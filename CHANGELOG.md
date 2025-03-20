@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.6.1](https://github.com/babarot/gomi/compare/v1.6.0...v1.6.1) - 2025-03-20
+### New Features
+- Make forbidden paths configurable by @babarot in https://github.com/babarot/gomi/pull/95
+
 ## [v1.6.0](https://github.com/babarot/gomi/compare/v1.5.1...v1.6.0) - 2025-02-26
 ### New Features
 - Add `--prune` option for trash management by @babarot in https://github.com/babarot/gomi/pull/88
