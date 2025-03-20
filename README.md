@@ -169,6 +169,22 @@ core:
 
     home_fallback: true # If true, fallbacks to home trash when external trash fails
 
+    forbidden_paths:    # List of paths that cannot be moved to trash for safety
+      - "$HOME/.local/share/Trash"
+      - "$HOME/.trash"
+      - "$XDG_DATA_HOME/Trash"
+      - "/tmp/Trash"
+      - "/var/tmp/Trash"
+      - "$HOME/.gomi"
+      - "/"
+      - "/etc"
+      - "/usr"
+      - "/var"
+      - "/bin"
+      - "/sbin"
+      - "/lib"
+      - "/lib64"
+
   restore:
     confirm: false      # If true, prompts for confirmation before restoring (yes/no)
     verbose: true       # If true, displays detailed restoration information
