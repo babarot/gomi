@@ -33,7 +33,8 @@ type RestoreItemStyles struct {
 	DimmedTitle lipgloss.Style
 	DimmedDesc  lipgloss.Style
 
-	FilterMatch lipgloss.Style
+	FilterMatch  lipgloss.Style
+	FilterPrompt lipgloss.Style
 }
 
 func NewRestoreItemStyles(cfg config.UI) (s RestoreItemStyles) {
@@ -68,7 +69,13 @@ func NewRestoreItemStyles(cfg config.UI) (s RestoreItemStyles) {
 	s.DimmedDesc = s.DimmedTitle.
 		Foreground(lipgloss.AdaptiveColor{Light: "#C2B8C2", Dark: "#4D4D4D"})
 
-	s.FilterMatch = lipgloss.NewStyle().Underline(true)
+	s.FilterMatch = lipgloss.NewStyle().
+		Foreground(lipgloss.Color(cfg.Style.ListView.FilterMatch)).
+		Underline(true)
+
+	s.FilterPrompt = lipgloss.NewStyle().
+		Foreground(lipgloss.Color(cfg.Style.ListView.FilterPrompt)).
+		Underline(true)
 
 	s.SelectedTitle = lipgloss.NewStyle().
 		Foreground(lipgloss.AdaptiveColor{Light: selected, Dark: selected}).

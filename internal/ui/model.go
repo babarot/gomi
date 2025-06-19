@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/paginator"
 	"github.com/charmbracelet/bubbles/viewport"
+	"github.com/charmbracelet/lipgloss"
 )
 
 // Model represents the main UI model following the Bubble Tea pattern
@@ -72,6 +73,11 @@ func NewModel(manager *trash.Manager, files []*trash.File, cfg *config.Config) M
 	l.SetShowTitle(false)
 	l.SetShowHelp(false) // do not use default help of list model
 	l.DisableQuitKeybindings()
+	
+	// Configure filter prompt style
+	l.FilterInput.PromptStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color(cfg.UI.Style.ListView.FilterPrompt)).
+		Bold(true)
 
 	// Set paginator type based on config
 	switch cfg.UI.Paginator {

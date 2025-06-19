@@ -61,6 +61,13 @@ Restore a file to its original location. The `--restore` flag is a bit long, so 
 rm -b
 ```
 
+This launches an interactive file browser where you can:
+- Navigate through trashed files using arrow keys
+- Press `/` to start searching/filtering files by name
+- Press `Tab` to select multiple files for restoration
+- Press `Space` to preview file contents
+- Press `Enter` to restore selected files
+
 ## Installation
 
 ### Getting Started in Seconds
@@ -206,8 +213,10 @@ ui:
     directory_command: ls -F -A --color=always
   style:
     list_view:
-      cursor: "#AD58B4"   # purple
-      selected: "#5FB458" # green
+      cursor: "#AD58B4"         # purple - color of the cursor border and text
+      selected: "#5FB458"       # green - color of selected files
+      filter_match: "#F39C12"   # orange - color of matched text when searching
+      filter_prompt: "#7AA2F7"  # blue - color of the "Filter:" prompt text
       indent_on_select: false
     detail_view:
       border: "#FFFFFF"
