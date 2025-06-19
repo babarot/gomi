@@ -111,6 +111,8 @@ type ListViewConfig struct {
 	IndentOnSelect bool   `yaml:"indent_on_select"`
 	Cursor         string `yaml:"cursor" validate:"validColorCode|allowEmpty"`
 	Selected       string `yaml:"selected" validate:"validColorCode|allowEmpty"`
+	FilterMatch    string `yaml:"filter_match" validate:"validColorCode|allowEmpty"`
+	FilterPrompt   string `yaml:"filter_prompt" validate:"validColorCode|allowEmpty"`
 }
 
 // DetailViewConfig configures the detailed file view
@@ -339,5 +341,15 @@ func (c *Config) setDefault() {
 	// Since deletion is a potentially destructive operation, use a distinctive color to emphasize caution
 	if c.UI.Style.DeletionDialog == "" {
 		c.UI.Style.DeletionDialog = "205"
+	}
+	
+	// Set color for filter match highlighting
+	if c.UI.Style.ListView.FilterMatch == "" {
+		c.UI.Style.ListView.FilterMatch = "#F39C12"
+	}
+	
+	// Set color for filter prompt
+	if c.UI.Style.ListView.FilterPrompt == "" {
+		c.UI.Style.ListView.FilterPrompt = "#7AA2F7"
 	}
 }

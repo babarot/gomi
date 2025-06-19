@@ -18,12 +18,13 @@ type Styles struct {
 
 // ListStyles contains styles for list view
 type ListStyles struct {
-	Normal      lipgloss.Style
-	Selected    lipgloss.Style
-	Cursor      lipgloss.Style
-	Description lipgloss.Style
-	Title       lipgloss.Style
-	FilterMatch lipgloss.Style
+	Normal       lipgloss.Style
+	Selected     lipgloss.Style
+	Cursor       lipgloss.Style
+	Description  lipgloss.Style
+	Title        lipgloss.Style
+	FilterMatch  lipgloss.Style
+	FilterPrompt lipgloss.Style
 }
 
 // DetailStyles contains styles for detail view
@@ -103,7 +104,11 @@ func New(cfg config.UI) *Styles {
 			Padding(0, 1).
 			Bold(true),
 		FilterMatch: lipgloss.NewStyle().
+			Foreground(lipgloss.Color(cfg.Style.ListView.FilterMatch)).
 			Underline(true),
+		FilterPrompt: lipgloss.NewStyle().
+			Foreground(lipgloss.Color(cfg.Style.ListView.FilterPrompt)).
+			Bold(true),
 	}
 
 	s.Detail = DetailStyles{

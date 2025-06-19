@@ -57,6 +57,8 @@ func NewDefaultConfig() *Config {
 					IndentOnSelect: true,
 					Cursor:         "#AD58B4",
 					Selected:       "#5FB458",
+					FilterMatch:    "#F39C12",
+					FilterPrompt:   "#7AA2F7",
 				},
 				DetailView: DetailViewConfig{
 					Border: "#EEEEDD",
