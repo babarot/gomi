@@ -379,8 +379,14 @@ The `--debug` flag has two modes:
 
 ## Related
 
+### CLI Trash Tools
+
 - [andreafrancia/trash-cli](https://github.com/andreafrancia/trash-cli)
 - [sindresorhus/trash](https://github.com/sindresorhus/trash)
+
+### Editor Integration
+
+- [babarot/rm.nvim](https://github.com/babarot/rm.nvim) - Neovim plugin for safe file deletion with `gomi` support
 
 ## License
 
