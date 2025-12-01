@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.6.2](https://github.com/babarot/gomi/compare/v1.6.1...v1.6.2) - 2025-12-01
+### Bug fixes
+- Fix: Use os.Lstat instead of os.Stat to support broken symlinks by @babarot in https://github.com/babarot/gomi/pull/106
+
 ## [v1.6.1](https://github.com/babarot/gomi/compare/v1.6.0...v1.6.1) - 2025-06-19
 ### New Features
 - Make forbidden paths configurable by @babarot in https://github.com/babarot/gomi/pull/95
