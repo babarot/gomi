@@ -80,8 +80,8 @@ func (c *CLI) processFile(arg string, failed *syncStringSlice) error {
 		return fmt.Errorf("failed to get absolute path: %w", err)
 	}
 
-	// Check if file exists
-	if _, err := os.Stat(path); os.IsNotExist(err) {
+	// Check if file exists (use Lstat to handle broken symlinks)
+	if _, err := os.Lstat(path); os.IsNotExist(err) {
 		if !c.option.Rm.Force {
 			failed.Append(arg)
 			return fmt.Errorf("%s: no such file or directory", arg)
