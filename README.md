@@ -13,7 +13,7 @@ In a typical CLI, there’s no "trash" folder like in graphical file managers. T
 ## Features
 
 - 🔄 Familiar syntax - works just like rm command but with a safety net
-- 🎯 [XDG Trash spec](https://specifications.freedesktop.org/trash-spec/latest/) compliant - integrates perfectly with your desktop environment
+- 🎯 [XDG Trash spec](https://specifications.freedesktop.org/trash/latest/) compliant - integrates perfectly with your desktop environment
 - 👀 Beautiful TUI for browsing and restoring deleted files
 - ⚡️ Blazing fast with concurrent operations
 - 🖥️ Cross-platform support (Linux, macOS, Windows)
@@ -24,7 +24,7 @@ In a typical CLI, there’s no "trash" folder like in graphical file managers. T
 
 <!--
 - Functions like the `rm` command but moves files to the trash instead of permanently deleting them.
-- Follows the [XDG Trash specification](https://specifications.freedesktop.org/trash-spec/latest/) for modern Linux desktop environments:
+- Follows the [XDG Trash specification](https://specifications.freedesktop.org/trash/latest/) for modern Linux desktop environments:
   - Supports `$XDG_DATA_HOME/Trash` or `~/.local/share/Trash`
   - Compatible with other applications using the XDG trash
 - Simple and intuitive restoration process with a user-friendly interface.
