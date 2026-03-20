@@ -23,25 +23,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         id: run-tagpr
-      - name: Check for changelog
-        if: steps.run-tagpr.outputs.pull_request != ''
-        uses: babarot/changelog-empty-check-action@d76c23d5d734c5e72877d184a15d272bc39cef4b # v0.0.19
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          label-name: changelog/missing
-          pull-request-number: ${{ fromJSON(steps.run-tagpr.outputs.pull_request).number }}
-          warning-message: |
-            ## 🚨 Not Mergeable: Changelog Update Required
-            This is a release PR, waiting to be merged when a new release is ready.
-            However, there are currently no changes that would be reflected in the Changelog—meaning there are no updates significant enough to justify a new release.
-            As a result, this PR is in a waiting state. Once a meaningful update is made and the Changelog is updated accordingly, this PR can be merged.
-          success-message: |
-            ## ✅ Mergeable: Changelog Updated
-            New changes have been added and reflected in the Changelog, making this release PR ready to be merged.
-            Please perform a final check, and if everything looks good, proceed with the merge.
     outputs:
       tag: ${{ steps.run-tagpr.outputs.tag }}
-
 
   goreleaser:
     if: needs.tagpr.outputs.tag != ''
@@ -54,12 +37,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # https://github.com/actions/checkout/issues/1471
+          fetch-depth: 0
           fetch-tags: true
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: 'go.mod'
+          go-version-file: go.mod
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
