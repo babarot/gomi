@@ -4,10 +4,26 @@ import (
 	"log/slog"
 
 	"github.com/babarot/gomi/internal/ui/keys"
+	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/fatih/color"
 )
+
+// newHelpModel creates a help model with adaptive colors for light/dark terminals.
+func newHelpModel() help.Model {
+	h := help.New()
+	h.Styles.ShortKey = lipgloss.NewStyle().
+		Foreground(lipgloss.AdaptiveColor{Light: "#626262", Dark: "#626262"})
+	h.Styles.ShortDesc = lipgloss.NewStyle().
+		Foreground(lipgloss.AdaptiveColor{Light: "#808080", Dark: "#4A4A4A"})
+	h.Styles.ShortSeparator = lipgloss.NewStyle().
+		Foreground(lipgloss.AdaptiveColor{Light: "#999999", Dark: "#3C3C3C"})
+	h.Styles.FullKey = h.Styles.ShortKey
+	h.Styles.FullDesc = h.Styles.ShortDesc
+	h.Styles.FullSeparator = h.Styles.ShortSeparator
+	return h
+}
 
 // View returns the string representation of the current UI state
 func (m Model) View() string {

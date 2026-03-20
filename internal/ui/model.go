@@ -97,6 +97,6 @@ func NewModel(manager *trash.Manager, files []*trash.File, cfg *config.Config) M
 		list:         l,
 		viewport:     viewport.Model{},
 		styles:       styles.New(cfg.UI),
-		help:         help.New(),
+		help:         newHelpModel(),
 	}
 }
