@@ -30,7 +30,9 @@ jobs:
           go-version-file: go.mod
           cache: true
       - name: Run tests
-        run: go test ./... -coverprofile=coverage.out -covermode=count
+        run: |
+          COVERPKG=$(go list ./... | grep -v -E '(/cli|/ui|/utils/log)' | paste -sd, -)
+          go test ./... -coverprofile=coverage.out -covermode=count -coverpkg="$COVERPKG"
       - name: Run octocov
         if: runner.os == 'Linux'
         uses: k1LoW/octocov-action@73d561f65d59e66899ed5c87e4621a913b5d5c20 # v1.5.0

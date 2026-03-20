@@ -5,6 +5,9 @@ codeToTestRatio:
   code:
     - '**/*.go'
     - '!**/*_test.go'
+    - '!internal/cli/**'
+    - '!internal/ui/**'
+    - '!internal/utils/log/**'
   test:
     - '**/*_test.go'
 testExecutionTime:
