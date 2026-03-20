@@ -16,6 +16,9 @@ changelog:
     - title: Deprecated features
       labels:
         - kind/deprecation
+    - title: Improvements
+      labels:
+        - kind/improvement
     - title: Refactorings
       labels:
         - kind/cleanup
