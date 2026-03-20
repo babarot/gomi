@@ -257,7 +257,7 @@ history:
     globs:
     - "*.jpg"        # Exclude JPEG files
     size:
-      min: 0KB       # Exclude empty files
+      min: ""        # No minimum size filter (set e.g. "1KB" to exclude empty files)
       max: 10GB      # Exclude files larger than 10GB
 
 # Enables debugging and operation logging for gomi.

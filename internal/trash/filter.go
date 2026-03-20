@@ -149,14 +149,14 @@ func rejectBySize[T Filterable](
 		include := true
 		if size.Min != "" {
 			if min, err := units.FromHumanSize(size.Min); err == nil {
-				if dirSize <= min {
+				if dirSize < min {
 					include = false
 				}
 			}
 		}
 		if size.Max != "" {
 			if max, err := units.FromHumanSize(size.Max); err == nil {
-				if max <= dirSize {
+				if max < dirSize {
 					include = false
 				}
 			}

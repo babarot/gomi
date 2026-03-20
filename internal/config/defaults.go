@@ -98,7 +98,6 @@ func NewDefaultConfig() *Config {
 				Patterns: []string{},
 				Globs:    []string{},
 				Size: SizeConfig{
-					Min: "0KB",
 					Max: "10GB",
 				},
 			},
