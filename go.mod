@@ -1,8 +1,6 @@
 module github.com/babarot/gomi
 
-go 1.23.0
-
-toolchain go1.24.0
+go 1.25.0
 
 require (
 	al.essio.dev/pkg/shellescape v1.5.1
@@ -33,7 +31,7 @@ require (
 	github.com/otiai10/copy v1.14.1
 	github.com/rs/xid v1.6.0
 	github.com/samber/lo v1.49.1
-	golang.org/x/sync v0.12.0
+	golang.org/x/sync v0.20.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -58,11 +56,11 @@ require (
 	github.com/otiai10/mint v1.6.3 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sahilm/fuzzy v0.1.1 // indirect
-	golang.org/x/crypto v0.36.0 // indirect
+	golang.org/x/crypto v0.49.0 // indirect
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0 // indirect
 	golang.org/x/image v0.20.0 // indirect
-	golang.org/x/net v0.38.0 // indirect
-	golang.org/x/sys v0.31.0 // indirect
-	golang.org/x/text v0.23.0 // indirect
+	golang.org/x/net v0.51.0 // indirect
+	golang.org/x/sys v0.42.0 // indirect
+	golang.org/x/text v0.35.0 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 )
