@@ -1,5 +1,14 @@
 # Changelog
 
+## [v1.6.3](https://github.com/babarot/gomi/compare/v1.6.2...v1.6.3) - 2026-03-20
+### Bug fixes
+- Fix files with dollar signs in names being incorrectly expanded by @babarot in https://github.com/babarot/gomi/pull/111
+- Fix cross-device link error in legacy storage by @babarot in https://github.com/babarot/gomi/pull/112
+### Improvements
+- Fix empty files being excluded from restore list by @babarot in https://github.com/babarot/gomi/pull/110
+- Fix gomi_dir being ignored when strategy is auto by @babarot in https://github.com/babarot/gomi/pull/113
+- Fix colors invisible on light terminal backgrounds by @babarot in https://github.com/babarot/gomi/pull/114
+
 ## [v1.6.2](https://github.com/babarot/gomi/compare/v1.6.1...v1.6.2) - 2026-02-12
 ### Bug fixes
 - Fix: Use os.Lstat instead of os.Stat to support broken symlinks by @babarot in https://github.com/babarot/gomi/pull/106
