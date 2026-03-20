@@ -1,6 +1,7 @@
 package trash
 
 import (
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -38,9 +39,13 @@ func TestConfig_Validate(t *testing.T) {
 		},
 		{
 			name: "absolute home trash dir",
-			cfg: &Config{
-				HomeTrashDir: "/tmp/trash",
-			},
+			cfg: func() *Config {
+				dir := "/tmp/trash"
+				if runtime.GOOS == "windows" {
+					dir = `C:\tmp\trash`
+				}
+				return &Config{HomeTrashDir: dir}
+			}(),
 			wantErr: "",
 		},
 		{
