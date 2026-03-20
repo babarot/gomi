@@ -9,6 +9,8 @@ In a typical CLI, there’s no "trash" folder like in graphical file managers. T
 ![demo](./docs/demo/readme.gif)
 
 [![Release](https://github.com/babarot/gomi/actions/workflows/release.yaml/badge.svg)](https://github.com/babarot/gomi/actions/workflows/release.yaml)
+[![Tests](https://github.com/babarot/gomi/actions/workflows/build.yaml/badge.svg)](https://github.com/babarot/gomi/actions/workflows/build.yaml)
+[![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/babarot/09e491ead047d9430c6b40cc7d4107c8/raw/gomi-coverage.json)](https://github.com/babarot/gomi/actions/workflows/build.yaml)
 
 ## Features
 
