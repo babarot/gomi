@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -29,6 +30,9 @@ func TestNewDefaultConfig(t *testing.T) {
 
 func TestDefaultConfigPath(t *testing.T) {
 	t.Run("with XDG_CONFIG_HOME", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("Unix-specific test")
+		}
 		t.Setenv("XDG_CONFIG_HOME", "/custom/config")
 		path, err := DefaultConfigPath()
 		if err != nil {

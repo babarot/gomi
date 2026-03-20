@@ -1,6 +1,7 @@
 package config
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/go-playground/validator/v10"
@@ -147,6 +148,9 @@ func TestExpandPath(t *testing.T) {
 			name:  "absolute path stays absolute",
 			input: "/tmp/test",
 			check: func(t *testing.T, result string) {
+				if runtime.GOOS == "windows" {
+					t.Skip("Unix-specific test")
+				}
 				if result != "/tmp/test" {
 					t.Errorf("got %q, want /tmp/test", result)
 				}

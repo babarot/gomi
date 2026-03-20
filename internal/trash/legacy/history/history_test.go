@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -31,6 +32,9 @@ func TestFile_Getters(t *testing.T) {
 
 func TestNew(t *testing.T) {
 	t.Run("with home dir", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("Unix-specific test")
+		}
 		h := New("/custom/home", config.History{})
 		if h.home != "/custom/home" {
 			t.Errorf("home = %q, want %q", h.home, "/custom/home")

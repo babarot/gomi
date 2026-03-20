@@ -1,6 +1,7 @@
 package xdg
 
 import (
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -110,6 +111,9 @@ func TestEncodeTrashPath(t *testing.T) {
 }
 
 func TestTrashInfo_GetAbsolutePath(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix-specific test")
+	}
 	tests := []struct {
 		name      string
 		path      string
@@ -132,6 +136,9 @@ func TestTrashInfo_GetAbsolutePath(t *testing.T) {
 }
 
 func TestTrashInfo_GetRelativePath(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix-specific test")
+	}
 	tests := []struct {
 		name      string
 		path      string

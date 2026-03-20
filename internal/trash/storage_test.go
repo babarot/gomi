@@ -3,6 +3,7 @@ package trash
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 )
@@ -99,6 +100,9 @@ func TestFile_RequiresAdmin(t *testing.T) {
 }
 
 func TestFile_GetOriginalPath(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix-specific test")
+	}
 	tests := []struct {
 		name         string
 		originalPath string
@@ -121,6 +125,9 @@ func TestFile_GetOriginalPath(t *testing.T) {
 }
 
 func TestFile_GetRelativePath(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix-specific test")
+	}
 	tests := []struct {
 		name         string
 		originalPath string
