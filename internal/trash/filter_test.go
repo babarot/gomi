@@ -72,6 +72,12 @@ func TestRejectBySize(t *testing.T) {
 			expectedNames: []string{"file1.txt", "file2.log", "important.txt", "temp.tmp"},
 		},
 		{
+			name:          "Empty file with min 0KB is included",
+			sizeConfig:    config.SizeConfig{Min: "0KB"},
+			expectedCount: 4,
+			expectedNames: []string{"file1.txt", "file2.log", "important.txt", "temp.tmp"},
+		},
+		{
 			name:          "Filter by min size",
 			sizeConfig:    config.SizeConfig{Min: "1KB"},
 			expectedCount: 3,
