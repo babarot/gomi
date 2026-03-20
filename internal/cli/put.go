@@ -112,29 +112,13 @@ func (c *CLI) processFile(arg string, failed *syncStringSlice) error {
 	return nil
 }
 
-// expandPath expands environment variables in the path
+// expandPath resolves a file path to its clean form.
+// It does NOT expand environment variables because file arguments
+// should be treated literally — a file named "$foo" must not be
+// interpreted as an environment variable reference.
+// Shell-level expansion (e.g. ~ or $HOME) is the shell's job, not ours.
 func expandPath(path string) (string, error) {
-	// Expand environment variables
-	if strings.HasPrefix(path, "$") {
-		// Expand variables like $HOME
-		parts := strings.SplitN(path, "/", 2)
-		envVar := parts[0]
-
-		// Get environment variable value
-		expandedVar := os.ExpandEnv(envVar)
-		if expandedVar == "" {
-			return "", fmt.Errorf("environment variable %s not set", envVar)
-		}
-
-		// Add path part after environment variable
-		if len(parts) > 1 {
-			return filepath.Join(expandedVar, parts[1]), nil
-		}
-		return expandedVar, nil
-	}
-
-	// Expand environment variables in regular paths
-	return os.ExpandEnv(path), nil
+	return filepath.Clean(path), nil
 }
 
 // isForbiddenPath checks if the given path is in the forbidden paths list
