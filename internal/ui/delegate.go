@@ -51,7 +51,7 @@ func NewRestoreItemStyles(cfg config.UI) (s RestoreItemStyles) {
 		Padding(0, 0, 0, 2)
 
 	s.NormalDesc = s.NormalTitle.
-		Foreground(lipgloss.AdaptiveColor{Light: "#A49FA5", Dark: "#777777"})
+		Foreground(lipgloss.AdaptiveColor{Light: "#626262", Dark: "#777777"})
 
 	s.CursorTitle = lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder(), false, false, false, true).
@@ -63,11 +63,11 @@ func NewRestoreItemStyles(cfg config.UI) (s RestoreItemStyles) {
 		Foreground(lipgloss.AdaptiveColor{Light: cursor, Dark: cursor})
 
 	s.DimmedTitle = lipgloss.NewStyle().
-		Foreground(lipgloss.AdaptiveColor{Light: "#A49FA5", Dark: "#777777"}).
+		Foreground(lipgloss.AdaptiveColor{Light: "#808080", Dark: "#777777"}).
 		Padding(0, 0, 0, 2)
 
 	s.DimmedDesc = s.DimmedTitle.
-		Foreground(lipgloss.AdaptiveColor{Light: "#C2B8C2", Dark: "#4D4D4D"})
+		Foreground(lipgloss.AdaptiveColor{Light: "#999999", Dark: "#4D4D4D"})
 
 	s.FilterMatch = lipgloss.NewStyle().
 		Foreground(lipgloss.Color(cfg.Style.ListView.FilterMatch)).
