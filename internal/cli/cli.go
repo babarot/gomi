@@ -245,6 +245,13 @@ func newTrashManager(cfg *config.Config) (*trash.Manager, error) {
 
 	var opts []trash.ManagerOption
 
+	// If gomi_dir is explicitly set and strategy is auto, use legacy storage
+	// as the primary backend since gomi_dir only applies to legacy mode.
+	if trashConfig.GomiDir != "" && trashConfig.Strategy == trash.StrategyAuto {
+		slog.Info("gomi_dir is set, using legacy storage as primary", "gomi_dir", trashConfig.GomiDir)
+		trashConfig.Strategy = trash.StrategyLegacy
+	}
+
 	switch strategy := trashConfig.Strategy; strategy {
 	case trash.StrategyXDG:
 		// Force XDG only
