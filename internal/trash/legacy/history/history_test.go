@@ -41,8 +41,10 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("empty home uses default", func(t *testing.T) {
+		home, _ := os.UserHomeDir()
+		t.Setenv("HOME", home)
 		h := New("", config.History{})
-		want := filepath.Join(os.Getenv("HOME"), ".gomi")
+		want := filepath.Join(home, ".gomi")
 		if h.home != want {
 			t.Errorf("home = %q, want %q", h.home, want)
 		}

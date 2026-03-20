@@ -30,6 +30,10 @@ jobs:
           go-version-file: go.mod
           cache: true
       - name: Run tests
+        if: runner.os != 'Linux'
+        run: go test ./...
+      - name: Run tests with coverage
+        if: runner.os == 'Linux'
         run: |
           COVERPKG=$(go list ./... | grep -v -E '(/cli|/ui|/utils/log)' | paste -sd, -)
           go test ./... -coverprofile=coverage.out -covermode=count -coverpkg="$COVERPKG"
