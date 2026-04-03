@@ -21,8 +21,8 @@ func TestExpandPath(t *testing.T) {
 		{"foo.txt", "foo.txt"},
 		{"./foo.txt", "foo.txt"},
 		{"foo/../bar.txt", "bar.txt"},
-		{"foo/./bar.txt", "foo/bar.txt"},
-		{"/absolute/path", "/absolute/path"},
+		{"foo/./bar.txt", filepath.Join("foo", "bar.txt")},
+		{"/absolute/path", filepath.Clean("/absolute/path")},
 		{"", "."},
 	}
 
