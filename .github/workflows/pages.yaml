@@ -5,6 +5,10 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'docs/**'
+      - 'hack/install'
+      - '.github/workflows/pages.yaml'
   workflow_dispatch:
 
 permissions:
