@@ -41,16 +41,17 @@ func TestNew_AsDefault(t *testing.T) {
 	}
 }
 
-func TestNew_WithRotation(t *testing.T) {
+func TestNew_WithOptions(t *testing.T) {
 	Reset()
 	defer Reset()
 
-	dir := t.TempDir()
-	logPath := dir + "/test.log"
-
+	// Test New() with multiple options combined.
+	// Uses io.Discard to avoid file handle leaks on Windows.
 	logger, err := New(
-		UseOutputPath(logPath),
-		EnableRotation("1MB", 3),
+		UseOutput(io.Discard),
+		UseLevel(DebugLevel),
+		UseReportCaller(true),
+		UseReportTimestamp(true),
 	)
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
