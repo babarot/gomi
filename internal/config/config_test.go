@@ -17,6 +17,9 @@ func TestNewDefaultConfig(t *testing.T) {
 	if !cfg.Core.Trash.HomeFallback {
 		t.Error("HomeFallback should be true")
 	}
+	if cfg.Core.Trash.GomiDir == "" {
+		t.Error("GomiDir should not be empty")
+	}
 	if cfg.History.Include.Period != 365 {
 		t.Errorf("Period = %d, want 365", cfg.History.Include.Period)
 	}
@@ -25,6 +28,48 @@ func TestNewDefaultConfig(t *testing.T) {
 	}
 	if cfg.UI.Density != "spacious" {
 		t.Errorf("Density = %q, want %q", cfg.UI.Density, "spacious")
+	}
+
+	// Forbidden paths must include critical system dirs
+	forbiddenSet := make(map[string]bool)
+	for _, p := range cfg.Core.Trash.ForbiddenPaths {
+		forbiddenSet[p] = true
+	}
+	for _, p := range []string{"/", "/etc", "/usr", "/var", "/bin", "/sbin"} {
+		if !forbiddenSet[p] {
+			t.Errorf("ForbiddenPaths missing critical path %q", p)
+		}
+	}
+
+	// PermanentDelete should be disabled by default
+	if cfg.Core.PermanentDelete.Enable {
+		t.Error("PermanentDelete.Enable should be false by default")
+	}
+
+	// Restore defaults
+	if !cfg.Core.Restore.Confirm {
+		t.Error("Restore.Confirm should be true by default")
+	}
+
+	// Logging rotation defaults
+	if cfg.Logging.Rotation.MaxSize != "10MB" {
+		t.Errorf("Rotation.MaxSize = %q, want %q", cfg.Logging.Rotation.MaxSize, "10MB")
+	}
+	if cfg.Logging.Rotation.MaxFiles != 3 {
+		t.Errorf("Rotation.MaxFiles = %d, want 3", cfg.Logging.Rotation.MaxFiles)
+	}
+
+	// Preview defaults
+	if !cfg.UI.Preview.SyntaxHighlight {
+		t.Error("Preview.SyntaxHighlight should be true by default")
+	}
+	if cfg.UI.Paginator != "dots" {
+		t.Errorf("UI.Paginator = %q, want %q", cfg.UI.Paginator, "dots")
+	}
+
+	// History exclude defaults
+	if cfg.History.Exclude.Size.Max != "10GB" {
+		t.Errorf("History.Exclude.Size.Max = %q, want %q", cfg.History.Exclude.Size.Max, "10GB")
 	}
 }
 
