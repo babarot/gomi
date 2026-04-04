@@ -35,7 +35,10 @@ func (c *CLI) Restore() error {
 	}
 
 	// Show UI for file selection
-	selected, err := ui.Render(c.manager, filtered, c.config)
+	selected, err := ui.Render(c.manager, filtered, ui.RenderOptions{
+		Config:        c.config.UI,
+		DeleteEnabled: c.config.Core.PermanentDelete.Enable,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to show file selection UI: %w", err)
 	}

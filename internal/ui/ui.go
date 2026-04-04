@@ -46,6 +46,13 @@ var (
 	ErrInputCanceled = errors.New("input is canceled")
 )
 
+// RenderOptions holds the configuration needed by the UI layer.
+// This avoids passing the full config.Config to the UI package.
+type RenderOptions struct {
+	Config        config.UI
+	DeleteEnabled bool
+}
+
 // Init implements tea.Model
 func (m Model) Init() tea.Cmd {
 	return tea.Batch(
@@ -56,9 +63,9 @@ func (m Model) Init() tea.Cmd {
 }
 
 // Render displays the file selection interface and returns the selected files
-func Render(manager trash.Trash, files []*trash.File, cfg *config.Config) ([]*trash.File, error) {
+func Render(manager trash.Trash, files []*trash.File, opts RenderOptions) ([]*trash.File, error) {
 	// Create and initialize the model
-	m := NewModel(manager, files, cfg)
+	m := NewModel(manager, files, opts)
 
 	// Initialize UI program
 	p := tea.NewProgram(m)
@@ -75,7 +82,7 @@ func Render(manager trash.Trash, files []*trash.File, cfg *config.Config) ([]*tr
 		return nil, fmt.Errorf("unexpected model type: %T", result)
 	}
 	if finalModel.state.current == Quitting {
-		if msg := cfg.UI.ExitMessage; msg != "" {
+		if msg := opts.Config.ExitMessage; msg != "" {
 			fmt.Println(msg)
 		}
 		return nil, nil
