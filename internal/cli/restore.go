@@ -84,7 +84,7 @@ func (c *CLI) restoreFile(file *trash.File) error {
 	// Check if the file exists at the original location
 	if _, err := os.Stat(originalPath); err == nil {
 		// File exists at original location, ask for new name if necessary
-		newName, err := ui.InputFilename(file)
+		newName, err := c.prompter.InputFilename(file)
 		if err != nil {
 			if errors.Is(err, ui.ErrInputCanceled) {
 				c.printVerbose("Canceled! No new filename input.\n")
@@ -97,7 +97,7 @@ func (c *CLI) restoreFile(file *trash.File) error {
 	}
 
 	// If configured, ask for confirmation
-	if c.config.Core.Restore.Confirm && !ui.Confirm(fmt.Sprintf("OK to restore? %s", filepath.Base(originalPath))) {
+	if c.config.Core.Restore.Confirm && !c.prompter.Confirm(fmt.Sprintf("OK to restore? %s", filepath.Base(originalPath))) {
 		c.printVerbose("Replied no, canceled!\n")
 		return nil
 	}
@@ -105,7 +105,7 @@ func (c *CLI) restoreFile(file *trash.File) error {
 	// Check again if destination exists (might have been created while confirming)
 	if _, err := os.Stat(originalPath); err == nil {
 		msg := fmt.Sprintf("Caution! The same name already exists. Even so okay to restore? %s", filepath.Base(originalPath))
-		if !ui.Confirm(msg) {
+		if !c.prompter.Confirm(msg) {
 			c.printVerbose("Replied no, canceled!\n")
 			return nil
 		}
