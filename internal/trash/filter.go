@@ -23,6 +23,8 @@ type Filterable interface {
 	GetPath() string
 	// GetDeletedAt returns when the file was trashed
 	GetDeletedAt() time.Time
+	// GetSize returns the cached size in bytes, or 0 if unknown
+	GetSize() int64
 }
 
 // FilterOptions holds filtering configuration
@@ -60,7 +62,7 @@ func Filter[T Filterable](items []T, opts FilterOptions) []T {
 	slog.Debug("after glob filtering", "len(items)", len(items))
 
 	// Filter by size
-	items = rejectBySize(items, opts.Exclude.Size, nil)
+	items = rejectBySize(items, opts.Exclude.Size)
 	slog.Debug("after size filtering", "len(items)", len(items))
 
 	// Filter by time period
@@ -127,32 +129,34 @@ func rejectByGlobs[T Filterable](items []T, globs []string) []T {
 	return filtered
 }
 
-func rejectBySize[T Filterable](
-	items []T,
-	size config.SizeConfig,
-	dirSizeFunc func(string) (int64, error),
-) []T {
-	if dirSizeFunc == nil {
-		dirSizeFunc = fs.DirSize
+func rejectBySize[T Filterable](items []T, size config.SizeConfig) []T {
+	if size.Min == "" && size.Max == "" {
+		return items
 	}
+
 	var filtered []T
 	for _, item := range items {
-		dirSize, err := dirSizeFunc(item.GetPath())
-		if err != nil {
-			continue // Skip items we can't size
+		// Use cached size from List(); fall back to DirSize for unknown sizes
+		fileSize := item.GetSize()
+		if fileSize == 0 {
+			var err error
+			fileSize, err = fs.DirSize(item.GetPath())
+			if err != nil {
+				continue // Skip items we can't size
+			}
 		}
 
 		include := true
 		if size.Min != "" {
 			if min, err := units.FromHumanSize(size.Min); err == nil {
-				if dirSize < min {
+				if fileSize < min {
 					include = false
 				}
 			}
 		}
 		if size.Max != "" {
 			if max, err := units.FromHumanSize(size.Max); err == nil {
-				if max < dirSize {
+				if max < fileSize {
 					include = false
 				}
 			}

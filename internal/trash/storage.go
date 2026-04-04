@@ -98,6 +98,10 @@ func (f *File) GetDeletedAt() time.Time {
 	return f.DeletedAt
 }
 
+func (f *File) GetSize() int64 {
+	return f.Size
+}
+
 // Exists checks if the file still exists in the trash
 func (f *File) Exists() bool {
 	_, err := os.Stat(f.TrashPath)

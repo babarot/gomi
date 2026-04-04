@@ -1,7 +1,6 @@
 package trash
 
 import (
-	"fmt"
 	"slices"
 	"testing"
 	"time"
@@ -13,52 +12,28 @@ import (
 type TestItem struct {
 	name      string
 	path      string
+	size      int64
 	deletedAt time.Time
 }
 
-func (t TestItem) GetName() string {
-	return t.name
-}
-
-func (t TestItem) GetPath() string {
-	return t.path
-}
-
-func (t TestItem) GetDeletedAt() time.Time {
-	return t.deletedAt
-}
+func (t TestItem) GetName() string         { return t.name }
+func (t TestItem) GetPath() string         { return t.path }
+func (t TestItem) GetDeletedAt() time.Time { return t.deletedAt }
+func (t TestItem) GetSize() int64          { return t.size }
 
 // createTestItems generates a slice of test items for various test scenarios
 func createTestItems() []TestItem {
 	now := time.Now()
 	return []TestItem{
-		{name: "file1.txt", path: "/trash/file1.txt", deletedAt: now.Add(-24 * time.Hour)},
-		{name: "file2.log", path: "/trash/file2.log", deletedAt: now.Add(-48 * time.Hour)},
-		{name: "important.txt", path: "/trash/important.txt", deletedAt: now.Add(-72 * time.Hour)},
-		{name: "temp.tmp", path: "/trash/temp.tmp", deletedAt: now.Add(-96 * time.Hour)},
-	}
-}
-
-// createMockDirSizeFunc creates a mock DirSize function for testing
-func createMockDirSizeFunc() func(string) (int64, error) {
-	return func(path string) (int64, error) {
-		sizemap := map[string]int64{
-			"/trash/file1.txt":     100,    // 100 bytes
-			"/trash/file2.log":     1024,   // 1 KB
-			"/trash/important.txt": 10240,  // 10 KB
-			"/trash/temp.tmp":      102400, // 100 KB
-		}
-		size, exists := sizemap[path]
-		if !exists {
-			return 0, fmt.Errorf("path not found in mock")
-		}
-		return size, nil
+		{name: "file1.txt", path: "/trash/file1.txt", size: 100, deletedAt: now.Add(-24 * time.Hour)},
+		{name: "file2.log", path: "/trash/file2.log", size: 1024, deletedAt: now.Add(-48 * time.Hour)},
+		{name: "important.txt", path: "/trash/important.txt", size: 10240, deletedAt: now.Add(-72 * time.Hour)},
+		{name: "temp.tmp", path: "/trash/temp.tmp", size: 102400, deletedAt: now.Add(-96 * time.Hour)},
 	}
 }
 
 func TestRejectBySize(t *testing.T) {
 	items := createTestItems()
-	mockDirSizeFunc := createMockDirSizeFunc()
 
 	testCases := []struct {
 		name          string
@@ -101,7 +76,7 @@ func TestRejectBySize(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Use the mock DirSize function in the filter
-			filtered := rejectBySize(items, tc.sizeConfig, mockDirSizeFunc)
+			filtered := rejectBySize(items, tc.sizeConfig)
 
 			if len(filtered) != tc.expectedCount {
 				t.Errorf("Expected %d items, got %d", tc.expectedCount, len(filtered))
@@ -119,14 +94,12 @@ func TestRejectBySize(t *testing.T) {
 }
 
 func TestFilter(t *testing.T) {
-	mockDirSizeFunc := createMockDirSizeFunc()
-
 	now := time.Now()
 	items := []TestItem{
-		{name: "file1.txt", path: "/trash/file1.txt", deletedAt: now.Add(-24 * time.Hour)},
-		{name: "file2.log", path: "/trash/file2.log", deletedAt: now.Add(-48 * time.Hour)},
-		{name: "important.txt", path: "/trash/important.txt", deletedAt: now.Add(-72 * time.Hour)},
-		{name: "temp.tmp", path: "/trash/temp.tmp", deletedAt: now.Add(-96 * time.Hour)},
+		{name: "file1.txt", path: "/trash/file1.txt", size: 100, deletedAt: now.Add(-24 * time.Hour)},
+		{name: "file2.log", path: "/trash/file2.log", size: 1024, deletedAt: now.Add(-48 * time.Hour)},
+		{name: "important.txt", path: "/trash/important.txt", size: 10240, deletedAt: now.Add(-72 * time.Hour)},
+		{name: "temp.tmp", path: "/trash/temp.tmp", size: 102400, deletedAt: now.Add(-96 * time.Hour)},
 	}
 
 	testCases := []struct {
@@ -161,8 +134,7 @@ func TestFilter(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Use the mock DirSize function in the filter
-			filtered := rejectBySize(items, tc.filterOptions.Exclude.Size, mockDirSizeFunc)
+			filtered := rejectBySize(items, tc.filterOptions.Exclude.Size)
 
 			if len(filtered) != tc.expectedCount {
 				t.Errorf("Expected %d items, got %d", tc.expectedCount, len(filtered))

@@ -51,6 +51,10 @@ func (f File) GetDeletedAt() time.Time {
 	return f.Timestamp
 }
 
+func (f File) GetSize() int64 {
+	return 0 // Size is not stored in legacy history; will fall back to DirSize
+}
+
 func New(home string, c config.History) History {
 	if home == "" {
 		home = filepath.Join(os.Getenv("HOME"), ".gomi")
