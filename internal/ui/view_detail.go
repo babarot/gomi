@@ -27,7 +27,7 @@ func (m Model) renderHeader() string {
 	return m.styles.RenderDetailTitle(
 		m.detailFile.Title(),
 		defaultWidth,
-		m.detailFile.isSelected(),
+		m.selection.Contains(m.detailFile),
 	)
 }
 

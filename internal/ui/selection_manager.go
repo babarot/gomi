@@ -1,9 +1,6 @@
 package ui
 
-var (
-	selectionManager = &SelectionManager{items: []File{}}
-)
-
+// SelectionManager tracks which files the user has selected for restoration
 type SelectionManager struct {
 	items []File
 }

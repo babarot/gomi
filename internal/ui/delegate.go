@@ -110,13 +110,14 @@ type RestoreDelegate struct {
 	ShortHelpFunc func() []key.Binding
 	FullHelpFunc  func() [][]key.Binding
 
+	selection       *SelectionManager
 	showDescription bool
 	height          int
 	spacing         int
 }
 
 // NewRestoreDelegate creates a new delegate with Restore styles.
-func NewRestoreDelegate(cfg config.UI, files []File) RestoreDelegate {
+func NewRestoreDelegate(cfg config.UI, files []File, selection *SelectionManager) RestoreDelegate {
 	var height = 2
 	var spacing = 1
 
@@ -134,6 +135,7 @@ func NewRestoreDelegate(cfg config.UI, files []File) RestoreDelegate {
 	}
 
 	return RestoreDelegate{
+		selection:       selection,
 		showDescription: showDescription,
 		Styles:          NewRestoreItemStyles(cfg),
 		height:          height,
@@ -213,14 +215,14 @@ func (d RestoreDelegate) Render(w io.Writer, m list.Model, index int, item list.
 			matched := unmatched.Inherit(s.FilterMatch)
 			title = lipgloss.StyleRunes(title, matchedRunes, matched, unmatched)
 		}
-		if file.isSelected() {
+		if d.selection.Contains(file) {
 			title = s.SelectedCursorTitle.Render(title)
 			desc = s.SelectedCursorDesc.Render(desc)
 		} else {
 			title = s.CursorTitle.Render(title)
 			desc = s.CursorDesc.Render(desc)
 		}
-	} else if file.isSelected() {
+	} else if d.selection.Contains(file) {
 		title = s.SelectedTitle.Render(title)
 		desc = s.SelectedDesc.Render(desc)
 	} else {
