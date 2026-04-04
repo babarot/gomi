@@ -9,6 +9,7 @@ import (
 
 	"github.com/babarot/gomi/internal/config"
 	"github.com/babarot/gomi/internal/trash"
+	"github.com/babarot/gomi/internal/trash/xdg"
 	"github.com/babarot/gomi/internal/utils/log"
 )
 
@@ -295,50 +296,6 @@ func TestPrune_EmptyArg(t *testing.T) {
 	}
 }
 
-func TestParseTrashInfoFile(t *testing.T) {
-	dir := t.TempDir()
-	infoFile := filepath.Join(dir, "test.trashinfo")
-
-	content := "[Trash Info]\nPath=/home/user/test.txt\nDeletionDate=2024-06-15T10:30:00\n"
-	if err := os.WriteFile(infoFile, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	orphan, err := parseTrashInfoFile(infoFile)
-	if err != nil {
-		t.Fatalf("parseTrashInfoFile() error = %v", err)
-	}
-	if orphan.OriginalPath != "/home/user/test.txt" {
-		t.Errorf("OriginalPath = %q, want %q", orphan.OriginalPath, "/home/user/test.txt")
-	}
-	if orphan.DeletedAt.Year() != 2024 || orphan.DeletedAt.Month() != 6 || orphan.DeletedAt.Day() != 15 {
-		t.Errorf("DeletedAt = %v, unexpected", orphan.DeletedAt)
-	}
-	if orphan.TrashInfoPath != infoFile {
-		t.Errorf("TrashInfoPath = %q, want %q", orphan.TrashInfoPath, infoFile)
-	}
-}
-
-func TestParseTrashInfoFile_InvalidDate(t *testing.T) {
-	dir := t.TempDir()
-	infoFile := filepath.Join(dir, "bad.trashinfo")
-	if err := os.WriteFile(infoFile, []byte("Path=/foo\nDeletionDate=not-a-date\n"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	_, err := parseTrashInfoFile(infoFile)
-	if err == nil {
-		t.Error("expected error for invalid date")
-	}
-}
-
-func TestParseTrashInfoFile_NonExistent(t *testing.T) {
-	_, err := parseTrashInfoFile("/nonexistent/file.trashinfo")
-	if err == nil {
-		t.Error("expected error for non-existent file")
-	}
-}
-
 func TestPruneArgs_UnmarshalFlag(t *testing.T) {
 	var p PruneArgs
 	if err := p.UnmarshalFlag("30d,orphans"); err != nil {
@@ -353,7 +310,7 @@ func TestPruneArgs_UnmarshalFlag(t *testing.T) {
 }
 
 func TestOrphanedFile_Getters(t *testing.T) {
-	o := OrphanedFile{
+	o := xdg.OrphanedFile{
 		TrashInfoName: "test.trashinfo",
 	}
 	if o.GetName() != "test.trashinfo" {
