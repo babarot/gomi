@@ -329,7 +329,6 @@ func (s *Storage) listLocation(loc *trashLocation) ([]*trash.File, error) {
 			IsDir:        fileInfo.IsDir(),
 			FileMode:     fileInfo.Mode(),
 		}
-		file.SetStorage(s)
 		files = append(files, file)
 	}
 

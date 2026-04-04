@@ -156,7 +156,6 @@ func (s *Storage) List() ([]*trash.File, error) {
 			file.FileMode = info.Mode()
 		}
 
-		file.SetStorage(s)
 		files = append(files, file)
 	}
 
