@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -17,6 +18,9 @@ import (
 
 // Storage implements the trash.Storage interface for legacy (.gomi) storage
 type Storage struct {
+	// mu protects history access for concurrent Put/Restore/Remove calls
+	mu sync.Mutex
+
 	// Root directory for trash storage (~/.gomi)
 	root string
 
@@ -98,7 +102,8 @@ func (s *Storage) Put(src string) error {
 		return trash.NewStorageError("put", src, err)
 	}
 
-	// Add to history
+	// Add to history (protected by mutex for concurrent Put calls)
+	s.mu.Lock()
 	s.history.Add(history.File{
 		Name:      filepath.Base(abs),
 		ID:        id,
@@ -110,6 +115,7 @@ func (s *Storage) Put(src string) error {
 
 	// Save history
 	if err := s.saveHistory(); err != nil {
+		s.mu.Unlock()
 		// Try to roll back the file move
 		if moveErr := fs.Move(trashPath, abs, true); moveErr != nil {
 			return trash.NewStorageError(
@@ -122,14 +128,19 @@ func (s *Storage) Put(src string) error {
 			src,
 			fmt.Errorf("failed to save history: %w", err))
 	}
+	s.mu.Unlock()
 
 	return nil
 }
 
 func (s *Storage) List() ([]*trash.File, error) {
+	s.mu.Lock()
+	filtered := s.history.Filter()
+	s.mu.Unlock()
+
 	var files []*trash.File
 
-	for _, f := range s.history.Filter() {
+	for _, f := range filtered {
 		// Convert legacy File to trash.File
 		file := &trash.File{
 			Name:         f.Name,
@@ -167,13 +178,14 @@ func (s *Storage) Restore(file *trash.File, dst string) error {
 		return trash.NewStorageError("restore", dst, err)
 	}
 
-	// Remove from history
+	// Remove from history (protected by mutex)
+	s.mu.Lock()
 	s.history.RemoveByPath(file.TrashPath)
-
-	// Save history
 	if err := s.saveHistory(); err != nil {
+		s.mu.Unlock()
 		return trash.NewStorageError("restore", dst, fmt.Errorf("failed to save history: %w", err))
 	}
+	s.mu.Unlock()
 
 	return nil
 }
@@ -184,13 +196,14 @@ func (s *Storage) Remove(file *trash.File) error {
 		return trash.NewStorageError("remove", file.TrashPath, err)
 	}
 
-	// Remove from history
+	// Remove from history (protected by mutex)
+	s.mu.Lock()
 	s.history.RemoveByPath(file.TrashPath)
-
-	// Save history
 	if err := s.saveHistory(); err != nil {
+		s.mu.Unlock()
 		return trash.NewStorageError("remove", file.TrashPath, fmt.Errorf("failed to save history: %w", err))
 	}
+	s.mu.Unlock()
 
 	return nil
 }
