@@ -16,7 +16,7 @@ import (
 // Model represents the main UI model following the Bubble Tea pattern
 type Model struct {
 	// Manager handles trash operations
-	trashManager *trash.Manager
+	trashManager trash.Trash
 
 	// State management
 	state *ViewState
@@ -46,7 +46,7 @@ type Model struct {
 }
 
 // NewModel creates a new UI model instance
-func NewModel(manager *trash.Manager, files []*trash.File, cfg *config.Config) Model {
+func NewModel(manager trash.Trash, files []*trash.File, cfg *config.Config) Model {
 	var items []list.Item
 	var fileList []File
 

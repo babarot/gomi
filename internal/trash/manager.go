@@ -28,6 +28,15 @@ const (
 	StrategyNone Strategy = ""
 )
 
+// Trash defines the interface for trash operations.
+// It is implemented by Manager and can be mocked in tests.
+type Trash interface {
+	Put(src string) error
+	List() ([]*File, error)
+	Restore(file *File, dst string) error
+	Remove(file *File) error
+}
+
 // Manager handles multiple trash storage implementations
 type Manager struct {
 	storages []Storage
