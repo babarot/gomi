@@ -37,13 +37,14 @@ func newTestModel() Model {
 	l.DisableQuitKeybindings()
 
 	return Model{
-		state:    NewViewState(),
-		keyMap:   km,
-		config:   cfg.UI,
-		list:     l,
-		viewport: viewport.Model{},
-		styles:   styles.New(cfg.UI),
-		help:     help.New(),
+		state:     NewViewState(),
+		keyMap:    km,
+		selection: &SelectionManager{items: []File{}},
+		config:    cfg.UI,
+		list:      l,
+		viewport:  viewport.Model{},
+		styles:    styles.New(cfg.UI),
+		help:      help.New(),
 	}
 }
 
@@ -190,7 +191,7 @@ func TestUpdate_DetailView_AtSignToggles(t *testing.T) {
 func TestUpdate_ConfirmView_YesNo_No(t *testing.T) {
 	m := newTestModel()
 	// Reset global selection manager for test isolation
-	selectionManager = &SelectionManager{items: []File{}}
+	m.selection = &SelectionManager{items: []File{}}
 
 	m.state.SetView(ConfirmView)
 	m.state.SetConfirmState(ConfirmStateYesNo, []File{})
@@ -207,7 +208,7 @@ func TestUpdate_ConfirmView_YesNo_No(t *testing.T) {
 
 func TestUpdate_ConfirmView_YesNo_Quit(t *testing.T) {
 	m := newTestModel()
-	selectionManager = &SelectionManager{items: []File{}}
+	m.selection = &SelectionManager{items: []File{}}
 
 	m.state.SetView(ConfirmView)
 	m.state.SetConfirmState(ConfirmStateYesNo, []File{})
@@ -226,7 +227,7 @@ func TestUpdate_ConfirmView_YesNo_Quit(t *testing.T) {
 
 func TestUpdate_ConfirmView_TypeYES_Backspace(t *testing.T) {
 	m := newTestModel()
-	selectionManager = &SelectionManager{items: []File{}}
+	m.selection = &SelectionManager{items: []File{}}
 
 	m.state.SetView(ConfirmView)
 	m.state.SetConfirmState(ConfirmStateTypeYES, []File{})
@@ -252,7 +253,7 @@ func TestUpdate_ConfirmView_TypeYES_Backspace(t *testing.T) {
 
 func TestUpdate_ConfirmView_TypeYES_Esc(t *testing.T) {
 	m := newTestModel()
-	selectionManager = &SelectionManager{items: []File{}}
+	m.selection = &SelectionManager{items: []File{}}
 
 	m.state.SetView(ConfirmView)
 	m.state.SetConfirmState(ConfirmStateTypeYES, []File{})
@@ -268,7 +269,7 @@ func TestUpdate_ConfirmView_TypeYES_Esc(t *testing.T) {
 
 func TestUpdate_ListView_Enter_NoFiles(t *testing.T) {
 	m := newTestModel()
-	selectionManager = &SelectionManager{items: []File{}}
+	m.selection = &SelectionManager{items: []File{}}
 	m.state.SetView(ListView)
 
 	// Add an item to the list so SelectedItem works
@@ -293,7 +294,7 @@ func TestUpdate_ListView_Enter_WithSelection(t *testing.T) {
 
 	f1 := newTestFile("a.txt")
 	f2 := newTestFile("b.txt")
-	selectionManager = &SelectionManager{items: []File{f1, f2}}
+	m.selection = &SelectionManager{items: []File{f1, f2}}
 	m.state.SetView(ListView)
 	m.list.SetItems([]list.Item{f1, f2})
 

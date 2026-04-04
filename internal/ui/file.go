@@ -37,10 +37,6 @@ type File struct {
 	colorscheme     string
 }
 
-func (f File) isSelected() bool {
-	return selectionManager.Contains(f)
-}
-
 func (f File) Description() string {
 	_, err := os.Stat(f.TrashPath)
 	if os.IsNotExist(err) {

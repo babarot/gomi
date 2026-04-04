@@ -31,6 +31,9 @@ type Model struct {
 	files   []File
 	choices []File
 
+	// Selection tracking
+	selection *SelectionManager
+
 	// UI components and config
 	config   config.UI
 	help     help.Model
@@ -63,8 +66,11 @@ func NewModel(manager *trash.Manager, files []*trash.File, cfg *config.Config) M
 		DeleteEnabled: cfg.Core.PermanentDelete.Enable,
 	})
 
+	// Initialize selection manager
+	selection := &SelectionManager{items: []File{}}
+
 	// Initialize list delegate
-	delegate := NewRestoreDelegate(cfg.UI, fileList)
+	delegate := NewRestoreDelegate(cfg.UI, fileList, selection)
 	delegate.ShortHelpFunc = keyMap.AsListKeyMap().ShortHelp
 	delegate.FullHelpFunc = keyMap.AsListKeyMap().FullHelp
 
@@ -93,6 +99,7 @@ func NewModel(manager *trash.Manager, files []*trash.File, cfg *config.Config) M
 		trashManager: manager,
 		state:        NewViewState(),
 		keyMap:       keyMap,
+		selection:    selection,
 		files:        fileList,
 		config:       cfg.UI,
 		list:         l,

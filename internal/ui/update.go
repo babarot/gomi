@@ -80,7 +80,7 @@ func (m Model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	case m.keyMap.List.Delete != nil && key.Matches(msg, *m.keyMap.List.Delete):
 		if m.list.FilterState() != list.Filtering {
-			files := selectionManager.items
+			files := m.selection.items
 			switch len(files) {
 			case 0:
 				file, ok := m.list.SelectedItem().(File)
@@ -104,10 +104,10 @@ func (m Model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			if !ok {
 				return m, nil
 			}
-			if item.isSelected() {
-				selectionManager.Remove(item)
+			if m.selection.Contains(item) {
+				m.selection.Remove(item)
 			} else {
-				selectionManager.Add(item)
+				m.selection.Add(item)
 			}
 			m.list.CursorDown()
 		}
@@ -119,8 +119,8 @@ func (m Model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			if !ok {
 				return m, nil
 			}
-			if item.isSelected() {
-				selectionManager.Remove(item)
+			if m.selection.Contains(item) {
+				m.selection.Remove(item)
 			}
 			m.list.CursorUp()
 		}
@@ -137,8 +137,8 @@ func (m Model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	case key.Matches(msg, m.keyMap.List.Esc):
 		if m.list.FilterState() != list.Filtering {
-			if len(selectionManager.items) > 0 {
-				selectionManager = &SelectionManager{items: []File{}}
+			if len(m.selection.items) > 0 {
+				m.selection = &SelectionManager{items: []File{}}
 				return m, nil
 			}
 		}
@@ -147,7 +147,7 @@ func (m Model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	case key.Matches(msg, m.keyMap.List.Enter):
 		if m.list.FilterState() != list.Filtering {
-			files := selectionManager.items
+			files := m.selection.items
 			if len(files) == 0 {
 				file, ok := m.list.SelectedItem().(File)
 				if ok {
@@ -252,7 +252,7 @@ func (m Model) updateDetailView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 // updateConfirmView handles updates specific to the confirmation dialog
 func (m Model) updateConfirmView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	files := selectionManager.items
+	files := m.selection.items
 
 	// Branch processing based on ConfirmState
 	if m.state.confirmation.state == ConfirmStateTypeYES {
