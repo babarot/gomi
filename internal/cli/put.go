@@ -93,7 +93,7 @@ func (c *CLI) processFile(arg string, failed *syncStringSlice) error {
 	}
 
 	// Move to trash
-	err = c.manager.Put(path)
+	err = c.trash.Put(path)
 	if err != nil {
 		if !c.option.Rm.Force {
 			failed.Append(arg)

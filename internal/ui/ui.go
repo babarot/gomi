@@ -63,9 +63,9 @@ func (m Model) Init() tea.Cmd {
 }
 
 // Render displays the file selection interface and returns the selected files
-func Render(manager trash.Trash, files []*trash.File, opts RenderOptions) ([]*trash.File, error) {
+func Render(t trash.Trash, files []*trash.File, opts RenderOptions) ([]*trash.File, error) {
 	// Create and initialize the model
-	m := NewModel(manager, files, opts)
+	m := NewModel(t, files, opts)
 
 	// Initialize UI program
 	p := tea.NewProgram(m)

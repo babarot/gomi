@@ -85,7 +85,7 @@ func (c *CLI) permanentlyDeleteByTimeRange(durations []time.Duration) error {
 	}
 
 	slog.Debug("Get all files from trash")
-	files, err := c.manager.List()
+	files, err := c.trash.List()
 	if err != nil {
 		return fmt.Errorf("failed to list trash contents: %w", err)
 	}
@@ -138,7 +138,7 @@ func (c *CLI) permanentlyDeleteByTimeRange(durations []time.Duration) error {
 	var failedDeletions []string
 	for _, file := range filesToDelete {
 		slog.Debug("removing trash file", "file", file.OriginalPath)
-		if err := c.manager.Remove(file); err != nil {
+		if err := c.trash.Remove(file); err != nil {
 			slog.Error("failed to remove file", "file", file.Name, "error", err)
 			failedDeletions = append(failedDeletions, file.Name)
 		}
