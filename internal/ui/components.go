@@ -7,11 +7,12 @@ import (
 	"regexp"
 	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/jimschubert/answer/validate"
+
 	"github.com/babarot/gomi/internal/trash"
 	"github.com/babarot/gomi/internal/ui/components/confirm"
 	"github.com/babarot/gomi/internal/ui/components/input"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/jimschubert/answer/validate"
 )
 
 func Confirm(prompt string) bool {
@@ -42,7 +43,11 @@ func ConfirmYes(prompt string) bool {
 		return false
 	}
 
-	return p.(*confirm.YesValidationModel).IsAccepted()
+	m2, ok := p.(*confirm.YesValidationModel)
+	if !ok {
+		return false
+	}
+	return m2.IsAccepted()
 }
 
 func InputFilename(file *trash.File) (string, error) {

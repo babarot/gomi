@@ -110,7 +110,9 @@ func TestStorage_Put_CreatesTrashInfo(t *testing.T) {
 
 	srcDir := t.TempDir()
 	srcFile := filepath.Join(srcDir, "check_info.txt")
-	os.WriteFile(srcFile, []byte("data"), 0644)
+	if err := os.WriteFile(srcFile, []byte("data"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	if err := s.Put(srcFile); err != nil {
 		t.Fatal(err)
@@ -139,10 +141,12 @@ func TestStorage_Put_CollisionHandling(t *testing.T) {
 	s, _ := newTestStorage(t)
 
 	// Trash two files with the same name from different directories
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		srcDir := t.TempDir()
 		srcFile := filepath.Join(srcDir, "dup.txt")
-		os.WriteFile(srcFile, []byte("content"), 0644)
+		if err := os.WriteFile(srcFile, []byte("content"), 0644); err != nil {
+			t.Fatal(err)
+		}
 
 		if err := s.Put(srcFile); err != nil {
 			t.Fatalf("Put() #%d error = %v", i, err)
@@ -164,7 +168,9 @@ func TestStorage_Restore(t *testing.T) {
 	srcDir := t.TempDir()
 	srcFile := filepath.Join(srcDir, "restore_me.txt")
 	content := []byte("restore this")
-	os.WriteFile(srcFile, content, 0644)
+	if err := os.WriteFile(srcFile, content, 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	if err := s.Put(srcFile); err != nil {
 		t.Fatal(err)
@@ -206,7 +212,9 @@ func TestStorage_Restore_CustomDst(t *testing.T) {
 
 	srcDir := t.TempDir()
 	srcFile := filepath.Join(srcDir, "original.txt")
-	os.WriteFile(srcFile, []byte("data"), 0644)
+	if err := os.WriteFile(srcFile, []byte("data"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	if err := s.Put(srcFile); err != nil {
 		t.Fatal(err)
@@ -233,7 +241,9 @@ func TestStorage_Remove(t *testing.T) {
 
 	srcDir := t.TempDir()
 	srcFile := filepath.Join(srcDir, "delete_me.txt")
-	os.WriteFile(srcFile, []byte("bye"), 0644)
+	if err := os.WriteFile(srcFile, []byte("bye"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	if err := s.Put(srcFile); err != nil {
 		t.Fatal(err)
@@ -273,9 +283,15 @@ func TestStorage_PutDirectory(t *testing.T) {
 
 	srcDir := t.TempDir()
 	testDir := filepath.Join(srcDir, "mydir")
-	os.MkdirAll(filepath.Join(testDir, "sub"), 0755)
-	os.WriteFile(filepath.Join(testDir, "a.txt"), []byte("a"), 0644)
-	os.WriteFile(filepath.Join(testDir, "sub", "b.txt"), []byte("b"), 0644)
+	if err := os.MkdirAll(filepath.Join(testDir, "sub"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(testDir, "a.txt"), []byte("a"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(testDir, "sub", "b.txt"), []byte("b"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	if err := s.Put(testDir); err != nil {
 		t.Fatalf("Put(dir) error = %v", err)
@@ -318,7 +334,9 @@ func TestStorage_List_SkipsInvalidInfo(t *testing.T) {
 	trashRoot := filepath.Join(dataDir, "Trash")
 
 	// Create a file in files/ without a matching .trashinfo
-	os.WriteFile(filepath.Join(trashRoot, "files", "orphan.txt"), []byte("orphan"), 0644)
+	if err := os.WriteFile(filepath.Join(trashRoot, "files", "orphan.txt"), []byte("orphan"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	files, err := s.List()
 	if err != nil {
@@ -365,7 +383,9 @@ func TestTrashInfo_Save_NoOverwrite(t *testing.T) {
 	infoPath := filepath.Join(dir, "existing.trashinfo")
 
 	// Create an existing file
-	os.WriteFile(infoPath, []byte("existing"), 0644)
+	if err := os.WriteFile(infoPath, []byte("existing"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	info := &TrashInfo{
 		Path:         "/tmp/file",

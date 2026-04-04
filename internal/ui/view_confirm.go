@@ -59,12 +59,12 @@ func (m Model) formatConfirmation(files []File) string {
 func (m Model) formatConfirmationTypeYES(files []File) string {
 	// Display the current input state
 	const fullText = "YES"
-	var inputDisplay string
+	var inputDisplay strings.Builder
 
 	for i, char := range fullText {
 		if i < len(m.state.confirmation.yesInput) {
 			// Already typed characters shown in normal text
-			inputDisplay += m.styles.Confirm.Text.Render(string(m.state.confirmation.yesInput[i]))
+			inputDisplay.WriteString(m.styles.Confirm.Text.Render(string(m.state.confirmation.yesInput[i])))
 		} else {
 			// Not yet typed characters shown as placeholder
 			// instead of using a static underscore character for placeholders,
@@ -72,7 +72,7 @@ func (m Model) formatConfirmationTypeYES(files []File) string {
 			//
 			// inputDisplay += m.styles.Confirm.Placeholder.Render(string(char))
 			_ = char
-			inputDisplay += m.styles.Confirm.Placeholder.Render("_")
+			inputDisplay.WriteString(m.styles.Confirm.Placeholder.Render("_"))
 		}
 	}
 
@@ -109,7 +109,7 @@ func (m Model) formatConfirmationTypeYES(files []File) string {
 		"",
 		"Type YES to confirm",
 		"",
-		inputDisplay + statusIcon,
+		inputDisplay.String() + statusIcon,
 		"",
 		"  (ESC to cancel, Enter to confirm)  ",
 	}...)

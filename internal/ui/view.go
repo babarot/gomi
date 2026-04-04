@@ -3,11 +3,12 @@ package ui
 import (
 	"log/slog"
 
-	"github.com/babarot/gomi/internal/ui/keys"
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/fatih/color"
+
+	"github.com/babarot/gomi/internal/ui/keys"
 )
 
 // newHelpModel creates a help model with adaptive colors for light/dark terminals.

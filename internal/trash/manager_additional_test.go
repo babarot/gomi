@@ -47,7 +47,9 @@ func TestNewManager(t *testing.T) {
 func TestManager_Put(t *testing.T) {
 	tmpDir := t.TempDir()
 	testFile := filepath.Join(tmpDir, "test.txt")
-	os.WriteFile(testFile, []byte("hello"), 0644)
+	if err := os.WriteFile(testFile, []byte("hello"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	t.Run("success on first storage", func(t *testing.T) {
 		m := &Manager{
@@ -194,7 +196,9 @@ func TestManager_Restore(t *testing.T) {
 	t.Run("destination already exists", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		existing := filepath.Join(tmpDir, "exists.txt")
-		os.WriteFile(existing, []byte("data"), 0644)
+		if err := os.WriteFile(existing, []byte("data"), 0644); err != nil {
+			t.Fatal(err)
+		}
 
 		m := &Manager{
 			storages: []Storage{

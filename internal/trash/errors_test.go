@@ -36,7 +36,7 @@ func TestStorageError_Error(t *testing.T) {
 func TestStorageError_Unwrap(t *testing.T) {
 	inner := fmt.Errorf("inner error")
 	se := &StorageError{Op: "put", Path: "/tmp/file", Err: inner}
-	if got := se.Unwrap(); got != inner {
+	if got := se.Unwrap(); !errors.Is(got, inner) {
 		t.Errorf("Unwrap() = %v, want %v", got, inner)
 	}
 }
@@ -47,7 +47,7 @@ func TestNewStorageError(t *testing.T) {
 	if !errors.As(err, &se) {
 		t.Fatal("expected *StorageError")
 	}
-	if se.Op != "restore" || se.Path != "/tmp/file" || se.Err != ErrNotFound {
+	if se.Op != "restore" || se.Path != "/tmp/file" || !errors.Is(se.Err, ErrNotFound) {
 		t.Errorf("unexpected fields: %+v", se)
 	}
 }

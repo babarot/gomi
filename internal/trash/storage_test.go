@@ -49,7 +49,9 @@ func TestFile_Getters(t *testing.T) {
 func TestFile_Exists(t *testing.T) {
 	tmpDir := t.TempDir()
 	existing := filepath.Join(tmpDir, "exists.txt")
-	os.WriteFile(existing, []byte("hello"), 0644)
+	if err := os.WriteFile(existing, []byte("hello"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	tests := []struct {
 		name      string
@@ -74,10 +76,14 @@ func TestFile_RequiresAdmin(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	writable := filepath.Join(tmpDir, "writable.txt")
-	os.WriteFile(writable, []byte("hello"), 0644)
+	if err := os.WriteFile(writable, []byte("hello"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	readonly := filepath.Join(tmpDir, "readonly.txt")
-	os.WriteFile(readonly, []byte("hello"), 0444)
+	if err := os.WriteFile(readonly, []byte("hello"), 0444); err != nil {
+		t.Fatal(err)
+	}
 
 	tests := []struct {
 		name      string

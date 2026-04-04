@@ -233,9 +233,10 @@ func (m *Model) View() string {
 		}
 	}
 
-	if m.done == userQuit {
+	switch m.done {
+	case userQuit:
 		return ""
-	} else if m.done == userEnter {
+	case userEnter:
 		// rather than clearing the program output, we want to show the question + answer just as AlecAivazis/survey did
 		if m.Prompt != "" {
 			b.WriteString(m.Styles.Prompt.Inline(true).Render(m.Prompt))

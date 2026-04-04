@@ -22,12 +22,12 @@ func loadFileListCmd(files []File) tea.Cmd {
 
 		// Sort files by deletion time, newest first
 		sort.Slice(files, func(i, j int) bool {
-			return files[i].File.DeletedAt.After(files[j].File.DeletedAt)
+			return files[i].DeletedAt.After(files[j].DeletedAt)
 		})
 
 		// Filter out files that no longer exist
 		files = lo.Reject(files, func(f File, index int) bool {
-			_, err := os.Stat(f.File.TrashPath)
+			_, err := os.Stat(f.TrashPath)
 			return os.IsNotExist(err)
 		})
 
@@ -54,7 +54,7 @@ func deletePermanentlyCmd(m *Model, files ...File) tea.Cmd {
 		// Refresh file list after deletion
 		origin := m.files
 		origin = lo.Reject(origin, func(f File, index int) bool {
-			_, err := os.Stat(f.File.TrashPath)
+			_, err := os.Stat(f.TrashPath)
 			return os.IsNotExist(err)
 		})
 

@@ -199,9 +199,15 @@ func TestStorage_PutDirectory(t *testing.T) {
 	// Create a directory with files
 	srcDir := t.TempDir()
 	testDir := filepath.Join(srcDir, "mydir")
-	os.MkdirAll(filepath.Join(testDir, "sub"), 0755)
-	os.WriteFile(filepath.Join(testDir, "a.txt"), []byte("a"), 0644)
-	os.WriteFile(filepath.Join(testDir, "sub", "b.txt"), []byte("b"), 0644)
+	if err := os.MkdirAll(filepath.Join(testDir, "sub"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(testDir, "a.txt"), []byte("a"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(testDir, "sub", "b.txt"), []byte("b"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	if err := s.Put(testDir); err != nil {
 		t.Fatalf("Put(dir) error = %v", err)
@@ -271,7 +277,9 @@ func TestStorage_PutMultipleFiles(t *testing.T) {
 
 	srcDir := t.TempDir()
 	for _, name := range []string{"a.txt", "b.txt", "c.txt"} {
-		os.WriteFile(filepath.Join(srcDir, name), []byte(name), 0644)
+		if err := os.WriteFile(filepath.Join(srcDir, name), []byte(name), 0644); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	for _, name := range []string{"a.txt", "b.txt", "c.txt"} {

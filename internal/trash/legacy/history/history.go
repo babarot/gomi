@@ -8,10 +8,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/babarot/gomi/internal/config"
-	"github.com/babarot/gomi/internal/trash"
 	"github.com/k0kubun/pp/v3"
 	"github.com/rs/xid"
+
+	"github.com/babarot/gomi/internal/config"
+	"github.com/babarot/gomi/internal/trash"
 )
 
 const (

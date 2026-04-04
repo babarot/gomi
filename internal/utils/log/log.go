@@ -57,7 +57,11 @@ func handler() *charmlog.Logger {
 }
 
 func loggerHandler(l *slog.Logger) *charmlog.Logger {
-	return l.Handler().(*charmlog.Logger)
+	h, ok := l.Handler().(*charmlog.Logger)
+	if !ok {
+		panic("unexpected logger handler type")
+	}
+	return h
 }
 
 // Logging methods

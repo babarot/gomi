@@ -117,9 +117,9 @@ type mockStorage struct {
 	listErr     error
 }
 
-func (m *mockStorage) Put(src string) error        { return m.putErr }
+func (m *mockStorage) Put(src string) error              { return m.putErr }
 func (m *mockStorage) Restore(f *File, dst string) error { return m.restoreErr }
-func (m *mockStorage) Remove(f *File) error         { return m.removeErr }
+func (m *mockStorage) Remove(f *File) error              { return m.removeErr }
 
 func (m *mockStorage) List() ([]*File, error) {
 	return m.files, m.listErr

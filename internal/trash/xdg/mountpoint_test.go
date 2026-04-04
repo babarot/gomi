@@ -5,6 +5,7 @@ package xdg
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 )
 
@@ -13,8 +14,12 @@ func TestIsOnSameDevice(t *testing.T) {
 
 	fileA := filepath.Join(dir, "a.txt")
 	fileB := filepath.Join(dir, "b.txt")
-	os.WriteFile(fileA, []byte("a"), 0644)
-	os.WriteFile(fileB, []byte("b"), 0644)
+	if err := os.WriteFile(fileA, []byte("a"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(fileB, []byte("b"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	same, err := isOnSameDevice(fileA, fileB)
 	if err != nil {
@@ -37,8 +42,12 @@ func TestIsOnSameDevice_WithSymlink(t *testing.T) {
 	real := filepath.Join(dir, "real.txt")
 	link := filepath.Join(dir, "link.txt")
 
-	os.WriteFile(real, []byte("data"), 0644)
-	os.Symlink(real, link)
+	if err := os.WriteFile(real, []byte("data"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(real, link); err != nil {
+		t.Fatal(err)
+	}
 
 	same, err := isOnSameDevice(real, link)
 	if err != nil {
@@ -58,7 +67,9 @@ func TestIsValidExternalTrash_NotExists(t *testing.T) {
 func TestIsValidExternalTrash_RegularFile(t *testing.T) {
 	dir := t.TempDir()
 	file := filepath.Join(dir, "notadir")
-	os.WriteFile(file, []byte("x"), 0644)
+	if err := os.WriteFile(file, []byte("x"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	if isValidExternalTrash(file) {
 		t.Error("regular file should not be valid external trash")
@@ -68,8 +79,12 @@ func TestIsValidExternalTrash_RegularFile(t *testing.T) {
 func TestIsValidExternalTrash_ValidDir(t *testing.T) {
 	dir := t.TempDir()
 	trashDir := filepath.Join(dir, ".Trash-1000")
-	os.MkdirAll(filepath.Join(trashDir, "files"), 0700)
-	os.MkdirAll(filepath.Join(trashDir, "info"), 0700)
+	if err := os.MkdirAll(filepath.Join(trashDir, "files"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(trashDir, "info"), 0700); err != nil {
+		t.Fatal(err)
+	}
 
 	if !isValidExternalTrash(trashDir) {
 		t.Error("properly structured trash dir should be valid")
@@ -79,11 +94,17 @@ func TestIsValidExternalTrash_ValidDir(t *testing.T) {
 func TestIsValidExternalTrash_Symlink(t *testing.T) {
 	dir := t.TempDir()
 	realDir := filepath.Join(dir, "real")
-	os.MkdirAll(filepath.Join(realDir, "files"), 0700)
-	os.MkdirAll(filepath.Join(realDir, "info"), 0700)
+	if err := os.MkdirAll(filepath.Join(realDir, "files"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(realDir, "info"), 0700); err != nil {
+		t.Fatal(err)
+	}
 
 	linkDir := filepath.Join(dir, "link")
-	os.Symlink(realDir, linkDir)
+	if err := os.Symlink(realDir, linkDir); err != nil {
+		t.Fatal(err)
+	}
 
 	if isValidExternalTrash(linkDir) {
 		t.Error("symlink should not be valid external trash")
@@ -125,11 +146,8 @@ func TestGetMountPoints(t *testing.T) {
 
 	// Root should always be present
 	var hasRoot bool
-	for _, p := range points {
-		if p == "/" {
-			hasRoot = true
-			break
-		}
+	if slices.Contains(points, "/") {
+		hasRoot = true
 	}
 	if !hasRoot {
 		t.Error("mount points should include /")

@@ -3,6 +3,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -10,9 +11,10 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/babarot/gomi/internal/utils/shell"
 	"github.com/go-playground/validator/v10"
 	"gopkg.in/yaml.v2"
+
+	"github.com/babarot/gomi/internal/utils/shell"
 )
 
 // Config represents the root configuration structure that holds all application settings.
@@ -310,7 +312,8 @@ func (c *Config) validate() error {
 	_ = validate.RegisterValidation("validDirPath", validateDirPath)
 
 	if err := validate.Struct(c); err != nil {
-		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+		var validationErrors validator.ValidationErrors
+		if errors.As(err, &validationErrors) {
 			for _, err := range validationErrors {
 				return fmt.Errorf("validation error: Field %s, %q is invalid", err.Field(), err.Value())
 			}
@@ -342,12 +345,12 @@ func (c *Config) setDefault() {
 	if c.UI.Style.DeletionDialog == "" {
 		c.UI.Style.DeletionDialog = "205"
 	}
-	
+
 	// Set color for filter match highlighting
 	if c.UI.Style.ListView.FilterMatch == "" {
 		c.UI.Style.ListView.FilterMatch = "#F39C12"
 	}
-	
+
 	// Set color for filter prompt
 	if c.UI.Style.ListView.FilterPrompt == "" {
 		c.UI.Style.ListView.FilterPrompt = "#7AA2F7"

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -137,7 +138,8 @@ func validateDirPath(fl validator.FieldLevel) bool {
 			// Path doesn't exist but format is valid
 			return true
 		}
-		if _, ok := err.(*os.PathError); ok {
+		pathError := &os.PathError{}
+		if errors.As(err, &pathError) {
 			// Path error indicates possible OS constraint violation
 			return false
 		}

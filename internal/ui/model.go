@@ -1,15 +1,16 @@
 package ui
 
 import (
-	"github.com/babarot/gomi/internal/config"
-	"github.com/babarot/gomi/internal/trash"
-	"github.com/babarot/gomi/internal/ui/keys"
-	"github.com/babarot/gomi/internal/ui/styles"
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/paginator"
 	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/lipgloss"
+
+	"github.com/babarot/gomi/internal/config"
+	"github.com/babarot/gomi/internal/trash"
+	"github.com/babarot/gomi/internal/ui/keys"
+	"github.com/babarot/gomi/internal/ui/styles"
 )
 
 // Model represents the main UI model following the Bubble Tea pattern
@@ -73,7 +74,7 @@ func NewModel(manager *trash.Manager, files []*trash.File, cfg *config.Config) M
 	l.SetShowTitle(false)
 	l.SetShowHelp(false) // do not use default help of list model
 	l.DisableQuitKeybindings()
-	
+
 	// Configure filter prompt style
 	l.FilterInput.PromptStyle = lipgloss.NewStyle().
 		Foreground(lipgloss.Color(cfg.UI.Style.ListView.FilterPrompt)).
