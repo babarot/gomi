@@ -11,7 +11,6 @@ import (
 
 	"github.com/babarot/gomi/internal/trash"
 	"github.com/babarot/gomi/internal/trash/xdg"
-	"github.com/babarot/gomi/internal/ui"
 	"github.com/babarot/gomi/internal/ui/table"
 	"github.com/babarot/gomi/internal/utils/duration"
 )
@@ -120,7 +119,7 @@ func (c *CLI) permanentlyDeleteByTimeRange(durations []time.Duration) error {
 	printDeletionSummary(filesToDelete, newestAge, oldestAge, len(durations) == 1)
 
 	// First confirmation
-	if !ui.Confirm(fmt.Sprintf("Are you sure you want to remove these %d files?", len(filesToDelete))) {
+	if !c.prompter.Confirm(fmt.Sprintf("Are you sure you want to remove these %d files?", len(filesToDelete))) {
 		fmt.Println("Operation canceled.")
 		return nil
 	}
@@ -129,7 +128,7 @@ func (c *CLI) permanentlyDeleteByTimeRange(durations []time.Duration) error {
 	fmt.Println()
 	// WARNING: Files will be permanently deleted and CANNOT be recovered. Are you absolutely sure?
 	fmt.Printf("%s\n", color.New(color.FgHiRed).Sprint("WARNING: This operation is permanent and cannot be undone!"))
-	if !ui.ConfirmYes("Do you really want to permanently delete these files?") {
+	if !c.prompter.ConfirmYes("Do you really want to permanently delete these files?") {
 		fmt.Println("Operation canceled.")
 		return nil
 	}
@@ -207,7 +206,7 @@ func (c *CLI) removeOrphanedMetadata() error {
 			Order:            table.SortDesc,
 		})
 		fmt.Println()
-		if !ui.Confirm(fmt.Sprintf("Are you sure you want to remove %d orphaned metadata files?", len(orphanedFiles))) {
+		if !c.prompter.Confirm(fmt.Sprintf("Are you sure you want to remove %d orphaned metadata files?", len(orphanedFiles))) {
 			fmt.Println("Operation canceled.")
 			return nil
 		}

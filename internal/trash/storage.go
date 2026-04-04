@@ -84,9 +84,6 @@ type File struct {
 	// MountRoot is the root path of the mount point containing this trash
 	// This is used to resolve relative paths in .trashinfo files
 	MountRoot string
-
-	// storage is a reference to the Storage implementation that manages this file
-	storage Storage
 }
 
 func (f *File) GetName() string {
@@ -116,16 +113,6 @@ func (f *File) RequiresAdmin() bool {
 		return false
 	}
 	return info.Mode().Perm()&0200 == 0
-}
-
-// SetStorage sets the storage reference for this file
-func (f *File) SetStorage(s Storage) {
-	f.storage = s
-}
-
-// GetStorage returns the storage reference for this file
-func (f *File) GetStorage() Storage {
-	return f.storage
 }
 
 // GetOriginalPath returns the absolute original path of the file

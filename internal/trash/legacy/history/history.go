@@ -55,6 +55,7 @@ func New(home string, c config.History) History {
 	if home == "" {
 		home = filepath.Join(os.Getenv("HOME"), ".gomi")
 	}
+	migrateIfNeeded(home)
 	return History{
 		home:   home,
 		path:   filepath.Join(home, Filename),

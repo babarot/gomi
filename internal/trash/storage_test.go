@@ -154,17 +154,3 @@ func TestFile_GetRelativePath(t *testing.T) {
 		})
 	}
 }
-
-func TestFile_Storage(t *testing.T) {
-	f := &File{}
-	if got := f.GetStorage(); got != nil {
-		t.Errorf("expected nil storage, got %v", got)
-	}
-
-	// We can't easily create a mock Storage here since it's in the same package,
-	// but we can verify SetStorage/GetStorage round-trips with nil
-	f.SetStorage(nil)
-	if got := f.GetStorage(); got != nil {
-		t.Errorf("expected nil after SetStorage(nil), got %v", got)
-	}
-}

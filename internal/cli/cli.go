@@ -19,6 +19,7 @@ import (
 	"github.com/babarot/gomi/internal/trash"
 	"github.com/babarot/gomi/internal/trash/legacy"
 	"github.com/babarot/gomi/internal/trash/xdg"
+	"github.com/babarot/gomi/internal/ui"
 	"github.com/babarot/gomi/internal/utils/debug"
 	"github.com/babarot/gomi/internal/utils/env"
 	"github.com/babarot/gomi/internal/utils/log"
@@ -57,12 +58,21 @@ type RmOption struct {
 	Verbose     bool `short:"v" long:"verbose" description:"(dummy) explain what is being done"`
 }
 
+// Prompter abstracts user interaction for confirmation and input.
+// This enables mock-based testing of CLI commands that require user prompts.
+type Prompter interface {
+	Confirm(prompt string) bool
+	ConfirmYes(prompt string) bool
+	InputFilename(file *trash.File) (string, error)
+}
+
 type CLI struct {
-	version Version
-	option  Option
-	config  *config.Config
-	runID   string
-	trash   trash.Trash
+	version  Version
+	option   Option
+	config   *config.Config
+	runID    string
+	trash    trash.Trash
+	prompter Prompter
 }
 
 var runID = sync.OnceValue(func() string {
@@ -72,6 +82,8 @@ var runID = sync.OnceValue(func() string {
 
 // Run is the main entry point for the CLI
 func Run(v Version) error {
+	env.Init()
+
 	opt, args, err := parseOptions(v)
 	if err != nil {
 		return err
@@ -106,11 +118,12 @@ func Run(v Version) error {
 	defer slog.Debug("main function finished")
 
 	cli := CLI{
-		version: v,
-		option:  *opt,
-		config:  cfg,
-		runID:   runID(),
-		trash:   t,
+		version:  v,
+		option:   *opt,
+		config:   cfg,
+		runID:    runID(),
+		trash:    t,
+		prompter: &uiPrompter{},
 	}
 
 	if err := cli.Run(args); err != nil {
@@ -281,3 +294,10 @@ func newTrashManager(cfg *config.Config) (*trash.Manager, error) {
 
 	return manager, nil
 }
+
+// uiPrompter is the default Prompter implementation that delegates to the ui package.
+type uiPrompter struct{}
+
+func (p *uiPrompter) Confirm(prompt string) bool                  { return ui.Confirm(prompt) }
+func (p *uiPrompter) ConfirmYes(prompt string) bool               { return ui.ConfirmYes(prompt) }
+func (p *uiPrompter) InputFilename(f *trash.File) (string, error) { return ui.InputFilename(f) }
