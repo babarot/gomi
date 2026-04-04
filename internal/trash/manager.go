@@ -177,36 +177,9 @@ func (m *Manager) List() ([]*File, error) {
 
 // Restore restores the given file
 func (m *Manager) Restore(file *File, dst string) error {
-	// Find the appropriate storage for this file
-	var targetStorage Storage
-	for _, storage := range m.storages {
-		slog.Debug("checking storage",
-			"file", strings.Join([]string{
-				"name: " + file.Name,
-				"trashPath: " + file.TrashPath,
-				"originalPath: " + file.OriginalPath,
-			}, "\n"),
-			"info", strings.Join([]string{
-				fmt.Sprintf("type: %s", storage.Info().Type),
-				"trashes: " + strings.Join(storage.Info().Trashes, ", "),
-			}, "\n"),
-		)
-		foundStorage := func() bool {
-			for _, trashRoot := range storage.Info().Trashes {
-				if strings.HasPrefix(file.TrashPath, trashRoot) {
-					return true
-				}
-			}
-			return false
-		}()
-		if foundStorage {
-			targetStorage = storage
-			break
-		}
-	}
-
-	if targetStorage == nil {
-		return errors.New("file does not belong to any known storage")
+	storage, err := m.findStorageForFile(file)
+	if err != nil {
+		return err
 	}
 
 	if dst == "" {
@@ -218,33 +191,30 @@ func (m *Manager) Restore(file *File, dst string) error {
 		return ErrFileExists
 	}
 
-	return targetStorage.Restore(file, dst)
+	return storage.Restore(file, dst)
 }
 
 // Remove permanently removes the file from trash
 func (m *Manager) Remove(file *File) error {
-	// Find the appropriate storage for this file
-	var targetStorage Storage
+	storage, err := m.findStorageForFile(file)
+	if err != nil {
+		return err
+	}
+
+	return storage.Remove(file)
+}
+
+// findStorageForFile returns the storage backend that manages the given file,
+// determined by matching the file's trash path against each storage's root paths.
+func (m *Manager) findStorageForFile(file *File) (Storage, error) {
 	for _, storage := range m.storages {
-		foundStorage := func() bool {
-			for _, trashRoot := range storage.Info().Trashes {
-				if strings.HasPrefix(file.TrashPath, trashRoot) {
-					return true
-				}
+		for _, trashRoot := range storage.Info().Trashes {
+			if strings.HasPrefix(file.TrashPath, trashRoot) {
+				return storage, nil
 			}
-			return false
-		}()
-		if foundStorage {
-			targetStorage = storage
-			break
 		}
 	}
-
-	if targetStorage == nil {
-		return errors.New("file does not belong to any known storage")
-	}
-
-	return targetStorage.Remove(file)
+	return nil, errors.New("file does not belong to any known storage")
 }
 
 // ListStorages returns information about all available storage backends
