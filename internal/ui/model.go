@@ -15,8 +15,8 @@ import (
 
 // Model represents the main UI model following the Bubble Tea pattern
 type Model struct {
-	// Manager handles trash operations
-	trashManager trash.Trash
+	// Trash handles trash operations (put, list, restore, remove)
+	trash trash.Trash
 
 	// State management
 	state *ViewState
@@ -46,7 +46,7 @@ type Model struct {
 }
 
 // NewModel creates a new UI model instance
-func NewModel(manager trash.Trash, files []*trash.File, opts RenderOptions) Model {
+func NewModel(t trash.Trash, files []*trash.File, opts RenderOptions) Model {
 	var items []list.Item
 	var fileList []File
 
@@ -98,15 +98,15 @@ func NewModel(manager trash.Trash, files []*trash.File, opts RenderOptions) Mode
 
 	// Return fully initialized model
 	return Model{
-		trashManager: manager,
-		state:        NewViewState(),
-		keyMap:       keyMap,
-		selection:    selection,
-		files:        fileList,
-		config:       uiCfg,
-		list:         l,
-		viewport:     viewport.Model{},
-		styles:       styles.New(uiCfg),
-		help:         newHelpModel(),
+		trash:     t,
+		state:     NewViewState(),
+		keyMap:    keyMap,
+		selection: selection,
+		files:     fileList,
+		config:    uiCfg,
+		list:      l,
+		viewport:  viewport.Model{},
+		styles:    styles.New(uiCfg),
+		help:      newHelpModel(),
 	}
 }

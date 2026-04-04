@@ -70,6 +70,14 @@ flowchart TD
 
 ```mermaid
 classDiagram
+    class Trash {
+        <<interface>>
+        +Put(src string) error
+        +List() []*File
+        +Restore(file *File, dst string) error
+        +Remove(file *File) error
+    }
+
     class Manager {
         -storages []Storage
         -config Config
@@ -78,6 +86,7 @@ classDiagram
         +Put(src string) error
         +List() []*File
         +Restore(file *File, dst string) error
+        +Remove(file *File) error
         +IsPrimaryStorageAvailable() bool
     }
 
@@ -102,6 +111,7 @@ classDiagram
         +Strategy Strategy
         +HomeTrashDir string
         +HomeFallback bool
+        +ForceHomeTrash bool
         +History History
         +GomiDir string
     }
@@ -114,6 +124,7 @@ classDiagram
     }
 
     class LegacyStorage {
+        -mu sync.Mutex
         -root string
         -config Config
         -history History
@@ -135,6 +146,7 @@ classDiagram
         +Type StorageType
     }
 
+    Trash <|.. Manager : implements
     Manager --> Storage : uses
     Manager --> Strategy : determines
     Manager --> Config : configured by
@@ -148,9 +160,13 @@ classDiagram
 
 </details>
 
+### Trash Interface
+
+The `Trash` interface defines the public API for trash operations (`Put`, `List`, `Restore`, `Remove`). The CLI and UI layers depend on this interface rather than the concrete `Manager` type, enabling mock-based testing and loose coupling.
+
 ### Storage Manager
 
-The Storage Manager acts as a coordinator for multiple storage implementations:
+The `Manager` implements the `Trash` interface and acts as a coordinator for multiple storage implementations:
 
 - Manages multiple storage backends
 - Routes operations based on selected strategy

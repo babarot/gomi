@@ -62,7 +62,7 @@ type CLI struct {
 	option  Option
 	config  *config.Config
 	runID   string
-	manager trash.Trash
+	trash   trash.Trash
 }
 
 var runID = sync.OnceValue(func() string {
@@ -93,7 +93,7 @@ func Run(v Version) error {
 		return err
 	}
 
-	manager, err := newTrashManager(cfg)
+	t, err := newTrashManager(cfg)
 	if err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func Run(v Version) error {
 		option:  *opt,
 		config:  cfg,
 		runID:   runID(),
-		manager: manager,
+		trash:   t,
 	}
 
 	if err := cli.Run(args); err != nil {

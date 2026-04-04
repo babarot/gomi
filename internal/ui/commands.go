@@ -46,7 +46,7 @@ func deletePermanentlyCmd(m *Model, files ...File) tea.Cmd {
 	return func() tea.Msg {
 		for _, file := range files {
 			slog.Debug("permanently delete", "file", file.TrashPath)
-			if err := m.trashManager.Remove(file.File); err != nil {
+			if err := m.trash.Remove(file.File); err != nil {
 				return FileListUpdatedMsg{err: err}
 			}
 		}

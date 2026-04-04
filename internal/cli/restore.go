@@ -17,7 +17,7 @@ func (c *CLI) Restore() error {
 	defer slog.Debug("cli.restore finished")
 
 	// Get list of files in trash
-	files, err := c.manager.List()
+	files, err := c.trash.List()
 	if err != nil {
 		return fmt.Errorf("failed to list trash contents: %w", err)
 	}
@@ -35,7 +35,7 @@ func (c *CLI) Restore() error {
 	}
 
 	// Show UI for file selection
-	selected, err := ui.Render(c.manager, filtered, ui.RenderOptions{
+	selected, err := ui.Render(c.trash, filtered, ui.RenderOptions{
 		Config:        c.config.UI,
 		DeleteEnabled: c.config.Core.PermanentDelete.Enable,
 	})
@@ -112,7 +112,7 @@ func (c *CLI) restoreFile(file *trash.File) error {
 	}
 
 	// Perform the restore
-	if err := c.manager.Restore(file, originalPath); err != nil {
+	if err := c.trash.Restore(file, originalPath); err != nil {
 		return fmt.Errorf("failed to restore '%s': %w", file.Name, err)
 	}
 
