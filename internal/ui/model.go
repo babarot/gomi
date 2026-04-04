@@ -46,31 +46,33 @@ type Model struct {
 }
 
 // NewModel creates a new UI model instance
-func NewModel(manager trash.Trash, files []*trash.File, cfg *config.Config) Model {
+func NewModel(manager trash.Trash, files []*trash.File, opts RenderOptions) Model {
 	var items []list.Item
 	var fileList []File
+
+	uiCfg := opts.Config
 
 	// Convert trash files to UI files
 	for _, file := range files {
 		items = append(items, File{File: file})
 		fileList = append(fileList, File{
 			File:            file,
-			dirListCommand:  cfg.UI.Preview.DirectoryCommand,
-			syntaxHighlight: cfg.UI.Preview.SyntaxHighlight,
-			colorscheme:     cfg.UI.Preview.Colorscheme,
+			dirListCommand:  uiCfg.Preview.DirectoryCommand,
+			syntaxHighlight: uiCfg.Preview.SyntaxHighlight,
+			colorscheme:     uiCfg.Preview.Colorscheme,
 		})
 	}
 
 	// Initialize key map
 	keyMap := keys.NewKeyMap(keys.KeyMapConfig{
-		DeleteEnabled: cfg.Core.PermanentDelete.Enable,
+		DeleteEnabled: opts.DeleteEnabled,
 	})
 
 	// Initialize selection manager
 	selection := &SelectionManager{items: []File{}}
 
 	// Initialize list delegate
-	delegate := NewRestoreDelegate(cfg.UI, fileList, selection)
+	delegate := NewRestoreDelegate(uiCfg, fileList, selection)
 	delegate.ShortHelpFunc = keyMap.AsListKeyMap().ShortHelp
 	delegate.FullHelpFunc = keyMap.AsListKeyMap().FullHelp
 
@@ -83,11 +85,11 @@ func NewModel(manager trash.Trash, files []*trash.File, cfg *config.Config) Mode
 
 	// Configure filter prompt style
 	l.FilterInput.PromptStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color(cfg.UI.Style.ListView.FilterPrompt)).
+		Foreground(lipgloss.Color(uiCfg.Style.ListView.FilterPrompt)).
 		Bold(true)
 
 	// Set paginator type based on config
-	switch cfg.UI.Paginator {
+	switch uiCfg.Paginator {
 	case PaginatorArabic:
 		l.Paginator.Type = paginator.Arabic
 	default:
@@ -101,10 +103,10 @@ func NewModel(manager trash.Trash, files []*trash.File, cfg *config.Config) Mode
 		keyMap:       keyMap,
 		selection:    selection,
 		files:        fileList,
-		config:       cfg.UI,
+		config:       uiCfg,
 		list:         l,
 		viewport:     viewport.Model{},
-		styles:       styles.New(cfg.UI),
+		styles:       styles.New(uiCfg),
 		help:         newHelpModel(),
 	}
 }

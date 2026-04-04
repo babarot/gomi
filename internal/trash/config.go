@@ -35,15 +35,6 @@ type Config struct {
 	// ForceHomeTrash forces using home trash even for external devices
 	ForceHomeTrash bool
 
-	// SkipMountPointFind skips finding mount points for external trash dirs
-	SkipMountPointFind bool
-
-	// PreservePaths preserves original path structure in trash
-	PreservePaths bool
-
-	// UseCompression enables compression for trashed files
-	UseCompression bool
-
 	// History contains history-related configuration
 	History config.History
 
