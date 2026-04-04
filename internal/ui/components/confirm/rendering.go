@@ -201,10 +201,7 @@ func (i *inputRenderer) Init() tea.Cmd {
 	input.PromptStyle = i.m.Styles.Prompt
 	input.PlaceholderStyle = i.m.Styles.Placeholder
 	input.TextStyle = i.m.Styles.Text
-	input.CharLimit = len(i.m.AcceptedDecisionText)
-	if len(i.m.DeniedDecisionText) > input.CharLimit {
-		input.CharLimit = len(i.m.DeniedDecisionText)
-	}
+	input.CharLimit = max(len(i.m.DeniedDecisionText), len(i.m.AcceptedDecisionText))
 	input.Focus()
 	i.text = input
 	return nil
@@ -217,8 +214,8 @@ func (i *inputRenderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch {
-		case msg.Type == tea.KeyEnter:
+		switch msg.Type {
+		case tea.KeyEnter:
 			switch k := strings.ToLower(i.text.Value()); {
 			case strings.HasPrefix(k, strings.ToLower(i.m.AcceptedDecisionText)):
 				i.m.SetDecision(Accepted)
@@ -295,10 +292,7 @@ func (i *immediateRenderer) Init() tea.Cmd {
 	input.PromptStyle = i.m.Styles.Prompt
 	input.PlaceholderStyle = i.m.Styles.Placeholder
 	input.TextStyle = i.m.Styles.Text
-	input.CharLimit = len(i.m.AcceptedDecisionText)
-	if len(i.m.DeniedDecisionText) > input.CharLimit {
-		input.CharLimit = len(i.m.DeniedDecisionText)
-	}
+	input.CharLimit = max(len(i.m.DeniedDecisionText), len(i.m.AcceptedDecisionText))
 	input.Focus()
 	i.text = input
 	return nil
@@ -313,8 +307,8 @@ func (i *immediateRenderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch {
-		case msg.Type == tea.KeyCtrlC, msg.Type == tea.KeyEsc:
+		switch msg.Type {
+		case tea.KeyCtrlC, tea.KeyEsc:
 			i.m.SetDecision(Denied)
 			i.m.done = true
 			return i.m, tea.Quit

@@ -2,6 +2,7 @@ package trash
 
 import (
 	"fmt"
+	"slices"
 	"testing"
 	"time"
 
@@ -108,13 +109,7 @@ func TestRejectBySize(t *testing.T) {
 
 			// Check if remaining items match expected names
 			for _, item := range filtered {
-				found := false
-				for _, expectedName := range tc.expectedNames {
-					if item.GetName() == expectedName {
-						found = true
-						break
-					}
-				}
+				found := slices.Contains(tc.expectedNames, item.GetName())
 				if !found {
 					t.Errorf("Unexpected item in filtered list: %s", item.GetName())
 				}
@@ -175,13 +170,7 @@ func TestFilter(t *testing.T) {
 
 			// Check if remaining items match expected names
 			for _, item := range filtered {
-				found := false
-				for _, expectedName := range tc.expectedNames {
-					if item.GetName() == expectedName {
-						found = true
-						break
-					}
-				}
+				found := slices.Contains(tc.expectedNames, item.GetName())
 				if !found {
 					t.Errorf("Unexpected item in filtered list: %s", item.GetName())
 				}

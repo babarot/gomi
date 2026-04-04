@@ -4,13 +4,15 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
+	"slices"
 	"time"
 
-	"github.com/babarot/gomi/internal/config"
-	"github.com/babarot/gomi/internal/utils/fs"
 	"github.com/docker/go-units"
 	"github.com/gobwas/glob"
 	"github.com/k1LoW/duration"
+
+	"github.com/babarot/gomi/internal/config"
+	"github.com/babarot/gomi/internal/utils/fs"
 )
 
 // Filterable defines the interface that trashed files must implement to be filtered
@@ -75,13 +77,7 @@ func rejectByNames[T Filterable](items []T, excludeFiles []string) []T {
 
 	var filtered []T
 	for _, item := range items {
-		excluded := false
-		for _, exclude := range excludeFiles {
-			if item.GetName() == exclude {
-				excluded = true
-				break
-			}
-		}
+		excluded := slices.Contains(excludeFiles, item.GetName())
 		if !excluded {
 			filtered = append(filtered, item)
 		}

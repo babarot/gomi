@@ -175,8 +175,13 @@ func TestHistory_Open(t *testing.T) {
 				{Name: "test.txt", ID: "abc", From: "/home/test.txt", To: filepath.Join(dir, "test.txt")},
 			},
 		}
-		data, _ := json.Marshal(historyData)
-		os.WriteFile(filepath.Join(dir, Filename), data, 0644)
+		data, err := json.Marshal(historyData)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, Filename), data, 0644); err != nil {
+			t.Fatal(err)
+		}
 
 		h := New(dir, config.History{})
 		if err := h.Open(); err != nil {
@@ -191,7 +196,9 @@ func TestHistory_Open(t *testing.T) {
 func TestHistory_Update(t *testing.T) {
 	dir := t.TempDir()
 	h := New(dir, config.History{})
-	h.Open()
+	if err := h.Open(); err != nil {
+		t.Fatal(err)
+	}
 
 	newFiles := []File{
 		{Name: "a.txt", ID: "id1"},
@@ -213,7 +220,9 @@ func TestHistory_Update(t *testing.T) {
 		t.Fatal(err)
 	}
 	var saved History
-	json.Unmarshal(data, &saved)
+	if err := json.Unmarshal(data, &saved); err != nil {
+		t.Fatal(err)
+	}
 	if len(saved.Files) != 2 {
 		t.Errorf("saved %d files, want 2", len(saved.Files))
 	}
@@ -229,9 +238,14 @@ func TestHistory_Save(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	data, _ := os.ReadFile(filepath.Join(dir, Filename))
+	data, err := os.ReadFile(filepath.Join(dir, Filename))
+	if err != nil {
+		t.Fatal(err)
+	}
 	var saved History
-	json.Unmarshal(data, &saved)
+	if err := json.Unmarshal(data, &saved); err != nil {
+		t.Fatal(err)
+	}
 	if len(saved.Files) != 1 {
 		t.Errorf("saved %d files, want 1", len(saved.Files))
 	}

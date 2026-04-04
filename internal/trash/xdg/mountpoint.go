@@ -7,11 +7,13 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"syscall"
 
-	"github.com/babarot/gomi/internal/trash"
 	"github.com/moby/sys/mountinfo"
+
+	"github.com/babarot/gomi/internal/trash"
 )
 
 // Unix/Linux implementation of XDG trash handling
@@ -51,12 +53,9 @@ func getMountPoints() ([]string, error) {
 		}
 
 		// Skip read-only filesystems
-		opts := strings.Split(info.Options, ",")
-		for _, opt := range opts {
-			if opt == "ro" {
-				slog.Debug("skipping read-only filesystem", "mountpoint", info.Mountpoint)
-				return true, false
-			}
+		if slices.Contains(strings.Split(info.Options, ","), "ro") {
+			slog.Debug("skipping read-only filesystem", "mountpoint", info.Mountpoint)
+			return true, false
 		}
 
 		return false, false
@@ -84,38 +83,6 @@ func getMountPoints() ([]string, error) {
 	}
 
 	return points, nil
-}
-
-// getMountPoint returns the mount point for the given path
-func getMountPoint(path string) (string, error) {
-	absPath, err := filepath.Abs(path)
-	if err != nil {
-		return "", fmt.Errorf("failed to get absolute path: %w", err)
-	}
-
-	// Get all mount points
-	mounts, err := mountinfo.GetMounts(nil)
-	if err != nil {
-		return "", fmt.Errorf("failed to get mount info: %w", err)
-	}
-
-	// Find the longest matching mount point
-	var longest string
-	for _, m := range mounts {
-		if strings.HasPrefix(absPath, m.Mountpoint) {
-			if len(m.Mountpoint) > len(longest) {
-				longest = m.Mountpoint
-			}
-		}
-	}
-
-	if longest == "" {
-		// If no mount point found, the path must be on the root filesystem
-		return "/", nil
-	}
-
-	slog.Debug("found mount point", "path", absPath, "mountpoint", longest)
-	return longest, nil
 }
 
 // isOnSameDevice checks if two paths are on the same device

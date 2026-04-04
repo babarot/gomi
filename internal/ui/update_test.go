@@ -4,15 +4,26 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/babarot/gomi/internal/config"
-	"github.com/babarot/gomi/internal/trash"
-	"github.com/babarot/gomi/internal/ui/keys"
-	"github.com/babarot/gomi/internal/ui/styles"
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/babarot/gomi/internal/config"
+	"github.com/babarot/gomi/internal/trash"
+	"github.com/babarot/gomi/internal/ui/keys"
+	"github.com/babarot/gomi/internal/ui/styles"
 )
+
+// asModel extracts Model from tea.Model with a fatal on type mismatch
+func asModel(t *testing.T, m tea.Model) Model {
+	t.Helper()
+	model, ok := m.(Model)
+	if !ok {
+		t.Fatalf("unexpected model type: %T", m)
+	}
+	return model
+}
 
 // newTestModel creates a minimal Model for testing Update logic
 func newTestModel() Model {
@@ -41,7 +52,7 @@ func TestUpdate_WindowSizeMsg(t *testing.T) {
 
 	msg := tea.WindowSizeMsg{Width: 120, Height: 40}
 	updated, _ := m.Update(msg)
-	model := updated.(Model)
+	model := asModel(t, updated)
 
 	if model.list.Width() != 120 {
 		t.Errorf("list width = %d, want 120", model.list.Width())
@@ -53,7 +64,7 @@ func TestUpdate_ErrorMsg(t *testing.T) {
 
 	msg := errorMsg{err: errors.New("test error")}
 	updated, cmd := m.Update(msg)
-	model := updated.(Model)
+	model := asModel(t, updated)
 
 	if model.state.current != Quitting {
 		t.Errorf("state = %v, want Quitting", model.state.current)
@@ -72,7 +83,7 @@ func TestUpdate_FileListLoadedMsg(t *testing.T) {
 	file := newTestFile("loaded.txt")
 	msg := FileListLoadedMsg{files: []list.Item{file}}
 	updated, _ := m.Update(msg)
-	model := updated.(Model)
+	model := asModel(t, updated)
 
 	items := model.list.Items()
 	if len(items) != 1 {
@@ -85,7 +96,7 @@ func TestUpdate_FileListLoadedMsg_Error(t *testing.T) {
 
 	msg := FileListLoadedMsg{err: errors.New("load failed")}
 	updated, cmd := m.Update(msg)
-	model := updated.(Model)
+	model := asModel(t, updated)
 
 	if model.err == nil {
 		t.Error("err should be set")
@@ -101,7 +112,7 @@ func TestUpdate_ListView_Quit(t *testing.T) {
 
 	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")}
 	updated, cmd := m.Update(msg)
-	model := updated.(Model)
+	model := asModel(t, updated)
 
 	if model.state.current != Quitting {
 		t.Errorf("state = %v, want Quitting", model.state.current)
@@ -117,7 +128,7 @@ func TestUpdate_ListView_CtrlC(t *testing.T) {
 
 	msg := tea.KeyMsg{Type: tea.KeyCtrlC}
 	updated, cmd := m.Update(msg)
-	model := updated.(Model)
+	model := asModel(t, updated)
 
 	if model.state.current != Quitting {
 		t.Errorf("state = %v, want Quitting", model.state.current)
@@ -133,7 +144,7 @@ func TestUpdate_DetailView_EscReturnsToList(t *testing.T) {
 
 	msg := tea.KeyMsg{Type: tea.KeyEsc}
 	updated, _ := m.Update(msg)
-	model := updated.(Model)
+	model := asModel(t, updated)
 
 	if model.state.current != ListView {
 		t.Errorf("state = %v, want ListView", model.state.current)
@@ -146,7 +157,7 @@ func TestUpdate_DetailView_Quit(t *testing.T) {
 
 	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")}
 	updated, cmd := m.Update(msg)
-	model := updated.(Model)
+	model := asModel(t, updated)
 
 	if model.state.current != Quitting {
 		t.Errorf("state = %v, want Quitting", model.state.current)
@@ -166,7 +177,7 @@ func TestUpdate_DetailView_AtSignToggles(t *testing.T) {
 
 	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("@")}
 	updated, _ := m.Update(msg)
-	model := updated.(Model)
+	model := asModel(t, updated)
 
 	if model.state.detail.dateFormat == initialDateFormat {
 		t.Error("date format should have toggled")
@@ -186,7 +197,7 @@ func TestUpdate_ConfirmView_YesNo_No(t *testing.T) {
 
 	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("n")}
 	updated, _ := m.Update(msg)
-	model := updated.(Model)
+	model := asModel(t, updated)
 
 	// Should go back to previous view
 	if model.state.current == ConfirmView {
@@ -203,7 +214,7 @@ func TestUpdate_ConfirmView_YesNo_Quit(t *testing.T) {
 
 	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")}
 	updated, cmd := m.Update(msg)
-	model := updated.(Model)
+	model := asModel(t, updated)
 
 	if model.state.current != Quitting {
 		t.Errorf("state = %v, want Quitting", model.state.current)
@@ -223,7 +234,7 @@ func TestUpdate_ConfirmView_TypeYES_Backspace(t *testing.T) {
 	// Type "Y"
 	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("Y")}
 	updated, _ := m.Update(msg)
-	m = updated.(Model)
+	m = asModel(t, updated)
 
 	if m.state.confirmation.yesInput != "Y" {
 		t.Errorf("yesInput = %q, want %q", m.state.confirmation.yesInput, "Y")
@@ -232,7 +243,7 @@ func TestUpdate_ConfirmView_TypeYES_Backspace(t *testing.T) {
 	// Backspace
 	msg = tea.KeyMsg{Type: tea.KeyBackspace}
 	updated, _ = m.Update(msg)
-	m = updated.(Model)
+	m = asModel(t, updated)
 
 	if m.state.confirmation.yesInput != "" {
 		t.Errorf("yesInput = %q, want empty after backspace", m.state.confirmation.yesInput)
@@ -248,7 +259,7 @@ func TestUpdate_ConfirmView_TypeYES_Esc(t *testing.T) {
 
 	msg := tea.KeyMsg{Type: tea.KeyEsc}
 	updated, _ := m.Update(msg)
-	model := updated.(Model)
+	model := asModel(t, updated)
 
 	if model.state.current == ConfirmView {
 		t.Error("esc should leave ConfirmView")
@@ -266,7 +277,7 @@ func TestUpdate_ListView_Enter_NoFiles(t *testing.T) {
 
 	msg := tea.KeyMsg{Type: tea.KeyEnter}
 	updated, cmd := m.Update(msg)
-	model := updated.(Model)
+	model := asModel(t, updated)
 
 	// With no selection manager items, it should pick the current item
 	if len(model.choices) != 1 {
@@ -288,7 +299,7 @@ func TestUpdate_ListView_Enter_WithSelection(t *testing.T) {
 
 	msg := tea.KeyMsg{Type: tea.KeyEnter}
 	updated, cmd := m.Update(msg)
-	model := updated.(Model)
+	model := asModel(t, updated)
 
 	if len(model.choices) != 2 {
 		t.Errorf("choices = %d, want 2", len(model.choices))
@@ -304,7 +315,7 @@ func TestUpdate_ShowDetailMsg(t *testing.T) {
 	file := File{File: &trash.File{Name: "detail.txt", TrashPath: "/trash/detail.txt"}}
 	msg := ShowDetailMsg{file: file}
 	updated, _ := m.Update(msg)
-	model := updated.(Model)
+	model := asModel(t, updated)
 
 	if model.state.current != DetailView {
 		t.Errorf("state = %v, want DetailView", model.state.current)

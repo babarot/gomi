@@ -111,7 +111,9 @@ func TestRotateWriter_RemoveOldFiles(t *testing.T) {
 
 	// Create some fake backup files
 	for _, suffix := range []string{".20240101-120000", ".20240102-120000", ".20240103-120000", ".20240104-120000"} {
-		os.WriteFile(path+suffix, []byte("old"), 0644)
+		if err := os.WriteFile(path+suffix, []byte("old"), 0644); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	rw, err := newRotateWriter(path, "1KB", 2)

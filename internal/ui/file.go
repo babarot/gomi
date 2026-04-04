@@ -42,31 +42,31 @@ func (f File) isSelected() bool {
 }
 
 func (f File) Description() string {
-	_, err := os.Stat(f.File.TrashPath)
+	_, err := os.Stat(f.TrashPath)
 	if os.IsNotExist(err) {
 		return "(already might have been deleted or unmounted)"
 	}
 
 	return fmt.Sprintf("%s %s %s",
-		humanize.Time(f.File.DeletedAt),
+		humanize.Time(f.DeletedAt),
 		bullet,
-		filepath.Dir(f.File.OriginalPath),
+		filepath.Dir(f.OriginalPath),
 	)
 }
 
 func (f File) Title() string {
-	fi, err := os.Stat(f.File.TrashPath)
+	fi, err := os.Stat(f.TrashPath)
 	if err != nil {
-		return f.File.Name + "?"
+		return f.Name + "?"
 	}
 	if fi.IsDir() {
-		return f.File.Name + "/"
+		return f.Name + "/"
 	}
-	return f.File.Name
+	return f.Name
 }
 
 func (f File) FilterValue() string {
-	return f.File.Name
+	return f.Name
 }
 
 func (f File) Size() string {
@@ -158,7 +158,7 @@ func (f File) colorize(content string) (string, error) {
 	var l chroma.Lexer
 	l = lexers.Get(f.Name)
 	if l == nil {
-		l = lexers.Analyse(content)
+		l = lexers.Analyse(content) //nolint:misspell // method name from chroma library
 	}
 	if l == nil {
 		slog.Debug("highlight: fallback to default lexer")

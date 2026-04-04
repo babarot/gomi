@@ -6,7 +6,10 @@ LDFLAGS := "-X main.version=$(shell git describe --tags --abbrev=0 --always) -X 
 all: build
 
 test: $(SRCS)
-	go test ./...
+	go test ./... -coverprofile=coverage.out -covermode=count
+
+lint:
+	golangci-lint run ./...
 
 deps:
 	go mod tidy
@@ -25,4 +28,4 @@ sys-install: build
 clean:
 	rm -f $(BINARY_NAME)
 
-.PHONY: all test deps build install clean
+.PHONY: all test lint deps build install clean

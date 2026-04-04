@@ -12,6 +12,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jessevdk/go-flags"
+	"github.com/rs/xid"
+
 	"github.com/babarot/gomi/internal/config"
 	"github.com/babarot/gomi/internal/trash"
 	"github.com/babarot/gomi/internal/trash/legacy"
@@ -19,8 +22,6 @@ import (
 	"github.com/babarot/gomi/internal/utils/debug"
 	"github.com/babarot/gomi/internal/utils/env"
 	"github.com/babarot/gomi/internal/utils/log"
-	"github.com/jessevdk/go-flags"
-	"github.com/rs/xid"
 )
 
 type Option struct {

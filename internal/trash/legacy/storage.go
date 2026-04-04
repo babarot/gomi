@@ -8,10 +8,11 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/babarot/gomi/internal/trash"
 	"github.com/babarot/gomi/internal/trash/legacy/history"
 	"github.com/babarot/gomi/internal/utils/fs"
-	"github.com/google/uuid"
 )
 
 // Storage implements the trash.Storage interface for legacy (.gomi) storage
@@ -114,7 +115,7 @@ func (s *Storage) Put(src string) error {
 			return trash.NewStorageError(
 				"put",
 				src,
-				fmt.Errorf("failed to save history and rollback failed: %v (original error: %w)", moveErr, err))
+				fmt.Errorf("failed to save history and rollback failed: %w (original error: %w)", moveErr, err))
 		}
 		return trash.NewStorageError(
 			"put",

@@ -3,9 +3,10 @@ package styles
 import (
 	"strings"
 
-	"github.com/babarot/gomi/internal/config"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
+
+	"github.com/babarot/gomi/internal/config"
 )
 
 // Styles holds all UI styles for consistent theming

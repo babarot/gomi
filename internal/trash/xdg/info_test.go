@@ -15,7 +15,7 @@ func TestNewInfo(t *testing.T) {
 		check   func(t *testing.T, info *TrashInfo)
 	}{
 		{
-			name: "valid trashinfo",
+			name:  "valid trashinfo",
 			input: "[Trash Info]\nPath=/home/user/file.txt\nDeletionDate=2024-01-15T10:30:00\n",
 			check: func(t *testing.T, info *TrashInfo) {
 				if info.Path != "/home/user/file.txt" {
@@ -31,7 +31,7 @@ func TestNewInfo(t *testing.T) {
 			},
 		},
 		{
-			name: "encoded path with spaces",
+			name:  "encoded path with spaces",
 			input: "[Trash Info]\nPath=/home/user/my%20file.txt\nDeletionDate=2024-01-15T10:30:00\n",
 			check: func(t *testing.T, info *TrashInfo) {
 				if info.Path != "/home/user/my file.txt" {
@@ -40,7 +40,7 @@ func TestNewInfo(t *testing.T) {
 			},
 		},
 		{
-			name: "with comments and blank lines",
+			name:  "with comments and blank lines",
 			input: "# comment\n\n[Trash Info]\n\nPath=/tmp/file\nDeletionDate=2024-01-01T00:00:00\n",
 			check: func(t *testing.T, info *TrashInfo) {
 				if info.Path != "/tmp/file" {

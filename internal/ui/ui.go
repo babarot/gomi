@@ -4,9 +4,10 @@ import (
 	"errors"
 	"fmt"
 
+	tea "github.com/charmbracelet/bubbletea"
+
 	"github.com/babarot/gomi/internal/config"
 	"github.com/babarot/gomi/internal/trash"
-	tea "github.com/charmbracelet/bubbletea"
 )
 
 // ListDensityType represents the density of the list view
@@ -69,7 +70,10 @@ func Render(manager *trash.Manager, files []*trash.File, cfg *config.Config) ([]
 	}
 
 	// Process results
-	finalModel := result.(Model)
+	finalModel, ok := result.(Model)
+	if !ok {
+		return nil, fmt.Errorf("unexpected model type: %T", result)
+	}
 	if finalModel.state.current == Quitting {
 		if msg := cfg.UI.ExitMessage; msg != "" {
 			fmt.Println(msg)

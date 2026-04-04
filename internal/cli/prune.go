@@ -9,12 +9,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fatih/color"
+
 	"github.com/babarot/gomi/internal/trash"
 	"github.com/babarot/gomi/internal/trash/xdg"
 	"github.com/babarot/gomi/internal/ui"
 	"github.com/babarot/gomi/internal/ui/table"
 	"github.com/babarot/gomi/internal/utils/duration"
-	"github.com/fatih/color"
 )
 
 var (
@@ -303,11 +304,11 @@ func parseTrashInfoFile(path string) (OrphanedFile, error) {
 	var originalPath string
 
 	for _, line := range lines {
-		if strings.HasPrefix(line, "Path=") {
-			originalPath = strings.TrimPrefix(line, "Path=")
+		if after, ok := strings.CutPrefix(line, "Path="); ok {
+			originalPath = after
 		}
-		if strings.HasPrefix(line, "DeletionDate=") {
-			deletedAtStr := strings.TrimPrefix(line, "DeletionDate=")
+		if after, ok := strings.CutPrefix(line, "DeletionDate="); ok {
+			deletedAtStr := after
 			deletedAt, err = time.Parse("2006-01-02T15:04:05", deletedAtStr)
 			if err != nil {
 				return OrphanedFile{}, err

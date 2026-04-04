@@ -9,8 +9,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/babarot/gomi/internal/utils/fs"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/babarot/gomi/internal/utils/fs"
 )
 
 // Put moves files to trash
@@ -29,7 +30,6 @@ func (c *CLI) Put(args []string) error {
 	)
 
 	for _, arg := range args {
-		arg := arg // Create new instance of arg for goroutine
 		eg.Go(func() error {
 			return c.processFile(arg, failed)
 		})

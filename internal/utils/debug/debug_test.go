@@ -2,6 +2,7 @@ package debug
 
 import (
 	"bytes"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,7 +14,9 @@ func TestShowExistingLogs(t *testing.T) {
 	logPath := filepath.Join(dir, "test.log")
 
 	content := "line1\nline2\nline3\n"
-	os.WriteFile(logPath, []byte(content), 0644)
+	if err := os.WriteFile(logPath, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	var buf bytes.Buffer
 	err := showExistingLogs(&buf, logPath)
@@ -36,7 +39,7 @@ func TestShowExistingLogs_NonExistent(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for non-existent file")
 	}
-	if err != ErrLogFileNotFound {
+	if !errors.Is(err, ErrLogFileNotFound) {
 		t.Errorf("error = %v, want ErrLogFileNotFound", err)
 	}
 }
@@ -44,7 +47,9 @@ func TestShowExistingLogs_NonExistent(t *testing.T) {
 func TestShowExistingLogs_EmptyFile(t *testing.T) {
 	dir := t.TempDir()
 	logPath := filepath.Join(dir, "empty.log")
-	os.WriteFile(logPath, []byte(""), 0644)
+	if err := os.WriteFile(logPath, []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	var buf bytes.Buffer
 	err := showExistingLogs(&buf, logPath)
@@ -59,7 +64,9 @@ func TestShowExistingLogs_EmptyFile(t *testing.T) {
 func TestLogs_FullMode(t *testing.T) {
 	dir := t.TempDir()
 	logPath := filepath.Join(dir, "test.log")
-	os.WriteFile(logPath, []byte("hello\nworld\n"), 0644)
+	if err := os.WriteFile(logPath, []byte("hello\nworld\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	var buf bytes.Buffer
 	err := Logs(&buf, logPath, false)
@@ -74,7 +81,7 @@ func TestLogs_FullMode(t *testing.T) {
 func TestLogs_NonExistent(t *testing.T) {
 	var buf bytes.Buffer
 	err := Logs(&buf, "/nonexistent/path.log", false)
-	if err != ErrLogFileNotFound {
+	if !errors.Is(err, ErrLogFileNotFound) {
 		t.Errorf("error = %v, want ErrLogFileNotFound", err)
 	}
 }

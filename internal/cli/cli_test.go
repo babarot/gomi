@@ -2,7 +2,6 @@ package cli
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -165,13 +164,13 @@ func TestSyncStringSlice_Concurrent(t *testing.T) {
 	done := make(chan struct{})
 
 	// Concurrent writes
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		go func() {
 			s.Append("item")
 			done <- struct{}{}
 		}()
 	}
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		<-done
 	}
 
@@ -234,7 +233,9 @@ func TestCLI_Run_Version(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	buf.ReadFrom(r)
+	if _, err := buf.ReadFrom(r); err != nil {
+		t.Fatalf("ReadFrom() error = %v", err)
+	}
 	output := buf.String()
 	if !strings.Contains(output, "1.0.0") {
 		t.Errorf("version output should contain version, got %q", output)
@@ -298,7 +299,7 @@ func TestParseTrashInfoFile(t *testing.T) {
 	dir := t.TempDir()
 	infoFile := filepath.Join(dir, "test.trashinfo")
 
-	content := fmt.Sprintf("[Trash Info]\nPath=/home/user/test.txt\nDeletionDate=2024-06-15T10:30:00\n")
+	content := "[Trash Info]\nPath=/home/user/test.txt\nDeletionDate=2024-06-15T10:30:00\n"
 	if err := os.WriteFile(infoFile, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -321,7 +322,9 @@ func TestParseTrashInfoFile(t *testing.T) {
 func TestParseTrashInfoFile_InvalidDate(t *testing.T) {
 	dir := t.TempDir()
 	infoFile := filepath.Join(dir, "bad.trashinfo")
-	os.WriteFile(infoFile, []byte("Path=/foo\nDeletionDate=not-a-date\n"), 0644)
+	if err := os.WriteFile(infoFile, []byte("Path=/foo\nDeletionDate=not-a-date\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	_, err := parseTrashInfoFile(infoFile)
 	if err == nil {
@@ -356,9 +359,8 @@ func TestOrphanedFile_Getters(t *testing.T) {
 	if o.GetName() != "test.trashinfo" {
 		t.Errorf("GetName() = %q, want %q", o.GetName(), "test.trashinfo")
 	}
-	if o.GetDeletedAt().IsZero() {
-		// zero value is fine, just make sure it doesn't panic
-	}
+	// GetDeletedAt() should not panic on zero value
+	_ = o.GetDeletedAt()
 }
 
 func TestFilterFiles(t *testing.T) {
@@ -366,7 +368,9 @@ func TestFilterFiles(t *testing.T) {
 
 	// Create a real file to represent an existing trash entry
 	existingFile := filepath.Join(dir, "exists.txt")
-	os.WriteFile(existingFile, []byte("hi"), 0644)
+	if err := os.WriteFile(existingFile, []byte("hi"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	cli := &CLI{config: config.NewDefaultConfig()}
 

@@ -168,7 +168,9 @@ func TestEnsureConfig(t *testing.T) {
 func TestEnsureConfig_ExistingFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "config.yaml")
-	os.WriteFile(configPath, []byte("core:\n  trash:\n    strategy: auto\n"), 0644)
+	if err := os.WriteFile(configPath, []byte("core:\n  trash:\n    strategy: auto\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	cfg, err := ensureConfig(configPath)
 	if err != nil {
@@ -192,7 +194,9 @@ history:
   include:
     within_days: 30
 `
-	os.WriteFile(configPath, []byte(content), 0644)
+	if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	cfg := &Config{}
 	if err := cfg.load(configPath); err != nil {
