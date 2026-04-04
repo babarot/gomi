@@ -82,6 +82,8 @@ var runID = sync.OnceValue(func() string {
 
 // Run is the main entry point for the CLI
 func Run(v Version) error {
+	env.Init()
+
 	opt, args, err := parseOptions(v)
 	if err != nil {
 		return err
