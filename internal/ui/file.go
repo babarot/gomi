@@ -38,11 +38,6 @@ type File struct {
 }
 
 func (f File) Description() string {
-	_, err := os.Stat(f.TrashPath)
-	if os.IsNotExist(err) {
-		return "(already might have been deleted or unmounted)"
-	}
-
 	return fmt.Sprintf("%s %s %s",
 		humanize.Time(f.DeletedAt),
 		bullet,
@@ -51,11 +46,7 @@ func (f File) Description() string {
 }
 
 func (f File) Title() string {
-	fi, err := os.Stat(f.TrashPath)
-	if err != nil {
-		return f.Name + "?"
-	}
-	if fi.IsDir() {
+	if f.IsDir {
 		return f.Name + "/"
 	}
 	return f.Name
