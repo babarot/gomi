@@ -147,25 +147,38 @@ func (m *Manager) Put(src string) error {
 
 // List returns all files from all storage backends
 func (m *Manager) List() ([]*File, error) {
-	var allFiles []*File
-	var errs []error
-
 	slog.Debug("storage manager list")
 
+	type result struct {
+		files []*File
+		err   error
+	}
+
+	ch := make(chan result, len(m.storages))
 	for _, storage := range m.storages {
-		files, err := storage.List()
-		if err != nil {
-			errs = append(errs, fmt.Errorf("failed to list files from %s: %w",
-				storage.Info().Trashes, err))
+		go func(s Storage) {
+			files, err := s.List()
+			if err != nil {
+				ch <- result{err: fmt.Errorf("failed to list files from %s: %w",
+					s.Info().Trashes, err)}
+				return
+			}
+			slog.Info("list files",
+				"storage_type", s.Info().Type,
+				"len(files)", len(files))
+			ch <- result{files: files}
+		}(storage)
+	}
+
+	var allFiles []*File
+	var errs []error
+	for range m.storages {
+		r := <-ch
+		if r.err != nil {
+			errs = append(errs, r.err)
 			continue
 		}
-		allFiles = append(allFiles, files...)
-		slog.Info("list files",
-			"storage_type",
-			storage.Info().Type,
-			"len(files)",
-			len(files),
-		)
+		allFiles = append(allFiles, r.files...)
 	}
 
 	if len(allFiles) == 0 && len(errs) > 0 {
