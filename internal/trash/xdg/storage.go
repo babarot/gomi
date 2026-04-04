@@ -182,15 +182,8 @@ func (s *Storage) Restore(file *trash.File, dst string) error {
 	}
 
 	// Remove .trashinfo file
-	infoBaseName := filepath.Base(file.TrashPath) + ".trashinfo"
-	infoPath := filepath.Join(
-		filepath.Dir(filepath.Dir(file.TrashPath)), // Go up two levels (past "files" dir)
-		"info",
-		infoBaseName,
-	)
-	if err := os.Remove(infoPath); err != nil {
-		// Log error but don't fail - file is already restored
-		fmt.Fprintf(os.Stderr, "Warning: failed to remove trash info: %v\n", err)
+	if err := os.Remove(infoPathForFile(file.TrashPath)); err != nil {
+		slog.Warn("failed to remove trash info", "error", err)
 	}
 
 	return nil
@@ -203,18 +196,21 @@ func (s *Storage) Remove(file *trash.File) error {
 	}
 
 	// Remove .trashinfo file
-	infoBaseName := filepath.Base(file.TrashPath) + ".trashinfo"
-	infoPath := filepath.Join(
-		filepath.Dir(filepath.Dir(file.TrashPath)), // Go up two levels (past "files" dir)
-		"info",
-		infoBaseName,
-	)
-	if err := os.Remove(infoPath); err != nil {
-		// Log error but don't fail - file is already removed
-		fmt.Fprintf(os.Stderr, "Warning: failed to remove trash info: %v\n", err)
+	if err := os.Remove(infoPathForFile(file.TrashPath)); err != nil {
+		slog.Warn("failed to remove trash info", "error", err)
 	}
 
 	return nil
+}
+
+// infoPathForFile returns the .trashinfo file path for a given trash file path.
+// Given a path like /trash/files/foo.txt, it returns /trash/info/foo.txt.trashinfo.
+func infoPathForFile(trashPath string) string {
+	return filepath.Join(
+		filepath.Dir(filepath.Dir(trashPath)), // Go up two levels (past "files" dir)
+		"info",
+		filepath.Base(trashPath)+".trashinfo",
+	)
 }
 
 func (s *Storage) initHomeTrash() (*trashLocation, error) {

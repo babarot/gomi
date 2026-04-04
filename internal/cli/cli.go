@@ -62,7 +62,7 @@ type CLI struct {
 	option  Option
 	config  *config.Config
 	runID   string
-	manager *trash.Manager
+	manager trash.Trash
 }
 
 var runID = sync.OnceValue(func() string {
