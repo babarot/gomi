@@ -25,13 +25,7 @@ func loadFileListCmd(files []File) tea.Cmd {
 			return files[i].DeletedAt.After(files[j].DeletedAt)
 		})
 
-		// Filter out files that no longer exist
-		files = lo.Reject(files, func(f File, index int) bool {
-			_, err := os.Stat(f.TrashPath)
-			return os.IsNotExist(err)
-		})
-
-		// Convert to list items
+		// Convert to list items (existence already checked by cli.filterFiles)
 		items := make([]list.Item, len(files))
 		for i, file := range files {
 			items[i] = file
