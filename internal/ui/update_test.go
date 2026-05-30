@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 
 	"github.com/babarot/gomi/internal/config"
 	"github.com/babarot/gomi/internal/trash"
@@ -57,6 +58,88 @@ func TestUpdate_WindowSizeMsg(t *testing.T) {
 
 	if model.list.Width() != 120 {
 		t.Errorf("list width = %d, want 120", model.list.Width())
+	}
+}
+
+func TestUpdate_WindowSizeMsg_ShrinksListHeight(t *testing.T) {
+	m := newTestModel()
+
+	const termHeight = 20
+	msg := tea.WindowSizeMsg{Width: 80, Height: termHeight}
+	updated, _ := m.Update(msg)
+	model := asModel(t, updated)
+
+	if model.list.Height() > termHeight {
+		t.Errorf("list height = %d, want <= %d (terminal height); "+
+			"list is not following the terminal height and will push items off-screen",
+			model.list.Height(), termHeight)
+	}
+}
+
+func TestUpdate_WindowSizeMsg_SetsHelpWidth(t *testing.T) {
+	m := newTestModel()
+
+	const termWidth = 70
+	msg := tea.WindowSizeMsg{Width: termWidth, Height: 20}
+	updated, _ := m.Update(msg)
+	model := asModel(t, updated)
+
+	if model.help.Width == 0 {
+		t.Fatal("help.Width = 0; the help model was not informed of the " +
+			"terminal width, so its View() will not truncate and may overflow")
+	}
+	if model.help.Width > termWidth {
+		t.Errorf("help.Width = %d, want <= %d (terminal width)",
+			model.help.Width, termWidth)
+	}
+}
+
+func TestView_FitsSmallTerminal(t *testing.T) {
+	m := newTestModel()
+	m.help = newHelpModel()
+	m.state.SetView(ListView)
+
+	const (
+		termWidth  = 70
+		termHeight = 20
+	)
+	msg := tea.WindowSizeMsg{Width: termWidth, Height: termHeight}
+	updated, _ := m.Update(msg)
+	model := asModel(t, updated)
+
+	view := model.View()
+
+	if h := lipgloss.Height(view); h > termHeight {
+		t.Errorf("View height = %d lines, want <= %d; "+
+			"output is taller than the terminal so the top rows scroll off",
+			h, termHeight)
+	}
+	if w := lipgloss.Width(view); w > termWidth {
+		t.Errorf("View width = %d cols, want <= %d; "+
+			"output is wider than the terminal so the right edge is clipped/wrapped",
+			w, termWidth)
+	}
+}
+
+// TestUpdate_WindowSizeMsg_HeightZero verifies that a synthetic
+// WindowSizeMsg with only Width set (sent by confirm-view cancel
+// paths in update.go) does not collapse the list height.
+func TestUpdate_WindowSizeMsg_HeightZero(t *testing.T) {
+	m := newTestModel()
+
+	// First, set a real terminal size.
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+	m = asModel(t, updated)
+	prevHeight := m.list.Height()
+
+	// Then send a width-only message (Height == 0).
+	updated, _ = m.Update(tea.WindowSizeMsg{Width: m.list.Width()})
+	model := asModel(t, updated)
+
+	if model.list.Height() != prevHeight {
+		t.Errorf("list height = %d, want %d; "+
+			"width-only WindowSizeMsg must not change list height",
+			model.list.Height(), prevHeight)
 	}
 }
 

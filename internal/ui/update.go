@@ -28,7 +28,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.WindowSizeMsg:
-		m.list.SetWidth(msg.Width)
+		// view.go appends a help block wrapped in lipgloss Margin(1, 2)
+		// below the list: 1 row top margin + 1 row content + 1 row bottom
+		// margin = 3 rows tall, and 2 cols on each side = 4 cols total.
+		const (
+			helpReservedRows = 3
+			helpReservedCols = 4
+		)
+		if msg.Width > 0 {
+			m.list.SetWidth(msg.Width)
+			m.help.Width = max(msg.Width-helpReservedCols, 0)
+		}
+		if msg.Height > 0 {
+			m.list.SetHeight(max(msg.Height-helpReservedRows, 1))
+		}
 		return m, tea.Batch(cmds...)
 
 	case FileListUpdatedMsg:
