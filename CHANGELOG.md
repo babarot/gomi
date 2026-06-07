@@ -1,5 +1,17 @@
 # Changelog
 
+## [v1.6.4](https://github.com/babarot/gomi/compare/v1.6.3...v1.6.4) - 2026-06-07
+### Improvements
+- fix: keep restore TUI within terminal bounds (closes #125) by @babarot in https://github.com/babarot/gomi/pull/127
+- Allow --prune to skip confirmation with -f by @babarot in https://github.com/babarot/gomi/pull/129
+### Refactorings
+- Fix concurrency safety: eliminate global SelectionManager and add mutex to legacy Storage by @babarot in https://github.com/babarot/gomi/pull/118
+- Refactor: extract Trash interface, move orphan logic, and DRY up XDG storage by @babarot in https://github.com/babarot/gomi/pull/119
+- Refactor: decouple config, remove unused fields, and narrow UI dependencies by @babarot in https://github.com/babarot/gomi/pull/120
+- Update architecture docs and rename manager variables to match Trash interface by @babarot in https://github.com/babarot/gomi/pull/121
+- Fix fundamental design issues: circular references, untestable prompts, and implicit init() by @babarot in https://github.com/babarot/gomi/pull/122
+- Reduce syscalls in gomi -b restore path by @babarot in https://github.com/babarot/gomi/pull/123
+
 ## [v1.6.3](https://github.com/babarot/gomi/compare/v1.6.2...v1.6.3) - 2026-03-20
 ### Bug fixes
 - Fix files with dollar signs in names being incorrectly expanded by @babarot in https://github.com/babarot/gomi/pull/111
