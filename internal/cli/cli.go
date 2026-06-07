@@ -53,7 +53,7 @@ type RmOption struct {
 	Interactive bool `short:"i" description:"(dummy) prompt before every removal"`
 	Recursive   bool `short:"r" long:"recursive" description:"(dummy) remove directories and their contents recursively"`
 	Recursive2  bool `short:"R" description:"(dummy) same as -r"`
-	Force       bool `short:"f" long:"force" description:"(dummy) ignore nonexistent files, never prompt"`
+	Force       bool `short:"f" long:"force" description:"ignore nonexistent files, never prompt (effective with --prune)"`
 	Directory   bool `short:"d" long:"dir" description:"(dummy) remove empty directories"`
 	Verbose     bool `short:"v" long:"verbose" description:"(dummy) explain what is being done"`
 }
