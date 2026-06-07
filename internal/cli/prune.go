@@ -111,26 +111,28 @@ func (c *CLI) permanentlyDeleteByTimeRange(durations []time.Duration) error {
 		return nil
 	}
 
-	table.PrintFiles(filesToDelete, table.PrintOptions{
-		ShowRelativeTime: true,
-		Order:            table.SortDesc,
-	})
-	fmt.Println()
-	printDeletionSummary(filesToDelete, newestAge, oldestAge, len(durations) == 1)
+	if !c.option.Rm.Force {
+		table.PrintFiles(filesToDelete, table.PrintOptions{
+			ShowRelativeTime: true,
+			Order:            table.SortDesc,
+		})
+		fmt.Println()
+		printDeletionSummary(filesToDelete, newestAge, oldestAge, len(durations) == 1)
 
-	// First confirmation
-	if !c.prompter.Confirm(fmt.Sprintf("Are you sure you want to remove these %d files?", len(filesToDelete))) {
-		fmt.Println("Operation canceled.")
-		return nil
-	}
+		// First confirmation
+		if !c.prompter.Confirm(fmt.Sprintf("Are you sure you want to remove these %d files?", len(filesToDelete))) {
+			fmt.Println("Operation canceled.")
+			return nil
+		}
 
-	// Second confirmation with warning
-	fmt.Println()
-	// WARNING: Files will be permanently deleted and CANNOT be recovered. Are you absolutely sure?
-	fmt.Printf("%s\n", color.New(color.FgHiRed).Sprint("WARNING: This operation is permanent and cannot be undone!"))
-	if !c.prompter.ConfirmYes("Do you really want to permanently delete these files?") {
-		fmt.Println("Operation canceled.")
-		return nil
+		// Second confirmation with warning
+		fmt.Println()
+		// WARNING: Files will be permanently deleted and CANNOT be recovered. Are you absolutely sure?
+		fmt.Printf("%s\n", color.New(color.FgHiRed).Sprint("WARNING: This operation is permanent and cannot be undone!"))
+		if !c.prompter.ConfirmYes("Do you really want to permanently delete these files?") {
+			fmt.Println("Operation canceled.")
+			return nil
+		}
 	}
 
 	// Remove files
