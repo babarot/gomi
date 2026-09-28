@@ -3,8 +3,10 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/fatih/color"
@@ -136,25 +138,83 @@ func (c *CLI) permanentlyDeleteByTimeRange(durations []time.Duration) error {
 	}
 
 	// Remove files
-	var failedDeletions []string
+	var failedDeletions []failedDeletion
 	for _, file := range filesToDelete {
 		slog.Debug("removing trash file", "file", file.OriginalPath)
 		if err := c.trash.Remove(file); err != nil {
 			slog.Error("failed to remove file", "file", file.Name, "error", err)
-			failedDeletions = append(failedDeletions, file.Name)
+			failedDeletions = append(failedDeletions, failedDeletion{file: file, err: err})
 		}
 	}
 
 	if len(failedDeletions) > 0 {
-		fmt.Printf("Failed to remove %d files:\n", len(failedDeletions))
-		for _, file := range failedDeletions {
-			fmt.Println("-", file)
-		}
+		printFailedDeletions(failedDeletions)
 		return fmt.Errorf("some files could not be removed")
 	}
 
 	fmt.Printf("Successfully removed %d files.\n", len(filesToDelete))
 	return nil
+}
+
+// failedDeletion holds a trash file that could not be removed and the reason
+type failedDeletion struct {
+	file *trash.File
+	err  error
+}
+
+// printFailedDeletions prints the files that could not be removed with their reasons.
+// If any of them failed due to insufficient permissions, it also prints a hint
+// on how to remove them manually.
+func printFailedDeletions(failed []failedDeletion) {
+	fmt.Printf("Failed to remove %d files:\n", len(failed))
+
+	var permissionDenied []string
+	for _, f := range failed {
+		fmt.Printf("- %s (%s): %s\n", f.file.Name, f.file.TrashPath, removeErrorReason(f.err))
+		if errors.Is(f.err, fs.ErrPermission) {
+			permissionDenied = append(permissionDenied, f.file.TrashPath)
+		}
+	}
+
+	if len(permissionDenied) == 0 {
+		return
+	}
+
+	quoted := make([]string, len(permissionDenied))
+	for i, path := range permissionDenied {
+		quoted[i] = shellQuote(path)
+	}
+	fmt.Println()
+	fmt.Println("Some files could not be removed due to insufficient permissions.")
+	fmt.Println("They may contain files owned by another user (e.g. created by a Docker container),")
+	fmt.Println("which gomi cannot remove as the current user. Remove them manually with sudo,")
+	fmt.Println("then clean up the leftover metadata:")
+	fmt.Println()
+	fmt.Printf("  sudo rm -rf %s\n", strings.Join(quoted, " "))
+	fmt.Println("  gomi --prune=orphans")
+	fmt.Println()
+}
+
+// removeErrorReason returns a short description of why a removal failed,
+// including the exact path that caused the failure when available
+func removeErrorReason(err error) string {
+	var pathErr *fs.PathError
+	if errors.As(err, &pathErr) {
+		return fmt.Sprintf("%v: %s", pathErr.Err, pathErr.Path)
+	}
+	return err.Error()
+}
+
+// shellQuote quotes s for safe use in a POSIX shell command line
+func shellQuote(s string) string {
+	isSafe := func(r rune) bool {
+		return r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' ||
+			strings.ContainsRune("/._-+:@%,=", r)
+	}
+	if s != "" && strings.IndexFunc(s, func(r rune) bool { return !isSafe(r) }) < 0 {
+		return s
+	}
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
 
 // printDeletionSummary prints a summary of the files to be deleted
