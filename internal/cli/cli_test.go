@@ -131,6 +131,95 @@ func TestIsForbiddenPath(t *testing.T) {
 	}
 }
 
+func TestIsForbiddenPathRelative(t *testing.T) {
+	root := t.TempDir()
+	sys := filepath.Join(root, "sys")
+	if err := os.Mkdir(sys, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cli := &CLI{
+		config: &config.Config{
+			Core: config.Core{
+				Trash: config.TrashConfig{ForbiddenPaths: []string{sys}},
+			},
+		},
+	}
+
+	// A relative argument given inside a forbidden directory is caught.
+	// The check comes before the trash is touched, so none is set up.
+	t.Chdir(sys)
+	err := cli.processFile("file", &syncStringSlice{})
+	if err == nil || !strings.Contains(err.Error(), "forbidden path") {
+		t.Errorf("processFile(%q) = %v, want a forbidden path error", "file", err)
+	}
+}
+
+func TestIsForbidden(t *testing.T) {
+	// root/
+	//   sys/           forbidden, like /var
+	//     tmp/         tempDir, like /var/folders/.../T
+	//       keep/      forbidden explicitly
+	//     other/
+	//   link -> sys    like /var -> /private/var
+	//   home/
+	//     result -> sys/other
+	root, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	sys := filepath.Join(root, "sys")
+	tmp := filepath.Join(sys, "tmp")
+	keep := filepath.Join(tmp, "keep")
+	other := filepath.Join(sys, "other")
+	home := filepath.Join(root, "home")
+	for _, d := range []string{keep, other, home} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	link := filepath.Join(root, "link")
+	if err := os.Symlink(sys, link); err != nil {
+		t.Fatal(err)
+	}
+	result := filepath.Join(home, "result")
+	if err := os.Symlink(other, result); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name      string
+		path      string
+		forbidden []string
+		tempDir   string
+		want      bool
+	}{
+		{"exact", sys, []string{sys}, "", true},
+		{"inside", filepath.Join(sys, "x"), []string{sys}, "", true},
+		{"outside", filepath.Join(home, "x"), []string{sys}, "", false},
+		{"sibling with same prefix", sys + "2", []string{sys}, "", false},
+		{"root matches only itself", filepath.Join(home, "x"), []string{"/"}, "", false},
+		{"through a symlinked parent", filepath.Join(link, "x"), []string{sys}, "", true},
+		{"forbidden given as the symlink", filepath.Join(sys, "x"), []string{link}, "", true},
+		{"symlink itself pointing into forbidden", result, []string{sys}, "", false},
+		{"inside tempDir", filepath.Join(tmp, "x"), []string{sys}, tmp, false},
+		{"inside tempDir through symlink", filepath.Join(link, "tmp", "x"), []string{sys}, tmp, false},
+		{"inside tempDir given as symlink", filepath.Join(tmp, "x"), []string{sys}, filepath.Join(link, "tmp"), false},
+		{"tempDir itself", tmp, []string{sys}, tmp, true},
+		{"elsewhere in forbidden with tempDir", filepath.Join(other, "x"), []string{sys}, tmp, true},
+		{"forbidden inside tempDir", filepath.Join(keep, "x"), []string{sys, keep}, tmp, true},
+		{"tempDir forbidden itself", filepath.Join(tmp, "x"), []string{tmp}, tmp, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isForbidden(tt.path, tt.forbidden, tt.tempDir)
+			if got != tt.want {
+				t.Errorf("isForbidden(%q, %q, %q) = %v, want %v", tt.path, tt.forbidden, tt.tempDir, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestSyncStringSlice(t *testing.T) {
 	s := &syncStringSlice{}
 
