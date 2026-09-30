@@ -179,7 +179,11 @@ core:
 
     home_fallback: true # If true, fallbacks to home trash when external trash fails
 
-    forbidden_paths:    # List of paths that cannot be moved to trash for safety
+    forbidden_paths:    # List of paths that cannot be moved to trash for safety.
+                        # Each path protects itself and everything inside it ("/" protects only itself).
+                        # Symlinks are resolved, so "/var" also covers "/private/var" on macOS.
+                        # Files inside $TMPDIR stay removable even when a listed path contains it
+                        # (e.g. "/var" and macOS's /var/folders/.../T); $TMPDIR itself does not.
       - "$HOME/.local/share/Trash"
       - "$HOME/.trash"
       - "$XDG_DATA_HOME/Trash"

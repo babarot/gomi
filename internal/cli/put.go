@@ -56,8 +56,16 @@ func (c *CLI) processFile(arg string, failed *syncStringSlice) error {
 		return fmt.Errorf("failed to expand path: %w", err)
 	}
 
+	// Get absolute path. The forbidden paths check needs it: a relative
+	// path such as "hosts" run in /etc must be checked as /etc/hosts.
+	path, err := filepath.Abs(expandedPath)
+	if err != nil {
+		failed.Append(arg)
+		return fmt.Errorf("failed to get absolute path: %w", err)
+	}
+
 	// Check for forbidden paths
-	if c.isForbiddenPath(expandedPath) {
+	if c.isForbiddenPath(path) {
 		failed.Append(arg)
 		return fmt.Errorf("refusing to remove forbidden path: %q", arg)
 	}
@@ -73,13 +81,6 @@ func (c *CLI) processFile(arg string, failed *syncStringSlice) error {
 		return fmt.Errorf("refusing to remove unsafe path: %q", arg)
 	}
 
-	// Get absolute path
-	path, err := filepath.Abs(expandedPath)
-	if err != nil {
-		failed.Append(arg)
-		return fmt.Errorf("failed to get absolute path: %w", err)
-	}
-
 	// Check if file exists (use Lstat to handle broken symlinks)
 	if _, err := os.Lstat(path); os.IsNotExist(err) {
 		if !c.option.Rm.Force {
@@ -92,17 +93,11 @@ func (c *CLI) processFile(arg string, failed *syncStringSlice) error {
 		return nil
 	}
 
-	// Move to trash
-	err = c.trash.Put(path)
-	if err != nil {
-		if !c.option.Rm.Force {
-			failed.Append(arg)
-			return fmt.Errorf("failed to move to trash: %w", err)
-		}
-		if c.option.Rm.Verbose {
-			fmt.Fprintf(os.Stderr, "failed to move %s to trash: %v\n", arg, err)
-		}
-		return nil
+	// Move to trash. Like rm -f, -f ignores only nonexistent files: a file
+	// that exists but could not be moved is still an error.
+	if err := c.trash.Put(path); err != nil {
+		failed.Append(arg)
+		return fmt.Errorf("failed to move to trash: %w", err)
 	}
 
 	if c.option.Rm.Verbose {
@@ -121,18 +116,83 @@ func expandPath(path string) (string, error) {
 	return filepath.Clean(path), nil
 }
 
-// isForbiddenPath checks if the given path is in the forbidden paths list
+// isForbiddenPath checks if the given absolute path is in the forbidden paths list
 func (c *CLI) isForbiddenPath(path string) bool {
-	path = filepath.Clean(path)
+	return isForbidden(path, c.config.Core.Trash.ForbiddenPaths, os.TempDir())
+}
 
-	for _, forbiddenPath := range c.config.Core.Trash.ForbiddenPaths {
+// isForbidden reports whether path is one of forbiddenPaths or inside one.
+//
+// Paths are compared both as given and with symlinks resolved, so that on
+// macOS, where /var, /etc and /tmp are symlinks into /private, a forbidden
+// "/var" also covers "/private/var" and the other way around. Only the parent
+// of path is resolved: when path itself is a symlink, the link is what gets
+// removed, not what it points to.
+//
+// The contents of tempDir ($TMPDIR) are allowed even when a forbidden path
+// contains tempDir. The per-user temporary directory on macOS lives under
+// /var/folders, and forbidding "/var" is meant to protect the system, not
+// the files that mktemp creates. tempDir itself stays forbidden, and so do
+// forbidden paths inside it.
+func isForbidden(path string, forbiddenPaths []string, tempDir string) bool {
+	targets := targetForms(path)
+	var temps []string
+	if tempDir != "" {
+		temps = dirForms(tempDir)
+	}
+
+	for _, forbiddenPath := range forbiddenPaths {
 		// Expand forbidden path with environment variables
-		expandedForbiddenPath := os.ExpandEnv(forbiddenPath)
-		expandedForbiddenPath = filepath.Clean(expandedForbiddenPath)
+		forbidden := dirForms(os.ExpandEnv(forbiddenPath))
 
-		// Check for exact match or sub-path
-		if path == expandedForbiddenPath || strings.HasPrefix(path, expandedForbiddenPath+string(filepath.Separator)) {
-			return true
+		if !anyWithin(targets, forbidden, true) {
+			continue
+		}
+		if anyWithin(temps, forbidden, false) && anyWithin(targets, temps, false) {
+			// Forbidden only because it is an ancestor of tempDir
+			continue
+		}
+		return true
+	}
+	return false
+}
+
+// targetForms returns path cleaned, and path with its parent directory's
+// symlinks resolved when that differs.
+func targetForms(path string) []string {
+	path = filepath.Clean(path)
+	forms := []string{path}
+	if dir, err := filepath.EvalSymlinks(filepath.Dir(path)); err == nil {
+		if resolved := filepath.Join(dir, filepath.Base(path)); resolved != path {
+			forms = append(forms, resolved)
+		}
+	}
+	return forms
+}
+
+// dirForms returns dir cleaned, and dir with its symlinks resolved when that
+// differs.
+func dirForms(dir string) []string {
+	dir = filepath.Clean(dir)
+	forms := []string{dir}
+	if resolved, err := filepath.EvalSymlinks(dir); err == nil && resolved != dir {
+		forms = append(forms, resolved)
+	}
+	return forms
+}
+
+// anyWithin reports whether any of paths is inside any of dirs. With
+// inclusive, a path equal to a dir counts too. Nothing is inside "/": it
+// only matches exactly, as forbidding "/" has always meant.
+func anyWithin(paths, dirs []string, inclusive bool) bool {
+	for _, p := range paths {
+		for _, d := range dirs {
+			if inclusive && p == d {
+				return true
+			}
+			if strings.HasPrefix(p, d+string(filepath.Separator)) {
+				return true
+			}
 		}
 	}
 	return false
