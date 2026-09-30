@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.6.5](https://github.com/babarot/gomi/compare/v1.6.4...v1.6.5) - 2026-09-30
+### Bug fixes
+- Fix forbidden path checks on macOS and allow removing files in $TMPDIR by @babarot in https://github.com/babarot/gomi/pull/135
+### Improvements
+- Show reason and sudo hint when prune fails to remove files by @babarot in https://github.com/babarot/gomi/pull/133
+
 ## [v1.6.4](https://github.com/babarot/gomi/compare/v1.6.3...v1.6.4) - 2026-06-07
 ### Improvements
 - fix: keep restore TUI within terminal bounds (closes #125) by @babarot in https://github.com/babarot/gomi/pull/127
