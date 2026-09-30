@@ -93,17 +93,11 @@ func (c *CLI) processFile(arg string, failed *syncStringSlice) error {
 		return nil
 	}
 
-	// Move to trash
-	err = c.trash.Put(path)
-	if err != nil {
-		if !c.option.Rm.Force {
-			failed.Append(arg)
-			return fmt.Errorf("failed to move to trash: %w", err)
-		}
-		if c.option.Rm.Verbose {
-			fmt.Fprintf(os.Stderr, "failed to move %s to trash: %v\n", arg, err)
-		}
-		return nil
+	// Move to trash. Like rm -f, -f ignores only nonexistent files: a file
+	// that exists but could not be moved is still an error.
+	if err := c.trash.Put(path); err != nil {
+		failed.Append(arg)
+		return fmt.Errorf("failed to move to trash: %w", err)
 	}
 
 	if c.option.Rm.Verbose {

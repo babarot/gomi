@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -217,6 +218,34 @@ func TestIsForbidden(t *testing.T) {
 				t.Errorf("isForbidden(%q, %q, %q) = %v, want %v", tt.path, tt.forbidden, tt.tempDir, got, tt.want)
 			}
 		})
+	}
+}
+
+// failingTrash is a trash whose Put always fails
+type failingTrash struct{ trash.Trash }
+
+func (failingTrash) Put(string) error { return errors.New("put failed") }
+
+func TestProcessFileForceReportsPutFailure(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "file")
+	if err := os.WriteFile(file, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	missing := filepath.Join(t.TempDir(), "missing")
+
+	cli := &CLI{
+		config: config.NewDefaultConfig(),
+		trash:  failingTrash{},
+	}
+	cli.option.Rm.Force = true
+
+	// -f ignores a nonexistent file, as rm -f does
+	if err := cli.processFile(missing, &syncStringSlice{}); err != nil {
+		t.Errorf("processFile(missing) with -f = %v, want nil", err)
+	}
+	// but not a file that exists and could not be moved
+	if err := cli.processFile(file, &syncStringSlice{}); err == nil {
+		t.Error("processFile(file) with -f = nil, want the Put error")
 	}
 }
 
