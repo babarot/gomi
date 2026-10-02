@@ -1,6 +1,7 @@
 package xdg
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -201,6 +202,48 @@ func TestStorage_Put_ConcurrentCollision(t *testing.T) {
 	}
 	if len(files) != n {
 		t.Errorf("List() returned %d files, want %d", len(files), n)
+	}
+}
+
+// When the trash cannot tell whether a name is taken (files/ is not
+// searchable), Put must fail instead of trying new names forever.
+func TestStorage_Put_UncheckableName(t *testing.T) {
+	if os.Getuid() == 0 {
+		t.Skip("root is never denied permission")
+	}
+	s, dataDir := newTestStorage(t)
+
+	srcFile := filepath.Join(t.TempDir(), "file.txt")
+	if err := os.WriteFile(srcFile, []byte("content"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	filesDir := filepath.Join(dataDir, "Trash", "files")
+	if err := os.Chmod(filesDir, 0); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.Chmod(filesDir, 0755) })
+
+	done := make(chan error, 1)
+	go func() { done <- s.Put(srcFile) }()
+	select {
+	case err := <-done:
+		if !errors.Is(err, os.ErrPermission) {
+			t.Errorf("Put() error = %v, want a permission error", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("Put() did not return")
+	}
+
+	if _, err := os.Stat(srcFile); err != nil {
+		t.Errorf("source file should stay in place: %v", err)
+	}
+	entries, err := os.ReadDir(filepath.Join(dataDir, "Trash", "info"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 0 {
+		t.Errorf("info dir has %d entries, want none", len(entries))
 	}
 }
 
