@@ -222,7 +222,7 @@ func TestStorage_Put_UncheckableName(t *testing.T) {
 	if err := os.Chmod(filesDir, 0); err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { os.Chmod(filesDir, 0755) })
+	t.Cleanup(func() { _ = os.Chmod(filesDir, 0755) })
 
 	done := make(chan error, 1)
 	go func() { done <- s.Put(srcFile) }()
