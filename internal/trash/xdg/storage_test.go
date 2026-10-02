@@ -1,9 +1,11 @@
 package xdg
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync"
 	"testing"
 	"time"
 
@@ -159,6 +161,89 @@ func TestStorage_Put_CollisionHandling(t *testing.T) {
 	}
 	if len(files) != 2 {
 		t.Errorf("List() returned %d files, want 2 (collision should create unique names)", len(files))
+	}
+}
+
+// gomi puts its arguments in parallel (cli.Put), so files with the same name
+// from different directories (rm .astro node_modules/.astro) race for the
+// same name in the trash. Every one of them must get a name of its own.
+func TestStorage_Put_ConcurrentCollision(t *testing.T) {
+	s, _ := newTestStorage(t)
+
+	const n = 20
+	srcs := make([]string, n)
+	for i := range srcs {
+		srcs[i] = filepath.Join(t.TempDir(), "dup.txt")
+		if err := os.WriteFile(srcs[i], []byte("content"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	var wg sync.WaitGroup
+	errs := make([]error, n)
+	start := make(chan struct{})
+	for i, src := range srcs {
+		wg.Go(func() {
+			<-start
+			errs[i] = s.Put(src)
+		})
+	}
+	close(start)
+	wg.Wait()
+
+	for i, err := range errs {
+		if err != nil {
+			t.Errorf("Put() #%d error = %v", i, err)
+		}
+	}
+	files, err := s.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(files) != n {
+		t.Errorf("List() returned %d files, want %d", len(files), n)
+	}
+}
+
+// When the trash cannot tell whether a name is taken (files/ is not
+// searchable), Put must fail instead of trying new names forever.
+func TestStorage_Put_UncheckableName(t *testing.T) {
+	if os.Getuid() == 0 {
+		t.Skip("root is never denied permission")
+	}
+	s, dataDir := newTestStorage(t)
+
+	srcFile := filepath.Join(t.TempDir(), "file.txt")
+	if err := os.WriteFile(srcFile, []byte("content"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	filesDir := filepath.Join(dataDir, "Trash", "files")
+	if err := os.Chmod(filesDir, 0); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(filesDir, 0755) })
+
+	done := make(chan error, 1)
+	go func() { done <- s.Put(srcFile) }()
+	select {
+	case err := <-done:
+		if !errors.Is(err, os.ErrPermission) {
+			t.Errorf("Put() error = %v, want a permission error", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("Put() did not return")
+	}
+
+	if _, err := os.Stat(srcFile); err != nil {
+		t.Errorf("source file should stay in place: %v", err)
+	}
+	entries, err := os.ReadDir(filepath.Join(dataDir, "Trash", "info"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 0 {
+		t.Errorf("info dir has %d entries, want none", len(entries))
 	}
 }
 
