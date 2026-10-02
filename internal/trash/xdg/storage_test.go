@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync"
 	"testing"
 	"time"
 
@@ -159,6 +160,47 @@ func TestStorage_Put_CollisionHandling(t *testing.T) {
 	}
 	if len(files) != 2 {
 		t.Errorf("List() returned %d files, want 2 (collision should create unique names)", len(files))
+	}
+}
+
+// gomi puts its arguments in parallel (cli.Put), so files with the same name
+// from different directories (rm .astro node_modules/.astro) race for the
+// same name in the trash. Every one of them must get a name of its own.
+func TestStorage_Put_ConcurrentCollision(t *testing.T) {
+	s, _ := newTestStorage(t)
+
+	const n = 20
+	srcs := make([]string, n)
+	for i := range srcs {
+		srcs[i] = filepath.Join(t.TempDir(), "dup.txt")
+		if err := os.WriteFile(srcs[i], []byte("content"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	var wg sync.WaitGroup
+	errs := make([]error, n)
+	start := make(chan struct{})
+	for i, src := range srcs {
+		wg.Go(func() {
+			<-start
+			errs[i] = s.Put(src)
+		})
+	}
+	close(start)
+	wg.Wait()
+
+	for i, err := range errs {
+		if err != nil {
+			t.Errorf("Put() #%d error = %v", i, err)
+		}
+	}
+	files, err := s.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(files) != n {
+		t.Errorf("List() returned %d files, want %d", len(files), n)
 	}
 }
 

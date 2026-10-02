@@ -1,6 +1,7 @@
 package xdg
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -91,37 +92,37 @@ func (s *Storage) Put(src string) error {
 		return trash.NewStorageError("put", src, err)
 	}
 
-	// Generate unique name in trash
-	baseName := filepath.Base(abs)
-	trashName := baseName
-	counter := 1
-
-	for {
-		infoPath := filepath.Join(loc.infoDir, trashName+".trashinfo")
-		filePath := filepath.Join(loc.filesDir, trashName)
-
-		// Check if name is already taken
-		_, errInfo := os.Stat(infoPath)
-		_, errFile := os.Stat(filePath)
-		if os.IsNotExist(errInfo) && os.IsNotExist(errFile) {
-			break
-		}
-
-		// Generate new name with counter
-		trashName = fmt.Sprintf("%s_%d", baseName, counter)
-		counter++
-	}
-
-	// Create .trashinfo file first
 	info := &TrashInfo{
 		Path:         abs,
 		MountRoot:    loc.mountRoot,
 		DeletionDate: time.Now(),
 	}
 
-	infoPath := filepath.Join(loc.infoDir, trashName+".trashinfo")
-	if err := info.Save(infoPath); err != nil {
-		return trash.NewStorageError("put", src, fmt.Errorf("failed to save trash info: %w", err))
+	// Reserve a unique name in the trash by creating its .trashinfo file.
+	// Save creates it with O_EXCL, so of two puts that pick the same name at
+	// once (gomi puts its arguments in parallel), one wins and the other
+	// moves on to the next name. Checking first with Stat would leave a gap
+	// between the check and the creation for the other to slip into.
+	baseName := filepath.Base(abs)
+	trashName := baseName
+	var infoPath string
+	for counter := 1; ; counter++ {
+		infoPath = filepath.Join(loc.infoDir, trashName+".trashinfo")
+		// A file without its .trashinfo (left by another tool) also holds the name
+		if _, err := os.Lstat(filepath.Join(loc.filesDir, trashName)); err == nil {
+			trashName = fmt.Sprintf("%s_%d", baseName, counter)
+			continue
+		} else if !os.IsNotExist(err) {
+			return trash.NewStorageError("put", src, err)
+		}
+		err := info.Save(infoPath)
+		if err == nil {
+			break
+		}
+		if !errors.Is(err, os.ErrExist) {
+			return trash.NewStorageError("put", src, fmt.Errorf("failed to save trash info: %w", err))
+		}
+		trashName = fmt.Sprintf("%s_%d", baseName, counter)
 	}
 
 	// Move file to trash
