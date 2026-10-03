@@ -68,6 +68,7 @@ func (c *CLI) Prune(args []string) error {
 // For a single duration, it removes files older than the specified duration.
 // For multiple durations, it removes files whose age falls between the shortest and longest durations.
 // The operation requires user confirmation and cannot be undone.
+// With --dry-run, it only shows the files and removes nothing.
 func (c *CLI) permanentlyDeleteByTimeRange(durations []time.Duration) error {
 	if len(durations) == 0 {
 		return nil
@@ -106,6 +107,10 @@ func (c *CLI) permanentlyDeleteByTimeRange(durations []time.Duration) error {
 				filesToDelete = append(filesToDelete, file)
 			}
 		}
+	}
+
+	if c.option.Meta.DryRun != "" {
+		return c.dryRunTimeRange(filesToDelete, newestAge, oldestAge, len(durations) == 1)
 	}
 
 	if len(filesToDelete) == 0 {
@@ -253,6 +258,10 @@ func (c *CLI) removeOrphanedMetadata() error {
 			continue
 		}
 		orphanedFiles = append(orphanedFiles, files...)
+	}
+
+	if c.option.Meta.DryRun != "" {
+		return c.dryRunOrphans(orphanedFiles)
 	}
 
 	if len(orphanedFiles) == 0 {

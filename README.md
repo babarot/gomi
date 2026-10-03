@@ -326,6 +326,26 @@ gomi --prune=0d,1d  # Remove files trashed today (0-1 day ago)
 gomi --prune=1w,2w  # Remove files trashed between 1 and 2 weeks ago
 ```
 
+#### 4. Preview What Would Be Removed
+
+Add `--dry-run` to see which files would be removed without removing anything. It works with all the arguments above, and no confirmation is asked:
+
+```bash
+gomi --prune=30d --dry-run           # A table on a terminal, one path per line when piped
+gomi --prune=30d --dry-run=table     # Always a table
+gomi --prune=30d --dry-run=text      # Always one path per line (the path in the trash)
+gomi --prune=30d --dry-run=json      # Always JSON, with the original and trash paths
+gomi --prune=orphans --dry-run=text  # Paths of orphaned .trashinfo files
+```
+
+For example, to see how much space each file takes:
+
+```bash
+gomi --prune=30d --dry-run=text | while IFS= read -r f; do du -sh "$f"; done
+```
+
+The format must be given with `=`. `--dry-run json` is read as `--dry-run` followed by an argument `json`.
+
 ### Duration Format
 
 The following duration units are supported:
@@ -354,6 +374,7 @@ The following duration units are supported:
 
 - The `orphans` argument cannot be combined with duration arguments.
 - This operation permanently deletes files and cannot be undone. Double confirmation will be required before deletion.
+- `--dry-run` takes precedence over `-f`, so `gomi --prune=30d -f --dry-run` removes nothing.
 
 ## Debugging
 
