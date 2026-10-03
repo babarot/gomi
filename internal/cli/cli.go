@@ -37,6 +37,7 @@ type MetaOption struct {
 	Version bool      `short:"V" long:"version" description:"Show version"`
 	Debug   string    `long:"debug" description:"View debug logs" optional-value:"full" optional:"yes" choice:"full" choice:"live"`
 	Prune   PruneArgs `long:"prune" description:"Prunes trash by removing orphaned metadata and items older than a specified duration (e.g., 30d,orphans)"`
+	DryRun  string    `long:"dry-run" description:"Show what --prune would remove without removing anything" optional-value:"auto" optional:"yes" choice:"auto" choice:"table" choice:"text" choice:"json"`
 }
 
 type PruneArgs []string
@@ -152,6 +153,9 @@ func (c CLI) Run(args []string) error {
 
 	case len(c.option.Meta.Prune) > 0:
 		return c.Prune(c.option.Meta.Prune)
+
+	case c.option.Meta.DryRun != "":
+		return errors.New("--dry-run requires --prune")
 
 	case c.option.Restore:
 		return c.Restore()
