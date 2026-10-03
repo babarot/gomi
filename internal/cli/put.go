@@ -11,6 +11,7 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
+	"github.com/babarot/gomi/internal/config"
 	"github.com/babarot/gomi/internal/utils/fs"
 )
 
@@ -134,21 +135,31 @@ func (c *CLI) isForbiddenPath(path string) bool {
 // /var/folders, and forbidding "/var" is meant to protect the system, not
 // the files that mktemp creates. tempDir itself stays forbidden, and so do
 // forbidden paths inside it.
-func isForbidden(path string, forbiddenPaths []string, tempDir string) bool {
+func isForbidden(path string, forbiddenPaths []config.ForbiddenPath, tempDir string) bool {
 	targets := targetForms(path)
 	var temps []string
 	if tempDir != "" {
 		temps = dirForms(tempDir)
 	}
 
-	for _, forbiddenPath := range forbiddenPaths {
+	for _, entry := range forbiddenPaths {
 		// Expand forbidden path with environment variables
-		forbidden := dirForms(os.ExpandEnv(forbiddenPath))
+		expandedPath := os.ExpandEnv(entry.Path)
+		if expandedPath == "~" {
+			if home, err := os.UserHomeDir(); err == nil {
+				expandedPath = home
+			}
+		} else if strings.HasPrefix(expandedPath, "~/") {
+			if home, err := os.UserHomeDir(); err == nil {
+				expandedPath = filepath.Join(home, expandedPath[2:])
+			}
+		}
+		forbidden := dirForms(expandedPath)
 
-		if !anyWithin(targets, forbidden, true) {
+		if !anyWithin(targets, forbidden, true, entry.Recursive) {
 			continue
 		}
-		if anyWithin(temps, forbidden, false) && anyWithin(targets, temps, false) {
+		if anyWithin(temps, forbidden, false, true) && anyWithin(targets, temps, false, true) {
 			// Forbidden only because it is an ancestor of tempDir
 			continue
 		}
@@ -181,17 +192,23 @@ func dirForms(dir string) []string {
 	return forms
 }
 
-// anyWithin reports whether any of paths is inside any of dirs. With
-// inclusive, a path equal to a dir counts too. Nothing is inside "/": it
-// only matches exactly, as forbidding "/" has always meant.
-func anyWithin(paths, dirs []string, inclusive bool) bool {
+// anyWithin reports whether any of paths matches or is inside any of dirs.
+// With inclusive, a path equal to a dir counts too.
+// With recursive, paths inside a dir count too.
+func anyWithin(paths, dirs []string, inclusive bool, recursive bool) bool {
 	for _, p := range paths {
 		for _, d := range dirs {
 			if inclusive && p == d {
 				return true
 			}
-			if strings.HasPrefix(p, d+string(filepath.Separator)) {
-				return true
+			if recursive {
+				if d == "/" {
+					if p != "/" && strings.HasPrefix(p, "/") {
+						return true
+					}
+				} else if strings.HasPrefix(p, d+string(filepath.Separator)) {
+					return true
+				}
 			}
 		}
 	}

@@ -55,8 +55,73 @@ type TrashConfig struct {
 	GomiDir string `yaml:"gomi_dir" validate:"omitempty,validDirPath"`
 
 	// List of forbidden paths that cannot be moved to trash
-	ForbiddenPaths []string `yaml:"forbidden_paths"`
+	ForbiddenPaths []ForbiddenPath `yaml:"forbidden_paths"`
 }
+
+// ForbiddenPath specifies a path that cannot be moved to trash.
+// By default, paths protect themselves and everything inside them recursively
+// (with the exception of "/", which protects only itself).
+// Setting recursive to false allows protecting a path itself without protecting
+// its contents.
+type ForbiddenPath struct {
+	Path      string `yaml:"path"`
+	Recursive bool   `yaml:"recursive"`
+}
+
+// UnmarshalYAML implements yaml.Unmarshaler to support:
+// - scalar string: "/etc" (recursive: true; "/" defaults to recursive: false)
+// - mapping with path and recursive: {path: "$HOME/.config", recursive: false}
+// - mapping shorthand: {"$HOME/.config": false}
+func (f *ForbiddenPath) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var s string
+	if err := unmarshal(&s); err == nil {
+		f.Path = s
+		f.Recursive = (s != "/")
+		return nil
+	}
+
+	var m map[string]bool
+	if err := unmarshal(&m); err == nil && len(m) == 1 {
+		for k, v := range m {
+			f.Path = k
+			f.Recursive = v
+		}
+		return nil
+	}
+
+	var raw struct {
+		Path      string `yaml:"path"`
+		Recursive *bool  `yaml:"recursive"`
+	}
+	if err := unmarshal(&raw); err != nil {
+		return err
+	}
+	if raw.Path == "" {
+		return errors.New("forbidden path cannot be empty")
+	}
+	f.Path = raw.Path
+	if raw.Recursive != nil {
+		f.Recursive = *raw.Recursive
+	} else {
+		f.Recursive = (raw.Path != "/")
+	}
+	return nil
+}
+
+// MarshalYAML implements yaml.Marshaler.
+func (f ForbiddenPath) MarshalYAML() (interface{}, error) {
+	if (f.Path == "/" && !f.Recursive) || (f.Path != "/" && f.Recursive) {
+		return f.Path, nil
+	}
+	return struct {
+		Path      string `yaml:"path"`
+		Recursive bool   `yaml:"recursive"`
+	}{
+		Path:      f.Path,
+		Recursive: f.Recursive,
+	}, nil
+}
+
 
 // RestoreConfig defines settings for file restoration behavior
 type RestoreConfig struct {
