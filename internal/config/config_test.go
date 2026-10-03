@@ -3,9 +3,12 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v2"
 )
 
 func TestNewDefaultConfig(t *testing.T) {
@@ -33,7 +36,7 @@ func TestNewDefaultConfig(t *testing.T) {
 	// Forbidden paths must include critical system dirs
 	forbiddenSet := make(map[string]bool)
 	for _, p := range cfg.Core.Trash.ForbiddenPaths {
-		forbiddenSet[p] = true
+		forbiddenSet[p.Path] = true
 	}
 	for _, p := range []string{"/", "/etc", "/usr", "/var", "/bin", "/sbin"} {
 		if !forbiddenSet[p] {
@@ -209,3 +212,127 @@ history:
 		t.Errorf("Period = %d, want 30", cfg.History.Include.Period)
 	}
 }
+
+func TestConfig_ForbiddenPaths_Unmarshal(t *testing.T) {
+	tests := []struct {
+		name    string
+		yaml    string
+		want    []ForbiddenPath
+		wantErr bool
+	}{
+		{
+			name: "strings only",
+			yaml: `
+core:
+  trash:
+    forbidden_paths:
+      - /etc
+      - /usr
+      - /
+`,
+			want: []ForbiddenPath{
+				{Path: "/etc", Recursive: true},
+				{Path: "/usr", Recursive: true},
+				{Path: "/", Recursive: false},
+			},
+		},
+		{
+			name: "struct with recursive false",
+			yaml: `
+core:
+  trash:
+    forbidden_paths:
+      - /etc
+      - path: $HOME/.config
+        recursive: false
+`,
+			want: []ForbiddenPath{
+				{Path: "/etc", Recursive: true},
+				{Path: "$HOME/.config", Recursive: false},
+			},
+		},
+		{
+			name: "struct with recursive true",
+			yaml: `
+core:
+  trash:
+    forbidden_paths:
+      - path: /var
+        recursive: true
+`,
+			want: []ForbiddenPath{
+				{Path: "/var", Recursive: true},
+			},
+		},
+		{
+			name: "struct without recursive defaults to true",
+			yaml: `
+core:
+  trash:
+    forbidden_paths:
+      - path: /opt
+`,
+			want: []ForbiddenPath{
+				{Path: "/opt", Recursive: true},
+			},
+		},
+		{
+			name: "shorthand mapping with boolean",
+			yaml: `
+core:
+  trash:
+    forbidden_paths:
+      - /etc
+      - $HOME/.config: false
+      - /var: true
+`,
+			want: []ForbiddenPath{
+				{Path: "/etc", Recursive: true},
+				{Path: "$HOME/.config", Recursive: false},
+				{Path: "/var", Recursive: true},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var cfg Config
+			err := yaml.Unmarshal([]byte(tt.yaml), &cfg)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("Unmarshal error = %v, wantErr = %v", err, tt.wantErr)
+			}
+			if !reflect.DeepEqual(cfg.Core.Trash.ForbiddenPaths, tt.want) {
+				t.Errorf("ForbiddenPaths = %+v, want %+v", cfg.Core.Trash.ForbiddenPaths, tt.want)
+			}
+		})
+	}
+}
+
+func TestConfig_ForbiddenPaths_Marshal(t *testing.T) {
+	cfg := Config{
+		Core: Core{
+			Trash: TrashConfig{
+				ForbiddenPaths: []ForbiddenPath{
+					{Path: "/etc", Recursive: true},
+					{Path: "/", Recursive: false},
+					{Path: "$HOME/.config", Recursive: false},
+				},
+			},
+		},
+	}
+
+	data, err := yaml.Marshal(&cfg)
+	if err != nil {
+		t.Fatalf("Marshal error = %v", err)
+	}
+
+	var roundtrip Config
+	if err := yaml.Unmarshal(data, &roundtrip); err != nil {
+		t.Fatalf("Unmarshal roundtrip error = %v", err)
+	}
+
+	if !reflect.DeepEqual(roundtrip.Core.Trash.ForbiddenPaths, cfg.Core.Trash.ForbiddenPaths) {
+		t.Errorf("Roundtrip mismatch: got %+v, want %+v", roundtrip.Core.Trash.ForbiddenPaths, cfg.Core.Trash.ForbiddenPaths)
+	}
+}
+

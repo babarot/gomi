@@ -97,11 +97,11 @@ func TestIsForbiddenPath(t *testing.T) {
 		config: &config.Config{
 			Core: config.Core{
 				Trash: config.TrashConfig{
-					ForbiddenPaths: []string{
-						"/",
-						"/etc",
-						"/usr",
-						"$HOME/.gomi",
+					ForbiddenPaths: []config.ForbiddenPath{
+						{Path: "/", Recursive: false},
+						{Path: "/etc", Recursive: true},
+						{Path: "/usr", Recursive: true},
+						{Path: "$HOME/.gomi", Recursive: true},
 					},
 				},
 			},
@@ -141,7 +141,9 @@ func TestIsForbiddenPathRelative(t *testing.T) {
 	cli := &CLI{
 		config: &config.Config{
 			Core: config.Core{
-				Trash: config.TrashConfig{ForbiddenPaths: []string{sys}},
+				Trash: config.TrashConfig{
+					ForbiddenPaths: []config.ForbiddenPath{{Path: sys, Recursive: true}},
+				},
 			},
 		},
 	}
@@ -187,37 +189,109 @@ func TestIsForbidden(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	toForbidden := func(paths ...string) []config.ForbiddenPath {
+		res := make([]config.ForbiddenPath, len(paths))
+		for i, p := range paths {
+			res[i] = config.ForbiddenPath{Path: p, Recursive: p != "/"}
+		}
+		return res
+	}
+
 	tests := []struct {
 		name      string
 		path      string
-		forbidden []string
+		forbidden []config.ForbiddenPath
 		tempDir   string
 		want      bool
 	}{
-		{"exact", sys, []string{sys}, "", true},
-		{"inside", filepath.Join(sys, "x"), []string{sys}, "", true},
-		{"outside", filepath.Join(home, "x"), []string{sys}, "", false},
-		{"sibling with same prefix", sys + "2", []string{sys}, "", false},
-		{"root matches only itself", filepath.Join(home, "x"), []string{"/"}, "", false},
-		{"through a symlinked parent", filepath.Join(link, "x"), []string{sys}, "", true},
-		{"forbidden given as the symlink", filepath.Join(sys, "x"), []string{link}, "", true},
-		{"symlink itself pointing into forbidden", result, []string{sys}, "", false},
-		{"inside tempDir", filepath.Join(tmp, "x"), []string{sys}, tmp, false},
-		{"inside tempDir through symlink", filepath.Join(link, "tmp", "x"), []string{sys}, tmp, false},
-		{"inside tempDir given as symlink", filepath.Join(tmp, "x"), []string{sys}, filepath.Join(link, "tmp"), false},
-		{"tempDir itself", tmp, []string{sys}, tmp, true},
-		{"elsewhere in forbidden with tempDir", filepath.Join(other, "x"), []string{sys}, tmp, true},
-		{"forbidden inside tempDir", filepath.Join(keep, "x"), []string{sys, keep}, tmp, true},
-		{"tempDir forbidden itself", filepath.Join(tmp, "x"), []string{tmp}, tmp, true},
+		{"exact", sys, toForbidden(sys), "", true},
+		{"inside", filepath.Join(sys, "x"), toForbidden(sys), "", true},
+		{"outside", filepath.Join(home, "x"), toForbidden(sys), "", false},
+		{"sibling with same prefix", sys + "2", toForbidden(sys), "", false},
+		{"root matches only itself", filepath.Join(home, "x"), toForbidden("/"), "", false},
+		{"through a symlinked parent", filepath.Join(link, "x"), toForbidden(sys), "", true},
+		{"forbidden given as the symlink", filepath.Join(sys, "x"), toForbidden(link), "", true},
+		{"symlink itself pointing into forbidden", result, toForbidden(sys), "", false},
+		{"inside tempDir", filepath.Join(tmp, "x"), toForbidden(sys), tmp, false},
+		{"inside tempDir through symlink", filepath.Join(link, "tmp", "x"), toForbidden(sys), tmp, false},
+		{"inside tempDir given as symlink", filepath.Join(tmp, "x"), toForbidden(sys), filepath.Join(link, "tmp"), false},
+		{"tempDir itself", tmp, toForbidden(sys), tmp, true},
+		{"elsewhere in forbidden with tempDir", filepath.Join(other, "x"), toForbidden(sys), tmp, true},
+		{"forbidden inside tempDir", filepath.Join(keep, "x"), toForbidden(sys, keep), tmp, true},
+		{"tempDir forbidden itself", filepath.Join(tmp, "x"), toForbidden(tmp), tmp, true},
+		// Non-recursive tests
+		{"non-recursive exact match", sys, []config.ForbiddenPath{{Path: sys, Recursive: false}}, "", true},
+		{"non-recursive inside is allowed", filepath.Join(sys, "x"), []config.ForbiddenPath{{Path: sys, Recursive: false}}, "", false},
+		{"non-recursive forbidden given as symlink", sys, []config.ForbiddenPath{{Path: link, Recursive: false}}, "", true},
+		{"non-recursive through symlinked parent", filepath.Join(link, "x"), []config.ForbiddenPath{{Path: filepath.Join(sys, "x"), Recursive: false}}, "", true},
+		{"non-recursive through symlinked parent inside is allowed", filepath.Join(link, "x", "sub"), []config.ForbiddenPath{{Path: filepath.Join(sys, "x"), Recursive: false}}, "", false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := isForbidden(tt.path, tt.forbidden, tt.tempDir)
 			if got != tt.want {
-				t.Errorf("isForbidden(%q, %q, %q) = %v, want %v", tt.path, tt.forbidden, tt.tempDir, got, tt.want)
+				t.Errorf("isForbidden(%q, %v, %q) = %v, want %v", tt.path, tt.forbidden, tt.tempDir, got, tt.want)
 			}
 		})
+	}
+}
+
+type mockSuccessTrash struct{ trash.Trash }
+
+func (mockSuccessTrash) Put(string) error { return nil }
+
+func TestProcessFileNonRecursiveForbidden(t *testing.T) {
+	dir := t.TempDir()
+	configDir := filepath.Join(dir, ".config")
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	fileInside := filepath.Join(configDir, "app.conf")
+	if err := os.WriteFile(fileInside, []byte("test"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	nestedDir := filepath.Join(configDir, "nested")
+	if err := os.MkdirAll(nestedDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	nestedFile := filepath.Join(nestedDir, "file.zip")
+	if err := os.WriteFile(nestedFile, []byte("zip"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cli := &CLI{
+		trash: mockSuccessTrash{},
+		config: &config.Config{
+			Core: config.Core{
+				Trash: config.TrashConfig{
+					ForbiddenPaths: []config.ForbiddenPath{
+						{Path: configDir, Recursive: false},
+					},
+				},
+			},
+		},
+	}
+
+	// 1. Removing .config itself must be refused
+	err := cli.processFile(configDir, &syncStringSlice{})
+	if err == nil || !strings.Contains(err.Error(), "forbidden path") {
+		t.Errorf("processFile(%q) = %v, want a forbidden path error", configDir, err)
+	}
+
+	// 2. Removing file inside .config must succeed
+	if err := cli.processFile(fileInside, &syncStringSlice{}); err != nil {
+		t.Errorf("processFile(%q) = %v, want nil", fileInside, err)
+	}
+
+	// 3. Removing nested file inside .config must succeed
+	if err := cli.processFile(nestedFile, &syncStringSlice{}); err != nil {
+		t.Errorf("processFile(%q) = %v, want nil", nestedFile, err)
+	}
+
+	// 4. Removing nested directory inside .config must succeed
+	if err := cli.processFile(nestedDir, &syncStringSlice{}); err != nil {
+		t.Errorf("processFile(%q) = %v, want nil", nestedDir, err)
 	}
 }
 
