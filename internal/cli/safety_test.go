@@ -628,7 +628,11 @@ func newPutCLI(t *testing.T, forbidden ...string) (*CLI, *diskTrash) {
 	t.Helper()
 	tr := newDiskTrash(t)
 	cfg := config.NewDefaultConfig()
-	cfg.Core.Trash.ForbiddenPaths = forbidden
+	paths := make([]config.ForbiddenPath, len(forbidden))
+	for i, f := range forbidden {
+		paths[i] = config.ForbiddenPath{Path: f, Recursive: f != "/"}
+	}
+	cfg.Core.Trash.ForbiddenPaths = paths
 	return &CLI{config: cfg, trash: tr}, tr
 }
 
