@@ -181,6 +181,9 @@ core:
 
     forbidden_paths:    # List of paths that cannot be moved to trash for safety.
                         # Each path protects itself and everything inside it ("/" protects only itself).
+                        # To protect a directory itself while allowing its contents to be trashed,
+                        # set recursive to false (e.g. { path: "$HOME/.config", recursive: false } or
+                        # "$HOME/.config": false).
                         # Symlinks are resolved, so "/var" also covers "/private/var" on macOS.
                         # Files inside $TMPDIR stay removable even when a listed path contains it
                         # (e.g. "/var" and macOS's /var/folders/.../T); $TMPDIR itself does not.
