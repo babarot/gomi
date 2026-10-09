@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.7.0](https://github.com/babarot/gomi/compare/v1.6.5...v1.7.0) - 2026-10-09
+### New Features
+- Add --dry-run to show what --prune would remove by @babarot in https://github.com/babarot/gomi/pull/138
+### Bug fixes
+- Fix files with the same name failing to be trashed at once by @babarot in https://github.com/babarot/gomi/pull/136
+### Others
+- Sync shared files from github-config by @babarot in https://github.com/babarot/gomi/pull/141
+
 ## [v1.6.5](https://github.com/babarot/gomi/compare/v1.6.4...v1.6.5) - 2026-09-30
 ### Bug fixes
 - Fix forbidden path checks on macOS and allow removing files in $TMPDIR by @babarot in https://github.com/babarot/gomi/pull/135
