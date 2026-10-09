@@ -5,5 +5,5 @@
 	vPrefix = true
 	versionFile = VERSION,README.md
 	changelog = true
-	majorLabels = release/major,kind/breaking-change
-	minorLabels = release/minor,kind/feature,kind/deprecation
+	majorLabels = kind/breaking-change
+	minorLabels = kind/feature,kind/deprecation
