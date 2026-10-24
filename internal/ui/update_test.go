@@ -408,3 +408,172 @@ func TestUpdate_ShowDetailMsg(t *testing.T) {
 		t.Errorf("detailFile.Name = %q, want %q", model.detailFile.Name, "detail.txt")
 	}
 }
+
+// removeRecorder is a trash that records which files are removed.
+type removeRecorder struct {
+	trash.Trash
+	removed []string
+}
+
+func (r *removeRecorder) Remove(file *trash.File) error {
+	r.removed = append(r.removed, file.Name)
+	return nil
+}
+
+func TestUpdate_DetailView_DeleteConfirmsDetailFile(t *testing.T) {
+	m := newTestModel()
+	file := File{File: &trash.File{Name: "detail.txt"}}
+	m.detailFile = file
+	m.state.SetView(DetailView)
+
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("D")})
+	model := asModel(t, updated)
+
+	if model.state.current != ConfirmView {
+		t.Fatalf("state = %v, want ConfirmView", model.state.current)
+	}
+	if got := model.state.confirmation.files; len(got) != 1 || got[0] != file {
+		t.Errorf("confirmation files = %v, want [detail.txt]", got)
+	}
+	if model.state.confirmation.state != ConfirmStateYesNo {
+		t.Errorf("confirmation state = %v, want %v", model.state.confirmation.state, ConfirmStateYesNo)
+	}
+}
+
+func TestUpdate_DetailView_DeleteConfirmsSelection(t *testing.T) {
+	m := newTestModel()
+	f1 := File{File: &trash.File{Name: "a.txt"}}
+	f2 := File{File: &trash.File{Name: "b.txt"}}
+	m.selection.Add(f1)
+	m.selection.Add(f2)
+	m.detailFile = File{File: &trash.File{Name: "detail.txt"}}
+	m.state.SetView(DetailView)
+
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("D")})
+	model := asModel(t, updated)
+
+	if got := model.state.confirmation.files; len(got) != 2 || got[0] != f1 || got[1] != f2 {
+		t.Errorf("confirmation files = %v, want [a.txt b.txt]", got)
+	}
+	if model.state.confirmation.state != ConfirmStateTypeYES {
+		t.Errorf("confirmation state = %v, want %v", model.state.confirmation.state, ConfirmStateTypeYES)
+	}
+}
+
+func TestUpdate_ConfirmView_DeletesConfirmedFiles(t *testing.T) {
+	m := newTestModel()
+	rec := &removeRecorder{}
+	m.trash = rec
+	confirmed := File{File: &trash.File{Name: "confirmed.txt"}}
+	other := File{File: &trash.File{Name: "other.txt"}}
+	m.list.SetItems([]list.Item{other})
+	m.selection.Add(confirmed)
+	m.state.SetView(ListView)
+
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("D")})
+	m = asModel(t, updated)
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("y")})
+	model := asModel(t, updated)
+
+	if cmd == nil {
+		t.Fatal("should return the delete cmd")
+	}
+	cmd()
+	if len(rec.removed) != 1 || rec.removed[0] != "confirmed.txt" {
+		t.Errorf("removed = %v, want [confirmed.txt]", rec.removed)
+	}
+	if model.selection.Contains(confirmed) {
+		t.Error("deleted file should be dropped from the selection")
+	}
+}
+
+func TestUpdate_ConfirmView_TypeYES_DeletesConfirmedFiles(t *testing.T) {
+	m := newTestModel()
+	rec := &removeRecorder{}
+	m.trash = rec
+	f1 := File{File: &trash.File{Name: "a.txt"}}
+	f2 := File{File: &trash.File{Name: "b.txt"}}
+	kept := File{File: &trash.File{Name: "kept.txt"}}
+	m.list.SetItems([]list.Item{kept})
+	m.selection.Add(f1)
+	m.selection.Add(f2)
+	m.state.SetView(ListView)
+
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("D")})
+	m = asModel(t, updated)
+	for _, r := range "YES" {
+		updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+		m = asModel(t, updated)
+	}
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model := asModel(t, updated)
+
+	if cmd == nil {
+		t.Fatal("should return the delete cmd")
+	}
+	cmd()
+	if len(rec.removed) != 2 || rec.removed[0] != "a.txt" || rec.removed[1] != "b.txt" {
+		t.Errorf("removed = %v, want [a.txt b.txt]", rec.removed)
+	}
+	if len(model.selection.items) != 0 {
+		t.Errorf("selection = %v, want empty", model.selection.items)
+	}
+}
+
+func TestUpdate_ListView_DeleteSelectionWithoutCursor(t *testing.T) {
+	m := newTestModel()
+	f1 := File{File: &trash.File{Name: "a.txt"}}
+	m.selection.Add(f1)
+	m.state.SetView(ListView)
+
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("D")})
+	model := asModel(t, updated)
+
+	if model.state.current != ConfirmView {
+		t.Fatalf("state = %v, want ConfirmView", model.state.current)
+	}
+	if got := model.state.confirmation.files; len(got) != 1 || got[0] != f1 {
+		t.Errorf("confirmation files = %v, want [a.txt]", got)
+	}
+}
+
+// Deleting from the detail view with files selected used to keep the yes/no
+// state, so pressing Y deleted the file on the cursor instead of the
+// selection the dialog was opened for.
+func TestUpdate_DetailView_DeleteRemovesSelectionNotCursor(t *testing.T) {
+	m := newTestModel()
+	rec := &removeRecorder{}
+	m.trash = rec
+	f1 := File{File: &trash.File{Name: "a.txt"}}
+	f2 := File{File: &trash.File{Name: "b.txt"}}
+	cursor := File{File: &trash.File{Name: "cursor.txt"}}
+	m.list.SetItems([]list.Item{cursor})
+	m.selection.Add(f1)
+	m.selection.Add(f2)
+	m.detailFile = cursor
+	m.state.SetView(DetailView)
+
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("D")})
+	m = asModel(t, updated)
+	var cmd tea.Cmd
+	for _, msg := range []tea.KeyMsg{
+		{Type: tea.KeyRunes, Runes: []rune("Y")},
+		{Type: tea.KeyRunes, Runes: []rune("E")},
+		{Type: tea.KeyRunes, Runes: []rune("S")},
+		{Type: tea.KeyEnter},
+	} {
+		if cmd != nil {
+			break
+		}
+		updated, cmd = m.Update(msg)
+		m = asModel(t, updated)
+	}
+
+	if cmd == nil {
+		t.Fatal("should return the delete cmd")
+	}
+	cmd()
+	if len(rec.removed) != 2 || rec.removed[0] != "a.txt" || rec.removed[1] != "b.txt" {
+		t.Errorf("removed = %v, want [a.txt b.txt]", rec.removed)
+	}
+}
