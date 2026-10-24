@@ -232,6 +232,36 @@ func mainModel(files []*trash.File, opts func(o *RenderOptions)) tea.Model {
 
 func withDelete(o *RenderOptions) { o.DeleteEnabled = true }
 
+// withStyle sets every color of ui.style: to a value of its own when custom,
+// or to none, as for colors left out of a config file.
+func withStyle(custom bool) func(o *RenderOptions) {
+	return func(o *RenderOptions) {
+		o.DeleteEnabled = true
+		c := func(v string) string {
+			if custom {
+				return v
+			}
+			return ""
+		}
+		st := &o.Config.Style
+		st.DeletionDialog = c("#C01010")
+		st.ListView.Cursor = c("#C01020")
+		st.ListView.Selected = c("#C01030")
+		st.ListView.FilterMatch = c("#C01040")
+		st.ListView.FilterPrompt = c("#C01050")
+		st.DetailView.Border = c("#C01060")
+		st.DetailView.InfoPane.DeletedFrom.Foreground = c("#C01070")
+		st.DetailView.InfoPane.DeletedFrom.Background = c("#C01080")
+		st.DetailView.InfoPane.DeletedAt.Foreground = c("#C01090")
+		st.DetailView.InfoPane.DeletedAt.Background = c("#C010A0")
+		st.DetailView.PreviewPane.Border = c("#C010B0")
+		st.DetailView.PreviewPane.Size.Foreground = c("#C010C0")
+		st.DetailView.PreviewPane.Size.Background = c("#C010D0")
+		st.DetailView.PreviewPane.Scroll.Foreground = c("#C010E0")
+		st.DetailView.PreviewPane.Scroll.Background = c("#C010F0")
+	}
+}
+
 var goldenCases = []goldenCase{
 	// list view
 	{name: "list"},
@@ -264,6 +294,20 @@ var goldenCases = []goldenCase{
 	{name: "confirm-yes-many", opts: withDelete, keys: []string{
 		"down", "down", "down", "down", "down", "down", "tab", "tab", "tab", "D",
 	}},
+
+	// every color of ui.style set
+	{name: "style-custom-list", opts: withStyle(true), keys: []string{"tab", "tab", "shift+tab"}},
+	{name: "style-custom-filter", opts: withStyle(true), keys: []string{"/", "r", "e"}},
+	{name: "style-custom-detail", opts: withStyle(true), keys: []string{"tab", "up", "space"}},
+	{name: "style-custom-detail-dir", opts: withStyle(true), keys: []string{"down", "space", "d"}},
+	{name: "style-custom-confirm", opts: withStyle(true), keys: []string{"tab", "tab", "tab", "D", "Y"}},
+
+	// every color of ui.style left out
+	{name: "style-empty-list", opts: withStyle(false), keys: []string{"tab", "tab", "shift+tab"}},
+	{name: "style-empty-filter", opts: withStyle(false), keys: []string{"/", "r", "e"}},
+	{name: "style-empty-detail", opts: withStyle(false), keys: []string{"tab", "up", "space"}},
+	{name: "style-empty-detail-dir", opts: withStyle(false), keys: []string{"down", "space", "d"}},
+	{name: "style-empty-confirm", opts: withStyle(false), keys: []string{"tab", "tab", "tab", "D", "Y"}},
 
 	// prompts outside the TUI
 	{name: "prompt-confirm", model: func(t *testing.T, _ []*trash.File) tea.Model {

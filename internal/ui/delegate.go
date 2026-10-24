@@ -12,6 +12,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/babarot/gomi/internal/config"
+	"github.com/babarot/gomi/internal/ui/styles"
 )
 
 type RestoreItemStyles struct {
@@ -34,62 +35,60 @@ type RestoreItemStyles struct {
 	FilterPrompt lipgloss.Style
 }
 
-func NewRestoreItemStyles(cfg config.UI, isDark bool) (s RestoreItemStyles) {
-	lightDark := lipgloss.LightDark(isDark)
-
+func NewRestoreItemStyles(cfg config.UI, p styles.Palette, isDark bool) (s RestoreItemStyles) {
 	indentOnSelect := 0
 	if cfg.Style.ListView.IndentOnSelect {
 		indentOnSelect = 1
 	}
 
-	cursor := cfg.Style.ListView.Cursor
-	selected := cfg.Style.ListView.Selected
+	cursor := p.Cursor.Of(isDark)
+	selected := p.Selected.Of(isDark)
 
 	s.NormalTitle = lipgloss.NewStyle().
 		Padding(0, 0, 0, 2)
 
 	s.NormalDesc = s.NormalTitle.
-		Foreground(lightDark(lipgloss.Color("#626262"), lipgloss.Color("#777777")))
+		Foreground(p.Description.Of(isDark))
 
 	s.CursorTitle = lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder(), false, false, false, true).
-		BorderForeground(lightDark(lipgloss.Color(cursor), lipgloss.Color(cursor))).
-		Foreground(lightDark(lipgloss.Color(cursor), lipgloss.Color(cursor))).
+		BorderForeground(cursor).
+		Foreground(cursor).
 		Padding(0, 0, 0, 1)
 
 	s.CursorDesc = s.CursorTitle.
-		Foreground(lightDark(lipgloss.Color(cursor), lipgloss.Color(cursor)))
+		Foreground(cursor)
 
 	s.DimmedTitle = lipgloss.NewStyle().
-		Foreground(lightDark(lipgloss.Color("#808080"), lipgloss.Color("#777777"))).
+		Foreground(p.Dimmed.Of(isDark)).
 		Padding(0, 0, 0, 2)
 
 	s.DimmedDesc = s.DimmedTitle.
-		Foreground(lightDark(lipgloss.Color("#999999"), lipgloss.Color("#4D4D4D")))
+		Foreground(p.DimmedDescription.Of(isDark))
 
 	s.FilterMatch = lipgloss.NewStyle().
-		Foreground(lipgloss.Color(cfg.Style.ListView.FilterMatch)).
+		Foreground(p.FilterMatch.Of(isDark)).
 		Underline(true)
 
 	s.FilterPrompt = lipgloss.NewStyle().
-		Foreground(lipgloss.Color(cfg.Style.ListView.FilterPrompt)).
+		Foreground(p.FilterPrompt.Of(isDark)).
 		Underline(true)
 
 	s.SelectedTitle = lipgloss.NewStyle().
-		Foreground(lightDark(lipgloss.Color(selected), lipgloss.Color(selected))).
+		Foreground(selected).
 		Padding(0, 0, 0, 2+indentOnSelect)
 
 	s.SelectedDesc = s.SelectedTitle.
-		Foreground(lightDark(lipgloss.Color(selected), lipgloss.Color(selected)))
+		Foreground(selected)
 
 	s.SelectedCursorTitle = lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder(), false, false, false, true).
-		BorderForeground(lightDark(lipgloss.Color(cursor), lipgloss.Color(cursor))).
-		Foreground(lightDark(lipgloss.Color(selected), lipgloss.Color(selected))).
+		BorderForeground(cursor).
+		Foreground(selected).
 		Padding(0, 0, 0, 1)
 
 	s.SelectedCursorDesc = s.SelectedCursorTitle.
-		Foreground(lightDark(lipgloss.Color(selected), lipgloss.Color(selected)))
+		Foreground(selected)
 
 	return s
 }
@@ -114,7 +113,7 @@ type RestoreDelegate struct {
 }
 
 // NewRestoreDelegate creates a new delegate with Restore styles.
-func NewRestoreDelegate(cfg config.UI, files []File, selection *SelectionManager, isDark bool) RestoreDelegate {
+func NewRestoreDelegate(cfg config.UI, p styles.Palette, files []File, selection *SelectionManager, isDark bool) RestoreDelegate {
 	var height = 2
 	var spacing = 1
 
@@ -134,7 +133,7 @@ func NewRestoreDelegate(cfg config.UI, files []File, selection *SelectionManager
 	return RestoreDelegate{
 		selection:       selection,
 		showDescription: showDescription,
-		Styles:          NewRestoreItemStyles(cfg, isDark),
+		Styles:          NewRestoreItemStyles(cfg, p, isDark),
 		height:          height,
 		spacing:         spacing,
 	}
