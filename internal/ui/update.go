@@ -45,14 +45,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, tea.Batch(cmds...)
 
-	case FileListUpdatedMsg:
-		if msg.err != nil {
-			m.err = msg.err
-			return m, tea.Quit
-		}
-		m.list.SetItems(msg.files)
-		return m, tea.Batch(cmds...)
-
 	case ShowDetailMsg:
 		m.state.SetView(DetailView)
 		m.detailFile = msg.file
