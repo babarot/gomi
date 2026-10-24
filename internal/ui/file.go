@@ -39,7 +39,7 @@ type File struct {
 
 func (f File) Description() string {
 	return fmt.Sprintf("%s %s %s",
-		humanize.Time(f.DeletedAt),
+		relativeTime(f.DeletedAt),
 		bullet,
 		filepath.Dir(f.OriginalPath),
 	)

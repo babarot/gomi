@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dustin/go-humanize"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/muesli/reflow/wordwrap"
 )
@@ -56,7 +55,7 @@ func (m Model) renderDeletedAt() string {
 	case DateFormatAbsolute:
 		ts = m.detailFile.DeletedAt.Format(time.DateTime)
 	default:
-		ts = humanize.Time(m.detailFile.DeletedAt)
+		ts = relativeTime(m.detailFile.DeletedAt)
 	}
 	return m.styles.RenderDeletedAt("Deleted At", ts)
 }

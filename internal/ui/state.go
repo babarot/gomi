@@ -2,8 +2,6 @@ package ui
 
 import (
 	"time"
-
-	"github.com/dustin/go-humanize"
 )
 
 // ViewType represents the current view state
@@ -111,7 +109,7 @@ func (v *ViewState) FormatDate(t time.Time) string {
 	if v.detail.dateFormat == DateFormatAbsolute {
 		return t.Format(time.DateTime)
 	}
-	return humanize.Time(t)
+	return relativeTime(t)
 }
 
 // SetConfirmState sets the confirmation dialog state

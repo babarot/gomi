@@ -1,0 +1,59 @@
+-- screen --
+╭──────────╮
+│ long.txt ├──────────────────────────────────────────────────────
+╰──────────╯
+
+   DELETED FROM 
+
+   /home/user/projects/gomi
+
+
+   DELETED AT     2 days ago
+
+────────────────────────────────────────────────────────── 1.4 kB 
+line 10: lorem ipsum dolor sit amet
+line 11: lorem ipsum dolor sit amet
+line 12: lorem ipsum dolor sit amet
+line 13: lorem ipsum dolor sit amet
+line 14: lorem ipsum dolor sit amet
+line 15: lorem ipsum dolor sit amet
+line 16: lorem ipsum dolor sit amet
+line 17: lorem ipsum dolor sit amet
+line 18: lorem ipsum dolor sit amet
+line 19: lorem ipsum dolor sit amet
+line 20: lorem ipsum dolor sit amet
+line 21: lorem ipsum dolor sit amet
+line 22: lorem ipsum dolor sit amet
+line 23: lorem ipsum dolor sit amet
+line 24: lorem ipsum dolor sit amet
+line 25: lorem ipsum dolor sit amet
+line 26: lorem ipsum dolor sit amet
+line 27: lorem ipsum dolor sit amet
+────────────────────────────────────────────────────────────  39% 
+──────────────────────────────────────────────────────────────────
+
+  space back • n next • p prev • ? more
+-- styles --
+L1 0-12 fg=#eeeedd
+L2 0-1 fg=#eeeedd
+L2 2-10 bold
+L2 11-66 fg=#eeeedd
+L3 0-12 fg=#eeeedd
+L5 2-16 fg=#eeeeee bg=#1c1c1c bold
+L10 2-14 fg=#eeeeee bg=#1c1c1c bold
+L12 0-58 fg=#3c3c3c
+L12 58-66 fg=#eeeedd bg=#3c3c3c
+L31 0-60 fg=#3c3c3c
+L31 60-66 fg=#eeeedd bg=#3c3c3c
+L32 0-66 fg=#eeeedd
+L34 2-7 fg=#616161
+L34 8-12 fg=#494949
+L34 13-14 fg=#3c3c3c
+L34 15-16 fg=#616161
+L34 17-21 fg=#494949
+L34 22-23 fg=#3c3c3c
+L34 24-25 fg=#616161
+L34 26-30 fg=#494949
+L34 31-32 fg=#3c3c3c
+L34 33-34 fg=#616161
+L34 35-39 fg=#494949

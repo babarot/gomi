@@ -1,0 +1,56 @@
+-- screen --
+
+│ yet-another-long-file-name-here.txt
+│ 1 week ago • /home/user/projects/gomi
+
+  todo.txt
+  1 week ago • /home/user/projects/gomi
+
+  report.csv
+  2 weeks ago • /home/user/projects/gomi
+
+  old.log
+  1 month ago • /home/user/projects/gomi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  ••
+
+  ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter …
+-- styles --
+L2 0-1 fg=#ad58b3
+L3 0-39 fg=#ad58b3
+L6 2-39 fg=#616161
+L9 2-40 fg=#616161
+L12 2-40 fg=#616161
+L27 2-3 fg=#dddada
+L27 3-4 fg=#837985
+L29 2-5 fg=#616161
+L29 6-8 fg=#808080
+L29 9-10 fg=#999999
+L29 11-14 fg=#616161
+L29 15-19 fg=#808080
+L29 20-21 fg=#999999
+L29 22-27 fg=#616161
+L29 28-35 fg=#808080
+L29 36-37 fg=#999999
+L29 38-43 fg=#616161
+L29 44-50 fg=#808080
+L29 51-52 fg=#999999
+L29 53-56 fg=#616161
+L29 57-63 fg=#808080
+L29 64-65 fg=#999999
+L29 66-67 fg=#616161
+L29 68-74 fg=#808080
+L29 75-76 fg=#dddada

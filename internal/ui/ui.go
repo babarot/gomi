@@ -3,8 +3,10 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/dustin/go-humanize"
 
 	"github.com/babarot/gomi/internal/config"
 	"github.com/babarot/gomi/internal/trash"
@@ -45,6 +47,14 @@ var (
 	ErrCannotPreview = errors.New("cannot preview")
 	ErrInputCanceled = errors.New("input is canceled")
 )
+
+// now returns the current time; tests replace it to render fixed relative times
+var now = time.Now
+
+// relativeTime formats t like humanize.Time, relative to now
+func relativeTime(t time.Time) string {
+	return humanize.RelTime(t, now(), "ago", "from now")
+}
 
 // RenderOptions holds the configuration needed by the UI layer.
 // This avoids passing the full config.Config to the UI package.
