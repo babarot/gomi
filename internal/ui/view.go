@@ -53,20 +53,15 @@ func (m Model) View() string {
 		view = m.detailView()
 		keyMap = m.keyMap.AsDetailKeyMap()
 
-	case ConfirmView:
-		view = m.confirmView()
-		switch m.state.previous {
-		case ListView:
-			keyMap = m.keyMap.AsListKeyMap()
-		case DetailView:
-			keyMap = m.keyMap.AsDetailKeyMap()
-		}
-
 	case Quitting:
 		return ""
 
 	default:
 		return ""
+	}
+
+	if m.state.Confirming() {
+		view = m.renderDialogOverBase(view, m.confirmDialog())
 	}
 
 	if view != "" {

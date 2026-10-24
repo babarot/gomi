@@ -9,16 +9,8 @@ import (
 	"github.com/samber/lo"
 )
 
-// confirmView renders the delete confirmation dialog
-func (m Model) confirmView() string {
-	var baseView string
-	switch m.state.previous {
-	case ListView:
-		baseView = m.list.View()
-	case DetailView:
-		baseView = m.detailView()
-	}
-
+// confirmDialog renders the delete confirmation dialog
+func (m Model) confirmDialog() string {
 	files := m.state.confirmation.files
 	slog.Debug("selected files on confirm view", "files", files)
 
@@ -29,7 +21,7 @@ func (m Model) confirmView() string {
 		dialogContent = m.formatConfirmation(files)
 	}
 
-	return m.renderDialogOverBase(baseView, dialogContent)
+	return dialogContent
 }
 
 // formatConfirmation formats the confirmation dialog content

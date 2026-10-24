@@ -84,7 +84,7 @@ func (m Model) renderPreview() string {
 // previewHeader renders the header of the preview section
 func (m Model) previewHeader() string {
 	return m.styles.RenderPreviewFrame(
-		m.detailFile.Size(),
+		m.detailSize,
 		true,
 		defaultWidth,
 	)

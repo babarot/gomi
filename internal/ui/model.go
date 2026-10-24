@@ -26,6 +26,9 @@ type Model struct {
 
 	// Current detail view file if any
 	detailFile File
+	// detailSize is the size of detailFile, computed once when the detail
+	// view opens since a directory has to be walked
+	detailSize string
 
 	// File data
 	files   []File

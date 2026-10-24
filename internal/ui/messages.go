@@ -12,14 +12,9 @@ func newShowDetailMsg(file File) ShowDetailMsg {
 	return ShowDetailMsg{file: file}
 }
 
-// FileListLoadedMsg indicates the initial file list has been loaded
+// FileListLoadedMsg carries the file list, loaded at start or reloaded
+// after files are deleted
 type FileListLoadedMsg struct {
-	files []list.Item
-	err   error
-}
-
-// FileListUpdatedMsg represents an update to the existing file list
-type FileListUpdatedMsg struct {
 	files []list.Item
 	err   error
 }

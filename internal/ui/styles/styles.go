@@ -11,21 +11,9 @@ import (
 
 // Styles holds all UI styles for consistent theming
 type Styles struct {
-	List    ListStyles
 	Detail  DetailStyles
 	Dialog  DialogStyles
 	Confirm ConfirmStyles
-}
-
-// ListStyles contains styles for list view
-type ListStyles struct {
-	Normal       lipgloss.Style
-	Selected     lipgloss.Style
-	Cursor       lipgloss.Style
-	Description  lipgloss.Style
-	Title        lipgloss.Style
-	FilterMatch  lipgloss.Style
-	FilterPrompt lipgloss.Style
 }
 
 // DetailStyles contains styles for detail view
@@ -85,32 +73,6 @@ type ConfirmStyles struct {
 // New creates a new Styles instance with the provided configuration
 func New(cfg config.UI) *Styles {
 	s := &Styles{}
-
-	s.List = ListStyles{
-		Normal: lipgloss.NewStyle().
-			Padding(0, 0, 0, 2),
-		Selected: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(cfg.Style.ListView.Selected)).
-			Padding(0, 0, 0, 2),
-		Cursor: lipgloss.NewStyle().
-			Border(lipgloss.NormalBorder(), false, false, false, true).
-			BorderForeground(lipgloss.Color(cfg.Style.ListView.Cursor)).
-			Foreground(lipgloss.Color(cfg.Style.ListView.Cursor)).
-			Padding(0, 0, 0, 1),
-		Description: lipgloss.NewStyle().
-			Foreground(lipgloss.AdaptiveColor{Light: "#A49FA5", Dark: "#777777"}),
-		Title: lipgloss.NewStyle().
-			BorderStyle(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color(cfg.Style.DetailView.Border)).
-			Padding(0, 1).
-			Bold(true),
-		FilterMatch: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(cfg.Style.ListView.FilterMatch)).
-			Underline(true),
-		FilterPrompt: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(cfg.Style.ListView.FilterPrompt)).
-			Bold(true),
-	}
 
 	s.Detail = DetailStyles{
 		View: func(sections ...string) string {
@@ -216,24 +178,6 @@ func New(cfg config.UI) *Styles {
 	return s
 }
 
-func (s *Styles) RenderListItem(title, description string, selected, cursor bool) string {
-	var style lipgloss.Style
-	if cursor {
-		if selected {
-			style = s.List.Cursor
-			style = style.Inherit(s.List.Selected)
-		} else {
-			style = s.List.Cursor
-		}
-	} else if selected {
-		style = s.List.Selected
-	} else {
-		style = s.List.Normal
-	}
-
-	return style.Render(title + "\n" + s.List.Description.Render(description))
-}
-
 func (s *Styles) RenderDetailTitle(title string, width int, selected bool) string {
 	filename := title
 	if selected {
@@ -309,53 +253,5 @@ func (s *Styles) RenderPreviewFrame(content string, isSize bool, width int) stri
 func (s *Styles) RenderDialog(content string) string {
 	return s.Dialog.Box.Render(
 		s.Dialog.Text.Render(content),
-	)
-}
-
-func (s *Styles) RenderDimmed(title, desc string) string {
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
-		s.List.Normal.Inherit(s.List.Description).Render(title),
-		s.List.Description.Render(desc),
-	)
-}
-
-func (s *Styles) RenderFilterMatch(title string, matchedRunes []int) string {
-	unmatched := s.List.Normal.Inline(true)
-	matched := unmatched.Inherit(s.List.FilterMatch)
-	return lipgloss.StyleRunes(title, matchedRunes, matched, unmatched)
-}
-
-func (s *Styles) RenderSelectedCursor(title, desc string) string {
-	style := s.List.Cursor
-	style = style.Inherit(s.List.Selected)
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
-		style.Render(title),
-		s.List.Description.Inherit(s.List.Selected).Render(desc),
-	)
-}
-
-func (s *Styles) RenderCursor(title, desc string) string {
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
-		s.List.Cursor.Render(title),
-		s.List.Description.Render(desc),
-	)
-}
-
-func (s *Styles) RenderSelected(title, desc string) string {
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
-		s.List.Selected.Render(title),
-		s.List.Description.Inherit(s.List.Selected).Render(desc),
-	)
-}
-
-func (s *Styles) RenderNormal(title, desc string) string {
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
-		s.List.Normal.Render(title),
-		s.List.Description.Render(desc),
 	)
 }

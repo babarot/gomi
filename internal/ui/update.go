@@ -19,13 +19,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		slog.Debug("Key pressed", "key", msg.String())
 		// Handle view-specific key updates
+		if m.state.Confirming() {
+			return m.updateConfirmView(msg)
+		}
 		switch m.state.current {
 		case ListView:
 			return m.updateListView(msg)
 		case DetailView:
 			return m.updateDetailView(msg)
-		case ConfirmView:
-			return m.updateConfirmView(msg)
 		}
 
 	case tea.WindowSizeMsg:
@@ -45,17 +46,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, tea.Batch(cmds...)
 
-	case FileListUpdatedMsg:
-		if msg.err != nil {
-			m.err = msg.err
-			return m, tea.Quit
-		}
-		m.list.SetItems(msg.files)
-		return m, tea.Batch(cmds...)
-
 	case ShowDetailMsg:
 		m.state.SetView(DetailView)
 		m.detailFile = msg.file
+		m.detailSize = msg.file.Size()
 		m.state.preview.available = true
 		m.viewport = m.newViewportModel(msg.file)
 		return m, tea.Batch(cmds...)
@@ -264,8 +258,7 @@ func (m *Model) openDeleteConfirm(cursor File) {
 	if len(files) > 1 {
 		state = ConfirmStateTypeYES
 	}
-	m.state.SetConfirmState(state, files)
-	m.state.SetView(ConfirmView)
+	m.state.OpenConfirm(state, files)
 }
 
 // deleteConfirmed deletes the files the confirmation was opened for and
@@ -299,33 +292,17 @@ func (m Model) handleTypeYesConfirmation(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case tea.KeyEnter:
 		if m.state.IsYesComplete() {
 			// Execute deletion if complete YES has been entered
-			m.state.SetView(m.state.previous)
+			m.state.CloseConfirm()
 			return m, m.deleteConfirmed()
 		}
 	case tea.KeyEsc: // Cancel
-		m.state.SetView(m.state.previous)
-		// Forcibly restructure a current window by sending WindowSizeMsg
-		return m, func() tea.Msg {
-			return tea.WindowSizeMsg{
-				Width: m.list.Width(),
-			}
-		}
+		m.state.CloseConfirm()
+		return m, nil
 	default:
 		// Character input processing
 		char := msg.String()
 		if len(char) == 1 {
 			m.state.UpdateYesInput(char)
-
-			// You can automatically confirm when YES is completed
-			if m.state.IsYesComplete() {
-				// Uncomment to enable auto-confirmation
-				//
-				// m.state.SetView(m.state.previous)
-				// return m, deletePermanentlyCmd(&m, files...)
-				//
-				// This branch is intentionally empty
-				slog.Debug("YES completed but auto-confirmation is disabled")
-			}
 		}
 	}
 	return m, nil
@@ -335,17 +312,12 @@ func (m Model) handleTypeYesConfirmation(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m Model) handleYesNoConfirmation(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch {
 	case key.Matches(msg, m.keyMap.Confirm.Yes):
-		m.state.SetView(m.state.previous)
+		m.state.CloseConfirm()
 		return m, m.deleteConfirmed()
 
 	case key.Matches(msg, m.keyMap.Confirm.No):
-		m.state.SetView(m.state.previous)
-		// Forcibly restructure a current window by sending WindowSizeMsg
-		return m, func() tea.Msg {
-			return tea.WindowSizeMsg{
-				Width: m.list.Width(),
-			}
-		}
+		m.state.CloseConfirm()
+		return m, nil
 
 	case key.Matches(msg, m.keyMap.Common.Quit):
 		m.state.SetView(Quitting)

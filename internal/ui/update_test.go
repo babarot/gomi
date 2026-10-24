@@ -276,16 +276,14 @@ func TestUpdate_ConfirmView_YesNo_No(t *testing.T) {
 	// Reset global selection manager for test isolation
 	m.selection = &SelectionManager{items: []File{}}
 
-	m.state.SetView(ConfirmView)
-	m.state.SetConfirmState(ConfirmStateYesNo, []File{})
+	m.state.OpenConfirm(ConfirmStateYesNo, []File{})
 
 	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("n")}
 	updated, _ := m.Update(msg)
 	model := asModel(t, updated)
 
-	// Should go back to previous view
-	if model.state.current == ConfirmView {
-		t.Error("should have left ConfirmView after pressing 'n'")
+	if model.state.Confirming() {
+		t.Error("should have closed the confirmation after pressing 'n'")
 	}
 }
 
@@ -293,8 +291,7 @@ func TestUpdate_ConfirmView_YesNo_Quit(t *testing.T) {
 	m := newTestModel()
 	m.selection = &SelectionManager{items: []File{}}
 
-	m.state.SetView(ConfirmView)
-	m.state.SetConfirmState(ConfirmStateYesNo, []File{})
+	m.state.OpenConfirm(ConfirmStateYesNo, []File{})
 
 	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")}
 	updated, cmd := m.Update(msg)
@@ -312,8 +309,7 @@ func TestUpdate_ConfirmView_TypeYES_Backspace(t *testing.T) {
 	m := newTestModel()
 	m.selection = &SelectionManager{items: []File{}}
 
-	m.state.SetView(ConfirmView)
-	m.state.SetConfirmState(ConfirmStateTypeYES, []File{})
+	m.state.OpenConfirm(ConfirmStateTypeYES, []File{})
 
 	// Type "Y"
 	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("Y")}
@@ -338,15 +334,14 @@ func TestUpdate_ConfirmView_TypeYES_Esc(t *testing.T) {
 	m := newTestModel()
 	m.selection = &SelectionManager{items: []File{}}
 
-	m.state.SetView(ConfirmView)
-	m.state.SetConfirmState(ConfirmStateTypeYES, []File{})
+	m.state.OpenConfirm(ConfirmStateTypeYES, []File{})
 
 	msg := tea.KeyMsg{Type: tea.KeyEsc}
 	updated, _ := m.Update(msg)
 	model := asModel(t, updated)
 
-	if model.state.current == ConfirmView {
-		t.Error("esc should leave ConfirmView")
+	if model.state.Confirming() {
+		t.Error("esc should close the confirmation")
 	}
 }
 
@@ -429,8 +424,8 @@ func TestUpdate_DetailView_DeleteConfirmsDetailFile(t *testing.T) {
 	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("D")})
 	model := asModel(t, updated)
 
-	if model.state.current != ConfirmView {
-		t.Fatalf("state = %v, want ConfirmView", model.state.current)
+	if !model.state.Confirming() {
+		t.Fatal("should have opened the confirmation")
 	}
 	if got := model.state.confirmation.files; len(got) != 1 || got[0] != file {
 		t.Errorf("confirmation files = %v, want [detail.txt]", got)
@@ -529,8 +524,8 @@ func TestUpdate_ListView_DeleteSelectionWithoutCursor(t *testing.T) {
 	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("D")})
 	model := asModel(t, updated)
 
-	if model.state.current != ConfirmView {
-		t.Fatalf("state = %v, want ConfirmView", model.state.current)
+	if !model.state.Confirming() {
+		t.Fatal("should have opened the confirmation")
 	}
 	if got := model.state.confirmation.files; len(got) != 1 || got[0] != f1 {
 		t.Errorf("confirmation files = %v, want [a.txt]", got)
