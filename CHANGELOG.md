@@ -1,5 +1,19 @@
 # Changelog
 
+## [v1.7.0](https://github.com/babarot/gomi/compare/v1.6.5...v1.7.0) - 2026-10-24
+### New Features
+- Add --dry-run to show what --prune would remove by @babarot in https://github.com/babarot/gomi/pull/138
+### Bug fixes
+- Fix files with the same name failing to be trashed at once by @babarot in https://github.com/babarot/gomi/pull/136
+- Fix the delete confirmation deleting the wrong files by @babarot in https://github.com/babarot/gomi/pull/145
+### Refactorings
+- Add golden tests for the TUI views by @babarot in https://github.com/babarot/gomi/pull/144
+- Clean up unused code and the state of the TUI by @babarot in https://github.com/babarot/gomi/pull/146
+- Upgrade Bubble Tea, Bubbles, Lip Gloss and log to v2 by @babarot in https://github.com/babarot/gomi/pull/147
+- Draw the TUI with a palette of named colors by @babarot in https://github.com/babarot/gomi/pull/148
+### Others
+- Sync shared files from github-config by @babarot in https://github.com/babarot/gomi/pull/141
+
 ## [v1.6.5](https://github.com/babarot/gomi/compare/v1.6.4...v1.6.5) - 2026-09-30
 ### Bug fixes
 - Fix forbidden path checks on macOS and allow removing files in $TMPDIR by @babarot in https://github.com/babarot/gomi/pull/135
