@@ -297,28 +297,12 @@ func (m Model) handleTypeYesConfirmation(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 	case tea.KeyEsc: // Cancel
 		m.state.CloseConfirm()
-		// Forcibly restructure a current window by sending WindowSizeMsg
-		return m, func() tea.Msg {
-			return tea.WindowSizeMsg{
-				Width: m.list.Width(),
-			}
-		}
+		return m, nil
 	default:
 		// Character input processing
 		char := msg.String()
 		if len(char) == 1 {
 			m.state.UpdateYesInput(char)
-
-			// You can automatically confirm when YES is completed
-			if m.state.IsYesComplete() {
-				// Uncomment to enable auto-confirmation
-				//
-				// m.state.CloseConfirm()
-				// return m, deletePermanentlyCmd(&m, files...)
-				//
-				// This branch is intentionally empty
-				slog.Debug("YES completed but auto-confirmation is disabled")
-			}
 		}
 	}
 	return m, nil
@@ -333,12 +317,7 @@ func (m Model) handleYesNoConfirmation(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	case key.Matches(msg, m.keyMap.Confirm.No):
 		m.state.CloseConfirm()
-		// Forcibly restructure a current window by sending WindowSizeMsg
-		return m, func() tea.Msg {
-			return tea.WindowSizeMsg{
-				Width: m.list.Width(),
-			}
-		}
+		return m, nil
 
 	case key.Matches(msg, m.keyMap.Common.Quit):
 		m.state.SetView(Quitting)
