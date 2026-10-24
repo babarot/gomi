@@ -150,3 +150,40 @@ func TestFilter(t *testing.T) {
 		})
 	}
 }
+
+// sizeCountingItem counts how many times its size is looked up
+type sizeCountingItem struct {
+	TestItem
+	sizeCalls *int
+}
+
+func (s sizeCountingItem) GetSize() int64 {
+	*s.sizeCalls++
+	return s.size
+}
+
+func TestFilterSizesOnlyItemsOtherFiltersKeep(t *testing.T) {
+	now := time.Now()
+	var calls int
+	items := []sizeCountingItem{
+		{TestItem{name: "recent.txt", path: "/trash/recent.txt", size: 100, deletedAt: now.Add(-1 * time.Hour)}, &calls},
+		{TestItem{name: "old.txt", path: "/trash/old.txt", size: 100, deletedAt: now.Add(-400 * 24 * time.Hour)}, &calls},
+		{TestItem{name: ".DS_Store", path: "/trash/.DS_Store", size: 100, deletedAt: now.Add(-1 * time.Hour)}, &calls},
+	}
+
+	opts := FilterOptions{
+		Include: config.IncludeConfig{Period: 365},
+		Exclude: config.ExcludeConfig{
+			Files: []string{".DS_Store"},
+			Size:  config.SizeConfig{Min: "0KB", Max: "1GB"},
+		},
+	}
+
+	result := Filter(items, opts)
+	if len(result) != 1 || result[0].GetName() != "recent.txt" {
+		t.Fatalf("got %v, want [recent.txt]", result)
+	}
+	if calls != 1 {
+		t.Errorf("sized %d items, want 1: only recent.txt passes the other filters", calls)
+	}
+}
