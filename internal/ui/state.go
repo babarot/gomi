@@ -10,7 +10,6 @@ type ViewType uint8
 const (
 	ListView ViewType = iota
 	DetailView
-	ConfirmView
 	Quitting
 )
 
@@ -20,8 +19,6 @@ func (v ViewType) String() string {
 		return "list view"
 	case DetailView:
 		return "detail view"
-	case ConfirmView:
-		return "confirm view"
 	case Quitting:
 		return "quit"
 	}
@@ -38,7 +35,6 @@ const (
 
 type ViewState struct {
 	current      ViewType
-	previous     ViewType
 	detail       detail
 	preview      preview
 	confirmation confirmation
@@ -52,7 +48,11 @@ type detail struct {
 type preview struct {
 	available bool
 }
+
+// confirmation is the delete confirmation dialog, drawn over the current
+// view while open
 type confirmation struct {
+	open     bool
 	state    ConfirmState
 	files    []File
 	yesInput string
@@ -69,8 +69,7 @@ const (
 // NewViewState creates a new ViewState with default values
 func NewViewState() *ViewState {
 	return &ViewState{
-		current:  ListView,
-		previous: ListView,
+		current: ListView,
 		detail: detail{
 			showOrigin: true,
 			dateFormat: DateFormatRelative,
@@ -84,9 +83,8 @@ func NewViewState() *ViewState {
 	}
 }
 
-// SetView changes the current view and updates the previous view
+// SetView changes the current view
 func (v *ViewState) SetView(newView ViewType) {
-	v.previous = v.current
 	v.current = newView
 }
 
@@ -112,11 +110,22 @@ func (v *ViewState) FormatDate(t time.Time) string {
 	return relativeTime(t)
 }
 
-// SetConfirmState sets the confirmation dialog state
-func (v *ViewState) SetConfirmState(state ConfirmState, files []File) {
+// OpenConfirm opens the confirmation dialog for files over the current view
+func (v *ViewState) OpenConfirm(state ConfirmState, files []File) {
+	v.confirmation.open = true
 	v.confirmation.state = state
 	v.confirmation.files = files
 	v.confirmation.yesInput = "" // reset input
+}
+
+// CloseConfirm closes the confirmation dialog
+func (v *ViewState) CloseConfirm() {
+	v.confirmation.open = false
+}
+
+// Confirming reports whether the confirmation dialog is open
+func (v *ViewState) Confirming() bool {
+	return v.confirmation.open
 }
 
 // UpdateYesInput updates the YES input state

@@ -10,9 +10,6 @@ func TestNewViewState(t *testing.T) {
 	if s.current != ListView {
 		t.Errorf("current = %v, want ListView", s.current)
 	}
-	if s.previous != ListView {
-		t.Errorf("previous = %v, want ListView", s.previous)
-	}
 	if s.detail.dateFormat != DateFormatRelative {
 		t.Errorf("dateFormat = %v, want DateFormatRelative", s.detail.dateFormat)
 	}
@@ -33,17 +30,6 @@ func TestViewState_SetView(t *testing.T) {
 	s.SetView(DetailView)
 	if s.current != DetailView {
 		t.Errorf("current = %v, want DetailView", s.current)
-	}
-	if s.previous != ListView {
-		t.Errorf("previous = %v, want ListView", s.previous)
-	}
-
-	s.SetView(ConfirmView)
-	if s.current != ConfirmView {
-		t.Errorf("current = %v, want ConfirmView", s.current)
-	}
-	if s.previous != DetailView {
-		t.Errorf("previous = %v, want DetailView", s.previous)
 	}
 }
 
@@ -99,12 +85,15 @@ func TestViewState_FormatDate(t *testing.T) {
 	}
 }
 
-func TestViewState_SetConfirmState(t *testing.T) {
+func TestViewState_OpenConfirm(t *testing.T) {
 	s := NewViewState()
 
 	files := []File{{}, {}}
-	s.SetConfirmState(ConfirmStateTypeYES, files)
+	s.OpenConfirm(ConfirmStateTypeYES, files)
 
+	if !s.Confirming() {
+		t.Error("confirmation should be open")
+	}
 	if s.confirmation.state != ConfirmStateTypeYES {
 		t.Errorf("state = %v, want ConfirmStateTypeYES", s.confirmation.state)
 	}
@@ -212,7 +201,6 @@ func TestViewType_String(t *testing.T) {
 	}{
 		{ListView, "list view"},
 		{DetailView, "detail view"},
-		{ConfirmView, "confirm view"},
 		{Quitting, "quit"},
 		{ViewType(99), "unknown"},
 	}
