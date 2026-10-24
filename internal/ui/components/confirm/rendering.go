@@ -3,15 +3,47 @@ package confirm
 import (
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
+// rendering is how the confirmation is drawn and takes keys. Update reports
+// only the command; the Model it belongs to is what the program runs.
 type rendering interface {
-	tea.Model
+	Init() tea.Cmd
+	Update(msg tea.Msg) tea.Cmd
+	View() string
+}
+
+// inputStyles styles a text input like bubbles v1 did: the given prompt,
+// placeholder and text styles in either focus state, and a cursor drawn
+// reversed with no color of its own.
+func inputStyles(prompt, placeholder, text lipgloss.Style) textinput.Styles {
+	s := textinput.DefaultStyles(true)
+	for _, st := range []*textinput.StyleState{&s.Focused, &s.Blurred} {
+		st.Prompt = prompt
+		st.Placeholder = placeholder
+		st.Text = text
+	}
+	s.Cursor.Color = lipgloss.NoColor{}
+	return s
+}
+
+// fitPlaceholder works around bubbles v2 drawing only the first character of
+// the placeholder when the input has no width: while the input is empty, it
+// gets the narrowest width that shows the whole placeholder with no padding,
+// and no width once something is typed.
+func fitPlaceholder(t *textinput.Model) {
+	w := 0
+	if t.Value() == "" {
+		w = max(utf8.RuneCountInString(t.Placeholder)-1, 0)
+	}
+	t.SetWidth(w)
 }
 
 // KeyMap defines the key bindings for selectable renderings
@@ -23,25 +55,25 @@ type KeyMap struct {
 
 var DefaultVerticalKeyMap = KeyMap{
 	Toggle: key.NewBinding(
-		key.WithKeys(tea.KeyUp.String(), tea.KeyDown.String()),
+		key.WithKeys("up", "down"),
 		key.WithHelp("↑/↓", "toggle"),
 	),
 	Help: key.NewBinding(
 		key.WithKeys("?"),
 		key.WithHelp("?", "help"),
 	),
-	Enter: key.NewBinding(key.WithKeys(tea.KeyEnter.String())),
+	Enter: key.NewBinding(key.WithKeys("enter")),
 }
 var DefaultHorizontalKeyMap = KeyMap{
 	Toggle: key.NewBinding(
-		key.WithKeys(tea.KeyLeft.String(), tea.KeyRight.String()),
+		key.WithKeys("left", "right"),
 		key.WithHelp("←/→", "toggle"),
 	),
 	Help: key.NewBinding(
 		key.WithKeys("?"),
 		key.WithHelp("?", "help"),
 	),
-	Enter: key.NewBinding(key.WithKeys(tea.KeyEnter.String())),
+	Enter: key.NewBinding(key.WithKeys("enter")),
 }
 
 // ShortHelp returns keybindings to be shown in the mini help view. It's part
@@ -81,17 +113,16 @@ func (s *selectionRenderer) Init() tea.Cmd {
 }
 
 // Update satisfies the tea.Model interface
-func (s *selectionRenderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
+func (s *selectionRenderer) Update(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		// If we set a width on the help menu it can gracefully truncate its view as needed.
-		s.help.Width = msg.Width
-	case tea.KeyMsg:
+		s.help.SetWidth(msg.Width)
+	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, s.KeyMap.Enter):
 			s.hideHelp = true
-			return s, tea.Quit
+			return tea.Quit
 		case key.Matches(msg, s.KeyMap.Toggle):
 			switch s.m.selected {
 			case Undecided, Denied:
@@ -103,7 +134,7 @@ func (s *selectionRenderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			s.help.ShowAll = !s.help.ShowAll
 		}
 	}
-	return s, cmd
+	return nil
 }
 
 // View satisfies the tea.Model interface
@@ -198,24 +229,24 @@ func (i *inputRenderer) Init() tea.Cmd {
 	} else {
 		input.Prompt = i.m.Prompt + " "
 	}
-	input.PromptStyle = i.m.Styles.Prompt
-	input.PlaceholderStyle = i.m.Styles.Placeholder
-	input.TextStyle = i.m.Styles.Text
+	input.SetStyles(inputStyles(i.m.Styles.Prompt, i.m.Styles.Placeholder, i.m.Styles.Text))
 	input.CharLimit = max(len(i.m.DeniedDecisionText), len(i.m.AcceptedDecisionText))
 	input.Focus()
+	fitPlaceholder(&input)
 	i.text = input
 	return nil
 }
 
 // Update satisfies the tea.Model interface
-func (i *inputRenderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (i *inputRenderer) Update(msg tea.Msg) tea.Cmd {
 	var c tea.Cmd
 	i.text, c = i.text.Update(msg)
+	fitPlaceholder(&i.text)
 
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.Type {
-		case tea.KeyEnter:
+	case tea.KeyPressMsg:
+		switch msg.String() {
+		case "enter":
 			switch k := strings.ToLower(i.text.Value()); {
 			case strings.HasPrefix(k, strings.ToLower(i.m.AcceptedDecisionText)):
 				i.m.SetDecision(Accepted)
@@ -223,11 +254,11 @@ func (i *inputRenderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				i.m.SetDecision(Denied)
 			}
 			i.m.done = true
-			return i, tea.Quit
+			return tea.Quit
 		}
 	}
 
-	return i, c
+	return c
 }
 
 // View satisfies the tea.Model interface
@@ -289,16 +320,15 @@ func (i *immediateRenderer) Init() tea.Cmd {
 		input.Prompt = i.m.Prompt + " "
 	}
 
-	input.PromptStyle = i.m.Styles.Prompt
-	input.PlaceholderStyle = i.m.Styles.Placeholder
-	input.TextStyle = i.m.Styles.Text
+	input.SetStyles(inputStyles(i.m.Styles.Prompt, i.m.Styles.Placeholder, i.m.Styles.Text))
 	input.CharLimit = max(len(i.m.DeniedDecisionText), len(i.m.AcceptedDecisionText))
 	input.Focus()
+	fitPlaceholder(&input)
 	i.text = input
 	return nil
 }
 
-func (i *immediateRenderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (i *immediateRenderer) Update(msg tea.Msg) tea.Cmd {
 	isLetter := func(s string) bool {
 		return !strings.ContainsFunc(s, func(r rune) bool {
 			return !unicode.IsLetter(r)
@@ -306,28 +336,28 @@ func (i *immediateRenderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.Type {
-		case tea.KeyCtrlC, tea.KeyEsc:
+	case tea.KeyPressMsg:
+		switch msg.String() {
+		case "ctrl+c", "esc":
 			i.m.SetDecision(Denied)
 			i.m.done = true
-			return i.m, tea.Quit
+			return tea.Quit
 		default:
 			if isLetter(msg.String()) {
 				switch strings.ToLower(msg.String()) {
 				case strings.ToLower(string(i.m.AcceptedDecisionText[0])):
 					i.m.SetDecision(Accepted)
 					i.m.done = true
-					return i.m, tea.Quit
+					return tea.Quit
 				case strings.ToLower(string(i.m.DeniedDecisionText[0])):
 					i.m.SetDecision(Denied)
 					i.m.done = true
-					return i.m, tea.Quit
+					return tea.Quit
 				}
 			}
 		}
 	}
-	return i.m, nil
+	return nil
 }
 
 func (i *immediateRenderer) View() string {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/dustin/go-humanize"
 
 	"github.com/babarot/gomi/internal/config"
@@ -68,6 +68,8 @@ func (m Model) Init() tea.Cmd {
 	return tea.Batch(
 		// load files
 		loadFileListCmd(m.files),
+		// styles depend on whether the background is dark
+		tea.RequestBackgroundColor,
 		// other cmds...
 	)
 }

@@ -1,11 +1,11 @@
 package ui
 
 import (
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/paginator"
-	"github.com/charmbracelet/bubbles/viewport"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/list"
+	"charm.land/bubbles/v2/paginator"
+	"charm.land/bubbles/v2/viewport"
+	"charm.land/lipgloss/v2"
 
 	"github.com/babarot/gomi/internal/config"
 	"github.com/babarot/gomi/internal/trash"
@@ -74,22 +74,13 @@ func NewModel(t trash.Trash, files []*trash.File, opts RenderOptions) Model {
 	// Initialize selection manager
 	selection := &SelectionManager{items: []File{}}
 
-	// Initialize list delegate
-	delegate := NewRestoreDelegate(uiCfg, fileList, selection)
-	delegate.ShortHelpFunc = keyMap.AsListKeyMap().ShortHelp
-	delegate.FullHelpFunc = keyMap.AsListKeyMap().FullHelp
-
-	// Create and configure list
-	l := list.New(items, delegate, defaultWidth, defaultHeight)
+	// Create and configure list; setBackground replaces its delegate and
+	// styles
+	l := list.New(items, NewRestoreDelegate(uiCfg, fileList, selection, true), defaultWidth, defaultHeight)
 	l.SetShowStatusBar(false)
 	l.SetShowTitle(false)
 	l.SetShowHelp(false) // do not use default help of list model
 	l.DisableQuitKeybindings()
-
-	// Configure filter prompt style
-	l.FilterInput.PromptStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color(uiCfg.Style.ListView.FilterPrompt)).
-		Bold(true)
 
 	// Set paginator type based on config
 	switch uiCfg.Paginator {
@@ -99,8 +90,7 @@ func NewModel(t trash.Trash, files []*trash.File, opts RenderOptions) Model {
 		l.Paginator.Type = paginator.Dots
 	}
 
-	// Return fully initialized model
-	return Model{
+	m := Model{
 		trash:     t,
 		state:     NewViewState(),
 		keyMap:    keyMap,
@@ -109,7 +99,33 @@ func NewModel(t trash.Trash, files []*trash.File, opts RenderOptions) Model {
 		config:    uiCfg,
 		list:      l,
 		viewport:  viewport.Model{},
-		styles:    styles.New(uiCfg),
-		help:      newHelpModel(),
+		help:      help.New(),
 	}
+	// Until the terminal reports its background, assume a dark one
+	m.setBackground(true)
+	return m
+}
+
+// setBackground styles the model for a dark or light terminal background
+func (m *Model) setBackground(isDark bool) {
+	m.styles = styles.New(m.config, isDark)
+	m.help.Styles = helpStyles(isDark)
+
+	delegate := NewRestoreDelegate(m.config, m.files, m.selection, isDark)
+	delegate.ShortHelpFunc = m.keyMap.AsListKeyMap().ShortHelp
+	delegate.FullHelpFunc = m.keyMap.AsListKeyMap().FullHelp
+	m.list.SetDelegate(delegate)
+
+	ls := list.DefaultStyles(isDark)
+	m.list.Styles = ls
+	m.list.Paginator.ActiveDot = ls.ActivePaginationDot.String()
+	m.list.Paginator.InactiveDot = ls.InactivePaginationDot.String()
+
+	// bubbles does not apply ls.Filter to the filter input itself
+	filter := ls.Filter
+	filter.Focused.Prompt = lipgloss.NewStyle().
+		Foreground(lipgloss.Color(m.config.Style.ListView.FilterPrompt)).
+		Bold(true)
+	filter.Blurred.Prompt = filter.Focused.Prompt
+	m.list.FilterInput.SetStyles(filter)
 }

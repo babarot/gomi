@@ -3,7 +3,7 @@ package log
 import (
 	"time"
 
-	charmlog "github.com/charmbracelet/log"
+	charmlog "charm.land/log/v2"
 )
 
 type (

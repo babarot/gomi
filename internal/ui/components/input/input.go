@@ -2,11 +2,12 @@ package input
 
 import (
 	"strings"
+	"unicode/utf8"
 
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/jimschubert/answer/colors"
 	"github.com/jimschubert/answer/validate"
 )
@@ -81,6 +82,32 @@ type Model struct {
 }
 
 // New creates a new model with default settings.
+// inputStyles styles a text input like bubbles v1 did: the given prompt,
+// placeholder and text styles in either focus state, and a cursor drawn
+// reversed with no color of its own.
+func inputStyles(prompt, placeholder, text lipgloss.Style) textinput.Styles {
+	s := textinput.DefaultStyles(true)
+	for _, st := range []*textinput.StyleState{&s.Focused, &s.Blurred} {
+		st.Prompt = prompt
+		st.Placeholder = placeholder
+		st.Text = text
+	}
+	s.Cursor.Color = lipgloss.NoColor{}
+	return s
+}
+
+// fitPlaceholder works around bubbles v2 drawing only the first character of
+// the placeholder when the input has no width: while the input is empty, it
+// gets the narrowest width that shows the whole placeholder with no padding,
+// and no width once something is typed.
+func fitPlaceholder(t *textinput.Model) {
+	w := 0
+	if t.Value() == "" {
+		w = max(utf8.RuneCountInString(t.Placeholder)-1, 0)
+	}
+	t.SetWidth(w)
+}
+
 func New() Model {
 	return Model{
 		PromptPrefix:     "? ",
@@ -94,9 +121,9 @@ func New() Model {
 		},
 		keyMap: keyMap{
 			Quit: key.NewBinding(
-				key.WithKeys(tea.KeyEsc.String(), tea.KeyCtrlC.String()),
+				key.WithKeys("esc", "ctrl+c"),
 			),
-			Enter: key.NewBinding(key.WithKeys(tea.KeyEnter.String())),
+			Enter: key.NewBinding(key.WithKeys("enter")),
 		},
 	}
 }
@@ -110,18 +137,19 @@ func (m *Model) setup() {
 	}
 	input := textinput.New()
 	input.CharLimit = m.CharLimit
-	input.Width = m.MaxWidth
+	input.SetWidth(m.MaxWidth)
 	if !strings.HasSuffix(m.Prompt, " ") {
 		input.Prompt = m.Prompt + " "
 	} else {
 		input.Prompt = m.Prompt
 	}
 	input.Placeholder = m.Placeholder
-	input.PromptStyle = m.Styles.Prompt
-	input.PlaceholderStyle = m.Styles.Placeholder
-	input.TextStyle = m.Styles.Text
+	input.SetStyles(inputStyles(m.Styles.Prompt, m.Styles.Placeholder, m.Styles.Text))
 	input.EchoMode = m.EchoMode
 	input.Focus()
+	if m.MaxWidth == 0 {
+		fitPlaceholder(&input)
+	}
 	m.input = input
 	m.initialized = true
 }
@@ -150,7 +178,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, m.keyMap.Enter):
 			if m.err == nil {
@@ -171,6 +199,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var before, after string
 	before = m.input.Value()
 	m.input, cmd = m.input.Update(msg)
+	if m.MaxWidth == 0 {
+		fitPlaceholder(&m.input)
+	}
 	after = m.input.Value()
 
 	changed := before != m.input.Value()
@@ -224,7 +255,11 @@ func (m *Model) writeError(err error, b *strings.Builder) {
 	}
 }
 
-func (m *Model) View() string {
+func (m *Model) View() tea.View {
+	return tea.NewView(m.view())
+}
+
+func (m *Model) view() string {
 	var b strings.Builder
 	if m.PromptPrefix != "" {
 		b.WriteString(m.Styles.PromptPrefix.Inline(true).Render(m.PromptPrefix))

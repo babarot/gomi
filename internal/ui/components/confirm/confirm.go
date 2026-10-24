@@ -1,8 +1,8 @@
 package confirm
 
 import (
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/jimschubert/answer/colors"
 )
 
@@ -208,10 +208,10 @@ func (m *Model) Init() tea.Cmd {
 
 // Update satisfies the tea.Model interface
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	return m.renderer.Update(msg)
+	return m, m.renderer.Update(msg)
 }
 
 // View satisfies the tea.Model interface
-func (m *Model) View() string {
-	return m.renderer.View()
+func (m *Model) View() tea.View {
+	return tea.NewView(m.renderer.View())
 }

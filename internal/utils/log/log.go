@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"sync"
 
-	charmlog "github.com/charmbracelet/log"
+	charmlog "charm.land/log/v2"
 )
 
 // New creates a new logger with the given options

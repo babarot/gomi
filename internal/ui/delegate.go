@@ -5,10 +5,10 @@ import (
 	"io"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/list"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/list"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/babarot/gomi/internal/config"
@@ -34,13 +34,14 @@ type RestoreItemStyles struct {
 	FilterPrompt lipgloss.Style
 }
 
-func NewRestoreItemStyles(cfg config.UI) (s RestoreItemStyles) {
+func NewRestoreItemStyles(cfg config.UI, isDark bool) (s RestoreItemStyles) {
+	lightDark := lipgloss.LightDark(isDark)
+
 	indentOnSelect := 0
 	if cfg.Style.ListView.IndentOnSelect {
 		indentOnSelect = 1
 	}
 
-	// TODO: support adaptive?
 	cursor := cfg.Style.ListView.Cursor
 	selected := cfg.Style.ListView.Selected
 
@@ -48,23 +49,23 @@ func NewRestoreItemStyles(cfg config.UI) (s RestoreItemStyles) {
 		Padding(0, 0, 0, 2)
 
 	s.NormalDesc = s.NormalTitle.
-		Foreground(lipgloss.AdaptiveColor{Light: "#626262", Dark: "#777777"})
+		Foreground(lightDark(lipgloss.Color("#626262"), lipgloss.Color("#777777")))
 
 	s.CursorTitle = lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder(), false, false, false, true).
-		BorderForeground(lipgloss.AdaptiveColor{Light: cursor, Dark: cursor}).
-		Foreground(lipgloss.AdaptiveColor{Light: cursor, Dark: cursor}).
+		BorderForeground(lightDark(lipgloss.Color(cursor), lipgloss.Color(cursor))).
+		Foreground(lightDark(lipgloss.Color(cursor), lipgloss.Color(cursor))).
 		Padding(0, 0, 0, 1)
 
 	s.CursorDesc = s.CursorTitle.
-		Foreground(lipgloss.AdaptiveColor{Light: cursor, Dark: cursor})
+		Foreground(lightDark(lipgloss.Color(cursor), lipgloss.Color(cursor)))
 
 	s.DimmedTitle = lipgloss.NewStyle().
-		Foreground(lipgloss.AdaptiveColor{Light: "#808080", Dark: "#777777"}).
+		Foreground(lightDark(lipgloss.Color("#808080"), lipgloss.Color("#777777"))).
 		Padding(0, 0, 0, 2)
 
 	s.DimmedDesc = s.DimmedTitle.
-		Foreground(lipgloss.AdaptiveColor{Light: "#999999", Dark: "#4D4D4D"})
+		Foreground(lightDark(lipgloss.Color("#999999"), lipgloss.Color("#4D4D4D")))
 
 	s.FilterMatch = lipgloss.NewStyle().
 		Foreground(lipgloss.Color(cfg.Style.ListView.FilterMatch)).
@@ -75,20 +76,20 @@ func NewRestoreItemStyles(cfg config.UI) (s RestoreItemStyles) {
 		Underline(true)
 
 	s.SelectedTitle = lipgloss.NewStyle().
-		Foreground(lipgloss.AdaptiveColor{Light: selected, Dark: selected}).
+		Foreground(lightDark(lipgloss.Color(selected), lipgloss.Color(selected))).
 		Padding(0, 0, 0, 2+indentOnSelect)
 
 	s.SelectedDesc = s.SelectedTitle.
-		Foreground(lipgloss.AdaptiveColor{Light: selected, Dark: selected})
+		Foreground(lightDark(lipgloss.Color(selected), lipgloss.Color(selected)))
 
 	s.SelectedCursorTitle = lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder(), false, false, false, true).
-		BorderForeground(lipgloss.AdaptiveColor{Light: cursor, Dark: cursor}).
-		Foreground(lipgloss.AdaptiveColor{Light: selected, Dark: selected}).
+		BorderForeground(lightDark(lipgloss.Color(cursor), lipgloss.Color(cursor))).
+		Foreground(lightDark(lipgloss.Color(selected), lipgloss.Color(selected))).
 		Padding(0, 0, 0, 1)
 
 	s.SelectedCursorDesc = s.SelectedCursorTitle.
-		Foreground(lipgloss.AdaptiveColor{Light: selected, Dark: selected})
+		Foreground(lightDark(lipgloss.Color(selected), lipgloss.Color(selected)))
 
 	return s
 }
@@ -113,7 +114,7 @@ type RestoreDelegate struct {
 }
 
 // NewRestoreDelegate creates a new delegate with Restore styles.
-func NewRestoreDelegate(cfg config.UI, files []File, selection *SelectionManager) RestoreDelegate {
+func NewRestoreDelegate(cfg config.UI, files []File, selection *SelectionManager, isDark bool) RestoreDelegate {
 	var height = 2
 	var spacing = 1
 
@@ -133,7 +134,7 @@ func NewRestoreDelegate(cfg config.UI, files []File, selection *SelectionManager
 	return RestoreDelegate{
 		selection:       selection,
 		showDescription: showDescription,
-		Styles:          NewRestoreItemStyles(cfg),
+		Styles:          NewRestoreItemStyles(cfg, isDark),
 		height:          height,
 		spacing:         spacing,
 	}

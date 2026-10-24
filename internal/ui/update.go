@@ -5,9 +5,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/list"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/list"
+	tea "charm.land/bubbletea/v2"
 	"github.com/samber/lo"
 )
 
@@ -16,7 +16,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmds := []tea.Cmd{}
 
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		slog.Debug("Key pressed", "key", msg.String())
 		// Handle view-specific key updates
 		if m.state.Confirming() {
@@ -29,6 +29,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.updateDetailView(msg)
 		}
 
+	case tea.BackgroundColorMsg:
+		m.setBackground(msg.IsDark())
+		return m, nil
+
 	case tea.WindowSizeMsg:
 		// view.go appends a help block wrapped in lipgloss Margin(1, 2)
 		// below the list: 1 row top margin + 1 row content + 1 row bottom
@@ -39,7 +43,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		)
 		if msg.Width > 0 {
 			m.list.SetWidth(msg.Width)
-			m.help.Width = max(msg.Width-helpReservedCols, 0)
+			m.help.SetWidth(max(msg.Width-helpReservedCols, 0))
 		}
 		if msg.Height > 0 {
 			m.list.SetHeight(max(msg.Height-helpReservedRows, 1))
@@ -80,7 +84,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // updateListView handles updates specific to the list view
-func (m Model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) updateListView(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch {
 	case key.Matches(msg, m.keyMap.Common.Quit):
 		m.state.SetView(Quitting)
@@ -179,7 +183,7 @@ func (m Model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 // updateDetailView handles updates specific to the detail view
-func (m Model) updateDetailView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) updateDetailView(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch {
 	case key.Matches(msg, m.keyMap.Common.Quit):
 		m.state.SetView(Quitting)
@@ -275,7 +279,7 @@ func (m *Model) deleteConfirmed() tea.Cmd {
 }
 
 // updateConfirmView handles updates specific to the confirmation dialog
-func (m Model) updateConfirmView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) updateConfirmView(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// Branch processing based on ConfirmState
 	if m.state.confirmation.state == ConfirmStateTypeYES {
 		return m.handleTypeYesConfirmation(msg)
@@ -285,17 +289,17 @@ func (m Model) updateConfirmView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 // Handle YES typing confirmation mode
-func (m Model) handleTypeYesConfirmation(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.Type {
-	case tea.KeyBackspace:
+func (m Model) handleTypeYesConfirmation(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "backspace":
 		m.state.BackspaceYesInput()
-	case tea.KeyEnter:
+	case "enter":
 		if m.state.IsYesComplete() {
 			// Execute deletion if complete YES has been entered
 			m.state.CloseConfirm()
 			return m, m.deleteConfirmed()
 		}
-	case tea.KeyEsc: // Cancel
+	case "esc": // Cancel
 		m.state.CloseConfirm()
 		return m, nil
 	default:
@@ -309,7 +313,7 @@ func (m Model) handleTypeYesConfirmation(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 // Handle standard Yes/No confirmation mode
-func (m Model) handleYesNoConfirmation(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) handleYesNoConfirmation(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch {
 	case key.Matches(msg, m.keyMap.Confirm.Yes):
 		m.state.CloseConfirm()

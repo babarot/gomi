@@ -4,11 +4,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/viewport"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/list"
+	"charm.land/bubbles/v2/viewport"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 
 	"github.com/babarot/gomi/internal/config"
 	"github.com/babarot/gomi/internal/trash"
@@ -44,7 +44,7 @@ func newTestModel() Model {
 		config:    cfg.UI,
 		list:      l,
 		viewport:  viewport.Model{},
-		styles:    styles.New(cfg.UI),
+		styles:    styles.New(cfg.UI, true),
 		help:      help.New(),
 	}
 }
@@ -84,19 +84,19 @@ func TestUpdate_WindowSizeMsg_SetsHelpWidth(t *testing.T) {
 	updated, _ := m.Update(msg)
 	model := asModel(t, updated)
 
-	if model.help.Width == 0 {
+	if model.help.Width() == 0 {
 		t.Fatal("help.Width = 0; the help model was not informed of the " +
 			"terminal width, so its View() will not truncate and may overflow")
 	}
-	if model.help.Width > termWidth {
+	if model.help.Width() > termWidth {
 		t.Errorf("help.Width = %d, want <= %d (terminal width)",
-			model.help.Width, termWidth)
+			model.help.Width(), termWidth)
 	}
 }
 
 func TestView_FitsSmallTerminal(t *testing.T) {
 	m := newTestModel()
-	m.help = newHelpModel()
+	m.help.Styles = helpStyles(true)
 	m.state.SetView(ListView)
 
 	const (
@@ -107,7 +107,7 @@ func TestView_FitsSmallTerminal(t *testing.T) {
 	updated, _ := m.Update(msg)
 	model := asModel(t, updated)
 
-	view := model.View()
+	view := model.View().Content
 
 	if h := lipgloss.Height(view); h > termHeight {
 		t.Errorf("View height = %d lines, want <= %d; "+
@@ -194,7 +194,7 @@ func TestUpdate_ListView_Quit(t *testing.T) {
 	m := newTestModel()
 	m.state.SetView(ListView)
 
-	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")}
+	msg := tea.KeyPressMsg{Code: 'q', Text: "q"}
 	updated, cmd := m.Update(msg)
 	model := asModel(t, updated)
 
@@ -210,7 +210,7 @@ func TestUpdate_ListView_CtrlC(t *testing.T) {
 	m := newTestModel()
 	m.state.SetView(ListView)
 
-	msg := tea.KeyMsg{Type: tea.KeyCtrlC}
+	msg := tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl}
 	updated, cmd := m.Update(msg)
 	model := asModel(t, updated)
 
@@ -226,7 +226,7 @@ func TestUpdate_DetailView_EscReturnsToList(t *testing.T) {
 	m := newTestModel()
 	m.state.SetView(DetailView)
 
-	msg := tea.KeyMsg{Type: tea.KeyEsc}
+	msg := tea.KeyPressMsg{Code: tea.KeyEscape}
 	updated, _ := m.Update(msg)
 	model := asModel(t, updated)
 
@@ -239,7 +239,7 @@ func TestUpdate_DetailView_Quit(t *testing.T) {
 	m := newTestModel()
 	m.state.SetView(DetailView)
 
-	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")}
+	msg := tea.KeyPressMsg{Code: 'q', Text: "q"}
 	updated, cmd := m.Update(msg)
 	model := asModel(t, updated)
 
@@ -259,7 +259,7 @@ func TestUpdate_DetailView_AtSignToggles(t *testing.T) {
 	initialDateFormat := m.state.detail.dateFormat
 	initialShowOrigin := m.state.detail.showOrigin
 
-	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("@")}
+	msg := tea.KeyPressMsg{Code: '@', Text: "@"}
 	updated, _ := m.Update(msg)
 	model := asModel(t, updated)
 
@@ -278,7 +278,7 @@ func TestUpdate_ConfirmView_YesNo_No(t *testing.T) {
 
 	m.state.OpenConfirm(ConfirmStateYesNo, []File{})
 
-	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("n")}
+	msg := tea.KeyPressMsg{Code: 'n', Text: "n"}
 	updated, _ := m.Update(msg)
 	model := asModel(t, updated)
 
@@ -293,7 +293,7 @@ func TestUpdate_ConfirmView_YesNo_Quit(t *testing.T) {
 
 	m.state.OpenConfirm(ConfirmStateYesNo, []File{})
 
-	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")}
+	msg := tea.KeyPressMsg{Code: 'q', Text: "q"}
 	updated, cmd := m.Update(msg)
 	model := asModel(t, updated)
 
@@ -312,7 +312,7 @@ func TestUpdate_ConfirmView_TypeYES_Backspace(t *testing.T) {
 	m.state.OpenConfirm(ConfirmStateTypeYES, []File{})
 
 	// Type "Y"
-	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("Y")}
+	msg := tea.KeyPressMsg{Code: 'Y', Text: "Y"}
 	updated, _ := m.Update(msg)
 	m = asModel(t, updated)
 
@@ -321,7 +321,7 @@ func TestUpdate_ConfirmView_TypeYES_Backspace(t *testing.T) {
 	}
 
 	// Backspace
-	msg = tea.KeyMsg{Type: tea.KeyBackspace}
+	msg = tea.KeyPressMsg{Code: tea.KeyBackspace}
 	updated, _ = m.Update(msg)
 	m = asModel(t, updated)
 
@@ -336,7 +336,7 @@ func TestUpdate_ConfirmView_TypeYES_Esc(t *testing.T) {
 
 	m.state.OpenConfirm(ConfirmStateTypeYES, []File{})
 
-	msg := tea.KeyMsg{Type: tea.KeyEsc}
+	msg := tea.KeyPressMsg{Code: tea.KeyEscape}
 	updated, _ := m.Update(msg)
 	model := asModel(t, updated)
 
@@ -354,7 +354,7 @@ func TestUpdate_ListView_Enter_NoFiles(t *testing.T) {
 	f := newTestFile("test.txt")
 	m.list.SetItems([]list.Item{f})
 
-	msg := tea.KeyMsg{Type: tea.KeyEnter}
+	msg := tea.KeyPressMsg{Code: tea.KeyEnter}
 	updated, cmd := m.Update(msg)
 	model := asModel(t, updated)
 
@@ -376,7 +376,7 @@ func TestUpdate_ListView_Enter_WithSelection(t *testing.T) {
 	m.state.SetView(ListView)
 	m.list.SetItems([]list.Item{f1, f2})
 
-	msg := tea.KeyMsg{Type: tea.KeyEnter}
+	msg := tea.KeyPressMsg{Code: tea.KeyEnter}
 	updated, cmd := m.Update(msg)
 	model := asModel(t, updated)
 
@@ -421,7 +421,7 @@ func TestUpdate_DetailView_DeleteConfirmsDetailFile(t *testing.T) {
 	m.detailFile = file
 	m.state.SetView(DetailView)
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("D")})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'D', Text: "D"})
 	model := asModel(t, updated)
 
 	if !model.state.Confirming() {
@@ -444,7 +444,7 @@ func TestUpdate_DetailView_DeleteConfirmsSelection(t *testing.T) {
 	m.detailFile = File{File: &trash.File{Name: "detail.txt"}}
 	m.state.SetView(DetailView)
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("D")})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'D', Text: "D"})
 	model := asModel(t, updated)
 
 	if got := model.state.confirmation.files; len(got) != 2 || got[0] != f1 || got[1] != f2 {
@@ -465,9 +465,9 @@ func TestUpdate_ConfirmView_DeletesConfirmedFiles(t *testing.T) {
 	m.selection.Add(confirmed)
 	m.state.SetView(ListView)
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("D")})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'D', Text: "D"})
 	m = asModel(t, updated)
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("y")})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	model := asModel(t, updated)
 
 	if cmd == nil {
@@ -494,13 +494,13 @@ func TestUpdate_ConfirmView_TypeYES_DeletesConfirmedFiles(t *testing.T) {
 	m.selection.Add(f2)
 	m.state.SetView(ListView)
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("D")})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'D', Text: "D"})
 	m = asModel(t, updated)
 	for _, r := range "YES" {
-		updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+		updated, _ = m.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
 		m = asModel(t, updated)
 	}
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	model := asModel(t, updated)
 
 	if cmd == nil {
@@ -521,7 +521,7 @@ func TestUpdate_ListView_DeleteSelectionWithoutCursor(t *testing.T) {
 	m.selection.Add(f1)
 	m.state.SetView(ListView)
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("D")})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'D', Text: "D"})
 	model := asModel(t, updated)
 
 	if !model.state.Confirming() {
@@ -548,14 +548,14 @@ func TestUpdate_DetailView_DeleteRemovesSelectionNotCursor(t *testing.T) {
 	m.detailFile = cursor
 	m.state.SetView(DetailView)
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("D")})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'D', Text: "D"})
 	m = asModel(t, updated)
 	var cmd tea.Cmd
-	for _, msg := range []tea.KeyMsg{
-		{Type: tea.KeyRunes, Runes: []rune("Y")},
-		{Type: tea.KeyRunes, Runes: []rune("E")},
-		{Type: tea.KeyRunes, Runes: []rune("S")},
-		{Type: tea.KeyEnter},
+	for _, msg := range []tea.KeyPressMsg{
+		{Code: 'Y', Text: "Y"},
+		{Code: 'E', Text: "E"},
+		{Code: 'S', Text: "S"},
+		{Code: tea.KeyEnter},
 	} {
 		if cmd != nil {
 			break

@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	charmlog "github.com/charmbracelet/log"
+	charmlog "charm.land/log/v2"
 	"github.com/docker/go-units"
 )
 

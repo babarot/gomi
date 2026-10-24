@@ -3,8 +3,7 @@ package styles
 import (
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
-	"github.com/muesli/termenv"
+	"charm.land/lipgloss/v2"
 
 	"github.com/babarot/gomi/internal/config"
 )
@@ -70,9 +69,11 @@ type ConfirmStyles struct {
 	Placeholder lipgloss.Style
 }
 
-// New creates a new Styles instance with the provided configuration
-func New(cfg config.UI) *Styles {
+// New creates a new Styles instance with the provided configuration, for a
+// dark or light terminal background
+func New(cfg config.UI, isDark bool) *Styles {
 	s := &Styles{}
+	lightDark := lipgloss.LightDark(isDark)
 
 	s.Detail = DetailStyles{
 		View: func(sections ...string) string {
@@ -86,8 +87,8 @@ func New(cfg config.UI) *Styles {
 			Padding(0, 1).
 			Bold(true),
 		Selected: lipgloss.NewStyle().
-			Foreground(lipgloss.AdaptiveColor{Light: "#000000", Dark: "#000000"}).
-			Background(lipgloss.AdaptiveColor{Light: cfg.Style.ListView.Selected, Dark: cfg.Style.ListView.Selected}),
+			Foreground(lightDark(lipgloss.Color("#000000"), lipgloss.Color("#000000"))).
+			Background(lightDark(lipgloss.Color(cfg.Style.ListView.Selected), lipgloss.Color(cfg.Style.ListView.Selected))),
 		Info: InfoStyles{
 			DeletedFrom: DeletedInfoStyle{
 				Title: lipgloss.NewStyle().
@@ -129,7 +130,7 @@ func New(cfg config.UI) *Styles {
 				Background(lipgloss.Color(cfg.Style.DetailView.PreviewPane.Scroll.Background)),
 			Error: PreviewErrorStyles{
 				Title: lipgloss.NewStyle().
-					Foreground(lipgloss.ANSIColor(termenv.ANSIBrightBlack)),
+					Foreground(lipgloss.BrightBlack),
 				Content: lipgloss.NewStyle().
 					Bold(true).
 					Transform(strings.ToUpper),
@@ -159,7 +160,7 @@ func New(cfg config.UI) *Styles {
 		Prompt: lipgloss.NewStyle().
 			Bold(true),
 		Text: lipgloss.NewStyle().
-			Foreground(lipgloss.AdaptiveColor{Light: "#1F1F1F", Dark: "#FFFFFF"}),
+			Foreground(lightDark(lipgloss.Color("#1F1F1F"), lipgloss.Color("#FFFFFF"))),
 		Indicator: lipgloss.NewStyle().
 			Foreground(lipgloss.Color(cfg.Style.ListView.Selected)),
 		Prefix: lipgloss.NewStyle().
@@ -169,10 +170,10 @@ func New(cfg config.UI) *Styles {
 		Error: lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#FF0000")),
 		Suggestion: lipgloss.NewStyle().
-			Foreground(lipgloss.AdaptiveColor{Light: "#A49FA5", Dark: "#777777"}).
+			Foreground(lightDark(lipgloss.Color("#A49FA5"), lipgloss.Color("#777777"))).
 			Italic(true),
 		Placeholder: lipgloss.NewStyle().
-			Foreground(lipgloss.AdaptiveColor{Light: "#A49FA5", Dark: "#777777"}),
+			Foreground(lightDark(lipgloss.Color("#A49FA5"), lipgloss.Color("#777777"))),
 	}
 
 	return s
@@ -207,7 +208,7 @@ func (s *Styles) RenderErrorPreview(errorMsg, mime string, width, height int) st
 		lipgloss.Center, lipgloss.Center,
 		title+"\n\n\n"+content,
 		lipgloss.WithWhitespaceChars("`"),
-		lipgloss.WithWhitespaceForeground(lipgloss.ANSIColor(termenv.ANSIBrightBlack)),
+		lipgloss.WithWhitespaceStyle(lipgloss.NewStyle().Foreground(lipgloss.BrightBlack)),
 	)
 }
 

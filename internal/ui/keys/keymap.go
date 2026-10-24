@@ -1,9 +1,9 @@
 package keys
 
 import (
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/viewport"
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/list"
+	"charm.land/bubbles/v2/viewport"
 )
 
 // KeyMapConfig holds configuration for key bindings
@@ -101,7 +101,7 @@ func NewKeyMap(cfg KeyMapConfig) *KeyMap {
 	// Initialize list view keys
 	km.List = List{
 		Space: key.NewBinding(
-			key.WithKeys(" "),
+			key.WithKeys("space"),
 			key.WithHelp("space", "detail"),
 		),
 		Esc: key.NewBinding(
@@ -125,7 +125,7 @@ func NewKeyMap(cfg KeyMapConfig) *KeyMap {
 	// Initialize detail view keys
 	km.Detail = Detail{
 		Space: key.NewBinding(
-			key.WithKeys(" "),
+			key.WithKeys("space"),
 			key.WithHelp("space", "back"),
 		),
 		Esc: key.NewBinding(
