@@ -49,6 +49,12 @@ func Filter[T Filterable](items []T, opts FilterOptions) []T {
 		),
 	)
 
+	// Filter by time period first and by size last: an item without a cached
+	// size is sized by walking it, so only what the other filters keep is
+	// walked
+	items = filterByPeriod(items, opts.Include.Period)
+	slog.Debug("after period filtering", "len(items)", len(items))
+
 	// Filter by filename exclusions
 	items = rejectByNames(items, opts.Exclude.Files)
 	slog.Debug("after name filtering", "len(items)", len(items))
@@ -64,10 +70,6 @@ func Filter[T Filterable](items []T, opts FilterOptions) []T {
 	// Filter by size
 	items = rejectBySize(items, opts.Exclude.Size)
 	slog.Debug("after size filtering", "len(items)", len(items))
-
-	// Filter by time period
-	items = filterByPeriod(items, opts.Include.Period)
-	slog.Debug("after period filtering", "len(items)", len(items))
 
 	return items
 }
