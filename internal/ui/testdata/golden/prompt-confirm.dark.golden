@@ -1,0 +1,6 @@
+-- screen --
+? Restore main.go? y/n
+-- styles --
+L1 0-1 fg=#41784f
+L1 19-20 reverse
+L1 20-22 fg=c240

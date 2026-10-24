@@ -1,0 +1,69 @@
+-- screen --
+  Filter:  
+
+  main.go
+  2 hours ago • /home/user/projects/gomi
+
+  notes/
+  5 hours ago • /home/user/projects/gomi
+
+  archive.bin
+  1 day ago • /home/user/projects/gomi
+
+  long.txt
+  2 days ago • /home/user/projects/gomi
+
+  README.md
+  3 days ago • /home/user/projects/gomi
+
+  config.yaml
+  4 days ago • /home/user/projects/gomi
+
+  a-very-long-file-name-for-testing.txt
+  5 days ago • /home/user/projects/gomi
+
+  another-quite-long-file-name.txt
+  6 days ago • /home/user/projects/gomi
+
+  ••
+
+  ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter …
+-- styles --
+L1 2-9 fg=#79a2f7 bold
+L1 10-11 fg=#ee6ff8 reverse
+L3 2-9 fg=#808080
+L4 2-40 fg=#999999
+L6 2-8 fg=#808080
+L7 2-40 fg=#999999
+L9 2-13 fg=#808080
+L10 2-38 fg=#999999
+L12 2-10 fg=#808080
+L13 2-39 fg=#999999
+L15 2-11 fg=#808080
+L16 2-39 fg=#999999
+L18 2-13 fg=#808080
+L19 2-39 fg=#999999
+L21 2-39 fg=#808080
+L22 2-39 fg=#999999
+L24 2-34 fg=#808080
+L25 2-39 fg=#999999
+L27 2-3 fg=#837985
+L27 3-4 fg=#dddada
+L29 2-5 fg=#616161
+L29 6-8 fg=#808080
+L29 9-10 fg=#999999
+L29 11-14 fg=#616161
+L29 15-19 fg=#808080
+L29 20-21 fg=#999999
+L29 22-27 fg=#616161
+L29 28-35 fg=#808080
+L29 36-37 fg=#999999
+L29 38-43 fg=#616161
+L29 44-50 fg=#808080
+L29 51-52 fg=#999999
+L29 53-56 fg=#616161
+L29 57-63 fg=#808080
+L29 64-65 fg=#999999
+L29 66-67 fg=#616161
+L29 68-74 fg=#808080
+L29 75-76 fg=#dddada

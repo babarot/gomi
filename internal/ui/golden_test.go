@@ -1,0 +1,399 @@
+package ui
+
+import (
+	"flag"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/charmbracelet/bubbles/cursor"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/termenv"
+
+	"github.com/babarot/gomi/internal/config"
+	"github.com/babarot/gomi/internal/trash"
+)
+
+var updateGolden = flag.Bool("update", false, "rewrite testdata/golden")
+
+// goldenNow is the fixed time the golden views are rendered at.
+var goldenNow = time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
+
+// fixture is a file in the trash for the golden views. Files are listed
+// newest first, in the order of this slice.
+type fixture struct {
+	name    string
+	content string            // file content; ignored for a directory
+	entries map[string]string // directory entries; nil for a file
+	ago     time.Duration     // how long before goldenNow it was deleted
+}
+
+var fixtures = []fixture{
+	{name: "main.go", ago: 2 * time.Hour, content: `package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("hello, gomi")
+}
+`},
+	{name: "notes", ago: 5 * time.Hour, entries: map[string]string{
+		"a.txt":   "first note\n",
+		"b.md":    "# second note\n\nsome text\n",
+		"c.log":   "2025-06-15 started\n2025-06-15 stopped\n",
+		"todo.md": "- [ ] restore files\n",
+	}},
+	{name: "archive.bin", ago: 26 * time.Hour, content: "\x00\x01\x02\x03\xff\xfe\xfd\xfc\x00\x00\x10\x20"},
+	{name: "long.txt", ago: 50 * time.Hour, content: longText()},
+	{name: "README.md", ago: 74 * time.Hour, content: "# gomi\n\nReplacement for rm with rich trash.\n"},
+	{name: "config.yaml", ago: 98 * time.Hour, content: "core:\n  trash:\n    strategy: auto\n"},
+	{name: "a-very-long-file-name-for-testing.txt", ago: 122 * time.Hour, content: "a\n"},
+	{name: "another-quite-long-file-name.txt", ago: 146 * time.Hour, content: "b\n"},
+	{name: "yet-another-long-file-name-here.txt", ago: 170 * time.Hour, content: "c\n"},
+	{name: "todo.txt", ago: 240 * time.Hour, content: "buy milk\n"},
+	{name: "report.csv", ago: 480 * time.Hour, content: "name,size\ngomi,1\n"},
+	{name: "old.log", ago: 960 * time.Hour, content: "old\n"},
+}
+
+// longText has more lines than the preview shows, each shorter than the
+// preview is wide.
+func longText() string {
+	var b strings.Builder
+	for i := 1; i <= 40; i++ {
+		b.WriteString("line ")
+		b.WriteString(string(rune('0' + i/10)))
+		b.WriteString(string(rune('0' + i%10)))
+		b.WriteString(": lorem ipsum dolor sit amet\n")
+	}
+	return b.String()
+}
+
+// makeFixtures creates the fixtures under trash/ in the current directory
+// and returns them as trash files. Paths are relative and modes fixed, so
+// that nothing about the machine running the test shows in the views.
+func makeFixtures(t *testing.T) []*trash.File {
+	t.Helper()
+
+	var files []*trash.File
+	for _, f := range fixtures {
+		path := filepath.Join("trash", f.name)
+		isDir := f.entries != nil
+		if isDir {
+			if err := os.MkdirAll(path, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			for name, content := range f.entries {
+				writeFile(t, filepath.Join(path, name), content)
+			}
+			if err := os.Chmod(path, 0o755); err != nil {
+				t.Fatal(err)
+			}
+		} else {
+			writeFile(t, path, f.content)
+		}
+		files = append(files, &trash.File{
+			Name:         f.name,
+			OriginalPath: "/home/user/projects/gomi/" + f.name,
+			TrashPath:    path,
+			DeletedAt:    goldenNow.Add(-f.ago),
+			IsDir:        isDir,
+		})
+	}
+	return files
+}
+
+func writeFile(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(path, 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// keyMsg returns the key message for a key name as key.Binding spells it
+// ("tab", "shift+tab", "space", "D").
+func keyMsg(name string) tea.KeyMsg {
+	switch name {
+	case "space", " ":
+		return tea.KeyMsg{Type: tea.KeySpace, Runes: []rune{' '}}
+	case "enter":
+		return tea.KeyMsg{Type: tea.KeyEnter}
+	case "esc":
+		return tea.KeyMsg{Type: tea.KeyEsc}
+	case "tab":
+		return tea.KeyMsg{Type: tea.KeyTab}
+	case "shift+tab":
+		return tea.KeyMsg{Type: tea.KeyShiftTab}
+	case "up":
+		return tea.KeyMsg{Type: tea.KeyUp}
+	case "down":
+		return tea.KeyMsg{Type: tea.KeyDown}
+	case "right":
+		return tea.KeyMsg{Type: tea.KeyRight}
+	case "backspace":
+		return tea.KeyMsg{Type: tea.KeyBackspace}
+	}
+	return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(name)}
+}
+
+// driver feeds a model messages the way tea.Program does, running the
+// commands they return and feeding their messages back in.
+type driver struct {
+	t *testing.T
+	m tea.Model
+}
+
+func (d *driver) send(msg tea.Msg) {
+	m, cmd := d.m.Update(msg)
+	d.m = m
+	d.run(cmd)
+}
+
+func (d *driver) keys(names ...string) {
+	for _, n := range names {
+		d.send(keyMsg(n))
+	}
+}
+
+// run runs cmd and what follows from it. A command that does not return
+// soon, such as the cursor's blink timer, is dropped, as are blinks: the
+// views are rendered with the cursor in its first state.
+func (d *driver) run(cmd tea.Cmd) {
+	queue := []tea.Cmd{cmd}
+	for steps := 0; len(queue) > 0; steps++ {
+		if steps > 1000 {
+			d.t.Fatal("commands did not settle")
+		}
+		c := queue[0]
+		queue = queue[1:]
+		if c == nil {
+			continue
+		}
+		msg, ok := runCmd(c)
+		if !ok {
+			continue
+		}
+		switch msg := msg.(type) {
+		case nil, tea.QuitMsg, cursor.BlinkMsg:
+		case tea.BatchMsg:
+			queue = append(queue, msg...)
+		default:
+			m, next := d.m.Update(msg)
+			d.m = m
+			queue = append(queue, next)
+		}
+	}
+}
+
+// runCmd runs c and reports false if it is a timer. The wait is shorter
+// than the cursor's blink (530ms) and far longer than any command that
+// returns at once.
+func runCmd(c tea.Cmd) (tea.Msg, bool) {
+	ch := make(chan tea.Msg, 1)
+	go func() { ch <- c() }()
+	select {
+	case msg := <-ch:
+		return msg, true
+	case <-time.After(300 * time.Millisecond):
+		return nil, false
+	}
+}
+
+// goldenCase is one view to render: a model, set up, then driven by keys.
+type goldenCase struct {
+	name string
+	// model returns the model to drive; nil means the main UI with the
+	// default config, changed by opts.
+	model func(t *testing.T, files []*trash.File) tea.Model
+	opts  func(o *RenderOptions)
+	keys  []string
+}
+
+func mainModel(files []*trash.File, opts func(o *RenderOptions)) tea.Model {
+	cfg := config.NewDefaultConfig()
+	o := RenderOptions{Config: cfg.UI}
+	// ls output depends on the machine; use the builtin listing.
+	o.Config.Preview.DirectoryCommand = ""
+	if opts != nil {
+		opts(&o)
+	}
+	return NewModel(nil, files, o)
+}
+
+func withDelete(o *RenderOptions) { o.DeleteEnabled = true }
+
+var goldenCases = []goldenCase{
+	// list view
+	{name: "list"},
+	{name: "list-compact", opts: func(o *RenderOptions) { o.Config.Density = CompactDensityVal }},
+	{name: "list-arabic", opts: func(o *RenderOptions) { o.Config.Paginator = PaginatorArabic }},
+	{name: "list-next-page", keys: []string{"right"}},
+	{name: "list-selected", keys: []string{"tab", "tab"}},
+	{name: "list-selected-cursor", keys: []string{"tab", "tab", "shift+tab"}},
+	{name: "list-filter-empty", keys: []string{"/"}},
+	{name: "list-filter-typing", keys: []string{"/", "r", "e"}},
+	{name: "list-filter-applied", keys: []string{"/", "r", "e", "enter"}},
+	{name: "list-help", keys: []string{"?"}},
+
+	// detail view
+	{name: "detail-text", keys: []string{"space"}},
+	{name: "detail-dir", keys: []string{"down", "space"}},
+	{name: "detail-binary", keys: []string{"down", "down", "space"}},
+	{name: "detail-toggle", keys: []string{"space", "@"}},
+	{name: "detail-scroll", keys: []string{"down", "down", "down", "space", "d"}},
+	{name: "detail-selected", keys: []string{"tab", "up", "space"}},
+	{name: "detail-help", keys: []string{"space", "?"}},
+
+	// delete confirmation
+	{name: "confirm-list", opts: withDelete, keys: []string{"D"}},
+	{name: "confirm-detail", opts: withDelete, keys: []string{"space", "D"}},
+	{name: "confirm-yes-empty", opts: withDelete, keys: []string{"tab", "tab", "tab", "D"}},
+	{name: "confirm-yes-partial", opts: withDelete, keys: []string{"tab", "tab", "tab", "D", "Y", "E"}},
+	{name: "confirm-yes-complete", opts: withDelete, keys: []string{"tab", "tab", "tab", "D", "Y", "E", "S"}},
+	{name: "confirm-yes-many", opts: withDelete, keys: []string{
+		"down", "down", "down", "down", "down", "down", "tab", "tab", "tab", "D",
+	}},
+
+	// prompts outside the TUI
+	{name: "prompt-confirm", model: func(t *testing.T, _ []*trash.File) tea.Model {
+		m := newConfirmModel("Restore main.go?")
+		return &m
+	}},
+	{name: "prompt-confirm-yes", model: func(t *testing.T, _ []*trash.File) tea.Model {
+		m := newConfirmYesModel("Type YES to delete 3 files:")
+		return &m
+	}},
+	{name: "prompt-confirm-yes-typed", keys: []string{"Y", "E", "S"}, model: func(t *testing.T, _ []*trash.File) tea.Model {
+		m := newConfirmYesModel("Type YES to delete 3 files:")
+		return &m
+	}},
+	{name: "prompt-input", model: func(t *testing.T, files []*trash.File) tea.Model {
+		m := newInputFilenameModel(files[0])
+		return &m
+	}},
+	{name: "prompt-input-error", keys: []string{"a", " ", "b"}, model: func(t *testing.T, files []*trash.File) tea.Model {
+		m := newInputFilenameModel(files[0])
+		return &m
+	}},
+}
+
+func TestGolden(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("paths and file modes render differently on Windows")
+	}
+
+	dir, err := filepath.Abs(filepath.Join("testdata", "golden"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(t.TempDir())
+	files := makeFixtures(t)
+
+	defer func(f func() time.Time) { now = f }(now)
+	now = func() time.Time { return goldenNow }
+
+	defer lipgloss.SetColorProfile(lipgloss.ColorProfile())
+	lipgloss.SetColorProfile(termenv.TrueColor)
+	defer lipgloss.SetHasDarkBackground(lipgloss.HasDarkBackground())
+
+	for _, bg := range []string{"dark", "light"} {
+		lipgloss.SetHasDarkBackground(bg == "dark")
+		for _, c := range goldenCases {
+			t.Run(c.name+"."+bg, func(t *testing.T) {
+				var m tea.Model
+				if c.model != nil {
+					m = c.model(t, files)
+				} else {
+					m = mainModel(files, c.opts)
+				}
+				d := &driver{t: t, m: m}
+				d.run(d.m.Init())
+				d.send(tea.WindowSizeMsg{Width: 80, Height: 30})
+				d.keys(c.keys...)
+				compareGolden(t, filepath.Join(dir, c.name+"."+bg+".golden"), normalize(t, d.m.View()))
+			})
+		}
+	}
+}
+
+func compareGolden(t *testing.T, path, got string) {
+	t.Helper()
+	if *updateGolden {
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(got), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return
+	}
+	want, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("%v (run go test ./internal/ui -run TestGolden -update)", err)
+	}
+	if !sameView(got, string(want)) {
+		t.Errorf("view differs from %s (run go test ./internal/ui -run TestGolden -update to accept)\n--- got ---\n%s--- want ---\n%s", path, got, want)
+	}
+}
+
+// sameView compares two normalized views, letting each channel of a 24-bit
+// color differ by one. Renderers round colors differently (lipgloss v1
+// truncates #AD58B4 to #ad58b3), and a difference that small does not show.
+func sameView(got, want string) bool {
+	if got == want {
+		return true
+	}
+	gl, wl := strings.Split(got, "\n"), strings.Split(want, "\n")
+	if len(gl) != len(wl) {
+		return false
+	}
+	styles := false // past "-- styles --", where colors may differ
+	for i := range gl {
+		if gl[i] == wl[i] {
+			styles = styles || gl[i] == "-- styles --"
+			continue
+		}
+		if !styles {
+			return false
+		}
+		gt, wt := strings.Split(gl[i], " "), strings.Split(wl[i], " ")
+		if len(gt) != len(wt) {
+			return false
+		}
+		for j := range gt {
+			if gt[j] != wt[j] && !closeColors(gt[j], wt[j]) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// closeColors reports whether a and b are the same fg= or bg= attribute
+// with 24-bit colors no more than one apart in each channel.
+func closeColors(a, b string) bool {
+	if len(a) != len("fg=#rrggbb") || len(b) != len(a) || a[:4] != b[:4] {
+		return false
+	}
+	if a[:4] != "fg=#" && a[:4] != "bg=#" {
+		return false
+	}
+	for k := 4; k < len(a); k += 2 {
+		x, err1 := strconv.ParseUint(a[k:k+2], 16, 8)
+		y, err2 := strconv.ParseUint(b[k:k+2], 16, 8)
+		if err1 != nil || err2 != nil || max(x, y)-min(x, y) > 1 {
+			return false
+		}
+	}
+	return true
+}

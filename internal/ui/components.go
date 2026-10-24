@@ -16,13 +16,7 @@ import (
 )
 
 func Confirm(prompt string) bool {
-	m := confirm.New()
-	m.Prompt = prompt
-	m.DefaultValue = confirm.Denied
-	m.Rendering = confirm.ImmediateInput
-	m.AcceptedDecisionText = "Yes"
-	m.DeniedDecisionText = "No"
-	m.Placeholder = "y/n"
+	m := newConfirmModel(prompt)
 
 	p := tea.NewProgram(&m)
 	if _, err := p.Run(); err != nil {
@@ -34,8 +28,7 @@ func Confirm(prompt string) bool {
 }
 
 func ConfirmYes(prompt string) bool {
-	m := confirm.NewYesValidation()
-	m.Prompt = prompt
+	m := newConfirmYesModel(prompt)
 
 	p, err := tea.NewProgram(&m).Run()
 	if err != nil {
@@ -51,6 +44,38 @@ func ConfirmYes(prompt string) bool {
 }
 
 func InputFilename(file *trash.File) (string, error) {
+	m := newInputFilenameModel(file)
+
+	p := tea.NewProgram(&m)
+	if _, err := p.Run(); err != nil {
+		return "", err
+	}
+
+	if m.Canceled() {
+		// m.Value() returns value even if canceled
+		return m.Value(), ErrInputCanceled
+	}
+	return m.Value(), nil
+}
+
+func newConfirmModel(prompt string) confirm.Model {
+	m := confirm.New()
+	m.Prompt = prompt
+	m.DefaultValue = confirm.Denied
+	m.Rendering = confirm.ImmediateInput
+	m.AcceptedDecisionText = "Yes"
+	m.DeniedDecisionText = "No"
+	m.Placeholder = "y/n"
+	return m
+}
+
+func newConfirmYesModel(prompt string) confirm.YesValidationModel {
+	m := confirm.NewYesValidation()
+	m.Prompt = prompt
+	return m
+}
+
+func newInputFilenameModel(file *trash.File) input.Model {
 	m := input.New()
 	m.Prompt = "New name to avoid to overwrite:"
 	m.Placeholder = file.Name
@@ -79,17 +104,7 @@ func InputFilename(file *trash.File) (string, error) {
 			return nil
 		}).
 		Build()
-
-	p := tea.NewProgram(&m)
-	if _, err := p.Run(); err != nil {
-		return "", err
-	}
-
-	if m.Canceled() {
-		// m.Value() returns value even if canceled
-		return m.Value(), ErrInputCanceled
-	}
-	return m.Value(), nil
+	return m
 }
 
 func onlySpecialChars(input string) bool {

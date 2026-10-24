@@ -1,0 +1,7 @@
+-- screen --
+? Type YES to delete 3 files: YES ✗
+-- styles --
+L1 0-1 fg=#41784f
+L1 30-31 reverse
+L1 31-33 fg=c240
+L1 34-35 fg=#ff0000

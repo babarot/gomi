@@ -1,0 +1,79 @@
+-- screen --
+
+   yet-another-long-file-name-here.txt
+   1 week ago • /home/user/projects/gomi
+
+│ todo.txt
+│ 1 week ago • /home/user/projects/gomi
+
+            ╭───────────────────────────────────────╮
+            │                                       │
+            │        Are you sure you want to       │
+            │       completely delete 3 files?      │
+            │                                       │
+            │          Type YES to confirm          │
+            │                                       │
+            │                 ___ ✗                 │
+            │                                       │
+            │   (ESC to cancel, Enter to confirm)   │
+            │                                       │
+            ╰───────────────────────────────────────╯
+
+
+
+
+
+
+
+  ••
+
+  ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter …
+-- styles --
+L2 3-38 fg=#5fb358
+L3 3-40 fg=#5fb358
+L5 0-1 fg=#ad58b3
+L6 0-39 fg=#ad58b3
+L8 12-53 fg=#ff007f
+L9 12-53 fg=#ff007f
+L10 12-13 fg=#ff007f
+L10 21-45 fg=#ff007f bold
+L10 52-53 fg=#ff007f
+L11 12-13 fg=#ff007f
+L11 20-46 fg=#ff007f bold
+L11 52-53 fg=#ff007f
+L12 12-53 fg=#ff007f
+L13 12-13 fg=#ff007f
+L13 23-42 fg=#ff007f bold
+L13 52-53 fg=#ff007f
+L14 12-53 fg=#ff007f
+L15 12-13 fg=#ff007f
+L15 30-31 fg=#a39fa5 bold
+L15 31-33 fg=#a39fa5
+L15 34-35 fg=#ff0000
+L15 52-53 fg=#ff007f
+L16 12-53 fg=#ff007f
+L17 12-13 fg=#ff007f
+L17 16-49 fg=#ff007f bold
+L17 52-53 fg=#ff007f
+L18 12-53 fg=#ff007f
+L19 12-53 fg=#ff007f
+L27 2-3 fg=#dddada
+L27 3-4 fg=#837985
+L29 2-5 fg=#616161
+L29 6-8 fg=#808080
+L29 9-10 fg=#999999
+L29 11-14 fg=#616161
+L29 15-19 fg=#808080
+L29 20-21 fg=#999999
+L29 22-27 fg=#616161
+L29 28-35 fg=#808080
+L29 36-37 fg=#999999
+L29 38-43 fg=#616161
+L29 44-50 fg=#808080
+L29 51-52 fg=#999999
+L29 53-56 fg=#616161
+L29 57-63 fg=#808080
+L29 64-65 fg=#999999
+L29 66-67 fg=#616161
+L29 68-74 fg=#808080
+L29 75-76 fg=#dddada

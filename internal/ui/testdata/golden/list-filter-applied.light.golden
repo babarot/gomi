@@ -1,0 +1,66 @@
+-- screen --
+
+│ README.md
+│ 3 days ago • /home/user/projects/gomi
+
+  report.csv
+  2 weeks ago • /home/user/projects/gomi
+
+  archive.bin
+  1 day ago • /home/user/projects/gomi
+
+  another-quite-long-file-name.txt
+  6 days ago • /home/user/projects/gomi
+
+  yet-another-long-file-name-here.txt
+  1 week ago • /home/user/projects/gomi
+
+  a-very-long-file-name-for-testing.txt
+  5 days ago • /home/user/projects/gomi
+
+
+
+
+
+
+
+
+
+
+  ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter …
+-- styles --
+L2 0-1 fg=#ad58b3
+L2 2-4 underline
+L3 0-39 fg=#ad58b3
+L5 2-4 fg=#f39c12 underline
+L6 2-40 fg=#616161
+L8 3-4 fg=#f39c12 underline
+L8 8-9 fg=#f39c12 underline
+L9 2-38 fg=#616161
+L11 8-9 fg=#f39c12 underline
+L11 14-15 fg=#f39c12 underline
+L12 2-39 fg=#616161
+L14 12-13 fg=#f39c12 underline
+L14 22-23 fg=#f39c12 underline
+L15 2-39 fg=#616161
+L17 6-7 fg=#f39c12 underline
+L17 17-18 fg=#f39c12 underline
+L18 2-39 fg=#616161
+L29 2-5 fg=#616161
+L29 6-8 fg=#808080
+L29 9-10 fg=#999999
+L29 11-14 fg=#616161
+L29 15-19 fg=#808080
+L29 20-21 fg=#999999
+L29 22-27 fg=#616161
+L29 28-35 fg=#808080
+L29 36-37 fg=#999999
+L29 38-43 fg=#616161
+L29 44-50 fg=#808080
+L29 51-52 fg=#999999
+L29 53-56 fg=#616161
+L29 57-63 fg=#808080
+L29 64-65 fg=#999999
+L29 66-67 fg=#616161
+L29 68-74 fg=#808080
+L29 75-76 fg=#dddada

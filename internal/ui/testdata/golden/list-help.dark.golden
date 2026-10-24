@@ -1,0 +1,73 @@
+-- screen --
+
+│ main.go
+│ 2 hours ago • /home/user/projects/gomi
+
+  notes/
+  5 hours ago • /home/user/projects/gomi
+
+  archive.bin
+  1 day ago • /home/user/projects/gomi
+
+  long.txt
+  2 days ago • /home/user/projects/gomi
+
+  README.md
+  3 days ago • /home/user/projects/gomi
+
+  config.yaml
+  4 days ago • /home/user/projects/gomi
+
+  a-very-long-file-name-for-testing.txt
+  5 days ago • /home/user/projects/gomi
+
+  another-quite-long-file-name.txt
+  6 days ago • /home/user/projects/gomi
+
+
+  ••
+
+  ↑/k      up             enter restore      q quit
+  ↓/j      down           space detail       ? close help
+  →/l/pgdn next page      esc   reset
+  ←/h/pgup prev page      tab   select
+  g/home   go to start    s+tab de-select
+  G/end    go to end
+-- styles --
+L2 0-9 fg=#ad58b3
+L3 0-40 fg=#ad58b3
+L6 2-40 fg=#777777
+L9 2-38 fg=#777777
+L12 2-39 fg=#777777
+L15 2-39 fg=#777777
+L18 2-39 fg=#777777
+L21 2-39 fg=#777777
+L24 2-39 fg=#777777
+L27 2-3 fg=#979797
+L27 3-4 fg=#3c3c3c
+L29 2-5 fg=#616161
+L29 11-13 fg=#494949
+L29 26-31 fg=#616161
+L29 32-39 fg=#494949
+L29 45-46 fg=#616161
+L29 47-51 fg=#494949
+L30 2-5 fg=#616161
+L30 11-15 fg=#494949
+L30 26-31 fg=#616161
+L30 32-38 fg=#494949
+L30 45-46 fg=#616161
+L30 47-57 fg=#494949
+L31 2-10 fg=#616161
+L31 11-20 fg=#494949
+L31 26-29 fg=#616161
+L31 32-37 fg=#494949
+L32 2-10 fg=#616161
+L32 11-20 fg=#494949
+L32 26-29 fg=#616161
+L32 32-38 fg=#494949
+L33 2-8 fg=#616161
+L33 11-22 fg=#494949
+L33 26-31 fg=#616161
+L33 32-41 fg=#494949
+L34 2-7 fg=#616161
+L34 11-20 fg=#494949

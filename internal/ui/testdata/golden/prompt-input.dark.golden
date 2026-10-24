@@ -1,0 +1,9 @@
+-- screen --
+? New name to avoid to overwrite: main.go
+✘ min: 1 characters
+-- styles --
+L1 0-1 fg=#41784f
+L1 34-35 reverse
+L1 35-41 fg=c240
+L2 0-1 fg=#fc3e34
+L2 2-19 fg=c240

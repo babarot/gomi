@@ -1,0 +1,97 @@
+-- screen --
+╭─────────╮
+│ main.go ├───────────────────────────────────────────────────────
+╰─────────╯
+
+   DELETED FROM 
+
+   /home/user/projects/gomi
+
+
+   DELETED AT     2 hours ago
+
+──────────────────────────────────────────────────────────── 72 B 
+package main
+
+import "fmt"
+
+func main() {
+    fmt.Println("hello, gomi")
+}
+
+
+
+
+
+
+
+
+
+
+
+──────────────────────────────────────────────────────────── 100% 
+──────────────────────────────────────────────────────────────────
+
+  n     next         ↑/k preview up      @ info
+  p     prev         ↓/j preview down    q quit
+  space back         u   ½ page up       ? close help
+  esc   back         d   ½ page down
+  tab   select       g   go to start
+  s+tab de-select    G   go to end
+-- styles --
+L1 0-11 fg=#eeeedd
+L2 0-1 fg=#eeeedd
+L2 2-9 bold
+L2 10-66 fg=#eeeedd
+L3 0-11 fg=#eeeedd
+L5 2-16 fg=#eeeeee bg=#1c1c1c bold
+L10 2-14 fg=#eeeeee bg=#1c1c1c bold
+L12 0-60 fg=#3c3c3c
+L12 60-66 fg=#eeeedd bg=#3c3c3c
+L13 0-7 fg=#81a1c1 bold
+L13 8-12 fg=#d8dee9
+L15 0-6 fg=#81a1c1 bold
+L15 7-12 fg=#a3be8c
+L17 0-4 fg=#81a1c1 bold
+L17 5-9 fg=#88c0d0
+L17 9-13 fg=#eceff4
+L18 4-7 fg=#d8dee9
+L18 7-8 fg=#eceff4
+L18 8-15 fg=#88c0d0
+L18 15-16 fg=#eceff4
+L18 16-29 fg=#a3be8c
+L18 29-30 fg=#eceff4
+L19 0-1 fg=#eceff4
+L31 0-60 fg=#3c3c3c
+L31 60-66 fg=#eeeedd bg=#3c3c3c
+L32 0-66 fg=#eeeedd
+L34 2-3 fg=#616161
+L34 8-12 fg=#494949
+L34 21-24 fg=#616161
+L34 25-35 fg=#494949
+L34 41-42 fg=#616161
+L34 43-47 fg=#494949
+L35 2-3 fg=#616161
+L35 8-12 fg=#494949
+L35 21-24 fg=#616161
+L35 25-37 fg=#494949
+L35 41-42 fg=#616161
+L35 43-47 fg=#494949
+L36 2-7 fg=#616161
+L36 8-12 fg=#494949
+L36 21-22 fg=#616161
+L36 25-34 fg=#494949
+L36 41-42 fg=#616161
+L36 43-53 fg=#494949
+L37 2-5 fg=#616161
+L37 8-12 fg=#494949
+L37 21-22 fg=#616161
+L37 25-36 fg=#494949
+L38 2-5 fg=#616161
+L38 8-14 fg=#494949
+L38 21-22 fg=#616161
+L38 25-36 fg=#494949
+L39 2-7 fg=#616161
+L39 8-17 fg=#494949
+L39 21-22 fg=#616161
+L39 25-34 fg=#494949
