@@ -14,10 +14,6 @@ import (
 	"github.com/babarot/gomi/internal/config"
 )
 
-var (
-	currentItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170")).Width(150)
-)
-
 type RestoreItemStyles struct {
 	NormalTitle lipgloss.Style
 	NormalDesc  lipgloss.Style
@@ -57,7 +53,7 @@ func NewRestoreItemStyles(cfg config.UI) (s RestoreItemStyles) {
 	s.CursorTitle = lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder(), false, false, false, true).
 		BorderForeground(lipgloss.AdaptiveColor{Light: cursor, Dark: cursor}).
-		Foreground(lipgloss.AdaptiveColor{Light: currentItemStyle.String(), Dark: cursor}).
+		Foreground(lipgloss.AdaptiveColor{Light: cursor, Dark: cursor}).
 		Padding(0, 0, 0, 1)
 
 	s.CursorDesc = s.CursorTitle.

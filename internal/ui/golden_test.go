@@ -257,6 +257,7 @@ var goldenCases = []goldenCase{
 	// delete confirmation
 	{name: "confirm-list", opts: withDelete, keys: []string{"D"}},
 	{name: "confirm-detail", opts: withDelete, keys: []string{"space", "D"}},
+	{name: "confirm-detail-selected", opts: withDelete, keys: []string{"tab", "tab", "space", "D"}},
 	{name: "confirm-yes-empty", opts: withDelete, keys: []string{"tab", "tab", "tab", "D"}},
 	{name: "confirm-yes-partial", opts: withDelete, keys: []string{"tab", "tab", "tab", "D", "Y", "E"}},
 	{name: "confirm-yes-complete", opts: withDelete, keys: []string{"tab", "tab", "tab", "D", "Y", "E", "S"}},

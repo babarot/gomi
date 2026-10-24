@@ -29,7 +29,7 @@
 
   ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter …
 -- styles --
-L2 0-1 fg=#ad58b3
+L2 0-9 fg=#ad58b3
 L3 0-40 fg=#ad58b3
 L6 2-40 fg=#616161
 L9 2-38 fg=#616161

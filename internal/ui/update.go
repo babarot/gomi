@@ -2,6 +2,7 @@ package ui
 
 import (
 	"log/slog"
+	"slices"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -93,21 +94,12 @@ func (m Model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	case m.keyMap.List.Delete != nil && key.Matches(msg, *m.keyMap.List.Delete):
 		if m.list.FilterState() != list.Filtering {
-			files := m.selection.items
-			switch len(files) {
-			case 0:
-				file, ok := m.list.SelectedItem().(File)
-				if !ok {
-					slog.Warn("cannot get file on cursor")
-					return m, nil
-				}
-				m.state.SetConfirmState(ConfirmStateYesNo, []File{file})
-			case 1:
-				m.state.SetConfirmState(ConfirmStateYesNo, files)
-			default:
-				m.state.SetConfirmState(ConfirmStateTypeYES, files)
+			file, ok := m.list.SelectedItem().(File)
+			if !ok && len(m.selection.items) == 0 {
+				slog.Warn("cannot get file on cursor")
+				return m, nil
 			}
-			m.state.SetView(ConfirmView)
+			m.openDeleteConfirm(file)
 		}
 		return m, nil
 
@@ -200,10 +192,7 @@ func (m Model) updateDetailView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case m.keyMap.Detail.Delete != nil && key.Matches(msg, *m.keyMap.Detail.Delete):
-		if m.list.FilterState() != list.Filtering {
-			m.state.SetView(ConfirmView)
-			slog.Debug("pressed delete key", "state", ConfirmView)
-		}
+		m.openDeleteConfirm(m.detailFile)
 		return m, nil
 
 	case key.Matches(msg, m.keyMap.Detail.AtSign):
@@ -263,20 +252,47 @@ func (m Model) updateDetailView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// openDeleteConfirm opens the confirmation for deleting the selected files,
+// or the file on the cursor when none is selected. More than one file asks
+// to type YES.
+func (m *Model) openDeleteConfirm(cursor File) {
+	files := slices.Clone(m.selection.items)
+	if len(files) == 0 {
+		files = []File{cursor}
+	}
+	state := ConfirmStateYesNo
+	if len(files) > 1 {
+		state = ConfirmStateTypeYES
+	}
+	m.state.SetConfirmState(state, files)
+	m.state.SetView(ConfirmView)
+}
+
+// deleteConfirmed deletes the files the confirmation was opened for and
+// drops them from the selection.
+func (m *Model) deleteConfirmed() tea.Cmd {
+	files := m.state.confirmation.files
+	for _, file := range files {
+		m.selection.Remove(file)
+	}
+	if len(files) == 0 {
+		return nil
+	}
+	return deletePermanentlyCmd(m, files...)
+}
+
 // updateConfirmView handles updates specific to the confirmation dialog
 func (m Model) updateConfirmView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	files := m.selection.items
-
 	// Branch processing based on ConfirmState
 	if m.state.confirmation.state == ConfirmStateTypeYES {
-		return m.handleTypeYesConfirmation(msg, files)
+		return m.handleTypeYesConfirmation(msg)
 	} else {
-		return m.handleYesNoConfirmation(msg, files)
+		return m.handleYesNoConfirmation(msg)
 	}
 }
 
 // Handle YES typing confirmation mode
-func (m Model) handleTypeYesConfirmation(msg tea.KeyMsg, files []File) (tea.Model, tea.Cmd) {
+func (m Model) handleTypeYesConfirmation(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.Type {
 	case tea.KeyBackspace:
 		m.state.BackspaceYesInput()
@@ -284,10 +300,7 @@ func (m Model) handleTypeYesConfirmation(msg tea.KeyMsg, files []File) (tea.Mode
 		if m.state.IsYesComplete() {
 			// Execute deletion if complete YES has been entered
 			m.state.SetView(m.state.previous)
-			if len(files) > 0 {
-				return m, deletePermanentlyCmd(&m, files...)
-			}
-			return m, nil
+			return m, m.deleteConfirmed()
 		}
 	case tea.KeyEsc: // Cancel
 		m.state.SetView(m.state.previous)
@@ -319,18 +332,11 @@ func (m Model) handleTypeYesConfirmation(msg tea.KeyMsg, files []File) (tea.Mode
 }
 
 // Handle standard Yes/No confirmation mode
-func (m Model) handleYesNoConfirmation(msg tea.KeyMsg, files []File) (tea.Model, tea.Cmd) {
+func (m Model) handleYesNoConfirmation(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch {
 	case key.Matches(msg, m.keyMap.Confirm.Yes):
-		// Immediately delete for single file
 		m.state.SetView(m.state.previous)
-		if len(files) == 1 {
-			return m, deletePermanentlyCmd(&m, files[0])
-		}
-		if file, ok := m.list.SelectedItem().(File); ok {
-			return m, deletePermanentlyCmd(&m, file)
-		}
-		return m, nil
+		return m, m.deleteConfirmed()
 
 	case key.Matches(msg, m.keyMap.Confirm.No):
 		m.state.SetView(m.state.previous)

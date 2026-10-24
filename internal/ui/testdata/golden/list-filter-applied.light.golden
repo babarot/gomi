@@ -30,7 +30,8 @@
   ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter …
 -- styles --
 L2 0-1 fg=#ad58b3
-L2 2-4 underline
+L2 2-4 fg=#ad58b3 underline
+L2 4-11 fg=#ad58b3
 L3 0-39 fg=#ad58b3
 L5 2-4 fg=#f39c12 underline
 L6 2-40 fg=#616161
