@@ -3,9 +3,9 @@ package confirm
 import (
 	"strings"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 // YesValidationModel extends the base Model with strict YES validation functionality.
@@ -69,11 +69,11 @@ func (y *YesValidationModel) Init() tea.Cmd {
 }
 
 func (y *YesValidationModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	return y.renderer.Update(msg)
+	return y, y.renderer.Update(msg)
 }
 
-func (y *YesValidationModel) View() string {
-	return y.renderer.View()
+func (y *YesValidationModel) View() tea.View {
+	return tea.NewView(y.renderer.View())
 }
 
 // Init initializes the text input with appropriate settings for YES validation.
@@ -91,11 +91,10 @@ func (i *yesValidationRenderer) Init() tea.Cmd {
 		input.Prompt = i.m.Prompt + " "
 	}
 
-	input.PromptStyle = i.m.Styles.Prompt
-	input.PlaceholderStyle = i.m.Styles.Placeholder
-	input.TextStyle = i.m.Styles.Text
+	input.SetStyles(inputStyles(i.m.Styles.Prompt, i.m.Styles.Placeholder, i.m.Styles.Text))
 	input.CharLimit = 3
 	input.Focus()
+	fitPlaceholder(&input)
 	i.text = input
 	return nil
 }
@@ -106,36 +105,38 @@ func (i *yesValidationRenderer) Init() tea.Cmd {
 // - Enter: Confirms if input is exactly "YES"
 // - Backspace: Always allowed for correction
 // - Characters: Only allows Y, E, S in sequence
-func (i *yesValidationRenderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (i *yesValidationRenderer) Update(msg tea.Msg) tea.Cmd {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.Type {
-		case tea.KeyCtrlC, tea.KeyEsc:
+	case tea.KeyPressMsg:
+		switch msg.String() {
+		case "ctrl+c", "esc":
 			i.m.SetDecision(Denied)
 			i.m.done = true
-			return i.m, tea.Quit
-		case tea.KeyEnter:
+			return tea.Quit
+		case "enter":
 			if i.text.Value() == i.m.AcceptedDecisionText {
 				i.m.SetDecision(Accepted)
 				i.m.done = true
-				return i.m, tea.Quit
+				return tea.Quit
 			}
-		case tea.KeyBackspace:
+		case "backspace":
 			// Always allow backspace for corrections
 			i.text, cmd = i.text.Update(msg)
-			return i.m, cmd
+			fitPlaceholder(&i.text)
+			return cmd
 		default:
 			// Only allow valid characters in sequence
 			if isValidYesChar(msg.String(), i.text.Value()) {
 				i.text, cmd = i.text.Update(msg)
+				fitPlaceholder(&i.text)
 			}
-			return i.m, cmd
+			return cmd
 		}
 	}
 
-	return i.m, cmd
+	return cmd
 }
 
 // View renders the current state of the confirmation prompt.

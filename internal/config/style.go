@@ -7,7 +7,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"github.com/samber/lo"
 )
 
@@ -78,7 +78,7 @@ func printWarningDeprecated(fieldName string, info *Deprecation) {
 		fullMessage = warningMessage
 	}
 
-	fmt.Println(containerStyle.Render(fullMessage))
+	_, _ = lipgloss.Println(containerStyle.Render(fullMessage))
 }
 
 func printErrorDeprecated(fieldName string, info Deprecation) {
@@ -112,7 +112,7 @@ func printErrorDeprecated(fieldName string, info Deprecation) {
 		lipgloss.JoinVertical(lipgloss.Left, messages...),
 	)
 
-	fmt.Println(containerStyle.Render(fullMessage))
+	_, _ = lipgloss.Println(containerStyle.Render(fullMessage))
 }
 
 func isStyleRenderEffectivelyEmpty(styledStr string) bool {

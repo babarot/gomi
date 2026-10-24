@@ -2,6 +2,7 @@ package ui
 
 import (
 	"flag"
+	"image/color"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -10,10 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/bubbles/cursor"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/muesli/termenv"
+	"charm.land/bubbles/v2/cursor"
+	tea "charm.land/bubbletea/v2"
 
 	"github.com/babarot/gomi/internal/config"
 	"github.com/babarot/gomi/internal/trash"
@@ -122,28 +121,29 @@ func writeFile(t *testing.T, path, content string) {
 
 // keyMsg returns the key message for a key name as key.Binding spells it
 // ("tab", "shift+tab", "space", "D").
-func keyMsg(name string) tea.KeyMsg {
+func keyMsg(name string) tea.KeyPressMsg {
 	switch name {
 	case "space", " ":
-		return tea.KeyMsg{Type: tea.KeySpace, Runes: []rune{' '}}
+		return tea.KeyPressMsg{Code: tea.KeySpace, Text: " "}
 	case "enter":
-		return tea.KeyMsg{Type: tea.KeyEnter}
+		return tea.KeyPressMsg{Code: tea.KeyEnter}
 	case "esc":
-		return tea.KeyMsg{Type: tea.KeyEsc}
+		return tea.KeyPressMsg{Code: tea.KeyEscape}
 	case "tab":
-		return tea.KeyMsg{Type: tea.KeyTab}
+		return tea.KeyPressMsg{Code: tea.KeyTab}
 	case "shift+tab":
-		return tea.KeyMsg{Type: tea.KeyShiftTab}
+		return tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift}
 	case "up":
-		return tea.KeyMsg{Type: tea.KeyUp}
+		return tea.KeyPressMsg{Code: tea.KeyUp}
 	case "down":
-		return tea.KeyMsg{Type: tea.KeyDown}
+		return tea.KeyPressMsg{Code: tea.KeyDown}
 	case "right":
-		return tea.KeyMsg{Type: tea.KeyRight}
+		return tea.KeyPressMsg{Code: tea.KeyRight}
 	case "backspace":
-		return tea.KeyMsg{Type: tea.KeyBackspace}
+		return tea.KeyPressMsg{Code: tea.KeyBackspace}
 	}
-	return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(name)}
+	r := []rune(name)[0]
+	return tea.KeyPressMsg{Code: r, Text: name}
 }
 
 // driver feeds a model messages the way tea.Program does, running the
@@ -303,14 +303,16 @@ func TestGolden(t *testing.T) {
 	defer func(f func() time.Time) { now = f }(now)
 	now = func() time.Time { return goldenNow }
 
-	defer lipgloss.SetColorProfile(lipgloss.ColorProfile())
-	lipgloss.SetColorProfile(termenv.TrueColor)
-	defer lipgloss.SetHasDarkBackground(lipgloss.HasDarkBackground())
-
-	for _, bg := range []string{"dark", "light"} {
-		lipgloss.SetHasDarkBackground(bg == "dark")
+	backgrounds := []struct {
+		name  string
+		color color.Color
+	}{
+		{"dark", color.Black},
+		{"light", color.White},
+	}
+	for _, bg := range backgrounds {
 		for _, c := range goldenCases {
-			t.Run(c.name+"."+bg, func(t *testing.T) {
+			t.Run(c.name+"."+bg.name, func(t *testing.T) {
 				var m tea.Model
 				if c.model != nil {
 					m = c.model(t, files)
@@ -319,9 +321,10 @@ func TestGolden(t *testing.T) {
 				}
 				d := &driver{t: t, m: m}
 				d.run(d.m.Init())
+				d.send(tea.BackgroundColorMsg{Color: bg.color})
 				d.send(tea.WindowSizeMsg{Width: 80, Height: 30})
 				d.keys(c.keys...)
-				compareGolden(t, filepath.Join(dir, c.name+"."+bg+".golden"), normalize(t, d.m.View()))
+				compareGolden(t, filepath.Join(dir, c.name+"."+bg.name+".golden"), normalize(t, d.m.View().Content))
 			})
 		}
 	}

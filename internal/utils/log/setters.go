@@ -4,7 +4,7 @@ import (
 	"io"
 	"log/slog"
 
-	"github.com/charmbracelet/log"
+	"charm.land/log/v2"
 )
 
 // applyToLoggers applies a given setting function to the provided loggers.

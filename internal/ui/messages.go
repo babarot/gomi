@@ -1,6 +1,6 @@
 package ui
 
-import "github.com/charmbracelet/bubbles/list"
+import "charm.land/bubbles/v2/list"
 
 // ShowDetailMsg represents a request to switch to detail view
 type ShowDetailMsg struct {

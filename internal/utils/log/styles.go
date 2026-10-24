@@ -6,8 +6,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/charmbracelet/lipgloss"
-	charmlog "github.com/charmbracelet/log"
+	"charm.land/lipgloss/v2"
+	charmlog "charm.land/log/v2"
 )
 
 var (
