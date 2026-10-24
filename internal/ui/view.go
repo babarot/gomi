@@ -10,21 +10,17 @@ import (
 	"github.com/fatih/color"
 
 	"github.com/babarot/gomi/internal/ui/keys"
+	"github.com/babarot/gomi/internal/ui/styles"
 )
 
-// helpStyles returns the help styles for a dark or light terminal background.
-func helpStyles(isDark bool) help.Styles {
-	lightDark := lipgloss.LightDark(isDark)
+// helpStyles returns the help styles drawn with p, for a dark or light
+// terminal background.
+func helpStyles(p styles.Palette, isDark bool) help.Styles {
 	s := help.DefaultStyles(isDark)
-	s.ShortKey = lipgloss.NewStyle().
-		Foreground(lightDark(lipgloss.Color("#626262"), lipgloss.Color("#626262")))
-	s.ShortDesc = lipgloss.NewStyle().
-		Foreground(lightDark(lipgloss.Color("#808080"), lipgloss.Color("#4A4A4A")))
-	s.ShortSeparator = lipgloss.NewStyle().
-		Foreground(lightDark(lipgloss.Color("#999999"), lipgloss.Color("#3C3C3C")))
-	// bubbles v2 made the default a little lighter; keep v1's
-	s.Ellipsis = lipgloss.NewStyle().
-		Foreground(lightDark(lipgloss.Color("#DDDADA"), lipgloss.Color("#3C3C3C")))
+	s.ShortKey = lipgloss.NewStyle().Foreground(p.HelpKey.Of(isDark))
+	s.ShortDesc = lipgloss.NewStyle().Foreground(p.HelpDesc.Of(isDark))
+	s.ShortSeparator = lipgloss.NewStyle().Foreground(p.HelpSeparator.Of(isDark))
+	s.Ellipsis = lipgloss.NewStyle().Foreground(p.HelpEllipsis.Of(isDark))
 	s.FullKey = s.ShortKey
 	s.FullDesc = s.ShortDesc
 	s.FullSeparator = s.ShortSeparator

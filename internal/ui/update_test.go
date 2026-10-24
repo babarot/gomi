@@ -44,7 +44,7 @@ func newTestModel() Model {
 		config:    cfg.UI,
 		list:      l,
 		viewport:  viewport.Model{},
-		styles:    styles.New(cfg.UI, true),
+		styles:    styles.New(styles.NewPalette(cfg.UI.Style), true),
 		help:      help.New(),
 	}
 }
@@ -96,7 +96,7 @@ func TestUpdate_WindowSizeMsg_SetsHelpWidth(t *testing.T) {
 
 func TestView_FitsSmallTerminal(t *testing.T) {
 	m := newTestModel()
-	m.help.Styles = helpStyles(true)
+	m.help.Styles = helpStyles(styles.NewPalette(m.config.Style), true)
 	m.state.SetView(ListView)
 
 	const (

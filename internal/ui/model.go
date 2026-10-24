@@ -39,6 +39,7 @@ type Model struct {
 
 	// UI components and config
 	config   config.UI
+	palette  styles.Palette
 	help     help.Model
 	list     list.Model
 	viewport viewport.Model
@@ -76,7 +77,8 @@ func NewModel(t trash.Trash, files []*trash.File, opts RenderOptions) Model {
 
 	// Create and configure list; setBackground replaces its delegate and
 	// styles
-	l := list.New(items, NewRestoreDelegate(uiCfg, fileList, selection, true), defaultWidth, defaultHeight)
+	palette := styles.NewPalette(uiCfg.Style)
+	l := list.New(items, NewRestoreDelegate(uiCfg, palette, fileList, selection, true), defaultWidth, defaultHeight)
 	l.SetShowStatusBar(false)
 	l.SetShowTitle(false)
 	l.SetShowHelp(false) // do not use default help of list model
@@ -97,6 +99,7 @@ func NewModel(t trash.Trash, files []*trash.File, opts RenderOptions) Model {
 		selection: selection,
 		files:     fileList,
 		config:    uiCfg,
+		palette:   palette,
 		list:      l,
 		viewport:  viewport.Model{},
 		help:      help.New(),
@@ -108,10 +111,10 @@ func NewModel(t trash.Trash, files []*trash.File, opts RenderOptions) Model {
 
 // setBackground styles the model for a dark or light terminal background
 func (m *Model) setBackground(isDark bool) {
-	m.styles = styles.New(m.config, isDark)
-	m.help.Styles = helpStyles(isDark)
+	m.styles = styles.New(m.palette, isDark)
+	m.help.Styles = helpStyles(m.palette, isDark)
 
-	delegate := NewRestoreDelegate(m.config, m.files, m.selection, isDark)
+	delegate := NewRestoreDelegate(m.config, m.palette, m.files, m.selection, isDark)
 	delegate.ShortHelpFunc = m.keyMap.AsListKeyMap().ShortHelp
 	delegate.FullHelpFunc = m.keyMap.AsListKeyMap().FullHelp
 	m.list.SetDelegate(delegate)
@@ -124,7 +127,7 @@ func (m *Model) setBackground(isDark bool) {
 	// bubbles does not apply ls.Filter to the filter input itself
 	filter := ls.Filter
 	filter.Focused.Prompt = lipgloss.NewStyle().
-		Foreground(lipgloss.Color(m.config.Style.ListView.FilterPrompt)).
+		Foreground(m.palette.FilterPrompt.Of(isDark)).
 		Bold(true)
 	filter.Blurred.Prompt = filter.Focused.Prompt
 	m.list.FilterInput.SetStyles(filter)

@@ -4,8 +4,6 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
-
-	"github.com/babarot/gomi/internal/config"
 )
 
 // Styles holds all UI styles for consistent theming
@@ -20,7 +18,6 @@ type DetailStyles struct {
 	View     func(sections ...string) string
 	Title    lipgloss.Style
 	Selected lipgloss.Style
-	Border   lipgloss.Style
 	Info     InfoStyles
 	Preview  PreviewStyles
 }
@@ -48,6 +45,7 @@ type PreviewStyles struct {
 type PreviewErrorStyles struct {
 	Title   lipgloss.Style
 	Content lipgloss.Style
+	Filler  lipgloss.Style
 }
 
 // DialogStyles contains styles for dialogs
@@ -57,44 +55,36 @@ type DialogStyles struct {
 	Separator lipgloss.Style
 }
 
-// ConfirmStyles contains styles for confirmation prompts
+// ConfirmStyles contains styles for typing YES in the delete confirmation
 type ConfirmStyles struct {
-	Prompt      lipgloss.Style
 	Text        lipgloss.Style
-	Indicator   lipgloss.Style
-	Prefix      lipgloss.Style
 	Success     lipgloss.Style
 	Error       lipgloss.Style
-	Suggestion  lipgloss.Style
 	Placeholder lipgloss.Style
 }
 
-// New creates a new Styles instance with the provided configuration, for a
-// dark or light terminal background
-func New(cfg config.UI, isDark bool) *Styles {
+// New creates the styles drawn with p, for a dark or light terminal
+// background
+func New(p Palette, isDark bool) *Styles {
 	s := &Styles{}
-	lightDark := lipgloss.LightDark(isDark)
+	fg := func(c Color) lipgloss.Style { return lipgloss.NewStyle().Foreground(c.Of(isDark)) }
 
 	s.Detail = DetailStyles{
 		View: func(sections ...string) string {
 			return lipgloss.JoinVertical(lipgloss.Left, sections...)
 		},
-		Border: lipgloss.NewStyle().
-			BorderStyle(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color(cfg.Style.DetailView.Border)),
 		Title: lipgloss.NewStyle().
-			BorderForeground(lipgloss.Color(cfg.Style.DetailView.Border)).
+			BorderForeground(p.Border.Of(isDark)).
 			Padding(0, 1).
 			Bold(true),
-		Selected: lipgloss.NewStyle().
-			Foreground(lightDark(lipgloss.Color("#000000"), lipgloss.Color("#000000"))).
-			Background(lightDark(lipgloss.Color(cfg.Style.ListView.Selected), lipgloss.Color(cfg.Style.ListView.Selected))),
+		Selected: fg(p.SelectedTitle).
+			Background(p.Selected.Of(isDark)),
 		Info: InfoStyles{
 			DeletedFrom: DeletedInfoStyle{
 				Title: lipgloss.NewStyle().
 					Padding(0, 1).
-					Background(lipgloss.Color(cfg.Style.DetailView.InfoPane.DeletedFrom.Background)).
-					Foreground(lipgloss.Color(cfg.Style.DetailView.InfoPane.DeletedFrom.Foreground)).
+					Background(p.DeletedFromBackground.Of(isDark)).
+					Foreground(p.DeletedFrom.Of(isDark)).
 					Bold(true).
 					Transform(strings.ToUpper),
 				Content: lipgloss.NewStyle().
@@ -106,8 +96,8 @@ func New(cfg config.UI, isDark bool) *Styles {
 			DeletedAt: DeletedInfoStyle{
 				Title: lipgloss.NewStyle().
 					Padding(0, 1).
-					Background(lipgloss.Color(cfg.Style.DetailView.InfoPane.DeletedAt.Background)).
-					Foreground(lipgloss.Color(cfg.Style.DetailView.InfoPane.DeletedAt.Foreground)).
+					Background(p.DeletedAtBackground.Of(isDark)).
+					Foreground(p.DeletedAt.Of(isDark)).
 					Bold(true).
 					Transform(strings.ToUpper),
 				Content: lipgloss.NewStyle().
@@ -118,22 +108,21 @@ func New(cfg config.UI, isDark bool) *Styles {
 			},
 		},
 		Preview: PreviewStyles{
-			Border: lipgloss.NewStyle().
-				Foreground(lipgloss.Color(cfg.Style.DetailView.PreviewPane.Border)),
+			Border: fg(p.PreviewBorder),
 			Size: lipgloss.NewStyle().
 				Padding(0, 1, 0, 1).
-				Foreground(lipgloss.Color(cfg.Style.DetailView.PreviewPane.Size.Foreground)).
-				Background(lipgloss.Color(cfg.Style.DetailView.PreviewPane.Size.Background)),
+				Foreground(p.PreviewSize.Of(isDark)).
+				Background(p.PreviewSizeBackground.Of(isDark)),
 			Scroll: lipgloss.NewStyle().
 				Padding(0, 1, 0, 1).
-				Foreground(lipgloss.Color(cfg.Style.DetailView.PreviewPane.Scroll.Foreground)).
-				Background(lipgloss.Color(cfg.Style.DetailView.PreviewPane.Scroll.Background)),
+				Foreground(p.PreviewScroll.Of(isDark)).
+				Background(p.PreviewScrollBackground.Of(isDark)),
 			Error: PreviewErrorStyles{
-				Title: lipgloss.NewStyle().
-					Foreground(lipgloss.BrightBlack),
+				Title: fg(p.PreviewError),
 				Content: lipgloss.NewStyle().
 					Bold(true).
 					Transform(strings.ToUpper),
+				Filler: fg(p.PreviewError),
 			},
 		},
 	}
@@ -141,8 +130,8 @@ func New(cfg config.UI, isDark bool) *Styles {
 	s.Dialog = DialogStyles{
 		Box: lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color(cfg.Style.DeletionDialog)).
-			Foreground(lipgloss.Color(cfg.Style.DeletionDialog)).
+			BorderForeground(p.Dialog.Of(isDark)).
+			Foreground(p.Dialog.Of(isDark)).
 			Bold(true).
 			Padding(1, 1).
 			BorderTop(true).
@@ -152,28 +141,14 @@ func New(cfg config.UI, isDark bool) *Styles {
 			Align(lipgloss.Center),
 		Text: lipgloss.NewStyle().
 			Align(lipgloss.Center),
-		Separator: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(cfg.Style.DetailView.Border)),
+		Separator: fg(p.Border),
 	}
 
 	s.Confirm = ConfirmStyles{
-		Prompt: lipgloss.NewStyle().
-			Bold(true),
-		Text: lipgloss.NewStyle().
-			Foreground(lightDark(lipgloss.Color("#1F1F1F"), lipgloss.Color("#FFFFFF"))),
-		Indicator: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(cfg.Style.ListView.Selected)),
-		Prefix: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(cfg.Style.ListView.Cursor)),
-		Success: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#00FF00")),
-		Error: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FF0000")),
-		Suggestion: lipgloss.NewStyle().
-			Foreground(lightDark(lipgloss.Color("#A49FA5"), lipgloss.Color("#777777"))).
-			Italic(true),
-		Placeholder: lipgloss.NewStyle().
-			Foreground(lightDark(lipgloss.Color("#A49FA5"), lipgloss.Color("#777777"))),
+		Text:        fg(p.DialogInput),
+		Success:     fg(p.DialogValid),
+		Error:       fg(p.DialogInvalid),
+		Placeholder: fg(p.DialogPlaceholder),
 	}
 
 	return s
@@ -208,7 +183,7 @@ func (s *Styles) RenderErrorPreview(errorMsg, mime string, width, height int) st
 		lipgloss.Center, lipgloss.Center,
 		title+"\n\n\n"+content,
 		lipgloss.WithWhitespaceChars("`"),
-		lipgloss.WithWhitespaceStyle(lipgloss.NewStyle().Foreground(lipgloss.BrightBlack)),
+		lipgloss.WithWhitespaceStyle(s.Detail.Preview.Error.Filler),
 	)
 }
 
