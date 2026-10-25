@@ -3,14 +3,14 @@
 │ main.go ├───────────────────────────────────────────────────────
 ╰─────────╯
 
-   DELETED FROM
+   DELETED FROM 
 
    /home/user/projects/gomi
 
 
    DELETED AT     2 hours ago
 
-──────────────────────────────────────────────────────────── 72 B
+──────────────────────────────────────────────────────────── 72 B 
 package main
 
 import "fmt"
@@ -29,14 +29,20 @@ func main() {
 
 
 
-──────────────────────────────────────────────────────────── 100%
+──────────────────────────────────────────────────────────── 100% 
 ──────────────────────────────────────────────────────────────────
 
   space back • n next • p prev • ? more
 -- styles --
-L2 2-9 fg=#000000 bold
-L5 3-15 bold
-L10 3-13 bold
+L1 0-11 fg=#eeeedd
+L2 0-1 fg=#eeeedd
+L2 2-9 fg=#000000 bg=#5fb458 bold
+L2 10-66 fg=#eeeedd
+L3 0-11 fg=#eeeedd
+L5 2-16 fg=#eeeeee bg=#1c1c1c bold
+L10 2-14 fg=#eeeeee bg=#1c1c1c bold
+L12 0-60 fg=#3c3c3c
+L12 60-66 fg=#eeeedd bg=#3c3c3c
 L13 0-7 fg=#81a1c1 bold
 L13 8-12 fg=#d8dee9
 L15 0-6 fg=#81a1c1 bold
@@ -51,6 +57,9 @@ L18 15-16 fg=#eceff4
 L18 16-29 fg=#a3be8c
 L18 29-30 fg=#eceff4
 L19 0-1 fg=#eceff4
+L31 0-60 fg=#3c3c3c
+L31 60-66 fg=#eeeedd bg=#3c3c3c
+L32 0-66 fg=#eeeedd
 L34 2-7 fg=#626262
 L34 8-12 fg=#4a4a4a
 L34 13-14 fg=#3c3c3c

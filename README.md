@@ -213,12 +213,13 @@ core:
 # Provides detailed customization of colors, layouts, and preview features.
 # Controls how files and directories are displayed in both list and detail views.
 ui:
+  theme: gomi # or catppuccin-mocha, catppuccin-latte, nord
   density: spacious # or compact
   preview:
     syntax_highlight: true
     colorscheme: nord  # Available themes: https://xyproto.github.io/splash/docs/index.html
     directory_command: ls -F -A --color=always
-  style:
+  style: # adjusts the gomi theme; other themes ignore it
     list_view:
       cursor: "#AD58B4"         # purple - color of the cursor border and text
       selected: "#5FB458"       # green - color of selected files

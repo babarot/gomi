@@ -1,0 +1,63 @@
+-- screen --
+
+   main.go
+   2 hours ago • /home/user/projects/gomi
+
+│ notes/
+│ 5 hours ago • /home/user/projects/gomi
+
+  archive.bin
+  1 day ago • /home/user/projects/gomi
+
+  long.txt
+  2 days ago • /home/user/projects/gomi
+
+  README.md
+  3 days ago • /home/user/projects/gomi
+
+  config.yaml
+  4 days ago • /home/user/projects/gomi
+
+  a-very-long-file-name-for-testing.txt
+  5 days ago • /home/user/projects/gomi
+
+  another-quite-long-file-name.txt
+  6 days ago • /home/user/projects/gomi
+
+
+  ••
+
+  ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter …
+-- styles --
+L2 3-10 fg=#a3be8c
+L3 3-41 fg=#a3be8c
+L5 0-1 fg=#88c0d0
+L5 2-8 fg=#a3be8c
+L6 0-1 fg=#88c0d0
+L6 2-40 fg=#a3be8c
+L9 2-38 fg=#7b88a1
+L12 2-39 fg=#7b88a1
+L15 2-39 fg=#7b88a1
+L18 2-39 fg=#7b88a1
+L21 2-39 fg=#7b88a1
+L24 2-39 fg=#7b88a1
+L27 2-3 fg=#847a85
+L27 3-4 fg=#dddada
+L29 2-5 fg=#7b88a1
+L29 6-8 fg=#616e88
+L29 9-10 fg=#4c566a
+L29 11-14 fg=#7b88a1
+L29 15-19 fg=#616e88
+L29 20-21 fg=#4c566a
+L29 22-27 fg=#7b88a1
+L29 28-35 fg=#616e88
+L29 36-37 fg=#4c566a
+L29 38-43 fg=#7b88a1
+L29 44-50 fg=#616e88
+L29 51-52 fg=#4c566a
+L29 53-56 fg=#7b88a1
+L29 57-63 fg=#616e88
+L29 64-65 fg=#4c566a
+L29 66-67 fg=#7b88a1
+L29 68-74 fg=#616e88
+L29 75-76 fg=#4c566a

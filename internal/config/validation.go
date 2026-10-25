@@ -18,6 +18,14 @@ func validateStrategy(fl validator.FieldLevel) bool {
 	return slices.Contains([]string{"auto", "xdg", "legacy"}, value)
 }
 
+// ThemeNames are the themes ui.theme may name
+var ThemeNames = []string{"gomi", "catppuccin-mocha", "catppuccin-latte", "nord"}
+
+// validateTheme validates the theme name
+func validateTheme(fl validator.FieldLevel) bool {
+	return slices.Contains(ThemeNames, fl.Field().String())
+}
+
 // validateAllowEmpty allows empty values for optional fields
 func validateAllowEmpty(fl validator.FieldLevel) bool {
 	str := strings.TrimSpace(fl.Field().String())

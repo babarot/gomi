@@ -273,6 +273,14 @@ func withStyle(custom bool) func(o *RenderOptions) {
 	}
 }
 
+// withTheme draws with the named theme
+func withTheme(name string) func(o *RenderOptions) {
+	return func(o *RenderOptions) {
+		o.DeleteEnabled = true
+		o.Config.Theme = name
+	}
+}
+
 var goldenCases = []goldenCase{
 	// list view
 	{name: "list"},
@@ -320,6 +328,11 @@ var goldenCases = []goldenCase{
 	{name: "style-empty-detail", opts: withStyle(false), keys: []string{"tab", "up", "space"}},
 	{name: "style-empty-detail-dir", opts: withStyle(false), keys: []string{"down", "space", "d"}},
 	{name: "style-empty-confirm", opts: withStyle(false), keys: []string{"tab", "tab", "tab", "D", "Y"}},
+
+	// themes other than gomi
+	{name: "theme-nord-list", opts: withTheme("nord"), keys: []string{"tab", "tab", "shift+tab"}},
+	{name: "theme-catppuccin-mocha-detail", opts: withTheme("catppuccin-mocha"), keys: []string{"tab", "up", "space"}},
+	{name: "theme-catppuccin-latte-confirm", opts: withTheme("catppuccin-latte"), keys: []string{"tab", "tab", "tab", "D", "Y"}},
 
 	// prompts outside the TUI
 	{name: "prompt-confirm", model: func(t *testing.T, _ []*trash.File) tea.Model {

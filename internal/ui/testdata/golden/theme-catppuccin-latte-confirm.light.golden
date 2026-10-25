@@ -1,0 +1,80 @@
+-- screen --
+
+   main.go
+   2 hours ago • /home/user/projects/gomi
+
+   notes/
+   5 hours ago • /home/user/projects/gomi
+
+          ╭────────────────────────────────────────────╮
+          │                                            │
+          │ Are you sure you want to completely delete │
+          │     'main.go', 'notes/', 'archive.bin'?    │
+          │                                            │
+          │             Type YES to confirm            │
+          │                                            │
+          │                    Y__ ✗                   │
+          │                                            │
+          │      (ESC to cancel, Enter to confirm)     │
+          │                                            │
+          ╰────────────────────────────────────────────╯
+  a-very-long-file-name-for-testing.txt
+  5 days ago • /home/user/projects/gomi
+
+  another-quite-long-file-name.txt
+  6 days ago • /home/user/projects/gomi
+
+
+  ••
+
+  ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter …
+-- styles --
+L2 3-10 fg=#40a02b
+L3 3-41 fg=#40a02b
+L5 3-9 fg=#40a02b
+L6 3-41 fg=#40a02b
+L8 10-56 fg=#d20f39
+L9 10-56 fg=#d20f39
+L10 10-11 fg=#d20f39
+L10 12-54 fg=#d20f39 bold
+L10 55-56 fg=#d20f39
+L11 10-11 fg=#d20f39
+L11 16-51 fg=#d20f39 bold
+L11 55-56 fg=#d20f39
+L12 10-56 fg=#d20f39
+L13 10-11 fg=#d20f39
+L13 24-43 fg=#d20f39 bold
+L13 55-56 fg=#d20f39
+L14 10-56 fg=#d20f39
+L15 10-11 fg=#d20f39
+L15 31-32 fg=#4c4f69 bold
+L15 32-34 fg=#8c8fa1
+L15 35-56 fg=#d20f39
+L16 10-56 fg=#d20f39
+L17 10-11 fg=#d20f39
+L17 17-50 fg=#d20f39 bold
+L17 55-56 fg=#d20f39
+L18 10-56 fg=#d20f39
+L19 10-56 fg=#d20f39
+L21 2-39 fg=#8c8fa1
+L24 2-39 fg=#8c8fa1
+L27 2-3 fg=#847a85
+L27 3-4 fg=#dddada
+L29 2-5 fg=#8c8fa1
+L29 6-8 fg=#9ca0b0
+L29 9-10 fg=#bcc0cc
+L29 11-14 fg=#8c8fa1
+L29 15-19 fg=#9ca0b0
+L29 20-21 fg=#bcc0cc
+L29 22-27 fg=#8c8fa1
+L29 28-35 fg=#9ca0b0
+L29 36-37 fg=#bcc0cc
+L29 38-43 fg=#8c8fa1
+L29 44-50 fg=#9ca0b0
+L29 51-52 fg=#bcc0cc
+L29 53-56 fg=#8c8fa1
+L29 57-63 fg=#9ca0b0
+L29 64-65 fg=#bcc0cc
+L29 66-67 fg=#8c8fa1
+L29 68-74 fg=#9ca0b0
+L29 75-76 fg=#bcc0cc
