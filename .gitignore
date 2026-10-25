@@ -1,3 +1,7 @@
 gomi*
 dist
 coverage.out
+# VHS demo (build artifacts in docs/tapes, GIFs copied to docs/demo)
+docs/tapes/.gomi
+docs/tapes/*.gif
+docs/tapes/*.mp4
