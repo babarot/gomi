@@ -30,6 +30,7 @@ type fixture struct {
 	content string            // file content; ignored for a directory
 	entries map[string]string // directory entries; nil for a file
 	ago     time.Duration     // how long before goldenNow it was deleted
+	runID   string            // the run that deleted it, shared by files deleted together
 }
 
 var fixtures = []fixture{
@@ -49,8 +50,8 @@ func main() {
 	}},
 	{name: "archive.bin", ago: 26 * time.Hour, content: "\x00\x01\x02\x03\xff\xfe\xfd\xfc\x00\x00\x10\x20"},
 	{name: "long.txt", ago: 50 * time.Hour, content: longText()},
-	{name: "README.md", ago: 74 * time.Hour, content: "# gomi\n\nReplacement for rm with rich trash.\n"},
-	{name: "config.yaml", ago: 98 * time.Hour, content: "core:\n  trash:\n    strategy: auto\n"},
+	{name: "README.md", ago: 74 * time.Hour, runID: "run-1", content: "# gomi\n\nReplacement for rm with rich trash.\n"},
+	{name: "config.yaml", ago: 74*time.Hour + 30*time.Second, runID: "run-1", content: "core:\n  trash:\n    strategy: auto\n"},
 	{name: "a-very-long-file-name-for-testing.txt", ago: 122 * time.Hour, content: "a\n"},
 	{name: "another-quite-long-file-name.txt", ago: 146 * time.Hour, content: "b\n"},
 	{name: "yet-another-long-file-name-here.txt", ago: 170 * time.Hour, content: "c\n"},
@@ -100,6 +101,7 @@ func makeFixtures(t *testing.T) []*trash.File {
 			OriginalPath: "/home/user/projects/gomi/" + f.name,
 			TrashPath:    path,
 			DeletedAt:    goldenNow.Add(-f.ago),
+			RunID:        f.runID,
 			IsDir:        isDir,
 		})
 	}
@@ -160,6 +162,9 @@ func (d *driver) send(msg tea.Msg) {
 	m, cmd := d.m.Update(msg)
 	d.m = m
 	d.run(cmd)
+	// tea.Program draws after each update, and the list learns from the
+	// drawing how many rows a page has
+	_ = d.m.View()
 }
 
 func (d *driver) keys(names ...string) {
@@ -226,6 +231,8 @@ type goldenCase struct {
 	model func(t *testing.T, files []*trash.File) tea.Model
 	opts  func(o *RenderOptions)
 	keys  []string
+	// width is the terminal's width; zero is 80
+	width int
 	// loading renders the view before what is read in the background comes
 	loading bool
 }
@@ -284,9 +291,10 @@ func withTheme(name string) func(o *RenderOptions) {
 var goldenCases = []goldenCase{
 	// list view
 	{name: "list"},
-	{name: "list-compact", opts: func(o *RenderOptions) { o.Config.Density = CompactDensityVal }},
-	{name: "list-arabic", opts: func(o *RenderOptions) { o.Config.Paginator = PaginatorArabic }},
-	{name: "list-next-page", keys: []string{"right"}},
+	{name: "list-wide", width: 120},
+	{name: "list-height", opts: func(o *RenderOptions) { o.Config.Height = "12" }},
+	{name: "list-next-page", opts: func(o *RenderOptions) { o.Config.Height = "12" }, keys: []string{"right"}},
+	{name: "list-end", keys: []string{"G"}},
 	{name: "list-selected", keys: []string{"tab", "tab"}},
 	{name: "list-selected-cursor", keys: []string{"tab", "tab", "shift+tab"}},
 	{name: "list-filter-empty", keys: []string{"/"}},
@@ -367,6 +375,8 @@ func TestGolden(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Chdir(t.TempDir())
+	// places under the home directory are written with ~
+	t.Setenv("HOME", "/home/user")
 	files := makeFixtures(t)
 
 	defer func(f func() time.Time) { now = f }(now)
@@ -391,7 +401,11 @@ func TestGolden(t *testing.T) {
 				d := &driver{t: t, m: m, loading: c.loading}
 				d.run(d.m.Init())
 				d.send(tea.BackgroundColorMsg{Color: bg.color})
-				d.send(tea.WindowSizeMsg{Width: 80, Height: 30})
+				width := c.width
+				if width == 0 {
+					width = 80
+				}
+				d.send(tea.WindowSizeMsg{Width: width, Height: 30})
 				d.keys(c.keys...)
 				compareGolden(t, filepath.Join(dir, c.name+"."+bg.name+".golden"), normalize(t, d.m.View().Content))
 			})

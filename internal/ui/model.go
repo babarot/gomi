@@ -1,9 +1,10 @@
 package ui
 
 import (
+	"os"
+
 	"charm.land/bubbles/v2/help"
-	"charm.land/bubbles/v2/list"
-	"charm.land/bubbles/v2/paginator"
+	"charm.land/bubbles/v2/textinput"
 	"charm.land/bubbles/v2/viewport"
 	"charm.land/lipgloss/v2"
 
@@ -33,6 +34,10 @@ type Model struct {
 	sizes    map[string]int64
 	// reading has the reads started and not yet returned
 	reading map[string]bool
+	// sizeQueue is the directories of the list waiting to be sized, and
+	// sizing how many of the list's are being sized
+	sizeQueue []File
+	sizing    int
 
 	// File data
 	files   []File
@@ -45,9 +50,17 @@ type Model struct {
 	config   config.UI
 	palette  styles.Palette
 	help     help.Model
-	list     list.Model
+	list     *fileList
 	viewport viewport.Model
 	styles   *styles.Styles
+	isDark   bool
+
+	// width and height are the columns and rows the UI takes
+	width, height int
+	// home is the home directory, written as ~ in paths
+	home string
+	// status tells what was just done, such as deleting files
+	status string
 
 	// Error state if any
 	err error
@@ -55,14 +68,11 @@ type Model struct {
 
 // NewModel creates a new UI model instance
 func NewModel(t trash.Trash, files []*trash.File, opts RenderOptions) Model {
-	var items []list.Item
-	var fileList []File
-
 	uiCfg := opts.Config
 
 	// Convert trash files to UI files
+	var fileList []File
 	for _, file := range files {
-		items = append(items, File{File: file})
 		fileList = append(fileList, File{
 			File:            file,
 			dirListCommand:  uiCfg.Preview.DirectoryCommand,
@@ -76,40 +86,25 @@ func NewModel(t trash.Trash, files []*trash.File, opts RenderOptions) Model {
 		DeleteEnabled: opts.DeleteEnabled,
 	})
 
-	// Initialize selection manager
-	selection := &SelectionManager{items: []File{}}
-
-	// Create and configure list; setBackground replaces its delegate and
-	// styles
-	palette := styles.NewPalette(uiCfg)
-	l := list.New(items, NewRestoreDelegate(uiCfg, palette, fileList, selection, true), defaultWidth, defaultHeight)
-	l.SetShowStatusBar(false)
-	l.SetShowTitle(false)
-	l.SetShowHelp(false) // do not use default help of list model
-	l.DisableQuitKeybindings()
-
-	// Set paginator type based on config
-	switch uiCfg.Paginator {
-	case PaginatorArabic:
-		l.Paginator.Type = paginator.Arabic
-	default:
-		l.Paginator.Type = paginator.Dots
-	}
-
+	home, _ := os.UserHomeDir()
+	list := newFileList()
 	m := Model{
 		trash:     t,
 		state:     NewViewState(),
 		keyMap:    keyMap,
-		selection: selection,
+		selection: &SelectionManager{items: []File{}},
 		files:     fileList,
 		config:    uiCfg,
-		palette:   palette,
-		list:      l,
+		palette:   styles.NewPalette(uiCfg),
+		list:      &list,
 		viewport:  viewport.Model{},
 		previews:  map[string]previewResult{},
 		sizes:     map[string]int64{},
 		reading:   map[string]bool{},
 		help:      help.New(),
+		width:     defaultWidth,
+		height:    defaultHeight,
+		home:      home,
 	}
 	// Until the terminal reports its background, assume a dark one
 	m.setBackground(true)
@@ -118,24 +113,27 @@ func NewModel(t trash.Trash, files []*trash.File, opts RenderOptions) Model {
 
 // setBackground styles the model for a dark or light terminal background
 func (m *Model) setBackground(isDark bool) {
+	m.isDark = isDark
 	m.styles = styles.New(m.palette, isDark)
 	m.help.Styles = helpStyles(m.palette, isDark)
 
-	delegate := NewRestoreDelegate(m.config, m.palette, m.files, m.selection, isDark)
-	delegate.ShortHelpFunc = m.keyMap.AsListKeyMap().ShortHelp
-	delegate.FullHelpFunc = m.keyMap.AsListKeyMap().FullHelp
-	m.list.SetDelegate(delegate)
+	prompt := lipgloss.NewStyle().Foreground(m.palette.FilterPrompt.Of(isDark)).Bold(true)
+	st := textinput.DefaultStyles(isDark)
+	st.Focused.Prompt, st.Blurred.Prompt = prompt, prompt
+	m.list.filter.SetStyles(st)
+}
 
-	ls := list.DefaultStyles(isDark)
-	m.list.Styles = ls
-	m.list.Paginator.ActiveDot = ls.ActivePaginationDot.String()
-	m.list.Paginator.InactiveDot = ls.InactivePaginationDot.String()
-
-	// bubbles does not apply ls.Filter to the filter input itself
-	filter := ls.Filter
-	filter.Focused.Prompt = lipgloss.NewStyle().
-		Foreground(m.palette.FilterPrompt.Of(isDark)).
-		Bold(true)
-	filter.Blurred.Prompt = filter.Focused.Prompt
-	m.list.FilterInput.SetStyles(filter)
+// uiHeight is how many rows the UI takes in a terminal of termHeight
+// rows, as ui.height says: a number of rows or a share of the terminal,
+// never more than the terminal.
+func uiHeight(spec string, termHeight int) int {
+	n, percent, ok := config.ParseHeight(spec)
+	switch {
+	case !ok:
+		return termHeight
+	case percent:
+		n = termHeight * n / 100
+	}
+	// the header, a row and the three lines at the bottom
+	return min(max(n, minHeight), termHeight)
 }

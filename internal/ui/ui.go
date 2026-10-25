@@ -35,6 +35,10 @@ const (
 
 	defaultWidth  = 66 // 56
 	defaultHeight = 30 // 26
+
+	// minHeight is the fewest rows the UI takes: the header, a row of the
+	// list and the three lines under it
+	minHeight = 5
 )
 
 const (

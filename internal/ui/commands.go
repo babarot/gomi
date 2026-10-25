@@ -6,7 +6,6 @@ import (
 	"os"
 	"sort"
 
-	"charm.land/bubbles/v2/list"
 	tea "charm.land/bubbletea/v2"
 	"github.com/samber/lo"
 )
@@ -25,13 +24,8 @@ func loadFileListCmd(files []File) tea.Cmd {
 			return files[i].DeletedAt.After(files[j].DeletedAt)
 		})
 
-		// Convert to list items (existence already checked by cli.filterFiles)
-		items := make([]list.Item, len(files))
-		for i, file := range files {
-			items[i] = file
-		}
-
-		return FileListLoadedMsg{files: items}
+		// existence already checked by cli.filterFiles
+		return FileListLoadedMsg{files: files}
 	}
 }
 
@@ -52,11 +46,6 @@ func deletePermanentlyCmd(m *Model, files ...File) tea.Cmd {
 			return os.IsNotExist(err)
 		})
 
-		items := make([]list.Item, len(origin))
-		for i, file := range origin {
-			items[i] = file
-		}
-
-		return FileListLoadedMsg{files: items}
+		return FileListLoadedMsg{files: origin, deleted: len(files)}
 	}
 }

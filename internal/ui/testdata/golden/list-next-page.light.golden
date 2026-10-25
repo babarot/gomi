@@ -1,56 +1,67 @@
 -- screen --
-
-│ yet-another-long-file-name-here.txt
-│ 1 week ago • /home/user/projects/gomi
-
-  todo.txt
-  1 week ago • /home/user/projects/gomi
-
-  report.csv
-  2 weeks ago • /home/user/projects/gomi
-
-  old.log
-  1 month ago • /home/user/projects/gomi
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  ••
+ gomi  12 in the trash · 1.7K
+    10:00 ┌ README.md                   ~/projects/gomi                     44B
+          └ config.yaml                 ~/projects/gomi                     34B
+── Tuesday ────────────────────────────────────────────────────── 1 file · 2B ──
+    10:00   a-very-long-file-name-for…  ~/projects/gomi                      2B
+── Monday ─────────────────────────────────────────────────────── 1 file · 2B ──
+    10:00   another-quite-long-file-n…  ~/projects/gomi                      2B
+── Sun, Jun 8 ─────────────────────────────────────────────────── 1 file · 2B ──
+▎   10:00   yet-another-long-file-nam…  ~/projects/gomi                      2B 
+  12 files · ↓ 3 more
 
   ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter …
 -- styles --
-L2 0-37 fg=#ad58b3
-L3 0-39 fg=#ad58b3
-L6 2-39 fg=#616161
-L9 2-40 fg=#616161
-L12 2-40 fg=#616161
-L27 2-3 fg=#dddada
-L27 3-4 fg=#837985
-L29 2-5 fg=#616161
-L29 6-8 fg=#808080
-L29 9-10 fg=#999999
-L29 11-14 fg=#616161
-L29 15-19 fg=#808080
-L29 20-21 fg=#999999
-L29 22-27 fg=#616161
-L29 28-35 fg=#808080
-L29 36-37 fg=#999999
-L29 38-43 fg=#616161
-L29 44-50 fg=#808080
-L29 51-52 fg=#999999
-L29 53-56 fg=#616161
-L29 57-63 fg=#808080
-L29 64-65 fg=#999999
-L29 66-67 fg=#616161
-L29 68-74 fg=#808080
-L29 75-76 fg=#dddada
+L1 1-5 fg=#ad58b4 bold
+L1 7-29 fg=#626262
+L2 4-9 fg=#626262
+L2 10-11 fg=#999999
+L2 12-21 fg=#262626 bold
+L2 40-79 fg=#626262
+L3 10-11 fg=#999999
+L3 12-23 fg=#262626 bold
+L3 40-79 fg=#626262
+L4 0-2 fg=#999999
+L4 3-10 fg=#4a4a4a bold
+L4 11-65 fg=#999999
+L4 66-77 fg=#626262
+L4 78-80 fg=#999999
+L5 4-9 fg=#626262
+L5 12-38 fg=#262626 bold
+L5 40-79 fg=#626262
+L6 0-2 fg=#999999
+L6 3-9 fg=#4a4a4a bold
+L6 10-65 fg=#999999
+L6 66-77 fg=#626262
+L6 78-80 fg=#999999
+L7 4-9 fg=#626262
+L7 12-38 fg=#262626 bold
+L7 40-79 fg=#626262
+L8 0-2 fg=#999999
+L8 3-13 fg=#4a4a4a bold
+L8 14-65 fg=#999999
+L8 66-77 fg=#626262
+L8 78-80 fg=#999999
+L9 0-4 fg=#ad58b4 bg=#e8e8e8
+L9 4-12 fg=#626262 bg=#e8e8e8
+L9 12-40 fg=#262626 bg=#e8e8e8 bold
+L9 40-80 fg=#626262 bg=#e8e8e8
+L10 2-21 fg=#626262
+L12 2-5 fg=#626262
+L12 6-8 fg=#808080
+L12 9-10 fg=#999999
+L12 11-14 fg=#626262
+L12 15-19 fg=#808080
+L12 20-21 fg=#999999
+L12 22-27 fg=#626262
+L12 28-35 fg=#808080
+L12 36-37 fg=#999999
+L12 38-43 fg=#626262
+L12 44-50 fg=#808080
+L12 51-52 fg=#999999
+L12 53-56 fg=#626262
+L12 57-63 fg=#808080
+L12 64-65 fg=#999999
+L12 66-67 fg=#626262
+L12 68-74 fg=#808080
+L12 75-76 fg=#dddada

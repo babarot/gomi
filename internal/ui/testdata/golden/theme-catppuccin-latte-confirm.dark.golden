@@ -1,80 +1,121 @@
 -- screen --
+ gomi  12 in the trash · 1.7K                                        3 selected
+── Today ───────────────────────────────────────────────────── 2 files · 166B ──
+  ✓ 10:00   main.go                     ~/projects/gomi                     72B
+  ✓ 07:00   notes/                      ~/projects/gomi                     94B
+── Yesterday ─────────────────────────────────────────────────── 1 file · 12B ──
+  ✓ 10:00   archive.bin                 ~/projects/gomi                     12B
+── Friday ───────────────────────────────────────────────────── 1 file · 1.4K ──
+▎   10:00   long.txt                    ~/projects/gomi                    1.4K 
+── Thursday ─────────────────────────────────────────────────── 2 files · 78B ──
+                 ╭────────────────────────────────────────────╮
+                 │                                            │
+                 │ Are you sure you want to completely delete │
+                 │     'main.go', 'notes/', 'archive.bin'?    │
+                 │                                            │
+                 │             Type YES to confirm            │
+                 │                                            │
+                 │                    Y__ ✗                   │
+                 │                                            │
+                 │      (ESC to cancel, Enter to confirm)     │
+                 │                                            │
+                 ╰────────────────────────────────────────────╯
+── Tue, May 6 ─────────────────────────────────────────────────── 1 file · 4B ──
+    12:00   old.log                     ~/projects/gomi                      4B
 
-   main.go
-   2 hours ago • /home/user/projects/gomi
-
-   notes/
-   5 hours ago • /home/user/projects/gomi
-
-          ╭────────────────────────────────────────────╮
-          │                                            │
-          │ Are you sure you want to completely delete │
-          │     'main.go', 'notes/', 'archive.bin'?    │
-          │                                            │
-          │             Type YES to confirm            │
-          │                                            │
-          │                    Y__ ✗                   │
-          │                                            │
-          │      (ESC to cancel, Enter to confirm)     │
-          │                                            │
-          ╰────────────────────────────────────────────╯
-  a-very-long-file-name-for-testing.txt
-  5 days ago • /home/user/projects/gomi
-
-  another-quite-long-file-name.txt
-  6 days ago • /home/user/projects/gomi
 
 
-  ••
+
+  12 files
 
   ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter …
 -- styles --
-L2 3-10 fg=#40a02b
-L3 3-41 fg=#40a02b
-L5 3-9 fg=#40a02b
-L6 3-41 fg=#40a02b
-L8 10-56 fg=#d20f39
-L9 10-56 fg=#d20f39
-L10 10-11 fg=#d20f39
-L10 12-54 fg=#d20f39 bold
-L10 55-56 fg=#d20f39
-L11 10-11 fg=#d20f39
-L11 16-51 fg=#d20f39 bold
-L11 55-56 fg=#d20f39
-L12 10-56 fg=#d20f39
-L13 10-11 fg=#d20f39
-L13 24-43 fg=#d20f39 bold
-L13 55-56 fg=#d20f39
-L14 10-56 fg=#d20f39
-L15 10-11 fg=#d20f39
-L15 31-32 fg=#4c4f69 bold
-L15 32-34 fg=#8c8fa1
-L15 35-56 fg=#d20f39
-L16 10-56 fg=#d20f39
-L17 10-11 fg=#d20f39
-L17 17-50 fg=#d20f39 bold
-L17 55-56 fg=#d20f39
-L18 10-56 fg=#d20f39
-L19 10-56 fg=#d20f39
-L21 2-39 fg=#8c8fa1
-L24 2-39 fg=#8c8fa1
-L27 2-3 fg=#979797
-L27 3-4 fg=#3c3c3c
-L29 2-5 fg=#8c8fa1
-L29 6-8 fg=#9ca0b0
-L29 9-10 fg=#bcc0cc
-L29 11-14 fg=#8c8fa1
-L29 15-19 fg=#9ca0b0
-L29 20-21 fg=#bcc0cc
-L29 22-27 fg=#8c8fa1
-L29 28-35 fg=#9ca0b0
-L29 36-37 fg=#bcc0cc
-L29 38-43 fg=#8c8fa1
-L29 44-50 fg=#9ca0b0
-L29 51-52 fg=#bcc0cc
-L29 53-56 fg=#8c8fa1
-L29 57-63 fg=#9ca0b0
-L29 64-65 fg=#bcc0cc
-L29 66-67 fg=#8c8fa1
-L29 68-74 fg=#9ca0b0
-L29 75-76 fg=#bcc0cc
+L1 1-5 fg=#1e66f5 bold
+L1 7-29 fg=#8c8fa1
+L1 69-79 fg=#40a02b
+L2 0-2 fg=#bcc0cc
+L2 3-8 fg=#6c6f85 bold
+L2 9-62 fg=#bcc0cc
+L2 63-77 fg=#8c8fa1
+L2 78-80 fg=#bcc0cc
+L3 2-3 fg=#40a02b bold
+L3 4-9 fg=#8c8fa1
+L3 12-19 fg=#4c4f69 bold
+L3 40-79 fg=#8c8fa1
+L4 2-3 fg=#40a02b bold
+L4 4-9 fg=#8c8fa1
+L4 12-18 fg=#8839ef bold
+L4 40-79 fg=#8c8fa1
+L5 0-2 fg=#bcc0cc
+L5 3-12 fg=#6c6f85 bold
+L5 13-64 fg=#bcc0cc
+L5 65-77 fg=#8c8fa1
+L5 78-80 fg=#bcc0cc
+L6 2-3 fg=#40a02b bold
+L6 4-9 fg=#8c8fa1
+L6 12-23 fg=#4c4f69 bold
+L6 40-79 fg=#8c8fa1
+L7 0-2 fg=#bcc0cc
+L7 3-9 fg=#6c6f85 bold
+L7 10-63 fg=#bcc0cc
+L7 64-77 fg=#8c8fa1
+L7 78-80 fg=#bcc0cc
+L8 0-4 fg=#1e66f5 bg=#ccd0da
+L8 4-12 fg=#8c8fa1 bg=#ccd0da
+L8 12-40 fg=#4c4f69 bg=#ccd0da bold
+L8 40-80 fg=#8c8fa1 bg=#ccd0da
+L9 0-2 fg=#bcc0cc
+L9 3-11 fg=#6c6f85 bold
+L9 12-63 fg=#bcc0cc
+L9 64-77 fg=#8c8fa1
+L9 78-80 fg=#bcc0cc
+L10 17-63 fg=#d20f39
+L11 17-63 fg=#d20f39
+L12 17-18 fg=#d20f39
+L12 19-61 fg=#d20f39 bold
+L12 62-63 fg=#d20f39
+L13 17-18 fg=#d20f39
+L13 23-58 fg=#d20f39 bold
+L13 62-63 fg=#d20f39
+L14 17-63 fg=#d20f39
+L15 17-18 fg=#d20f39
+L15 31-50 fg=#d20f39 bold
+L15 62-63 fg=#d20f39
+L16 17-63 fg=#d20f39
+L17 17-18 fg=#d20f39
+L17 38-39 fg=#4c4f69 bold
+L17 39-41 fg=#8c8fa1
+L17 42-63 fg=#d20f39
+L18 17-63 fg=#d20f39
+L19 17-18 fg=#d20f39
+L19 24-57 fg=#d20f39 bold
+L19 62-63 fg=#d20f39
+L20 17-63 fg=#d20f39
+L21 17-63 fg=#d20f39
+L22 0-2 fg=#bcc0cc
+L22 3-13 fg=#6c6f85 bold
+L22 14-65 fg=#bcc0cc
+L22 66-77 fg=#8c8fa1
+L22 78-80 fg=#bcc0cc
+L23 4-9 fg=#8c8fa1
+L23 12-19 fg=#4c4f69 bold
+L23 40-79 fg=#8c8fa1
+L28 2-10 fg=#8c8fa1
+L30 2-5 fg=#8c8fa1
+L30 6-8 fg=#9ca0b0
+L30 9-10 fg=#bcc0cc
+L30 11-14 fg=#8c8fa1
+L30 15-19 fg=#9ca0b0
+L30 20-21 fg=#bcc0cc
+L30 22-27 fg=#8c8fa1
+L30 28-35 fg=#9ca0b0
+L30 36-37 fg=#bcc0cc
+L30 38-43 fg=#8c8fa1
+L30 44-50 fg=#9ca0b0
+L30 51-52 fg=#bcc0cc
+L30 53-56 fg=#8c8fa1
+L30 57-63 fg=#9ca0b0
+L30 64-65 fg=#bcc0cc
+L30 66-67 fg=#8c8fa1
+L30 68-74 fg=#9ca0b0
+L30 75-76 fg=#bcc0cc

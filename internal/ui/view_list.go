@@ -1,0 +1,347 @@
+package ui
+
+import (
+	"fmt"
+	"path/filepath"
+	"strings"
+	"unicode"
+
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
+
+	"github.com/babarot/gomi/internal/ui/styles"
+)
+
+// The columns of a file row, from the left: the cursor bar, the selection
+// mark, the time, the line joining the files of one run, then the name,
+// where it was deleted from and its size.
+const (
+	colMark    = 2
+	colTime    = 4
+	colJoin    = 10
+	colName    = 12
+	sizeWidth  = 6
+	nameShare  = 45 // percent of the room left for the name; the rest is the place
+	minNameCol = 10
+)
+
+// fg returns a style drawing in c
+func (m Model) fg(c styles.Color) lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(c.Of(m.isDark))
+}
+
+// listView draws the list: a header, the rows, and the count, the status
+// and the key help at the bottom, in the rows the UI has.
+func (m Model) listView() string {
+	help := m.helpView()
+	lines := []string{m.headerLine()}
+	if m.list.filtering || m.list.filter.Value() != "" {
+		lines = append(lines, " "+m.list.filter.View())
+	}
+	n := max(1, m.height-len(lines)-2-lipgloss.Height(help))
+
+	rows := m.list.rows(now())
+	m.list.scroll(rows, n)
+	m.list.shownN = n
+	for i := range n {
+		j := m.list.top + i
+		if j >= len(rows) {
+			lines = append(lines, "")
+			continue
+		}
+		lines = append(lines, m.rowLine(rows[j], j == m.list.cursor))
+	}
+	if len(rows) == 0 {
+		lines[len(lines)-n] = "  " + m.fg(m.palette.Description).Render(m.emptyText())
+	}
+
+	lines = append(lines, m.countLine(rows, n), m.statusLine(), help)
+	return strings.Join(lines, "\n")
+}
+
+func (m Model) emptyText() string {
+	if m.list.filter.Value() != "" {
+		return fmt.Sprintf("No files match %q", m.list.filter.Value())
+	}
+	return "The trash is empty"
+}
+
+// headerLine is what is in the trash on the left, and what is selected on
+// the right.
+func (m Model) headerLine() string {
+	left := m.fg(m.palette.Cursor).Bold(true).Render("gomi") +
+		m.fg(m.palette.Description).Render(fmt.Sprintf("  %d in the trash · %s", len(m.list.files), m.totalSize()))
+	right := ""
+	if n := len(m.selection.items); n > 0 {
+		right = m.fg(m.palette.Selected).Render(fmt.Sprintf("%d selected", n))
+	}
+	gap := m.width - 2 - ansi.StringWidth(left) - ansi.StringWidth(right)
+	if gap < 1 {
+		return ansi.Truncate(" "+left, m.width, "")
+	}
+	return " " + left + strings.Repeat(" ", gap) + right
+}
+
+// totalSize is the size of everything in the trash, with … while a
+// directory is still being sized.
+func (m Model) totalSize() string {
+	return m.sizeOfFiles(m.list.files)
+}
+
+// knownSize is the size of f's contents, if known by now
+func (m Model) knownSize(f File) (int64, bool) {
+	if f.SizeKnown {
+		return f.Size, true
+	}
+	size, ok := m.sizes[f.TrashPath]
+	return size, ok && size >= 0
+}
+
+// rowLine draws a day heading or a file
+func (m Model) rowLine(r row, onCursor bool) string {
+	if r.kind == rowDay {
+		return m.dayLine(r)
+	}
+	return m.fileLine(r, onCursor)
+}
+
+// dayLine is a rule with the day and what was deleted on it
+func (m Model) dayLine(r row) string {
+	rule := m.fg(m.palette.HelpSeparator)
+	label := m.fg(m.palette.Heading).Bold(true).Render(r.day)
+	right := m.fg(m.palette.Description).Render(fmt.Sprintf("%d %s · %s", len(r.files), plural(len(r.files), "file"), m.sizeOfFiles(r.files)))
+	fill := m.width - 3 - ansi.StringWidth(r.day) - 2 - ansi.StringWidth(right) - 3
+	if fill < 1 {
+		return rule.Render("── ") + label
+	}
+	return rule.Render("── ") + label + " " + rule.Render(strings.Repeat("─", fill)) + " " + right + " " + rule.Render("──")
+}
+
+func (m Model) sizeOfFiles(files []File) string {
+	var total int64
+	unknown := false
+	for _, f := range files {
+		size, ok := m.knownSize(f)
+		if !ok {
+			unknown = true
+			continue
+		}
+		total += size
+	}
+	s := compactBytes(total)
+	if unknown {
+		s += ellipsis
+	}
+	return s
+}
+
+func plural(n int, word string) string {
+	if n == 1 {
+		return word
+	}
+	return word + "s"
+}
+
+// fileLine is one file: the time it was deleted, its name, where it was
+// deleted from and its size. The row under the cursor is drawn on a
+// background of its own, across the whole width.
+func (m Model) fileLine(r row, onCursor bool) string {
+	f := r.file
+	on := func(s lipgloss.Style) lipgloss.Style {
+		if onCursor {
+			return s.Background(m.palette.CursorRow.Of(m.isDark))
+		}
+		return s
+	}
+	plain := on(lipgloss.NewStyle())
+	pad := func(s string, w int) string {
+		return s + plain.Render(strings.Repeat(" ", max(0, w-ansi.StringWidth(s))))
+	}
+
+	var b strings.Builder
+	bar := " "
+	if onCursor {
+		bar = "▎"
+	}
+	b.WriteString(on(m.fg(m.palette.Cursor)).Render(bar) + plain.Render(" "))
+	mark := " "
+	if m.selection.Contains(f) {
+		mark = "✓"
+	}
+	b.WriteString(on(m.fg(m.palette.Selected)).Bold(true).Render(mark) + plain.Render(" "))
+	clock := ""
+	if r.first {
+		clock = f.DeletedAt.In(now().Location()).Format("15:04")
+	}
+	b.WriteString(pad(on(m.fg(m.palette.Description)).Render(clock), colJoin-colTime))
+	join := " "
+	if r.batch {
+		switch {
+		case r.first:
+			join = "┌"
+		case r.last:
+			join = "└"
+		default:
+			join = "│"
+		}
+	}
+	b.WriteString(on(m.fg(m.palette.HelpSeparator)).Render(join) + plain.Render(" "))
+
+	avail := max(0, m.width-colName-2-sizeWidth-1)
+	nameW := max(minNameCol, avail*nameShare/100)
+	placeW := max(0, avail-nameW)
+	b.WriteString(pad(m.nameCell(f, nameW, on), nameW))
+	b.WriteString(plain.Render("  "))
+	place := shortPath(m.displayPath(filepath.Dir(f.OriginalPath)), placeW)
+	b.WriteString(pad(on(m.fg(m.palette.Description)).Render(place), placeW))
+	size := ellipsis
+	if s, ok := m.knownSize(f); ok {
+		size = compactBytes(s)
+	}
+	b.WriteString(plain.Render(strings.Repeat(" ", max(0, sizeWidth-ansi.StringWidth(size)))))
+	b.WriteString(on(m.fg(m.palette.Description)).Render(size) + plain.Render(" "))
+	return ansi.Truncate(b.String(), m.width, "")
+}
+
+// nameCell is the file name cut to w, a directory marked with a slash, and
+// what matches the filter highlighted.
+func (m Model) nameCell(f File, w int, on func(lipgloss.Style) lipgloss.Style) string {
+	name := f.Name
+	color := m.palette.Name
+	if f.IsDir {
+		name += "/"
+		color = m.palette.DirName
+	}
+	name = ansi.Truncate(name, w, ellipsis)
+	base := on(m.fg(color)).Bold(true)
+	i, n := matchRunes(name, m.list.query())
+	if n == 0 {
+		return base.Render(name)
+	}
+	match := on(m.fg(m.palette.FilterMatch)).Bold(true).Underline(true)
+	r := []rune(name)
+	return base.Render(string(r[:i])) + match.Render(string(r[i:i+n])) + base.Render(string(r[i+n:]))
+}
+
+// matchRunes finds q, lowercased, in s ignoring case, and returns where it
+// starts and how long it is in runes of s; n is zero when it is not
+// there. Runes, not bytes: lowercasing can change how many bytes a rune
+// takes, so a byte offset in the lowercased string may not fit s.
+func matchRunes(s, q string) (i, n int) {
+	if q == "" {
+		return 0, 0
+	}
+	rs, rq := []rune(s), []rune(q)
+	for i := 0; i+len(rq) <= len(rs); i++ {
+		found := true
+		for j, c := range rq {
+			if unicode.ToLower(rs[i+j]) != c {
+				found = false
+				break
+			}
+		}
+		if found {
+			return i, len(rq)
+		}
+	}
+	return 0, 0
+}
+
+// displayPath writes the home directory as ~
+func (m Model) displayPath(p string) string {
+	if m.home != "" && (p == m.home || strings.HasPrefix(p, m.home+string(filepath.Separator))) {
+		return "~" + p[len(m.home):]
+	}
+	return p
+}
+
+// shortPath cuts p to w, keeping its head and as much of its tail as fits:
+// ~/…/drop/test. When only the last part fits whole, the one before it is
+// cut instead, so that directories which differ only there still differ:
+// /private/…/fee7ca5a…/scratchpad.
+func shortPath(p string, w int) string {
+	if ansi.StringWidth(p) <= w {
+		return p
+	}
+	sep := string(filepath.Separator)
+	parts := strings.Split(p, sep)
+	if len(parts) < 3 {
+		return ansi.Truncate(p, w, ellipsis)
+	}
+	head := parts[0]
+	if head == "" {
+		head = sep + parts[1]
+	}
+	tail, kept := "", 0
+	for i := len(parts) - 1; i >= 2; i-- {
+		next := sep + parts[i] + tail
+		if ansi.StringWidth(head+sep+ellipsis+next) > w {
+			break
+		}
+		tail, kept = next, kept+1
+	}
+	if kept < 2 && len(parts) > 3 {
+		last, prev := sep+parts[len(parts)-1], parts[len(parts)-2]
+		if room := w - ansi.StringWidth(head+sep+ellipsis+sep+last); room >= 6 {
+			return head + sep + ellipsis + sep + ansi.Truncate(prev, room, ellipsis) + last
+		}
+	}
+	if tail == "" {
+		return ansi.Truncate(p, w, ellipsis)
+	}
+	return head + sep + ellipsis + tail
+}
+
+// compactBytes writes a size in at most six columns: 794B, 3.1K, 31M.
+func compactBytes(n int64) string {
+	if n < 1024 {
+		return fmt.Sprintf("%dB", n)
+	}
+	v := float64(n) / 1024
+	units := "KMGTP"
+	i := 0
+	for v >= 1024 && i < len(units)-1 {
+		v /= 1024
+		i++
+	}
+	if v < 10 {
+		return fmt.Sprintf("%.1f%c", v, units[i])
+	}
+	return fmt.Sprintf("%.0f%c", v, units[i])
+}
+
+// countLine is how many files are shown, and how many more are below.
+func (m Model) countLine(rows []row, n int) string {
+	files := m.list.shown()
+	s := fmt.Sprintf("%d %s", len(files), plural(len(files), "file"))
+	if m.list.filter.Value() != "" {
+		s = fmt.Sprintf("%d of %d files", len(files), len(m.list.files))
+	}
+	below := 0
+	for _, r := range rows[min(len(rows), m.list.top+n):] {
+		if r.kind == rowFile {
+			below++
+		}
+	}
+	if below > 0 {
+		s += fmt.Sprintf(" · ↓ %d more", below)
+	}
+	return "  " + m.fg(m.palette.Description).Render(s)
+}
+
+// statusLine tells what was just done, such as deleting files
+func (m Model) statusLine() string {
+	if m.status == "" {
+		return ""
+	}
+	return "  " + m.fg(m.palette.Selected).Render(m.status)
+}
+
+// helpView is the key help at the bottom
+func (m Model) helpView() string {
+	keyMap := m.keyMap.AsListKeyMap()
+	if m.state.current == DetailView {
+		keyMap = m.keyMap.AsDetailKeyMap()
+	}
+	return lipgloss.NewStyle().PaddingLeft(2).Render(m.help.View(keyMap))
+}

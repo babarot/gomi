@@ -11,6 +11,7 @@
    DELETED AT     2 hours ago
 
 ──────────────────────────────────────────────────────────── 72 B 
+package main
                    ╭──────────────────────────╮
                    │                          │
                    │ Are you sure you want to │
@@ -19,7 +20,6 @@
                    │           (y/n)          │
                    │                          │
                    ╰──────────────────────────╯
-
 
 
 
@@ -43,31 +43,33 @@ L5 2-16 fg=#eeeeee bg=#1c1c1c bold
 L10 2-14 fg=#eeeeee bg=#1c1c1c bold
 L12 0-60 fg=#3c3c3c
 L12 60-66 fg=#eeeedd bg=#3c3c3c
-L13 19-47 fg=#ff007f
+L13 0-7 fg=#81a1c1 bold
+L13 8-12 fg=#d8dee9
 L14 19-47 fg=#ff007f
-L15 19-20 fg=#ff007f
-L15 21-45 fg=#ff007f bold
-L15 46-47 fg=#ff007f
+L15 19-47 fg=#ff007f
 L16 19-20 fg=#ff007f
-L16 28-38 fg=#ff007f bold
+L16 21-45 fg=#ff007f bold
 L16 46-47 fg=#ff007f
-L17 19-47 fg=#ff007f
-L18 19-20 fg=#ff007f
-L18 31-36 fg=#ff007f bold
-L18 46-47 fg=#ff007f
-L19 19-47 fg=#ff007f
+L17 19-20 fg=#ff007f
+L17 28-38 fg=#ff007f bold
+L17 46-47 fg=#ff007f
+L18 19-47 fg=#ff007f
+L19 19-20 fg=#ff007f
+L19 31-36 fg=#ff007f bold
+L19 46-47 fg=#ff007f
 L20 19-47 fg=#ff007f
+L21 19-47 fg=#ff007f
 L31 0-60 fg=#3c3c3c
 L31 60-66 fg=#eeeedd bg=#3c3c3c
 L32 0-66 fg=#eeeedd
-L34 2-7 fg=#616161
-L34 8-12 fg=#494949
+L34 2-7 fg=#626262
+L34 8-12 fg=#4a4a4a
 L34 13-14 fg=#3c3c3c
-L34 15-16 fg=#616161
-L34 17-21 fg=#494949
+L34 15-16 fg=#626262
+L34 17-21 fg=#4a4a4a
 L34 22-23 fg=#3c3c3c
-L34 24-25 fg=#616161
-L34 26-30 fg=#494949
+L34 24-25 fg=#626262
+L34 26-30 fg=#4a4a4a
 L34 31-32 fg=#3c3c3c
-L34 33-34 fg=#616161
-L34 35-39 fg=#494949
+L34 33-34 fg=#626262
+L34 35-39 fg=#4a4a4a

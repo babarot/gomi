@@ -28,6 +28,10 @@ func (c Color) Of(isDark bool) color.Color {
 // Palette is every color the TUI draws with, named by what it is used for.
 type Palette struct {
 	// The list
+	Name              Color // a file name
+	DirName           Color // a directory name
+	CursorRow         Color // the background of the row under the cursor
+	Heading           Color // the day over the files deleted on it
 	Cursor            Color // the bar and the text of the row under the cursor
 	Selected          Color // selected rows
 	FilterMatch       Color // characters that match the filter
@@ -86,6 +90,10 @@ func gomiPalette(st config.StyleConfig) Palette {
 		return same(c)
 	}
 	return Palette{
+		Name:              Color{Light: "#262626", Dark: "#E4E4E4"},
+		DirName:           Color{Light: "#1F6FB2", Dark: "#7AA2F7"},
+		CursorRow:         Color{Light: "#E8E8E8", Dark: "#2E2E2E"},
+		Heading:           Color{Light: "#4A4A4A", Dark: "#BBBBBB"},
 		Cursor:            or(st.ListView.Cursor, same("#AD58B4")),
 		Selected:          or(st.ListView.Selected, same("#5FB458")),
 		FilterMatch:       or(st.ListView.FilterMatch, same("#F39C12")),
@@ -133,6 +141,7 @@ type scheme struct {
 	Subtle  string // the frame around the file name
 	Text    string // text on Surface, typed text
 	Accent  string // the cursor, the filter prompt
+	Dir     string // directory names
 	OK      string // selected files
 	Prompt  string // filter matches
 	Warn    string // the delete confirmation
@@ -143,23 +152,27 @@ type scheme struct {
 var schemes = map[string]scheme{
 	"catppuccin-mocha": {
 		Base: "#1e1e2e", Surface: "#3b3b52", Border: "#525270", Muted: "#8888a4", Dim: "#706f87",
-		Subtle: "#b0b8d1", Text: "#e0e4f0", Accent: "#96bfff", OK: "#a6e3a1", Prompt: "#f9e2af",
-		Warn: "#f5a3b5", Error: "#f38ba8",
+		Subtle: "#b0b8d1", Text: "#e0e4f0", Accent: "#96bfff", Dir: "#d4b0ff", OK: "#a6e3a1",
+		Prompt: "#f9e2af", Warn: "#f5a3b5", Error: "#f38ba8",
 	},
 	"catppuccin-latte": {
 		Base: "#eff1f5", Surface: "#ccd0da", Border: "#bcc0cc", Muted: "#8c8fa1", Dim: "#9ca0b0",
-		Subtle: "#6c6f85", Text: "#4c4f69", Accent: "#1e66f5", OK: "#40a02b", Prompt: "#df8e1d",
-		Warn: "#d20f39", Error: "#d20f39",
+		Subtle: "#6c6f85", Text: "#4c4f69", Accent: "#1e66f5", Dir: "#8839ef", OK: "#40a02b",
+		Prompt: "#df8e1d", Warn: "#d20f39", Error: "#d20f39",
 	},
 	"nord": {
 		Base: "#2e3440", Surface: "#3b4252", Border: "#4c566a", Muted: "#7b88a1", Dim: "#616e88",
-		Subtle: "#d8dee9", Text: "#eceff4", Accent: "#88c0d0", OK: "#a3be8c", Prompt: "#ebcb8b",
-		Warn: "#b48ead", Error: "#bf616a",
+		Subtle: "#d8dee9", Text: "#eceff4", Accent: "#88c0d0", Dir: "#b48ead", OK: "#a3be8c",
+		Prompt: "#ebcb8b", Warn: "#b48ead", Error: "#bf616a",
 	},
 }
 
 func (s scheme) palette() Palette {
 	return Palette{
+		Name:              same(s.Text),
+		DirName:           same(s.Dir),
+		CursorRow:         same(s.Surface),
+		Heading:           same(s.Subtle),
 		Cursor:            same(s.Accent),
 		Selected:          same(s.OK),
 		FilterMatch:       same(s.Prompt),
