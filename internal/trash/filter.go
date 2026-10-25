@@ -137,6 +137,33 @@ type sizeSetter interface {
 	SetSize(int64)
 }
 
+// measurer is implemented by items that have their own size for the size
+// filter, which may be 0, rather than the size of their contents
+type measurer interface {
+	MeasuredSize() (size int64, ok bool, err error)
+}
+
+// filterSize is the size the size filter judges item by
+func filterSize[T Filterable](item T) (int64, error) {
+	if m, ok := any(item).(measurer); ok {
+		if n, ok, err := m.MeasuredSize(); ok {
+			return n, err
+		}
+	}
+	// Use cached size from List(); fall back to DirSize for unknown sizes
+	if n := item.GetSize(); n != 0 {
+		return n, nil
+	}
+	n, err := fs.DirSize(item.GetPath())
+	if err != nil {
+		return 0, err
+	}
+	if s, ok := any(item).(sizeSetter); ok {
+		s.SetSize(n)
+	}
+	return n, nil
+}
+
 func rejectBySize[T Filterable](items []T, size config.SizeConfig) []T {
 	if size.Min == "" && size.Max == "" {
 		return items
@@ -144,17 +171,9 @@ func rejectBySize[T Filterable](items []T, size config.SizeConfig) []T {
 
 	var filtered []T
 	for _, item := range items {
-		// Use cached size from List(); fall back to DirSize for unknown sizes
-		fileSize := item.GetSize()
-		if fileSize == 0 {
-			var err error
-			fileSize, err = fs.DirSize(item.GetPath())
-			if err != nil {
-				continue // Skip items we can't size
-			}
-			if s, ok := any(item).(sizeSetter); ok {
-				s.SetSize(fileSize)
-			}
+		fileSize, err := filterSize(item)
+		if err != nil {
+			continue // Skip items we can't size
 		}
 
 		include := true

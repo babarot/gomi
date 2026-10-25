@@ -140,8 +140,25 @@ func (s *Storage) Put(src string) error {
 func (s *Storage) List() ([]*trash.File, error) {
 	var files []*trash.File
 
+	// With a size filter, each trash's directorysizes tells the disk usage
+	// of the directories measured before; the filter measures the others
+	// and the caches are written back once it is done
+	var caches []*sizeCache
+	list := func(loc *trashLocation) ([]*trash.File, error) {
+		var c *sizeCache
+		if size := s.config.History.Exclude.Size; size.Min != "" || size.Max != "" {
+			c = newSizeCache(loc.root)
+		}
+		files, err := s.listLocation(loc, c)
+		// a trash that could not be listed keeps its cache as it is
+		if err == nil && c != nil {
+			caches = append(caches, c)
+		}
+		return files, err
+	}
+
 	// List files from home trash
-	homeFiles, err := s.listLocation(s.homeTrash)
+	homeFiles, err := list(s.homeTrash)
 	if err != nil {
 		return nil, trash.NewStorageError("list", "", fmt.Errorf("failed to list home trash: %w", err))
 	}
@@ -151,7 +168,7 @@ func (s *Storage) List() ([]*trash.File, error) {
 	for _, loc := range s.externalTrashes {
 		slog.Debug("listing external trash",
 			"path", loc.root)
-		extFiles, err := s.listLocation(loc)
+		extFiles, err := list(loc)
 		if err != nil {
 			// Log warning but continue with other locations
 			slog.Warn("failed to list external trash",
@@ -165,7 +182,13 @@ func (s *Storage) List() ([]*trash.File, error) {
 		files = append(files, extFiles...)
 	}
 
-	return s.filter(files), nil
+	// the caches look at what was given to the filter, so the directories
+	// it dropped for their size are saved too
+	filtered := s.filter(files)
+	for _, c := range caches {
+		c.save()
+	}
+	return filtered, nil
 }
 
 func (s *Storage) Restore(file *trash.File, dst string) error {
@@ -291,7 +314,9 @@ func (s *Storage) scanExternalTrashes() error {
 	return nil
 }
 
-func (s *Storage) listLocation(loc *trashLocation) ([]*trash.File, error) {
+// listLocation lists the trash at loc. With cache, the directories get the
+// size the size filter judges them by from it.
+func (s *Storage) listLocation(loc *trashLocation, cache *sizeCache) ([]*trash.File, error) {
 	var files []*trash.File
 
 	// Read files directory
@@ -301,8 +326,13 @@ func (s *Storage) listLocation(loc *trashLocation) ([]*trash.File, error) {
 	}
 
 	for _, entry := range entries {
+		if cache != nil {
+			cache.names[entry.Name()] = true
+		}
+
 		// Load corresponding .trashinfo file
-		info, err := loadTrashInfo(filepath.Join(loc.infoDir, entry.Name()+".trashinfo"))
+		infoPath := filepath.Join(loc.infoDir, entry.Name()+".trashinfo")
+		info, err := loadTrashInfo(infoPath)
 		if err != nil {
 			// Skip files without valid info
 			continue
@@ -332,6 +362,9 @@ func (s *Storage) listLocation(loc *trashLocation) ([]*trash.File, error) {
 			SizeKnown:    !fileInfo.IsDir(),
 			IsDir:        fileInfo.IsDir(),
 			FileMode:     fileInfo.Mode(),
+		}
+		if cache != nil && file.IsDir {
+			cache.track(entry.Name(), file, infoPath)
 		}
 		files = append(files, file)
 	}
