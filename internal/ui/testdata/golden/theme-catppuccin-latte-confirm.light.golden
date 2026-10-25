@@ -1,10 +1,10 @@
 -- screen --
- gomi  12 in the trash · 1.7K                                        3 selected
+ gomi  12 in the trash · 1.7K                         3 selected · view: recent
 ── Today ───────────────────────────────────────────────────── 2 files · 166B ──
   ✓ 10:00   main.go                     ~/projects/gomi                     72B
-  ✓ 07:00   notes/                      ~/projects/gomi                     94B
+  ✓ 07:00   notes/                      ~/docs                              94B
 ── Yesterday ─────────────────────────────────────────────────── 1 file · 12B ──
-  ✓ 10:00   archive.bin                 ~/projects/gomi                     12B
+  ✓ 10:00   archive.bin                 ~/Downloads                         12B
 ── Friday ───────────────────────────────────────────────────── 1 file · 1.4K ──
 ▎   10:00   long.txt                    ~/projects/gomi                    1.4K 
 ── Thursday ─────────────────────────────────────────────────── 2 files · 78B ──
@@ -21,7 +21,7 @@
                  │                                            │
                  ╰────────────────────────────────────────────╯
 ── Tue, May 6 ─────────────────────────────────────────────────── 1 file · 4B ──
-    12:00   old.log                     ~/projects/gomi                      4B
+    12:00   old.log                     /tmp                                 4B
 
 
 
@@ -32,7 +32,8 @@
 -- styles --
 L1 1-5 fg=#1e66f5 bold
 L1 7-29 fg=#8c8fa1
-L1 69-79 fg=#40a02b
+L1 54-64 fg=#40a02b
+L1 65-79 fg=#8c8fa1
 L2 0-2 fg=#bcc0cc
 L2 3-8 fg=#6c6f85 bold
 L2 9-62 fg=#bcc0cc

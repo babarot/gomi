@@ -1,10 +1,10 @@
 -- screen --
- gomi  12 in the trash · 1.7K
+ gomi  12 in the trash · 1.7K                                      view: recent
 ── Today ───────────────────────────────────────────────────── 2 files · 166B ──
 ▎   10:00   main.go                     ~/projects/gomi                     72B 
-    07:00   notes/                      ~/projects/gomi                     94B
+    07:00   notes/                      ~/docs                              94B
 ── Yesterday ─────────────────────────────────────────────────── 1 file · 12B ──
-    10:00   archive.bin                 ~/projects/gomi                     12B
+    10:00   archive.bin                 ~/Downloads                         12B
 ── Friday ───────────────────────────────────────────────────── 1 file · 1.4K ──
     10:00   long.txt                    ~/projects/gomi                    1.4K
 ── Thursday ─────────────────────────────────────────────────── 2 files · 78B ──
@@ -19,19 +19,19 @@
 ── Thu, Jun 5 ─────────────────────────────────────────────────── 1 file · 9B ──
     12:00   todo.txt                    ~/projects/gomi                      9B
 ── Mon, May 26 ───────────────────────────────────────────────── 1 file · 17B ──
-    12:00   report.csv                  ~/projects/gomi                     17B
+    12:00   report.csv                  /tmp                                17B
 ── Tue, May 6 ─────────────────────────────────────────────────── 1 file · 4B ──
   12 files · ↓ 1 more
 
-  ↑/k      up             enter restore      q quit
-  ↓/j      down           space detail       ? close help
-  →/l/pgdn next page      esc   reset
-  ←/h/pgup prev page      tab   select
-  g/home   go to start    s+tab de-select
+  ↑/k      up             enter restore      v   view
+  ↓/j      down           space detail       l/→ open
+  →/l/pgdn next page      esc   reset        h/← close
+  ←/h/pgup prev page      tab   select       q   quit
+  g/home   go to start    s+tab de-select    ?   close help
   G/end    go to end
 -- styles --
 L1 1-5 fg=#ad58b4 bold
-L1 7-29 fg=#626262
+L1 7-79 fg=#626262
 L2 0-2 fg=#999999
 L2 3-8 fg=#4a4a4a bold
 L2 9-62 fg=#999999
@@ -123,24 +123,30 @@ L25 11-13 fg=#808080
 L25 26-31 fg=#626262
 L25 32-39 fg=#808080
 L25 45-46 fg=#626262
-L25 47-51 fg=#808080
+L25 49-53 fg=#808080
 L26 2-5 fg=#626262
 L26 11-15 fg=#808080
 L26 26-31 fg=#626262
 L26 32-38 fg=#808080
-L26 45-46 fg=#626262
-L26 47-57 fg=#808080
+L26 45-48 fg=#626262
+L26 49-53 fg=#808080
 L27 2-10 fg=#626262
 L27 11-20 fg=#808080
 L27 26-29 fg=#626262
 L27 32-37 fg=#808080
+L27 45-48 fg=#626262
+L27 49-54 fg=#808080
 L28 2-10 fg=#626262
 L28 11-20 fg=#808080
 L28 26-29 fg=#626262
 L28 32-38 fg=#808080
+L28 45-46 fg=#626262
+L28 49-53 fg=#808080
 L29 2-8 fg=#626262
 L29 11-22 fg=#808080
 L29 26-31 fg=#626262
 L29 32-41 fg=#808080
+L29 45-46 fg=#626262
+L29 49-59 fg=#808080
 L30 2-7 fg=#626262
 L30 11-20 fg=#808080

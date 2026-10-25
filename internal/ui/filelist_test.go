@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/babarot/gomi/internal/config"
 	"github.com/babarot/gomi/internal/trash"
 )
 
@@ -233,5 +234,46 @@ func TestQueueSizes(t *testing.T) {
 	m = asModel(t, updated)
 	if cmd == nil || len(m.sizeQueue) != 0 || m.sizing != listSizers {
 		t.Errorf("the next directory did not start: queue %d, sizing %d", len(m.sizeQueue), m.sizing)
+	}
+}
+
+func TestFileList_Places(t *testing.T) {
+	l := testList()
+	l.setView(viewPlaces, listNow)
+	rows := l.rows(listNow)
+	// every file was deleted from /home/user, so one fold, opened
+	if len(rows) != 5 || rows[0].kind != rowFold || !rows[0].open {
+		t.Fatalf("rows = %d, first %v; want one open fold of 4 files", len(rows), rows[0].kind)
+	}
+	l.toggle(false, listNow)
+	if got := len(l.rows(listNow)); got != 1 {
+		t.Errorf("rows after closing = %d, want 1", got)
+	}
+}
+
+func TestFileList_BatchesKeepsCursorOnFile(t *testing.T) {
+	l := testList()
+	l.move(1, listNow) // on b, which the run "run" deleted with a
+	l.setView(viewBatches, listNow)
+	// the first fold (a and b) opens, so the cursor stays on b
+	if f, ok := l.current(listNow); !ok || f.Name != "b" {
+		t.Errorf("cursor on %v after switching, want b", f.Name)
+	}
+	// closing from a file moves to its fold
+	l.toggle(false, listNow)
+	if r, ok := l.currentRow(listNow); !ok || r.kind != rowFold || r.key != "run" {
+		t.Errorf("cursor on %+v after closing, want the fold of run", r.key)
+	}
+}
+
+func TestStartView(t *testing.T) {
+	cfg := config.UI{View: "batches", Views: []string{"places", "batches"}}
+	if got := startView(cfg); got != "batches" {
+		t.Errorf("startView = %q, want batches", got)
+	}
+	// a view ui.views does not have starts with the first of them
+	cfg.View = "recent"
+	if got := startView(cfg); got != "places" {
+		t.Errorf("startView = %q, want places", got)
 	}
 }

@@ -1,7 +1,7 @@
 -- screen --
- gomi  12 in the trash · 1.7K
+ gomi  12 in the trash · 1.7K                                      view: recent
 ╭─ archive.bin ────────────────────────────────────────────────────────────────╮
-│ From     ~/projects/gomi                                                     │
+│ From     ~/Downloads                                                         │
 │ Deleted  2025-06-14 10:00  1 day ago                                         │
 │ Size     12B  file                                                           │
 │ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │
@@ -31,13 +31,13 @@
   space back • n next • p prev • ? more
 -- styles --
 L1 1-5 fg=#ad58b4 bold
-L1 7-29 fg=#626262
+L1 7-79 fg=#626262
 L2 0-2 fg=#eeeedd
 L2 3-14 fg=#262626 bold
 L2 15-80 fg=#eeeedd
 L3 0-1 fg=#eeeedd
 L3 2-6 fg=#626262
-L3 11-26 fg=#262626
+L3 11-22 fg=#262626
 L3 79-80 fg=#eeeedd
 L4 0-1 fg=#eeeedd
 L4 2-9 fg=#626262

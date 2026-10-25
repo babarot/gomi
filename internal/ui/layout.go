@@ -91,6 +91,12 @@ func (m Model) followCursor(cmd tea.Cmd) (Model, tea.Cmd) {
 	if m.state.current != ListView || m.listLayout().side == sideNone {
 		return m, cmd
 	}
+	if r, ok := m.list.currentRow(now()); ok && r.kind == rowFold {
+		// a fold's preview is what is in it, drawn from the list; a file is
+		// read again when the cursor comes back to one
+		m.detailFile = File{}
+		return m, cmd
+	}
 	f, ok := m.list.current(now())
 	// the preview shows no file yet before the first one
 	if !ok || (m.detailFile.File != nil && f.TrashPath == m.detailFile.TrashPath) {

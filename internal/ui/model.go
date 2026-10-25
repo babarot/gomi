@@ -2,6 +2,7 @@ package ui
 
 import (
 	"os"
+	"slices"
 
 	"charm.land/bubbles/v2/help"
 	"charm.land/bubbles/v2/textinput"
@@ -99,6 +100,7 @@ func NewModel(t trash.Trash, files []*trash.File, opts RenderOptions) Model {
 
 	home, _ := os.UserHomeDir()
 	list := newFileList()
+	list.view = startView(uiCfg)
 	m := Model{
 		trash:     t,
 		state:     NewViewState(),
@@ -168,4 +170,17 @@ func uiHeight(spec string, termHeight, cursorY int) int {
 // tell where the prompt left the cursor
 func (m Model) waitsForCursor() bool {
 	return m.config.Height == config.HeightAuto || m.config.Height == ""
+}
+
+// startView is the view the list starts in: ui.view when ui.views has it,
+// else the first of ui.views
+func startView(cfg config.UI) string {
+	views := cfg.Views
+	if len(views) == 0 {
+		views = []string{viewRecent, viewPlaces, viewBatches}
+	}
+	if slices.Contains(views, cfg.View) {
+		return cfg.View
+	}
+	return views[0]
 }

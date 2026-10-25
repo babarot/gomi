@@ -31,6 +31,7 @@ type fixture struct {
 	entries map[string]string // directory entries; nil for a file
 	ago     time.Duration     // how long before goldenNow it was deleted
 	runID   string            // the run that deleted it, shared by files deleted together
+	dir     string            // where it was deleted from; empty is ~/projects/gomi
 }
 
 var fixtures = []fixture{
@@ -42,13 +43,13 @@ func main() {
 	fmt.Println("hello, gomi")
 }
 `},
-	{name: "notes", ago: 5 * time.Hour, entries: map[string]string{
+	{name: "notes", ago: 5 * time.Hour, dir: "/home/user/docs", entries: map[string]string{
 		"a.txt":   "first note\n",
 		"b.md":    "# second note\n\nsome text\n",
 		"c.log":   "2025-06-15 started\n2025-06-15 stopped\n",
 		"todo.md": "- [ ] restore files\n",
 	}},
-	{name: "archive.bin", ago: 26 * time.Hour, content: "\x00\x01\x02\x03\xff\xfe\xfd\xfc\x00\x00\x10\x20"},
+	{name: "archive.bin", ago: 26 * time.Hour, dir: "/home/user/Downloads", content: "\x00\x01\x02\x03\xff\xfe\xfd\xfc\x00\x00\x10\x20"},
 	{name: "long.txt", ago: 50 * time.Hour, content: longText()},
 	{name: "README.md", ago: 74 * time.Hour, runID: "run-1", content: "# gomi\n\nReplacement for rm with rich trash.\n"},
 	{name: "config.yaml", ago: 74*time.Hour + 30*time.Second, runID: "run-1", content: "core:\n  trash:\n    strategy: auto\n"},
@@ -56,8 +57,8 @@ func main() {
 	{name: "another-quite-long-file-name.txt", ago: 146 * time.Hour, content: "b\n"},
 	{name: "yet-another-long-file-name-here.txt", ago: 170 * time.Hour, content: "c\n"},
 	{name: "todo.txt", ago: 240 * time.Hour, content: "buy milk\n"},
-	{name: "report.csv", ago: 480 * time.Hour, content: "name,size\ngomi,1\n"},
-	{name: "old.log", ago: 960 * time.Hour, content: "old\n"},
+	{name: "report.csv", ago: 480 * time.Hour, dir: "/tmp", content: "name,size\ngomi,1\n"},
+	{name: "old.log", ago: 960 * time.Hour, dir: "/tmp", content: "old\n"},
 }
 
 // longText has more lines than the preview shows, each shorter than the
@@ -96,9 +97,13 @@ func makeFixtures(t *testing.T) []*trash.File {
 		} else {
 			writeFile(t, path, f.content)
 		}
+		dir := f.dir
+		if dir == "" {
+			dir = "/home/user/projects/gomi"
+		}
 		files = append(files, &trash.File{
 			Name:         f.name,
-			OriginalPath: "/home/user/projects/gomi/" + f.name,
+			OriginalPath: dir + "/" + f.name,
 			TrashPath:    path,
 			DeletedAt:    goldenNow.Add(-f.ago),
 			RunID:        f.runID,
@@ -280,6 +285,11 @@ func withStyle(custom bool) func(o *RenderOptions) {
 	}
 }
 
+// withView starts in the named view
+func withView(name string) func(o *RenderOptions) {
+	return func(o *RenderOptions) { o.Config.View = name }
+}
+
 // withTheme draws with the named theme
 func withTheme(name string) func(o *RenderOptions) {
 	return func(o *RenderOptions) {
@@ -295,6 +305,13 @@ var goldenCases = []goldenCase{
 	{name: "list-wide-down", width: 120, keys: []string{"down"}},
 	{name: "list-preview-below", opts: func(o *RenderOptions) { o.Config.Preview.Position = "below" }},
 	{name: "list-preview-right", width: 100, opts: func(o *RenderOptions) { o.Config.Preview.Position = "right" }, keys: []string{"down", "down", "down"}},
+	{name: "view-places", opts: withView("places")},
+	{name: "view-places-close", opts: withView("places"), keys: []string{"h", "j", "l"}},
+	{name: "view-batches", opts: withView("batches"), keys: []string{"j", "j", "j", "l", "j"}},
+	{name: "view-switch", keys: []string{"j", "v"}},
+	{name: "view-fold-select", opts: withView("places"), keys: []string{"tab"}},
+	{name: "view-fold-preview", width: 120, opts: withView("batches"), keys: []string{"j", "j", "j"}},
+	{name: "view-fold-delete", opts: func(o *RenderOptions) { withView("places")(o); o.DeleteEnabled = true }, keys: []string{"D"}},
 	{name: "list-preview-none", width: 120, opts: func(o *RenderOptions) { o.Config.Preview.Position = "none" }},
 	{name: "list-height", opts: func(o *RenderOptions) { o.Config.Height = "12" }},
 	{name: "list-next-page", opts: func(o *RenderOptions) { o.Config.Height = "12" }, keys: []string{"right"}},

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"charm.land/bubbles/v2/help"
 	"charm.land/bubbles/v2/viewport"
@@ -656,5 +657,33 @@ func TestUpdate_DetailView_HelpResizesPreview(t *testing.T) {
 	m = asModel(t, updated)
 	if m.viewport.Height() >= before {
 		t.Errorf("preview height = %d with the full help, want less than %d", m.viewport.Height(), before)
+	}
+}
+
+func TestTargets(t *testing.T) {
+	m := newTestModel()
+	a, b := listFile("a", time.Hour, "run"), listFile("b", time.Hour+time.Second, "run")
+	c := listFile("c", 2*time.Hour, "")
+	m.list.setFiles([]File{a, b, c}, listNow)
+	m.list.setView(viewBatches, listNow)
+	m.list.toggle(false, listNow) // close the run's fold, the cursor on it
+
+	// on a fold: its files
+	if got := m.targets(listNow); len(got) != 2 {
+		t.Errorf("targets on a fold = %d files, want 2", len(got))
+	}
+	// the selection wins wherever the cursor is
+	m.selection.Add(c)
+	if got := m.targets(listNow); len(got) != 1 || got[0].Name != "c" {
+		t.Errorf("targets with a selection = %v, want [c]", got)
+	}
+}
+
+func TestNextView(t *testing.T) {
+	m := newTestModel()
+	m.config.Views = []string{"batches", "recent"}
+	m.list.view = viewRecent
+	if got := m.nextView(); got != "batches" {
+		t.Errorf("nextView after recent = %q, want batches (the views wrap)", got)
 	}
 }

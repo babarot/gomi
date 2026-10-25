@@ -79,10 +79,15 @@ func (m Model) listView() string {
 	return strings.Join(lines, "\n")
 }
 
-// sidePane is the preview beside the list, of the file on the cursor
+// sidePane is the preview beside the list, of the file or the fold on
+// the cursor
 func (m Model) sidePane(l layout) string {
-	if _, ok := m.list.current(now()); !ok {
+	r, ok := m.list.currentRow(now())
+	switch {
+	case !ok:
 		return ""
+	case r.kind == rowFold:
+		return m.foldPane(r, l.paneW, l.paneH)
 	}
 	return m.pane(m.detailFile, l.paneW, l.paneH)
 }
@@ -99,9 +104,9 @@ func (m Model) emptyText() string {
 func (m Model) headerLine() string {
 	left := m.fg(m.palette.Cursor).Bold(true).Render("gomi") +
 		m.fg(m.palette.Description).Render(fmt.Sprintf("  %d in the trash · %s", len(m.list.files), m.totalSize()))
-	right := ""
+	right := m.fg(m.palette.Description).Render("view: " + m.list.view)
 	if n := len(m.selection.items); n > 0 {
-		right = m.fg(m.palette.Selected).Render(fmt.Sprintf("%d selected", n))
+		right = m.fg(m.palette.Selected).Render(fmt.Sprintf("%d selected", n)) + m.fg(m.palette.Description).Render(" · ") + right
 	}
 	gap := m.width - 2 - ansi.StringWidth(left) - ansi.StringWidth(right)
 	if gap < 1 {
@@ -125,12 +130,170 @@ func (m Model) knownSize(f File) (int64, bool) {
 	return size, ok && size >= 0
 }
 
-// rowLine draws a day heading or a file, w columns wide
+// rowLine draws a day heading, a fold or a file, w columns wide
 func (m Model) rowLine(r row, onCursor bool, w int) string {
-	if r.kind == rowDay {
+	switch {
+	case r.kind == rowDay:
 		return m.dayLine(r, w)
+	case r.kind == rowFold:
+		return m.foldLine(r, onCursor, w)
+	case r.depth > 0:
+		return m.foldFileLine(r, onCursor, w)
 	}
 	return m.fileLine(r, onCursor, w)
+}
+
+// rowStyle gives a row's styles the cursor row's background when it is
+// under the cursor
+func (m Model) rowStyle(onCursor bool) func(lipgloss.Style) lipgloss.Style {
+	return func(s lipgloss.Style) lipgloss.Style {
+		if onCursor {
+			return s.Background(m.palette.CursorRow.Of(m.isDark))
+		}
+		return s
+	}
+}
+
+// rowStart is the cursor bar and the selection mark that every selectable
+// row starts with; marked is the mark, if any
+func (m Model) rowStart(onCursor bool, mark string) string {
+	on := m.rowStyle(onCursor)
+	plain := on(lipgloss.NewStyle())
+	bar := " "
+	if onCursor {
+		bar = "▎"
+	}
+	if mark == "" {
+		mark = " "
+	}
+	return on(m.fg(m.palette.Cursor)).Render(bar) + plain.Render(" ") +
+		on(m.fg(m.palette.Selected)).Bold(true).Render(mark) + plain.Render(" ")
+}
+
+// fillRow pads a row to w columns on the row's background and cuts it to w
+func (m Model) fillRow(s string, onCursor bool, w int) string {
+	plain := m.rowStyle(onCursor)(lipgloss.NewStyle())
+	s += plain.Render(strings.Repeat(" ", max(0, w-ansi.StringWidth(s))))
+	return ansi.Truncate(s, w, "")
+}
+
+// foldLine is a directory in places or a run in batches: ▸ or ▾, what it
+// is, and how many files it holds and their size on the right.
+func (m Model) foldLine(r row, onCursor bool, w int) string {
+	on := m.rowStyle(onCursor)
+	plain := on(lipgloss.NewStyle())
+	dim := on(m.fg(m.palette.Description))
+
+	mark := ""
+	selected := 0
+	for _, f := range r.files {
+		if m.selection.Contains(f) {
+			selected++
+		}
+	}
+	switch {
+	case selected > 0 && selected == len(r.files):
+		mark = "✓"
+	case selected > 0:
+		mark = "•"
+	}
+	arrow := "▸"
+	if r.open {
+		arrow = "▾"
+	}
+
+	count := fmt.Sprintf("%d %s", len(r.files), plural(len(r.files), "file"))
+	if len(r.files) < r.total {
+		// the filter leaves out some of the fold
+		count = fmt.Sprintf("%d of %d files", len(r.files), r.total)
+	}
+	right := count + " · " + m.sizeOfFiles(r.files)
+	if m.list.view == viewPlaces {
+		right += "  " + fmt.Sprintf("%9s", relativeTime(r.files[0].DeletedAt))
+	}
+	room := max(0, w-6-ansi.StringWidth(right)-2)
+
+	var label string
+	if m.list.view == viewPlaces {
+		label = on(m.fg(m.palette.Name)).Bold(true).Render(shortPath(m.displayPath(r.key), room))
+	} else {
+		label = m.runLabel(r, room, on)
+	}
+	line := m.rowStart(onCursor, mark) + on(m.fg(m.palette.Cursor)).Render(arrow) + plain.Render(" ") + label
+	line += plain.Render(strings.Repeat(" ", max(1, w-1-ansi.StringWidth(line)-ansi.StringWidth(right))))
+	line += dim.Render(right)
+	return m.fillRow(line, onCursor, w)
+}
+
+// runLabel is a run in batches: when it ran, and "rm" with what it
+// removed, and the directory it removed them from when there is one
+func (m Model) runLabel(r row, room int, on func(lipgloss.Style) lipgloss.Style) string {
+	t := r.files[0].DeletedAt.In(now().Location())
+	when := t.Format("15:04")
+	if dayLabel(t, now()) != "Today" {
+		when = t.Format("Jan 2 15:04")
+	}
+	names := make([]string, len(r.files))
+	places := map[string]bool{}
+	for i, f := range r.files {
+		names[i] = f.Name
+		if f.IsDir {
+			names[i] += "/"
+		}
+		places[filepath.Dir(f.OriginalPath)] = true
+	}
+	where := fmt.Sprintf("%d places", len(places))
+	if len(places) == 1 {
+		where = m.displayPath(filepath.Dir(r.files[0].OriginalPath))
+	}
+	head := fmt.Sprintf("%-12s ", when)
+	rest := max(0, room-ansi.StringWidth(head)-3)
+	whereW := min(ansi.StringWidth(where), rest/3)
+	nameW := max(0, rest-whereW-2)
+	label := on(m.fg(m.palette.Description)).Render(head) +
+		on(m.fg(m.palette.HelpSeparator)).Render("rm ") +
+		on(m.fg(m.palette.Name)).Bold(true).Render(ansi.Truncate(strings.Join(names, " "), nameW, ellipsis))
+	if whereW > 0 {
+		label += on(lipgloss.NewStyle()).Render("  ") + on(m.fg(m.palette.Description)).Render(shortPath(where, whereW))
+	}
+	return label
+}
+
+// foldFileLine is a file in an open fold: a tree line, its name, and on
+// the right when it was deleted, or in batches where from, and its size
+func (m Model) foldFileLine(r row, onCursor bool, w int) string {
+	on := m.rowStyle(onCursor)
+	plain := on(lipgloss.NewStyle())
+	f := r.file
+	mark := ""
+	if m.selection.Contains(f) {
+		mark = "✓"
+	}
+	tree := "├"
+	if r.last {
+		tree = "└"
+	}
+	size := ellipsis
+	if n, ok := m.knownSize(f); ok {
+		size = compactBytes(n)
+	}
+	right := fmt.Sprintf("%9s  %6s", relativeTime(f.DeletedAt), size)
+	if m.list.view == viewBatches {
+		right = fmt.Sprintf("%6s", size)
+	}
+	line := m.rowStart(onCursor, mark) + plain.Render("  ") + on(m.fg(m.palette.HelpSeparator)).Render(tree) + plain.Render(" ")
+	room := max(0, w-1-ansi.StringWidth(line)-ansi.StringWidth(right)-2)
+	if m.list.view == viewBatches {
+		nameW := room / 2
+		line += m.nameCell(f, nameW, on)
+		line += plain.Render(strings.Repeat(" ", max(2, nameW+2-ansi.StringWidth(ansi.Strip(m.nameCell(f, nameW, on))))))
+		line += on(m.fg(m.palette.Description)).Render(shortPath(m.displayPath(filepath.Dir(f.OriginalPath)), max(0, room-nameW-2)))
+	} else {
+		line += m.nameCell(f, room, on)
+	}
+	line += plain.Render(strings.Repeat(" ", max(1, w-1-ansi.StringWidth(line)-ansi.StringWidth(right))))
+	line += on(m.fg(m.palette.Description)).Render(right)
+	return m.fillRow(line, onCursor, w)
 }
 
 // dayLine is a rule with the day and what was deleted on it

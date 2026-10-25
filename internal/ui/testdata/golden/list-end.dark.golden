@@ -1,10 +1,10 @@
 -- screen --
- gomi  12 in the trash · 1.7K
+ gomi  12 in the trash · 1.7K                                      view: recent
 ── Today ───────────────────────────────────────────────────── 2 files · 166B ──
     10:00   main.go                     ~/projects/gomi                     72B
-    07:00   notes/                      ~/projects/gomi                     94B
+    07:00   notes/                      ~/docs                              94B
 ── Yesterday ─────────────────────────────────────────────────── 1 file · 12B ──
-    10:00   archive.bin                 ~/projects/gomi                     12B
+    10:00   archive.bin                 ~/Downloads                         12B
 ── Friday ───────────────────────────────────────────────────── 1 file · 1.4K ──
     10:00   long.txt                    ~/projects/gomi                    1.4K
 ── Thursday ─────────────────────────────────────────────────── 2 files · 78B ──
@@ -19,9 +19,9 @@
 ── Thu, Jun 5 ─────────────────────────────────────────────────── 1 file · 9B ──
     12:00   todo.txt                    ~/projects/gomi                      9B
 ── Mon, May 26 ───────────────────────────────────────────────── 1 file · 17B ──
-    12:00   report.csv                  ~/projects/gomi                     17B
+    12:00   report.csv                  /tmp                                17B
 ── Tue, May 6 ─────────────────────────────────────────────────── 1 file · 4B ──
-▎   12:00   old.log                     ~/projects/gomi                      4B 
+▎   12:00   old.log                     /tmp                                 4B 
 
 
 
@@ -31,7 +31,7 @@
   ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter …
 -- styles --
 L1 1-5 fg=#ad58b4 bold
-L1 7-29 fg=#777777
+L1 7-79 fg=#777777
 L2 0-2 fg=#3c3c3c
 L2 3-8 fg=#bbbbbb bold
 L2 9-62 fg=#3c3c3c

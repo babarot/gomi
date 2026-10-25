@@ -1,12 +1,12 @@
 -- screen --
- gomi  12 in the trash · 1.7K
+ gomi  12 in the trash · 1.7K                                      view: recent
  / re 
 ── Thursday ──────────────────────────────────────────────────── 1 file · 44B ──
 ▎   10:00   README.md                   ~/projects/gomi                     44B 
 ── Sun, Jun 8 ─────────────────────────────────────────────────── 1 file · 2B ──
     10:00   yet-another-long-file-nam…  ~/projects/gomi                      2B
 ── Mon, May 26 ───────────────────────────────────────────────── 1 file · 17B ──
-    12:00   report.csv                  ~/projects/gomi                     17B
+    12:00   report.csv                  /tmp                                17B
 
 
 
@@ -31,7 +31,7 @@
   ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter …
 -- styles --
 L1 1-5 fg=#c01020 bold
-L1 7-29 fg=#626262
+L1 7-79 fg=#626262
 L2 1-2 fg=#c01050 bold
 L2 5-6 fg=c7 reverse
 L3 0-2 fg=#999999

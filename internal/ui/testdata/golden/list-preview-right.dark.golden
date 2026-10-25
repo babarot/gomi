@@ -1,10 +1,10 @@
 -- screen --
- gomi  12 in the trash · 1.7K
+ gomi  12 in the trash · 1.7K                                                          view: recent
 ── Today ────────────────────────────── 2 files · 166B ── ╭─ long.txt ─────────────────────────────╮
     10:00   main.go           ~/projects/gomi        72B  │ From     ~/projects/gomi               │
-    07:00   notes/            ~/projects/gomi        94B  │ Deleted  2025-06-13 10:00  2 days ago  │
+    07:00   notes/            ~/docs                 94B  │ Deleted  2025-06-13 10:00  2 days ago  │
 ── Yesterday ──────────────────────────── 1 file · 12B ── │ Size     1.4K  file                    │
-    10:00   archive.bin       ~/projects/gomi        12B  │ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │
+    10:00   archive.bin       ~/Downloads            12B  │ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │
 ── Friday ────────────────────────────── 1 file · 1.4K ── │ line 01: lorem ipsum dolor sit amet    │
 ▎   10:00   long.txt          ~/projects/gomi       1.4K  │ line 02: lorem ipsum dolor sit amet    │
 ── Thursday ──────────────────────────── 2 files · 78B ── │ line 03: lorem ipsum dolor sit amet    │
@@ -19,19 +19,19 @@
 ── Thu, Jun 5 ──────────────────────────── 1 file · 9B ── │ line 12: lorem ipsum dolor sit amet    │
     12:00   todo.txt          ~/projects/gomi         9B  │ line 13: lorem ipsum dolor sit amet    │
 ── Mon, May 26 ────────────────────────── 1 file · 17B ── │ line 14: lorem ipsum dolor sit amet    │
-    12:00   report.csv        ~/projects/gomi        17B  │ line 15: lorem ipsum dolor sit amet    │
+    12:00   report.csv        /tmp                   17B  │ line 15: lorem ipsum dolor sit amet    │
 ── Tue, May 6 ──────────────────────────── 1 file · 4B ── │ line 16: lorem ipsum dolor sit amet    │
-    12:00   old.log           ~/projects/gomi         4B  │ line 17: lorem ipsum dolor sit amet    │
+    12:00   old.log           /tmp                    4B  │ line 17: lorem ipsum dolor sit amet    │
                                                           │ line 18: lorem ipsum dolor sit amet    │
                                                           │ line 19: lorem ipsum dolor sit amet    │
                                                           │ line 20: lorem ipsum dolor sit amet    │
                                                           ╰────────────────────────────── 1–20/41 ─╯
   12 files
 
-  ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter • ? more
+  ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter • v view • ? more
 -- styles --
 L1 1-5 fg=#ad58b4 bold
-L1 7-29 fg=#777777
+L1 7-99 fg=#777777
 L2 0-2 fg=#3c3c3c
 L2 3-8 fg=#bbbbbb bold
 L2 9-39 fg=#3c3c3c
@@ -222,3 +222,6 @@ L30 68-74 fg=#4a4a4a
 L30 75-76 fg=#3c3c3c
 L30 77-78 fg=#626262
 L30 79-83 fg=#4a4a4a
+L30 84-85 fg=#3c3c3c
+L30 86-87 fg=#626262
+L30 88-92 fg=#4a4a4a
