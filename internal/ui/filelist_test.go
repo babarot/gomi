@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -106,7 +107,7 @@ func TestFileList_Filter(t *testing.T) {
 		t.Errorf("shown = %v, want [old]", shown)
 	}
 	// the place a file was deleted from matches too
-	l.filter.SetValue("home/user")
+	l.filter.SetValue(filepath.FromSlash("home/user"))
 	if got := len(l.shown()); got != 4 {
 		t.Errorf("shown %d files for the place, want 4", got)
 	}
@@ -165,8 +166,10 @@ func TestShortPath(t *testing.T) {
 		{"/private/tmp/claude/fee7ca5a-5176-4dc0/scratchpad", 32, "/private/…/fee7ca5a-…/scratchpad"},
 	}
 	for _, tt := range tests {
-		if got := shortPath(tt.path, tt.w); got != tt.want {
-			t.Errorf("shortPath(%q, %d) = %q, want %q", tt.path, tt.w, got, tt.want)
+		// paths are written with the separator of the OS
+		path, want := filepath.FromSlash(tt.path), filepath.FromSlash(tt.want)
+		if got := shortPath(path, tt.w); got != want {
+			t.Errorf("shortPath(%q, %d) = %q, want %q", path, tt.w, got, want)
 		}
 	}
 }
