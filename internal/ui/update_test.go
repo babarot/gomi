@@ -646,3 +646,15 @@ func TestUpdate_HeightFromCursor(t *testing.T) {
 		t.Errorf("settled %v, height %d; want true, 36 (the rows below the prompt)", m.settled, m.height)
 	}
 }
+
+func TestUpdate_DetailView_HelpResizesPreview(t *testing.T) {
+	m := newTestModel()
+	updated, _ := m.Update(ShowDetailMsg{file: newTestFile("a.txt")})
+	m = asModel(t, updated)
+	before := m.viewport.Height()
+	updated, _ = m.Update(tea.KeyPressMsg{Code: '?', Text: "?"})
+	m = asModel(t, updated)
+	if m.viewport.Height() >= before {
+		t.Errorf("preview height = %d with the full help, want less than %d", m.viewport.Height(), before)
+	}
+}

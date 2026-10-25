@@ -302,6 +302,8 @@ func (m Model) updateDetailView(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 
 	case key.Matches(msg, m.keyMap.Common.Help):
 		m.help.ShowAll = !m.help.ShowAll
+		// the full help takes rows from the pane
+		m.resizePreview()
 		return m, nil
 
 	}
