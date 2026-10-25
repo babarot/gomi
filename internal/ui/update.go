@@ -106,16 +106,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case sizeLoadedMsg:
+		// a size may reorder the picker's rows by size; the cursor stays on
+		// the file it was on
+		on := m.list.cursorKey(now())
 		delete(m.reading, sizeKey(msg.path))
 		m.sizes[msg.path] = msg.size
 		if msg.err != nil {
 			m.sizes[msg.path] = -1
 		}
+		m.list.find(on, now())
 		if msg.queued {
 			m.sizing--
-			return m, tea.Batch(m.nextSizes()...)
+			return m.followCursor(tea.Batch(m.nextSizes()...))
 		}
-		return m, nil
+		return m.followCursor(nil)
 
 	case FileListLoadedMsg:
 		if msg.err != nil {
@@ -136,11 +140,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	}
 
-	// the filter takes what else comes, such as the cursor's blink
+	// the filter takes what else comes, such as the cursor's blink or a
+	// paste; a paste narrows the list as typing does
 	if m.list.filtering {
+		before := m.list.filter.Value()
 		var cmd tea.Cmd
 		m.list.filter, cmd = m.list.filter.Update(msg)
 		cmds = append(cmds, cmd)
+		if m.list.filter.Value() != before {
+			m.list.top = 0
+			m.list.toStart(now())
+			return m.followCursor(tea.Batch(cmds...))
+		}
 	}
 	return m, tea.Batch(cmds...)
 }
@@ -209,11 +220,11 @@ func (m Model) updateListView(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.sortSel = m.list.sort
 		return m, nil
 
-	case m.list.view != viewRecent && key.Matches(msg, m.keyMap.List.Open):
+	case m.list.folds() && key.Matches(msg, m.keyMap.List.Open):
 		m.list.toggle(true, t)
 		return m, nil
 
-	case m.list.view != viewRecent && key.Matches(msg, m.keyMap.List.Close):
+	case m.list.folds() && key.Matches(msg, m.keyMap.List.Close):
 		m.list.toggle(false, t)
 		return m, nil
 

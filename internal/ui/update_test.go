@@ -2,6 +2,7 @@ package ui
 
 import (
 	"errors"
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -740,5 +741,57 @@ func TestUpdate_SortMenu(t *testing.T) {
 	m = asModel(t, updated)
 	if m.sortMenu || m.list.sort != 2 {
 		t.Errorf("after 3: menu %v, sort %d; want closed, 2", m.sortMenu, m.list.sort)
+	}
+}
+
+// A size that reorders the picker by size keeps the cursor, the preview
+// and what enter acts on on the same file.
+func TestUpdate_SizeKeepsCursorInSizeOrder(t *testing.T) {
+	m := newTestModel()
+	a, b := listFile("a", time.Hour, ""), listFile("b", 2*time.Hour, "")
+	a.IsDir, b.IsDir = true, true
+	m.list.setFiles([]File{a, b}, listNow)
+	m.list.setView(viewPicker, listNow)
+	m.list.sizeOf = m.knownSize
+	m.list.sort = sortBySize
+	m.sizes["/trash/a"] = 10
+	m.list.toStart(listNow) // on a, the only one sized
+	updated, _ := m.Update(sizeLoadedMsg{path: "/trash/b", size: 99})
+	m = asModel(t, updated)
+	if f, _ := m.list.current(listNow); f.Name != "a" {
+		t.Errorf("cursor on %q after b was sized, want a", f.Name)
+	}
+}
+
+// A paste into the filter narrows the list and moves the cursor as typing
+// does.
+func TestUpdate_PasteNarrows(t *testing.T) {
+	m := newTestModel()
+	m.list.setFiles([]File{listFile("apple", time.Hour, ""), listFile("berry", 2*time.Hour, "")}, listNow)
+	m.list.setView(viewPicker, listNow)
+	m.list.filtering = true
+	m.list.filter.Focus()
+	updated, _ := m.Update(tea.PasteMsg{Content: "berry"})
+	m = asModel(t, updated)
+	if f, _ := m.list.current(listNow); f.Name != "berry" {
+		t.Errorf("cursor on %q after pasting berry, want berry", f.Name)
+	}
+}
+
+func TestUpdate_PickerHMovesByPage(t *testing.T) {
+	m := newTestModel()
+	var files []File
+	for i := range 5 {
+		files = append(files, listFile(fmt.Sprintf("f%d", i), time.Duration(i+1)*time.Hour, ""))
+	}
+	m.list.setFiles(files, listNow)
+	m.list.setView(viewPicker, listNow)
+	m.list.shownN = 2
+	m.list.toEnd(listNow)
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'h', Text: "h"})
+	m = asModel(t, updated)
+	// a page up from f4, not back to the top
+	if f, _ := m.list.current(listNow); f.Name != "f2" {
+		t.Errorf("cursor on %q after h, want f2", f.Name)
 	}
 }

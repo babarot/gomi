@@ -284,7 +284,7 @@ func (l fileList) foldRows() []row {
 // file it is on is in and moves to the fold; open says which.
 func (l *fileList) toggle(open bool, now time.Time) {
 	r, ok := l.currentRow(now)
-	if !ok || l.view == viewRecent {
+	if !ok || !l.folds() {
 		return
 	}
 	switch {
@@ -537,4 +537,10 @@ func fuzzyRunes(s, q string) []int {
 		return nil
 	}
 	return pos
+}
+
+// folds reports whether the view folds the files, so that l and h open
+// and close; elsewhere they move by a page
+func (l fileList) folds() bool {
+	return l.view == viewPlaces || l.view == viewBatches
 }
