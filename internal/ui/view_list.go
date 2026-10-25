@@ -128,11 +128,13 @@ func (m Model) sizeOfFiles(files []File) string {
 		}
 		total += size
 	}
-	s := compactBytes(total)
-	if unknown {
-		s += ellipsis
+	switch {
+	case unknown && total == 0:
+		return ellipsis
+	case unknown:
+		return compactBytes(total) + ellipsis
 	}
-	return s
+	return compactBytes(total)
 }
 
 func plural(n int, word string) string {

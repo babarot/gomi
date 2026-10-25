@@ -1,75 +1,103 @@
 -- screen --
-╭─────────╮
-│ main.go ├───────────────────────────────────────────────────────
-╰─────────╯
-
-   DELETED FROM 
-
-   /home/user/projects/gomi
-
-
-   DELETED AT     2 hours ago
-
-──────────────────────────────────────────────────────────── 72 B 
-package main
-                   ╭──────────────────────────╮
-                   │                          │
-                   │ Are you sure you want to │
-                   │        'main.go'?        │
-                   │                          │
-                   │           (y/n)          │
-                   │                          │
-                   ╰──────────────────────────╯
-
-
-
-
-
-
-
-
-
-──────────────────────────────────────────────────────────── 100% 
-──────────────────────────────────────────────────────────────────
+ gomi  12 in the trash · 1.7K
+╭─ main.go ────────────────────────────────────────────────────────────────────╮
+│ From     ~/projects/gomi                                                     │
+│ Deleted  2025-06-15 10:00  2 hours ago                                       │
+│ Size     72B  file                                                           │
+│ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │
+│ package main                                                                 │
+│                                                                              │
+│ import "fmt"                                                                 │
+│                                                                              │
+│ func main() {                                                                │
+                          ╭──────────────────────────╮
+                          │                          │
+                          │ Are you sure you want to │
+                          │        'main.go'?        │
+                          │                          │
+                          │           (y/n)          │
+                          │                          │
+                          ╰──────────────────────────╯
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
   space back • n next • p prev • ? more
 -- styles --
-L1 0-11 fg=#eeeedd
-L2 0-1 fg=#eeeedd
-L2 2-9 bold
-L2 10-66 fg=#eeeedd
-L3 0-11 fg=#eeeedd
-L5 2-16 fg=#eeeeee bg=#1c1c1c bold
-L10 2-14 fg=#eeeeee bg=#1c1c1c bold
-L12 0-60 fg=#3c3c3c
-L12 60-66 fg=#eeeedd bg=#3c3c3c
-L13 0-7 fg=#81a1c1 bold
-L13 8-12 fg=#d8dee9
-L14 19-47 fg=#ff007f
-L15 19-47 fg=#ff007f
-L16 19-20 fg=#ff007f
-L16 21-45 fg=#ff007f bold
-L16 46-47 fg=#ff007f
-L17 19-20 fg=#ff007f
-L17 28-38 fg=#ff007f bold
-L17 46-47 fg=#ff007f
-L18 19-47 fg=#ff007f
-L19 19-20 fg=#ff007f
-L19 31-36 fg=#ff007f bold
-L19 46-47 fg=#ff007f
-L20 19-47 fg=#ff007f
-L21 19-47 fg=#ff007f
-L31 0-60 fg=#3c3c3c
-L31 60-66 fg=#eeeedd bg=#3c3c3c
-L32 0-66 fg=#eeeedd
-L34 2-7 fg=#626262
-L34 8-12 fg=#808080
-L34 13-14 fg=#999999
-L34 15-16 fg=#626262
-L34 17-21 fg=#808080
-L34 22-23 fg=#999999
-L34 24-25 fg=#626262
-L34 26-30 fg=#808080
-L34 31-32 fg=#999999
-L34 33-34 fg=#626262
-L34 35-39 fg=#808080
+L1 1-5 fg=#ad58b4 bold
+L1 7-29 fg=#626262
+L2 0-2 fg=#eeeedd
+L2 3-10 fg=#262626 bold
+L2 11-80 fg=#eeeedd
+L3 0-1 fg=#eeeedd
+L3 2-6 fg=#626262
+L3 11-26 fg=#262626
+L3 79-80 fg=#eeeedd
+L4 0-1 fg=#eeeedd
+L4 2-9 fg=#626262
+L4 11-27 fg=#262626
+L4 29-40 fg=#626262
+L4 79-80 fg=#eeeedd
+L5 0-1 fg=#eeeedd
+L5 2-6 fg=#626262
+L5 11-14 fg=#262626
+L5 16-20 fg=#626262
+L5 79-80 fg=#eeeedd
+L6 0-1 fg=#eeeedd
+L6 2-78 fg=#3c3c3c
+L6 79-80 fg=#eeeedd
+L7 0-1 fg=#eeeedd
+L7 2-9 fg=#81a1c1 bold
+L7 10-14 fg=#d8dee9
+L7 79-80 fg=#eeeedd
+L8 0-80 fg=#eeeedd
+L9 0-1 fg=#eeeedd
+L9 2-8 fg=#81a1c1 bold
+L9 9-14 fg=#a3be8c
+L9 79-80 fg=#eeeedd
+L10 0-80 fg=#eeeedd
+L11 0-1 fg=#eeeedd
+L11 2-6 fg=#81a1c1 bold
+L11 7-11 fg=#88c0d0
+L11 11-15 fg=#eceff4
+L11 79-80 fg=#eeeedd
+L12 26-54 fg=#ff007f
+L13 26-54 fg=#ff007f
+L14 26-27 fg=#ff007f
+L14 28-52 fg=#ff007f bold
+L14 53-54 fg=#ff007f
+L15 26-27 fg=#ff007f
+L15 35-45 fg=#ff007f bold
+L15 53-54 fg=#ff007f
+L16 26-54 fg=#ff007f
+L17 26-27 fg=#ff007f
+L17 38-43 fg=#ff007f bold
+L17 53-54 fg=#ff007f
+L18 26-54 fg=#ff007f
+L19 26-54 fg=#ff007f
+L20 0-80 fg=#eeeedd
+L21 0-80 fg=#eeeedd
+L22 0-80 fg=#eeeedd
+L23 0-80 fg=#eeeedd
+L24 0-80 fg=#eeeedd
+L25 0-80 fg=#eeeedd
+L26 0-80 fg=#eeeedd
+L27 0-80 fg=#eeeedd
+L28 0-80 fg=#eeeedd
+L30 2-7 fg=#626262
+L30 8-12 fg=#808080
+L30 13-14 fg=#999999
+L30 15-16 fg=#626262
+L30 17-21 fg=#808080
+L30 22-23 fg=#999999
+L30 24-25 fg=#626262
+L30 26-30 fg=#808080
+L30 31-32 fg=#999999
+L30 33-34 fg=#626262
+L30 35-39 fg=#808080

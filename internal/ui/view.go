@@ -56,7 +56,7 @@ func (m Model) view() string {
 	case ListView:
 		view = m.listView()
 	case DetailView:
-		view = m.detailView() + "\n\n" + m.helpView()
+		view = m.detailView()
 	default:
 		return ""
 	}
@@ -67,16 +67,13 @@ func (m Model) view() string {
 	return view
 }
 
-// newViewportModel creates a new viewport model for file preview
+// newViewportModel creates the viewport for the preview of file, with
+// what was read of it already; resizePreview sizes it
 func (m *Model) newViewportModel(file File) viewport.Model {
-	viewportModel := viewport.New(
-		viewport.WithWidth(defaultWidth),
-		viewport.WithHeight(defaultHeight-11-1), // info pane height (11) + preview border (1)
-	)
-	viewportModel.KeyMap = keys.PreviewKeys
-
+	vp := viewport.New()
+	vp.KeyMap = keys.PreviewKeys
 	if r, ok := m.previews[file.TrashPath]; ok {
-		viewportModel.SetContent(r.content)
+		vp.SetContent(r.content)
 	}
-	return viewportModel
+	return vp
 }

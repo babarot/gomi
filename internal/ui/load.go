@@ -4,7 +4,6 @@ import (
 	"log/slog"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/dustin/go-humanize"
 	"github.com/gabriel-vasile/mimetype"
 
 	"github.com/babarot/gomi/internal/utils/fs"
@@ -135,11 +134,11 @@ func (m Model) sizeText(f File) string {
 	size, ok := m.sizes[f.TrashPath]
 	switch {
 	case f.SizeKnown:
-		return humanize.Bytes(uint64(f.Size))
+		return compactBytes(f.Size)
 	case !ok:
 		return ellipsis
 	case size < 0:
 		return "(cannot be calculated)"
 	}
-	return humanize.Bytes(uint64(size))
+	return compactBytes(size)
 }

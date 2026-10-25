@@ -45,6 +45,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.termHeight = msg.Height
 			m.height = uiHeight(m.config.Height, m.termHeight, m.cursorY)
 		}
+		m.resizePreview()
 		return m, tea.Batch(cmds...)
 
 	case tea.CursorPositionMsg:
@@ -54,6 +55,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.settled = true
 		if m.termHeight > 0 {
 			m.height = uiHeight(m.config.Height, m.termHeight, m.cursorY)
+			m.resizePreview()
 		}
 		return m, nil
 
@@ -65,6 +67,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.state.SetView(DetailView)
 		m.detailFile = msg.file
 		m.viewport = m.newViewportModel(msg.file)
+		m.resizePreview()
 		cmds = append(cmds, m.loadDetail(msg.file)...)
 		return m, tea.Batch(cmds...)
 
@@ -260,11 +263,6 @@ func (m Model) updateDetailView(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.openDeleteConfirm(m.detailFile)
 		return m, nil
 
-	case key.Matches(msg, m.keyMap.Detail.AtSign):
-		m.state.ToggleDateFormat()
-		m.state.ToggleOriginPath()
-		return m, nil
-
 	case key.Matches(msg,
 		m.keyMap.Detail.PreviewUp,
 		m.keyMap.Detail.PreviewDown,
@@ -299,8 +297,6 @@ func (m Model) updateDetailView(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case key.Matches(msg, m.keyMap.Detail.Space):
-		m.state.detail.showOrigin = true
-		m.state.detail.dateFormat = DateFormatRelative
 		m.state.SetView(ListView)
 		return m, nil
 

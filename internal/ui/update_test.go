@@ -253,26 +253,6 @@ func TestUpdate_DetailView_Quit(t *testing.T) {
 	}
 }
 
-func TestUpdate_DetailView_AtSignToggles(t *testing.T) {
-	m := newTestModel()
-	m.state.SetView(DetailView)
-
-	// Initial state
-	initialDateFormat := m.state.detail.dateFormat
-	initialShowOrigin := m.state.detail.showOrigin
-
-	msg := tea.KeyPressMsg{Code: '@', Text: "@"}
-	updated, _ := m.Update(msg)
-	model := asModel(t, updated)
-
-	if model.state.detail.dateFormat == initialDateFormat {
-		t.Error("date format should have toggled")
-	}
-	if model.state.detail.showOrigin == initialShowOrigin {
-		t.Error("showOrigin should have toggled")
-	}
-}
-
 func TestUpdate_ConfirmView_YesNo_No(t *testing.T) {
 	m := newTestModel()
 	// Reset global selection manager for test isolation
@@ -431,8 +411,8 @@ func TestUpdate_ShowDetailMsg_ReadsOnce(t *testing.T) {
 	if got := len(model.loadDetail(dir)); got != 0 {
 		t.Errorf("commands after reading = %d, want 0", got)
 	}
-	if got := model.sizeText(dir); got != "42 B" {
-		t.Errorf("sizeText = %q, want %q", got, "42 B")
+	if got := model.sizeText(dir); got != "42B" {
+		t.Errorf("sizeText = %q, want %q", got, "42B")
 	}
 }
 

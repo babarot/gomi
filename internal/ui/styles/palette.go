@@ -41,18 +41,9 @@ type Palette struct {
 	DimmedDescription Color // the line under them
 
 	// The detail view
-	Border                  Color // the frame around the file name and the line beside it
-	SelectedTitle           Color // the file name of a selected file, on Selected
-	DeletedFrom             Color // the "DELETED FROM" label
-	DeletedFromBackground   Color
-	DeletedAt               Color // the "DELETED AT" label
-	DeletedAtBackground     Color
-	PreviewBorder           Color // the lines above and below the preview
-	PreviewSize             Color // the size on the line above the preview
-	PreviewSizeBackground   Color
-	PreviewScroll           Color // the scroll position on the line below it
-	PreviewScrollBackground Color
-	PreviewError            Color // the file type and the filler when a file cannot be previewed
+	Border        Color // the frame of the preview
+	PreviewBorder Color // the rule between a file's details and its contents
+	PreviewError  Color // the file type and the filler when a file cannot be previewed
 
 	// The delete confirmation
 	Dialog            Color // the frame and the text of the dialog
@@ -102,18 +93,9 @@ func gomiPalette(st config.StyleConfig) Palette {
 		Dimmed:            Color{Light: "#808080", Dark: "#777777"},
 		DimmedDescription: Color{Light: "#999999", Dark: "#4D4D4D"},
 
-		Border:                  or(st.DetailView.Border, same("#EEEEDD")),
-		SelectedTitle:           same("#000000"),
-		DeletedFrom:             or(st.DetailView.InfoPane.DeletedFrom.Foreground, same("#EEEEEE")),
-		DeletedFromBackground:   or(st.DetailView.InfoPane.DeletedFrom.Background, same("#1C1C1C")),
-		DeletedAt:               or(st.DetailView.InfoPane.DeletedAt.Foreground, same("#EEEEEE")),
-		DeletedAtBackground:     or(st.DetailView.InfoPane.DeletedAt.Background, same("#1C1C1C")),
-		PreviewBorder:           or(st.DetailView.PreviewPane.Border, same("#3C3C3C")),
-		PreviewSize:             or(st.DetailView.PreviewPane.Size.Foreground, same("#EEEEDD")),
-		PreviewSizeBackground:   or(st.DetailView.PreviewPane.Size.Background, same("#3C3C3C")),
-		PreviewScroll:           or(st.DetailView.PreviewPane.Scroll.Foreground, same("#EEEEDD")),
-		PreviewScrollBackground: or(st.DetailView.PreviewPane.Scroll.Background, same("#3C3C3C")),
-		PreviewError:            same("8"),
+		Border:        or(st.DetailView.Border, same("#EEEEDD")),
+		PreviewBorder: or(st.DetailView.PreviewPane.Border, same("#3C3C3C")),
+		PreviewError:  same("8"),
 
 		Dialog:            or(st.DeletionDialog, same("#FF007F")),
 		DialogInput:       Color{Light: "#1F1F1F", Dark: "#FFFFFF"},
@@ -181,18 +163,9 @@ func (s scheme) palette() Palette {
 		Dimmed:            same(s.Muted),
 		DimmedDescription: same(s.Dim),
 
-		Border:                  same(s.Subtle),
-		SelectedTitle:           same(s.Base),
-		DeletedFrom:             same(s.Text),
-		DeletedFromBackground:   same(s.Surface),
-		DeletedAt:               same(s.Text),
-		DeletedAtBackground:     same(s.Surface),
-		PreviewBorder:           same(s.Border),
-		PreviewSize:             same(s.Text),
-		PreviewSizeBackground:   same(s.Surface),
-		PreviewScroll:           same(s.Text),
-		PreviewScrollBackground: same(s.Surface),
-		PreviewError:            same(s.Dim),
+		Border:        same(s.Subtle),
+		PreviewBorder: same(s.Border),
+		PreviewError:  same(s.Dim),
 
 		Dialog:            same(s.Warn),
 		DialogInput:       same(s.Text),

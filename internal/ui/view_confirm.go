@@ -121,7 +121,7 @@ func (m Model) formatConfirmationTypeYES(files []File) string {
 func (m Model) renderDialogOverBase(baseView, dialogContent string) string {
 	listLines := strings.Split(baseView, "\n")
 	dialogLines := strings.Split(dialogContent, "\n")
-	center := lipgloss.NewStyle().Width(m.dialogWidth()).Align(lipgloss.Center)
+	center := lipgloss.NewStyle().Width(m.width).Align(lipgloss.Center)
 
 	if len(dialogLines) >= len(listLines) {
 		for i, line := range dialogLines {
@@ -135,13 +135,4 @@ func (m Model) renderDialogOverBase(baseView, dialogContent string) string {
 		listLines[dialogStartLine+i] = center.Render(line)
 	}
 	return strings.Join(listLines, "\n")
-}
-
-// dialogWidth is the width the dialog is centered in: the list's, or the
-// detail view's, which is still drawn at its fixed width
-func (m Model) dialogWidth() int {
-	if m.state.current == DetailView {
-		return defaultWidth
-	}
-	return m.width
 }

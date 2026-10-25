@@ -1,59 +1,91 @@
 -- screen --
-╭────────╮
-│ notes/ ├────────────────────────────────────────────────────────
-╰────────╯
-
-   DELETED FROM 
-
-   /home/user/projects/gomi
-
-
-   DELETED AT     5 hours ago
-
-──────────────────────────────────────────────────────────── 94 B 
--rw-r--r--    11 B  a.txt
--rw-r--r--    25 B  b.md
--rw-r--r--    38 B  c.log
--rw-r--r--    20 B  todo.md
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-──────────────────────────────────────────────────────────── 100% 
-──────────────────────────────────────────────────────────────────
+ gomi  12 in the trash · 1.7K
+╭─ notes/ ─────────────────────────────────────────────────────────────────────╮
+│ From     ~/projects/gomi                                                     │
+│ Deleted  2025-06-15 07:00  5 hours ago                                       │
+│ Size     94B  directory                                                      │
+│ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │
+│ -rw-r--r--    11 B  a.txt                                                    │
+│ -rw-r--r--    25 B  b.md                                                     │
+│ -rw-r--r--    38 B  c.log                                                    │
+│ -rw-r--r--    20 B  todo.md                                                  │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
   space back • n next • p prev • ? more
 -- styles --
-L1 0-10 fg=#eeeedd
-L2 0-1 fg=#eeeedd
-L2 2-8 bold
-L2 9-66 fg=#eeeedd
-L3 0-10 fg=#eeeedd
-L5 2-16 fg=#eeeeee bg=#1c1c1c bold
-L10 2-14 fg=#eeeeee bg=#1c1c1c bold
-L12 0-60 fg=#3c3c3c
-L12 60-66 fg=#eeeedd bg=#3c3c3c
-L31 0-60 fg=#3c3c3c
-L31 60-66 fg=#eeeedd bg=#3c3c3c
-L32 0-66 fg=#eeeedd
-L34 2-7 fg=#626262
-L34 8-12 fg=#4a4a4a
-L34 13-14 fg=#3c3c3c
-L34 15-16 fg=#626262
-L34 17-21 fg=#4a4a4a
-L34 22-23 fg=#3c3c3c
-L34 24-25 fg=#626262
-L34 26-30 fg=#4a4a4a
-L34 31-32 fg=#3c3c3c
-L34 33-34 fg=#626262
-L34 35-39 fg=#4a4a4a
+L1 1-5 fg=#ad58b4 bold
+L1 7-29 fg=#777777
+L2 0-2 fg=#eeeedd
+L2 3-9 fg=#7aa2f7 bold
+L2 10-80 fg=#eeeedd
+L3 0-1 fg=#eeeedd
+L3 2-6 fg=#777777
+L3 11-26 fg=#e4e4e4
+L3 79-80 fg=#eeeedd
+L4 0-1 fg=#eeeedd
+L4 2-9 fg=#777777
+L4 11-27 fg=#e4e4e4
+L4 29-40 fg=#777777
+L4 79-80 fg=#eeeedd
+L5 0-1 fg=#eeeedd
+L5 2-6 fg=#777777
+L5 11-14 fg=#e4e4e4
+L5 16-25 fg=#777777
+L5 79-80 fg=#eeeedd
+L6 0-1 fg=#eeeedd
+L6 2-78 fg=#3c3c3c
+L6 79-80 fg=#eeeedd
+L7 0-1 fg=#eeeedd
+L7 79-80 fg=#eeeedd
+L8 0-1 fg=#eeeedd
+L8 79-80 fg=#eeeedd
+L9 0-1 fg=#eeeedd
+L9 79-80 fg=#eeeedd
+L10 0-1 fg=#eeeedd
+L10 79-80 fg=#eeeedd
+L11 0-80 fg=#eeeedd
+L12 0-80 fg=#eeeedd
+L13 0-80 fg=#eeeedd
+L14 0-80 fg=#eeeedd
+L15 0-80 fg=#eeeedd
+L16 0-80 fg=#eeeedd
+L17 0-80 fg=#eeeedd
+L18 0-80 fg=#eeeedd
+L19 0-80 fg=#eeeedd
+L20 0-80 fg=#eeeedd
+L21 0-80 fg=#eeeedd
+L22 0-80 fg=#eeeedd
+L23 0-80 fg=#eeeedd
+L24 0-80 fg=#eeeedd
+L25 0-80 fg=#eeeedd
+L26 0-80 fg=#eeeedd
+L27 0-80 fg=#eeeedd
+L28 0-80 fg=#eeeedd
+L30 2-7 fg=#626262
+L30 8-12 fg=#4a4a4a
+L30 13-14 fg=#3c3c3c
+L30 15-16 fg=#626262
+L30 17-21 fg=#4a4a4a
+L30 22-23 fg=#3c3c3c
+L30 24-25 fg=#626262
+L30 26-30 fg=#4a4a4a
+L30 31-32 fg=#3c3c3c
+L30 33-34 fg=#626262
+L30 35-39 fg=#4a4a4a

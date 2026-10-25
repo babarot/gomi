@@ -2,19 +2,12 @@ package ui
 
 import (
 	"testing"
-	"time"
 )
 
 func TestNewViewState(t *testing.T) {
 	s := NewViewState()
 	if s.current != ListView {
 		t.Errorf("current = %v, want ListView", s.current)
-	}
-	if s.detail.dateFormat != DateFormatRelative {
-		t.Errorf("dateFormat = %v, want DateFormatRelative", s.detail.dateFormat)
-	}
-	if !s.detail.showOrigin {
-		t.Error("showOrigin should be true")
 	}
 	if s.confirmation.state != ConfirmStateYesNo {
 		t.Errorf("confirmation.state = %v, want ConfirmStateYesNo", s.confirmation.state)
@@ -27,58 +20,6 @@ func TestViewState_SetView(t *testing.T) {
 	s.SetView(DetailView)
 	if s.current != DetailView {
 		t.Errorf("current = %v, want DetailView", s.current)
-	}
-}
-
-func TestViewState_ToggleDateFormat(t *testing.T) {
-	s := NewViewState()
-
-	// Default is Relative
-	s.ToggleDateFormat()
-	if s.detail.dateFormat != DateFormatAbsolute {
-		t.Errorf("dateFormat = %v, want Absolute after first toggle", s.detail.dateFormat)
-	}
-
-	s.ToggleDateFormat()
-	if s.detail.dateFormat != DateFormatRelative {
-		t.Errorf("dateFormat = %v, want Relative after second toggle", s.detail.dateFormat)
-	}
-}
-
-func TestViewState_ToggleOriginPath(t *testing.T) {
-	s := NewViewState()
-
-	s.ToggleOriginPath()
-	if s.detail.showOrigin {
-		t.Error("showOrigin should be false after toggle")
-	}
-
-	s.ToggleOriginPath()
-	if !s.detail.showOrigin {
-		t.Error("showOrigin should be true after second toggle")
-	}
-}
-
-func TestViewState_FormatDate(t *testing.T) {
-	s := NewViewState()
-	now := time.Now()
-
-	// Relative format (default)
-	relative := s.FormatDate(now)
-	if relative == "" {
-		t.Error("relative format should not be empty")
-	}
-
-	// Absolute format
-	s.ToggleDateFormat()
-	absolute := s.FormatDate(now)
-	if absolute == "" {
-		t.Error("absolute format should not be empty")
-	}
-	// Should contain date components
-	expected := now.Format(time.DateTime)
-	if absolute != expected {
-		t.Errorf("absolute = %q, want %q", absolute, expected)
 	}
 }
 
