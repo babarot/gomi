@@ -214,6 +214,8 @@ core:
 # Controls how files and directories are displayed in both list and detail views.
 ui:
   height: auto # rows below the prompt, at least half the terminal; or a number ("30") or a share ("40%")
+  view: recent # the view the list starts in: recent, places or batches
+  views: [recent, places, batches] # the views v goes through
   theme: gomi # or catppuccin-mocha, catppuccin-latte, nord
   density: spacious # or compact
   preview:

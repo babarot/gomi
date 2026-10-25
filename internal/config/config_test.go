@@ -263,3 +263,22 @@ func TestConfig_Validate_PreviewPosition(t *testing.T) {
 		t.Error("expected validation error for position left")
 	}
 }
+
+func TestConfig_Validate_Views(t *testing.T) {
+	cfg := NewDefaultConfig()
+	cfg.UI.View = "places"
+	cfg.UI.Views = []string{"places", "recent"}
+	if err := cfg.validate(); err != nil {
+		t.Errorf("valid views: %v", err)
+	}
+	for _, bad := range []func(c *Config){
+		func(c *Config) { c.UI.View = "tree" },
+		func(c *Config) { c.UI.Views = []string{"recent", "tree"} },
+	} {
+		cfg := NewDefaultConfig()
+		bad(cfg)
+		if err := cfg.validate(); err == nil {
+			t.Error("expected validation error for an unknown view")
+		}
+	}
+}

@@ -1,5 +1,5 @@
 -- screen --
- gomi  12 in the trash · 1.7K
+ gomi  12 in the trash · 1.7K                                      view: recent
     10:00 ┌ README.md                   ~/projects/gomi                     44B
           └ config.yaml                 ~/projects/gomi                     34B
 ── Tuesday ────────────────────────────────────────────────────── 1 file · 2B ──
@@ -13,7 +13,7 @@
   ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter …
 -- styles --
 L1 1-5 fg=#ad58b4 bold
-L1 7-29 fg=#777777
+L1 7-79 fg=#777777
 L2 4-9 fg=#777777
 L2 10-11 fg=#3c3c3c
 L2 12-21 fg=#e4e4e4 bold

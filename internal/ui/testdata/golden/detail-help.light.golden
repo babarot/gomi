@@ -1,5 +1,5 @@
 -- screen --
- gomi  12 in the trash · 1.7K
+ gomi  12 in the trash · 1.7K                                      view: recent
 ╭─ main.go ────────────────────────────────────────────────────────────────────╮
 │ From     ~/projects/gomi                                                     │
 │ Deleted  2025-06-15 10:00  2 hours ago                                       │
@@ -31,7 +31,7 @@
   s+tab de-select    G   go to end
 -- styles --
 L1 1-5 fg=#ad58b4 bold
-L1 7-29 fg=#626262
+L1 7-79 fg=#626262
 L2 0-2 fg=#eeeedd
 L2 3-10 fg=#262626 bold
 L2 11-80 fg=#eeeedd

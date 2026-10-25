@@ -123,3 +123,71 @@ func (m Model) paneBody(f File, w, h int) []string {
 	}
 	return out
 }
+
+// foldPane is the preview of a fold: what it is, how many files it holds,
+// their size and when they were deleted, then the files.
+func (m Model) foldPane(r row, w, h int) string {
+	border := m.fg(m.palette.Border)
+	inner := max(0, w-4)
+	var title string
+	if m.list.view == viewPlaces {
+		title = shortPath(m.displayPath(r.key), max(0, w-8))
+	} else {
+		title = "rm at " + r.files[0].DeletedAt.In(now().Location()).Format("2006-01-02 15:04")
+	}
+	top := border.Render("╭─ ") + m.fg(m.palette.Name).Bold(true).Render(title) + " "
+	lines := []string{top + border.Render(strings.Repeat("─", max(0, w-1-ansi.StringWidth(top)))+"╮")}
+	row := func(s string) string {
+		s = ansi.Truncate(s, inner, ellipsis)
+		return border.Render("│") + " " + s + strings.Repeat(" ", max(0, inner-ansi.StringWidth(s))) + " " + border.Render("│")
+	}
+	label := func(k string) string { return m.fg(m.palette.Description).Render(fmt.Sprintf("%-9s", k)) }
+	value := m.fg(m.palette.Name)
+	dim := m.fg(m.palette.Description)
+
+	count := fmt.Sprintf("%d", len(r.files))
+	if len(r.files) < r.total {
+		count = fmt.Sprintf("%d of %d", len(r.files), r.total)
+	}
+	lines = append(lines, row(label("Files")+value.Render(count)+dim.Render("  "+m.sizeOfFiles(r.files))))
+	newest := r.files[0].DeletedAt.In(now().Location())
+	oldest := r.files[len(r.files)-1].DeletedAt.In(now().Location())
+	when := newest.Format("2006-01-02 15:04")
+	if oldest.Format("2006-01-02 15:04") != when {
+		when = oldest.Format("2006-01-02 15:04") + " – " + newest.Format("15:04")
+		if oldest.YearDay() != newest.YearDay() || oldest.Year() != newest.Year() {
+			when = oldest.Format("2006-01-02") + " – " + newest.Format("2006-01-02")
+		}
+	}
+	lines = append(lines, row(label("Deleted")+value.Render(when)))
+	what := "enter restores them all"
+	if m.list.view == viewBatches {
+		what = "enter puts this rm back"
+	}
+	lines = append(lines, row(label("Restore")+m.fg(m.palette.Selected).Render(what)))
+	lines = append(lines, row(m.fg(m.palette.PreviewBorder).Render(strings.Repeat("╌", inner))))
+
+	body := max(0, h-2-paneInfoRows)
+	for i := range body {
+		if i >= len(r.files) {
+			lines = append(lines, row(""))
+			continue
+		}
+		f := r.files[i]
+		name := f.Name
+		color := m.palette.Name
+		if f.IsDir {
+			name += "/"
+			color = m.palette.DirName
+		}
+		size := ellipsis
+		if n, ok := m.knownSize(f); ok {
+			size = compactBytes(n)
+		}
+		s := m.fg(color).Render(ansi.Truncate(name, max(0, inner-8), ellipsis))
+		s += strings.Repeat(" ", max(1, inner-ansi.StringWidth(s)-len(size))) + dim.Render(size)
+		lines = append(lines, row(s))
+	}
+	lines = append(lines, border.Render("╰"+strings.Repeat("─", max(0, w-2))+"╯"))
+	return strings.Join(lines, "\n")
+}

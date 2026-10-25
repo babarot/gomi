@@ -24,6 +24,9 @@ type List struct {
 	Esc      key.Binding
 	Select   key.Binding
 	DeSelect key.Binding
+	View     key.Binding
+	Open     key.Binding
+	Close    key.Binding
 	Enter    key.Binding
 	Delete   *key.Binding // Optional key based on configuration
 }
@@ -114,6 +117,18 @@ func NewKeyMap(cfg KeyMapConfig) *KeyMap {
 		DeSelect: key.NewBinding(
 			key.WithKeys("shift+tab"),
 			key.WithHelp("s+tab", "de-select"),
+		),
+		View: key.NewBinding(
+			key.WithKeys("v"),
+			key.WithHelp("v", "view"),
+		),
+		Open: key.NewBinding(
+			key.WithKeys("l", "right"),
+			key.WithHelp("l/→", "open"),
+		),
+		Close: key.NewBinding(
+			key.WithKeys("h", "left"),
+			key.WithHelp("h/←", "close"),
 		),
 		Enter: key.NewBinding(
 			key.WithKeys("enter"),
@@ -230,6 +245,7 @@ func (k KeyMap) AsListKeyMap() KeyMap {
 			k.List.Space,
 			k.List.Select,
 			DefaultKeyMapListFilter,
+			k.List.View,
 			DefaultKeyMapListShowFullHelp,
 		}
 	}
@@ -244,7 +260,7 @@ func (k KeyMap) AsListKeyMap() KeyMap {
 				DefaultKeyMapListGoToEnd,
 			},
 			{k.List.Enter, k.List.Space, k.List.Esc, k.List.Select, k.List.DeSelect},
-			{k.Common.Quit, DefaultKeyMapListCloseFullHelp},
+			{k.List.View, k.List.Open, k.List.Close, k.Common.Quit, DefaultKeyMapListCloseFullHelp},
 		}
 		if k.List.Delete != nil {
 			bindings[1] = append(bindings[1], *k.List.Delete)

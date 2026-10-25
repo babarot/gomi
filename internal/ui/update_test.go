@@ -4,6 +4,7 @@ import (
 	"errors"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"charm.land/bubbles/v2/help"
 	"charm.land/bubbles/v2/viewport"
@@ -657,4 +658,53 @@ func TestUpdate_DetailView_HelpResizesPreview(t *testing.T) {
 	if m.viewport.Height() >= before {
 		t.Errorf("preview height = %d with the full help, want less than %d", m.viewport.Height(), before)
 	}
+}
+
+func TestTargets(t *testing.T) {
+	m := newTestModel()
+	a, b := listFile("a", time.Hour, "run"), listFile("b", time.Hour+time.Second, "run")
+	c := listFile("c", 2*time.Hour, "")
+	m.list.setFiles([]File{a, b, c}, listNow)
+	m.list.setView(viewBatches, listNow)
+	m.list.toggle(false, listNow) // close the run's fold, the cursor on it
+
+	// on a fold: its files
+	if got := m.targets(listNow); len(got) != 2 {
+		t.Errorf("targets on a fold = %d files, want 2", len(got))
+	}
+	// the selection wins wherever the cursor is
+	m.selection.Add(c)
+	if got := m.targets(listNow); len(got) != 1 || got[0].Name != "c" {
+		t.Errorf("targets with a selection = %v, want [c]", got)
+	}
+}
+
+func TestNextView(t *testing.T) {
+	m := newTestModel()
+	m.config.Views = []string{"batches", "recent"}
+	m.list.view = viewRecent
+	if got := m.nextView(); got != "batches" {
+		t.Errorf("nextView after recent = %q, want batches (the views wrap)", got)
+	}
+}
+
+// Moving from a file to its fold before the file's preview is due must
+// drop the read: the preview then shows no file.
+func TestUpdate_PreviewDueAfterMovingToFold(t *testing.T) {
+	m := newTestModel()
+	m.width = 140 // the preview shows right of the list
+	a, b := listFile("a", time.Hour, "run"), listFile("b", time.Hour+time.Second, "run")
+	m.list.setFiles([]File{a, b}, listNow)
+	m.list.setView(viewBatches, listNow)
+	m.list.move(1, listNow) // on a, in the open fold
+	m, _ = m.followCursor(nil)
+	due := previewDueMsg{seq: m.previewSeq}
+
+	m.list.toggle(false, listNow) // close the fold, the cursor on it
+	m, _ = m.followCursor(nil)
+	updated, cmd := m.Update(due) // must not panic
+	if cmd != nil {
+		t.Errorf("a read started for the file the cursor left")
+	}
+	_ = updated
 }

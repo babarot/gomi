@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"time"
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
@@ -70,7 +71,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case previewDueMsg:
 		// the cursor rested on the file the preview shows
-		if msg.seq == m.previewSeq && m.state.current == ListView {
+		if msg.seq == m.previewSeq && m.state.current == ListView && m.detailFile.File != nil {
 			return m, tea.Batch(m.loadDetail(m.detailFile)...)
 		}
 		return m, nil
@@ -142,6 +143,8 @@ func (m Model) updateListView(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	}
 	t := now()
 	file, onFile := m.list.current(t)
+	r, onRow := m.list.currentRow(t)
+	onFold := onRow && r.kind == rowFold
 
 	switch {
 	case key.Matches(msg, m.keyMap.Common.Quit):
@@ -149,15 +152,31 @@ func (m Model) updateListView(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case m.keyMap.List.Delete != nil && key.Matches(msg, *m.keyMap.List.Delete):
-		if !onFile && len(m.selection.items) == 0 {
+		files := m.targets(t)
+		if len(files) == 0 {
 			slog.Warn("cannot get file on cursor")
 			return m, nil
 		}
-		m.openDeleteConfirm(file)
+		m.openDeleteConfirm(files)
 		return m, nil
 
 	case key.Matches(msg, m.keyMap.List.Select):
-		if onFile {
+		switch {
+		case onFold:
+			// a fold selects its files, or drops them when all are selected
+			all := true
+			for _, f := range r.files {
+				all = all && m.selection.Contains(f)
+			}
+			for _, f := range r.files {
+				if all {
+					m.selection.Remove(f)
+				} else {
+					m.selection.Add(f)
+				}
+			}
+			m.list.move(1, t)
+		case onFile:
 			if m.selection.Contains(file) {
 				m.selection.Remove(file)
 			} else {
@@ -165,6 +184,18 @@ func (m Model) updateListView(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			}
 			m.list.move(1, t)
 		}
+		return m, nil
+
+	case key.Matches(msg, m.keyMap.List.View):
+		m.list.setView(m.nextView(), t)
+		return m, nil
+
+	case m.list.view != viewRecent && key.Matches(msg, m.keyMap.List.Open):
+		m.list.toggle(true, t)
+		return m, nil
+
+	case m.list.view != viewRecent && key.Matches(msg, m.keyMap.List.Close):
+		m.list.toggle(false, t)
 		return m, nil
 
 	case key.Matches(msg, m.keyMap.List.DeSelect):
@@ -175,7 +206,10 @@ func (m Model) updateListView(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case key.Matches(msg, m.keyMap.List.Space):
-		if onFile {
+		switch {
+		case onFold:
+			m.list.toggle(!r.open, t)
+		case onFile:
 			return m, func() tea.Msg { return newShowDetailMsg(file) }
 		}
 		return m, nil
@@ -191,11 +225,7 @@ func (m Model) updateListView(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case key.Matches(msg, m.keyMap.List.Enter):
-		files := m.selection.items
-		if len(files) == 0 && onFile {
-			files = []File{file}
-		}
-		m.choices = files
+		m.choices = m.targets(t)
 		slog.Debug("key input: enter",
 			"files",
 			strings.Join(lo.Map(m.choices, func(file File, _ int) string {
@@ -276,7 +306,11 @@ func (m Model) updateDetailView(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case m.keyMap.Detail.Delete != nil && key.Matches(msg, *m.keyMap.Detail.Delete):
-		m.openDeleteConfirm(m.detailFile)
+		files := slices.Clone(m.selection.items)
+		if len(files) == 0 {
+			files = []File{m.detailFile}
+		}
+		m.openDeleteConfirm(files)
 		return m, nil
 
 	case key.Matches(msg,
@@ -301,7 +335,7 @@ func (m Model) updateDetailView(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		if key.Matches(msg, m.keyMap.Detail.Prev) {
 			n = -1
 		}
-		m.list.move(n, now())
+		m.list.moveFile(n, now())
 		file, ok := m.list.current(now())
 		if ok {
 			return m, func() tea.Msg { return newShowDetailMsg(file) }
@@ -327,14 +361,41 @@ func (m Model) updateDetailView(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// openDeleteConfirm opens the confirmation for deleting the selected files,
-// or the file on the cursor when none is selected. More than one file asks
-// to type YES.
-func (m *Model) openDeleteConfirm(cursor File) {
-	files := slices.Clone(m.selection.items)
-	if len(files) == 0 {
-		files = []File{cursor}
+// targets are the files enter restores and D deletes: the selected files
+// wherever the cursor is, else the files of the fold the cursor is on that
+// the filter keeps, else the file the cursor is on.
+func (m Model) targets(t time.Time) []File {
+	if len(m.selection.items) > 0 {
+		return slices.Clone(m.selection.items)
 	}
+	r, ok := m.list.currentRow(t)
+	switch {
+	case !ok:
+		return nil
+	case r.kind == rowFold:
+		return slices.Clone(r.files)
+	}
+	return []File{r.file}
+}
+
+// nextView is the view v goes to: the one after the current in ui.views
+func (m Model) nextView() string {
+	views := m.views()
+	i := slices.Index(views, m.list.view)
+	return views[(i+1)%len(views)]
+}
+
+// views are the views v goes through, as ui.views says
+func (m Model) views() []string {
+	if len(m.config.Views) == 0 {
+		return []string{viewRecent, viewPlaces, viewBatches}
+	}
+	return m.config.Views
+}
+
+// openDeleteConfirm opens the confirmation for deleting files. More than
+// one file asks to type YES.
+func (m *Model) openDeleteConfirm(files []File) {
 	state := ConfirmStateYesNo
 	if len(files) > 1 {
 		state = ConfirmStateTypeYES
