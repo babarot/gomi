@@ -49,6 +49,15 @@ func TestNewInfo(t *testing.T) {
 			},
 		},
 		{
+			name:  "gomi's run ID",
+			input: "[Trash Info]\nPath=/tmp/file\nDeletionDate=2024-01-01T00:00:00\nX-Gomi-RunID=abc123\n",
+			check: func(t *testing.T, info *TrashInfo) {
+				if info.RunID != "abc123" {
+					t.Errorf("RunID = %q, want %q", info.RunID, "abc123")
+				}
+			},
+		},
+		{
 			name:    "missing header",
 			input:   "Path=/tmp/file\nDeletionDate=2024-01-01T00:00:00\n",
 			wantErr: true,

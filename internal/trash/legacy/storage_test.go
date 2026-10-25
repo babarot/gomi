@@ -296,3 +296,37 @@ func TestStorage_PutMultipleFiles(t *testing.T) {
 		t.Errorf("List() returned %d files, want 3", len(files))
 	}
 }
+
+func TestStorage_PutRecordsRunID(t *testing.T) {
+	dir := t.TempDir()
+	cfg := newTestConfig(dir)
+
+	s, err := NewStorage(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	srcDir := t.TempDir()
+	for _, name := range []string{"a.txt", "b.txt"} {
+		src := filepath.Join(srcDir, name)
+		if err := os.WriteFile(src, []byte(name), 0644); err != nil {
+			t.Fatal(err)
+		}
+		if err := s.Put(src); err != nil {
+			t.Fatalf("Put(%s) error = %v", name, err)
+		}
+	}
+
+	files, err := s.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(files) != 2 {
+		t.Fatalf("List() returned %d files, want 2", len(files))
+	}
+	for _, f := range files {
+		if f.RunID != cfg.RunID {
+			t.Errorf("%s: RunID = %q, want %q", f.Name, f.RunID, cfg.RunID)
+		}
+	}
+}

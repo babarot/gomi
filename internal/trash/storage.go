@@ -72,6 +72,11 @@ type File struct {
 	// DeletedAt is when the file was moved to trash
 	DeletedAt time.Time
 
+	// RunID identifies the gomi run that moved the file to trash, so the
+	// files removed together share it. Empty when the trash did not record
+	// one
+	RunID string
+
 	// Size is the size of the file in bytes
 	Size int64
 

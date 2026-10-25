@@ -96,6 +96,7 @@ func (s *Storage) Put(src string) error {
 		Path:         abs,
 		MountRoot:    loc.mountRoot,
 		DeletionDate: time.Now(),
+		RunID:        s.config.RunID,
 	}
 
 	// Reserve a unique name in the trash by creating its .trashinfo file.
@@ -326,6 +327,7 @@ func (s *Storage) listLocation(loc *trashLocation) ([]*trash.File, error) {
 			OriginalPath: origPath,
 			TrashPath:    filePath,
 			DeletedAt:    info.DeletionDate,
+			RunID:        info.RunID,
 			Size:         fileInfo.Size(),
 			IsDir:        fileInfo.IsDir(),
 			FileMode:     fileInfo.Mode(),
