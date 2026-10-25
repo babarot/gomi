@@ -144,3 +144,7 @@ EOF
 # A record whose file is gone, for --prune=orphans
 printf '[Trash Info]\nPath=%s\nDeletionDate=%s\n' "$HOME/tmp/lost.txt" \
   "$(date -d "40 days ago" +%Y-%m-%dT%H:%M:%S)" > "$trash/info/lost.txt.trashinfo"
+
+# The tapes run in the shell that sourced this script; let it go on after a
+# command fails, as a shell would
+set +euo pipefail
