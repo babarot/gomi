@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -460,5 +461,56 @@ func TestFilterFiles(t *testing.T) {
 	}
 	if filtered[0].Name != "exists.txt" {
 		t.Errorf("Name = %q, want %q", filtered[0].Name, "exists.txt")
+	}
+}
+
+// renamingPrompter answers every prompt with yes and gives name as the new
+// name, noting whether it was asked for one
+type renamingPrompter struct {
+	name  string
+	asked bool
+}
+
+func (*renamingPrompter) Confirm(string) bool    { return true }
+func (*renamingPrompter) ConfirmYes(string) bool { return true }
+func (p *renamingPrompter) InputFilename(*trash.File) (string, error) {
+	p.asked = true
+	return p.name, nil
+}
+
+// restoringTrash records where Restore was asked to put a file
+type restoringTrash struct {
+	trash.Trash
+	dst string
+}
+
+func (r *restoringTrash) Restore(_ *trash.File, dst string) error {
+	r.dst = dst
+	return nil
+}
+
+// A symlink whose target is gone still has the name, so the restore asks
+// for a new one instead of replacing the link
+func TestRestoreFile_BrokenSymlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlinks need privileges on Windows")
+	}
+	dir := t.TempDir()
+	link := filepath.Join(dir, "notes.md")
+	if err := os.Symlink(filepath.Join(dir, "gone"), link); err != nil {
+		t.Fatal(err)
+	}
+
+	tr := &restoringTrash{}
+	p := &renamingPrompter{name: "notes-2.md"}
+	cli := &CLI{config: config.NewDefaultConfig(), trash: tr, prompter: p}
+	if err := cli.restoreFile(&trash.File{Name: "notes.md", OriginalPath: link}); err != nil {
+		t.Fatal(err)
+	}
+	if !p.asked {
+		t.Error("restored over a broken symlink without asking for a new name")
+	}
+	if want := filepath.Join(dir, "notes-2.md"); tr.dst != want {
+		t.Errorf("restored to %q, want %q", tr.dst, want)
 	}
 }

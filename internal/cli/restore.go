@@ -81,8 +81,9 @@ func (c *CLI) filterFiles(files []*trash.File) []*trash.File {
 func (c *CLI) restoreFile(file *trash.File) error {
 	originalPath := file.OriginalPath
 
-	// Check if the file exists at the original location
-	if _, err := os.Stat(originalPath); err == nil {
+	// Check if anything is at the original location; Lstat, so that a
+	// symlink whose target is gone counts, as the browser's marks count it
+	if _, err := os.Lstat(originalPath); err == nil {
 		// File exists at original location, ask for new name if necessary
 		newName, err := c.prompter.InputFilename(file)
 		if err != nil {
@@ -103,7 +104,7 @@ func (c *CLI) restoreFile(file *trash.File) error {
 	}
 
 	// Check again if destination exists (might have been created while confirming)
-	if _, err := os.Stat(originalPath); err == nil {
+	if _, err := os.Lstat(originalPath); err == nil {
 		msg := fmt.Sprintf("Caution! The same name already exists. Even so okay to restore? %s", filepath.Base(originalPath))
 		if !c.prompter.Confirm(msg) {
 			c.printVerbose("Replied no, canceled!\n")
