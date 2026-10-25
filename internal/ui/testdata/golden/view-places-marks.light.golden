@@ -1,0 +1,143 @@
+-- screen --
+ gomi  12 in the trash · 1.7K                                                                              view: places
+    ▾ ~/projects/gomi                    8 files · 1.6K  2 hours ago  ╭─ /tmp ─────────────────────────────────────────╮
+      ├ main.go                                2 hours ago     72B    │ Files    2  21B                                │
+      ├ long.txt                                2 days ago    1.4K    │ Deleted  2025-05-06 – 2025-05-26               │
+      ├ README.md                               3 days ago     44B    │ Restore  enter restores them all               │
+      ├ config.yaml                             3 days ago     34B !  │ Marks    + 2 have no folder                    │
+      ├ a-very-long-file-name-for-testing.txt   5 days ago      2B    │ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │
+      ├ another-quite-long-file-name.txt        6 days ago      2B    │ report.csv                                 17B │
+      ├ yet-another-long-file-name-here.txt     1 week ago      2B    │ old.log                                     4B │
+      └ todo.txt                                1 week ago      9B    │                                                │
+    ▸ ~/docs                               1 file · 94B  5 hours ago  │                                                │
+    ▸ ~/Downloads                            1 file · 12B  1 day ago  │                                                │
+▎   ▸ /tmp                                2 files · 21B  2 weeks ago  │                                                │
+                                                                      │                                                │
+                                                                      │                                                │
+                                                                      │                                                │
+                                                                      │                                                │
+                                                                      │                                                │
+                                                                      │                                                │
+                                                                      │                                                │
+                                                                      │                                                │
+                                                                      │                                                │
+                                                                      │                                                │
+                                                                      │                                                │
+                                                                      │                                                │
+                                                                      │                                                │
+                                                                      ╰────────────────────────────────────────────────╯
+  12 files   ! a file has its name now   + its folder is gone
+
+  ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter • v view • ? more
+-- styles --
+L1 1-5 fg=#ad58b4 bold
+L1 7-119 fg=#626262
+L2 4-5 fg=#ad58b4
+L2 6-21 fg=#262626 bold
+L2 41-68 fg=#626262
+L2 70-72 fg=#eeeedd
+L2 73-77 fg=#262626 bold
+L2 78-120 fg=#eeeedd
+L3 6-7 fg=#999999
+L3 8-15 fg=#262626 bold
+L3 47-66 fg=#626262
+L3 70-71 fg=#eeeedd
+L3 72-77 fg=#626262
+L3 81-82 fg=#262626
+L3 84-87 fg=#626262
+L3 119-120 fg=#eeeedd
+L4 6-7 fg=#999999
+L4 8-16 fg=#262626 bold
+L4 48-66 fg=#626262
+L4 70-71 fg=#eeeedd
+L4 72-79 fg=#626262
+L4 81-104 fg=#262626
+L4 119-120 fg=#eeeedd
+L5 6-7 fg=#999999
+L5 8-17 fg=#262626 bold
+L5 48-66 fg=#626262
+L5 70-71 fg=#eeeedd
+L5 72-79 fg=#626262
+L5 81-104 fg=#5fb458
+L5 119-120 fg=#eeeedd
+L6 6-7 fg=#999999
+L6 8-19 fg=#262626 bold
+L6 48-66 fg=#626262
+L6 67-68 fg=#ff007f bold
+L6 70-71 fg=#eeeedd
+L6 72-99 fg=#626262
+L6 119-120 fg=#eeeedd
+L7 6-7 fg=#999999
+L7 8-45 fg=#262626 bold
+L7 48-66 fg=#626262
+L7 70-71 fg=#eeeedd
+L7 72-118 fg=#3c3c3c
+L7 119-120 fg=#eeeedd
+L8 6-7 fg=#999999
+L8 8-40 fg=#262626 bold
+L8 48-66 fg=#626262
+L8 70-71 fg=#eeeedd
+L8 72-82 fg=#262626
+L8 115-118 fg=#626262
+L8 119-120 fg=#eeeedd
+L9 6-7 fg=#999999
+L9 8-43 fg=#262626 bold
+L9 48-66 fg=#626262
+L9 70-71 fg=#eeeedd
+L9 72-79 fg=#262626
+L9 116-118 fg=#626262
+L9 119-120 fg=#eeeedd
+L10 6-7 fg=#999999
+L10 8-16 fg=#262626 bold
+L10 48-66 fg=#626262
+L10 70-120 fg=#eeeedd
+L11 4-5 fg=#ad58b4
+L11 6-12 fg=#262626 bold
+L11 43-68 fg=#626262
+L11 70-120 fg=#eeeedd
+L12 4-5 fg=#ad58b4
+L12 6-17 fg=#262626 bold
+L12 45-68 fg=#626262
+L12 70-120 fg=#eeeedd
+L13 0-6 fg=#ad58b4 bg=#e8e8e8
+L13 6-42 fg=#262626 bg=#e8e8e8 bold
+L13 42-69 fg=#626262 bg=#e8e8e8
+L13 70-120 fg=#eeeedd
+L14 70-120 fg=#eeeedd
+L15 70-120 fg=#eeeedd
+L16 70-120 fg=#eeeedd
+L17 70-120 fg=#eeeedd
+L18 70-120 fg=#eeeedd
+L19 70-120 fg=#eeeedd
+L20 70-120 fg=#eeeedd
+L21 70-120 fg=#eeeedd
+L22 70-120 fg=#eeeedd
+L23 70-120 fg=#eeeedd
+L24 70-120 fg=#eeeedd
+L25 70-120 fg=#eeeedd
+L26 70-120 fg=#eeeedd
+L27 70-120 fg=#eeeedd
+L28 2-61 fg=#626262
+L30 2-5 fg=#626262
+L30 6-8 fg=#808080
+L30 9-10 fg=#999999
+L30 11-14 fg=#626262
+L30 15-19 fg=#808080
+L30 20-21 fg=#999999
+L30 22-27 fg=#626262
+L30 28-35 fg=#808080
+L30 36-37 fg=#999999
+L30 38-43 fg=#626262
+L30 44-50 fg=#808080
+L30 51-52 fg=#999999
+L30 53-56 fg=#626262
+L30 57-63 fg=#808080
+L30 64-65 fg=#999999
+L30 66-67 fg=#626262
+L30 68-74 fg=#808080
+L30 75-76 fg=#999999
+L30 77-78 fg=#626262
+L30 79-83 fg=#808080
+L30 84-85 fg=#999999
+L30 86-87 fg=#626262
+L30 88-92 fg=#808080

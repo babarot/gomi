@@ -10,8 +10,8 @@ import (
 )
 
 // paneInfoRows are the rows of the pane above the file's contents: From,
-// Deleted and Size, then a rule
-const paneInfoRows = 4
+// Deleted, Size and Restore, then a rule
+const paneInfoRows = 5
 
 // detailView is the preview of the file on the cursor, opened over the
 // whole of the UI: the header, the pane, and the status and the key help
@@ -84,6 +84,7 @@ func (m Model) pane(f File, w, h int) string {
 		kind = "directory"
 	}
 	lines = append(lines, row(label("Size")+value.Render(m.sizeText(f))+dim.Render("  "+kind)))
+	lines = append(lines, row(ansi.Truncate(label("Restore")+m.restoreText(f), inner, ellipsis)))
 	lines = append(lines, row(m.fg(m.palette.PreviewBorder).Render(strings.Repeat("╌", inner))))
 
 	for _, l := range m.paneBody(f, inner, bodyH) {
@@ -165,6 +166,7 @@ func (m Model) foldPane(r row, w, h int) string {
 		what = "enter puts this rm back"
 	}
 	lines = append(lines, row(label("Restore")+m.fg(m.palette.Selected).Render(what)))
+	lines = append(lines, row(label("Marks")+m.foldMarks(r.files)))
 	lines = append(lines, row(m.fg(m.palette.PreviewBorder).Render(strings.Repeat("╌", inner))))
 
 	body := max(0, h-2-paneInfoRows)
@@ -190,4 +192,42 @@ func (m Model) foldPane(r row, w, h int) string {
 	}
 	lines = append(lines, border.Render("╰"+strings.Repeat("─", max(0, w-2))+"╯"))
 	return strings.Join(lines, "\n")
+}
+
+// restoreText says what restoring f would meet, once its place is looked
+// at
+func (m Model) restoreText(f File) string {
+	switch m.origins[f.TrashPath] {
+	case originTaken:
+		return m.fg(m.palette.Dialog).Render("! a file has its name there now; gomi asks for a new name")
+	case originGone:
+		return m.fg(m.palette.Description).Render("+ its folder is gone; gomi makes it again")
+	case originBack:
+		return m.fg(m.palette.Selected).Render("back to where it was")
+	}
+	return m.fg(m.palette.Description).Render(ellipsis)
+}
+
+// foldMarks counts the marks among files
+func (m Model) foldMarks(files []File) string {
+	taken, gone := 0, 0
+	for _, f := range files {
+		switch m.origins[f.TrashPath] {
+		case originTaken:
+			taken++
+		case originGone:
+			gone++
+		}
+	}
+	if taken == 0 && gone == 0 {
+		return m.fg(m.palette.Description).Render("none")
+	}
+	var parts []string
+	if taken > 0 {
+		parts = append(parts, m.fg(m.palette.Dialog).Render(fmt.Sprintf("! %d have a file in their place", taken)))
+	}
+	if gone > 0 {
+		parts = append(parts, m.fg(m.palette.Description).Render(fmt.Sprintf("+ %d have no folder", gone)))
+	}
+	return strings.Join(parts, m.fg(m.palette.Description).Render(" · "))
 }

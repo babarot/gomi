@@ -2,11 +2,11 @@
  gomi  12 in the trash · 1.7K                                      view: recent
  / re 
 ── Thursday ──────────────────────────────────────────────────── 1 file · 44B ──
-▎   10:00   README.md                   ~/projects/gomi                     44B 
+▎   10:00   README.md                  ~/projects/gomi                    44B   
 ── Sun, Jun 8 ─────────────────────────────────────────────────── 1 file · 2B ──
-    10:00   yet-another-long-file-nam…  ~/projects/gomi                      2B
+    10:00   yet-another-long-file-na…  ~/projects/gomi                     2B
 ── Mon, May 26 ───────────────────────────────────────────────── 1 file · 17B ──
-    12:00   report.csv                  /tmp                                17B
+    12:00   report.csv                 /tmp                               17B +
 
 
 
@@ -26,7 +26,7 @@
 
 
 
-  3 of 12 files
+  3 of 12 files   ! a file has its name now   + its folder is gone
 
   ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter …
 -- styles --
@@ -42,16 +42,16 @@ L3 78-80 fg=#999999
 L4 0-4 fg=#c01020 bg=#e8e8e8
 L4 4-12 fg=#626262 bg=#e8e8e8
 L4 12-14 fg=#c01040 bg=#e8e8e8 bold underline
-L4 14-40 fg=#262626 bg=#e8e8e8 bold
-L4 40-80 fg=#626262 bg=#e8e8e8
+L4 14-39 fg=#262626 bg=#e8e8e8 bold
+L4 39-80 fg=#626262 bg=#e8e8e8
 L5 0-2 fg=#999999
 L5 3-13 fg=#4a4a4a bold
 L5 14-65 fg=#999999
 L5 66-77 fg=#626262
 L5 78-80 fg=#999999
 L6 4-9 fg=#626262
-L6 12-38 fg=#262626 bold
-L6 40-79 fg=#626262
+L6 12-37 fg=#262626 bold
+L6 39-77 fg=#626262
 L7 0-2 fg=#999999
 L7 3-14 fg=#4a4a4a bold
 L7 15-64 fg=#999999
@@ -60,8 +60,8 @@ L7 78-80 fg=#999999
 L8 4-9 fg=#626262
 L8 12-14 fg=#c01040 bold underline
 L8 14-22 fg=#262626 bold
-L8 40-79 fg=#626262
-L28 2-15 fg=#626262
+L8 39-79 fg=#626262
+L28 2-66 fg=#626262
 L30 2-5 fg=#626262
 L30 6-8 fg=#808080
 L30 9-10 fg=#999999

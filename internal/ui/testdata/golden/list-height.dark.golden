@@ -1,14 +1,14 @@
 -- screen --
  gomi  12 in the trash · 1.7K                                      view: recent
 ── Today ───────────────────────────────────────────────────── 2 files · 166B ──
-▎   10:00   main.go                     ~/projects/gomi                     72B 
-    07:00   notes/                      ~/docs                              94B
+▎   10:00   main.go                    ~/projects/gomi                    72B   
+    07:00   notes/                     ~/docs                             94B
 ── Yesterday ─────────────────────────────────────────────────── 1 file · 12B ──
-    10:00   archive.bin                 ~/Downloads                         12B
+    10:00   archive.bin                ~/Downloads                        12B
 ── Friday ───────────────────────────────────────────────────── 1 file · 1.4K ──
-    10:00   long.txt                    ~/projects/gomi                    1.4K
+    10:00   long.txt                   ~/projects/gomi                   1.4K
 ── Thursday ─────────────────────────────────────────────────── 2 files · 78B ──
-  12 files · ↓ 8 more
+  12 files · ↓ 8 more   ! a file has its name now   + its folder is gone
 
   ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter …
 -- styles --
@@ -21,11 +21,11 @@ L2 63-77 fg=#777777
 L2 78-80 fg=#3c3c3c
 L3 0-4 fg=#ad58b4 bg=#2e2e2e
 L3 4-12 fg=#777777 bg=#2e2e2e
-L3 12-40 fg=#e4e4e4 bg=#2e2e2e bold
-L3 40-80 fg=#777777 bg=#2e2e2e
+L3 12-39 fg=#e4e4e4 bg=#2e2e2e bold
+L3 39-80 fg=#777777 bg=#2e2e2e
 L4 4-9 fg=#777777
 L4 12-18 fg=#7aa2f7 bold
-L4 40-79 fg=#777777
+L4 39-77 fg=#777777
 L5 0-2 fg=#3c3c3c
 L5 3-12 fg=#bbbbbb bold
 L5 13-64 fg=#3c3c3c
@@ -33,7 +33,7 @@ L5 65-77 fg=#777777
 L5 78-80 fg=#3c3c3c
 L6 4-9 fg=#777777
 L6 12-23 fg=#e4e4e4 bold
-L6 40-79 fg=#777777
+L6 39-77 fg=#777777
 L7 0-2 fg=#3c3c3c
 L7 3-9 fg=#bbbbbb bold
 L7 10-63 fg=#3c3c3c
@@ -41,13 +41,13 @@ L7 64-77 fg=#777777
 L7 78-80 fg=#3c3c3c
 L8 4-9 fg=#777777
 L8 12-20 fg=#e4e4e4 bold
-L8 40-79 fg=#777777
+L8 39-77 fg=#777777
 L9 0-2 fg=#3c3c3c
 L9 3-11 fg=#bbbbbb bold
 L9 12-63 fg=#3c3c3c
 L9 64-77 fg=#777777
 L9 78-80 fg=#3c3c3c
-L10 2-21 fg=#777777
+L10 2-72 fg=#777777
 L12 2-5 fg=#626262
 L12 6-8 fg=#4a4a4a
 L12 9-10 fg=#3c3c3c

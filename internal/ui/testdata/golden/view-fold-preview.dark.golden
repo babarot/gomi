@@ -1,12 +1,12 @@
 -- screen --
  gomi  12 in the trash · 1.7K                                                                             view: batches
     ▾ 10:00        rm main.go  ~/…/gomi                 1 file · 72B  ╭─ rm at 2025-06-14 10:00 ───────────────────────╮
-      └ main.go                     ~/projects/gomi              72B  │ Files    1  12B                                │
+      └ main.go                    ~/projects/gomi             72B    │ Files    1  12B                                │
     ▸ 07:00        rm notes/  ~/docs                    1 file · 94B  │ Deleted  2025-06-14 10:00                      │
 ▎   ▸ Jun 14 10:00 rm archive.bin  ~/Downloads          1 file · 12B  │ Restore  enter puts this rm back               │
-    ▸ Jun 13 10:00 rm long.txt  ~/…/gomi               1 file · 1.4K  │ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │
-    ▸ Jun 12 10:00 rm README.md config.ya…  ~/…/gomi   2 files · 78B  │ archive.bin                                12B │
-    ▸ Jun 10 10:00 rm a-very-long-file-nam…  ~/…/gomi    1 file · 2B  │                                                │
+    ▸ Jun 13 10:00 rm long.txt  ~/…/gomi               1 file · 1.4K  │ Marks    none                                  │
+    ▸ Jun 12 10:00 rm README.md config.ya…  ~/…/gomi   2 files · 78B  │ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │
+    ▸ Jun 10 10:00 rm a-very-long-file-nam…  ~/…/gomi    1 file · 2B  │ archive.bin                                12B │
     ▸ Jun 9 10:00  rm another-quite-long-f…  ~/…/gomi    1 file · 2B  │                                                │
     ▸ Jun 8 10:00  rm yet-another-long-fil…  ~/…/gomi    1 file · 2B  │                                                │
     ▸ Jun 5 12:00  rm todo.txt  ~/…/gomi                 1 file · 9B  │                                                │
@@ -26,7 +26,7 @@
                                                                       │                                                │
                                                                       │                                                │
                                                                       ╰────────────────────────────────────────────────╯
-  12 files
+  12 files   ! a file has its name now   + its folder is gone
 
   ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter • v view • ? more
 -- styles --
@@ -42,7 +42,7 @@ L2 73-95 fg=#e4e4e4 bold
 L2 96-120 fg=#eeeedd
 L3 6-7 fg=#3c3c3c
 L3 8-15 fg=#e4e4e4 bold
-L3 36-68 fg=#777777
+L3 35-66 fg=#777777
 L3 70-71 fg=#eeeedd
 L3 72-77 fg=#777777
 L3 81-82 fg=#e4e4e4
@@ -72,7 +72,7 @@ L6 19-21 fg=#3c3c3c
 L6 22-30 fg=#e4e4e4 bold
 L6 32-68 fg=#777777
 L6 70-71 fg=#eeeedd
-L6 72-118 fg=#3c3c3c
+L6 72-85 fg=#777777
 L6 119-120 fg=#eeeedd
 L7 4-5 fg=#ad58b4
 L7 6-18 fg=#777777
@@ -80,15 +80,17 @@ L7 19-21 fg=#3c3c3c
 L7 22-42 fg=#e4e4e4 bold
 L7 44-68 fg=#777777
 L7 70-71 fg=#eeeedd
-L7 72-83 fg=#e4e4e4
-L7 115-118 fg=#777777
+L7 72-118 fg=#3c3c3c
 L7 119-120 fg=#eeeedd
 L8 4-5 fg=#ad58b4
 L8 6-18 fg=#777777
 L8 19-21 fg=#3c3c3c
 L8 22-43 fg=#e4e4e4 bold
 L8 45-68 fg=#777777
-L8 70-120 fg=#eeeedd
+L8 70-71 fg=#eeeedd
+L8 72-83 fg=#e4e4e4
+L8 115-118 fg=#777777
+L8 119-120 fg=#eeeedd
 L9 4-5 fg=#ad58b4
 L9 6-17 fg=#777777
 L9 19-21 fg=#3c3c3c
@@ -133,7 +135,7 @@ L24 70-120 fg=#eeeedd
 L25 70-120 fg=#eeeedd
 L26 70-120 fg=#eeeedd
 L27 70-120 fg=#eeeedd
-L28 2-10 fg=#777777
+L28 2-61 fg=#777777
 L30 2-5 fg=#626262
 L30 6-8 fg=#4a4a4a
 L30 9-10 fg=#3c3c3c
