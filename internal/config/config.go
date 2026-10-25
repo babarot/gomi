@@ -88,6 +88,10 @@ type UI struct {
 	// Density controls the compactness of the UI (compact or spacious)
 	Density string `yaml:"density" validate:"omitempty,oneof=compact spacious"`
 
+	// Height is how many rows the UI takes under the prompt: a number of
+	// rows ("30") or a share of the terminal ("40%"); empty is "100%"
+	Height string `yaml:"height" validate:"validHeight|allowEmpty"`
+
 	// Theme names the colors the UI is drawn with; empty is "gomi"
 	Theme string `yaml:"theme" validate:"validTheme|allowEmpty"`
 
@@ -310,6 +314,7 @@ func (c *Config) validate() error {
 	_ = validate.RegisterValidation("validSize", validateSize)
 	_ = validate.RegisterValidation("validColorCode", validateColorCode)
 	_ = validate.RegisterValidation("validTheme", validateTheme)
+	_ = validate.RegisterValidation("validHeight", validateHeight)
 	_ = validate.RegisterValidation("deprecated", validateDeprecated)
 	_ = validate.RegisterValidation("validDirPath", validateDirPath)
 

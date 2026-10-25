@@ -209,3 +209,27 @@ history:
 		t.Errorf("Period = %d, want 30", cfg.History.Include.Period)
 	}
 }
+
+func TestParseHeight(t *testing.T) {
+	tests := []struct {
+		in      string
+		n       int
+		percent bool
+		ok      bool
+	}{
+		{"30", 30, false, true},
+		{"40%", 40, true, true},
+		{"100%", 100, true, true},
+		{"101%", 0, false, false},
+		{"0", 0, false, false},
+		{"-3", 0, false, false},
+		{"auto", 0, false, false},
+		{"%", 0, false, false},
+	}
+	for _, tt := range tests {
+		n, percent, ok := ParseHeight(tt.in)
+		if n != tt.n || percent != tt.percent || ok != tt.ok {
+			t.Errorf("ParseHeight(%q) = %d, %v, %v; want %d, %v, %v", tt.in, n, percent, ok, tt.n, tt.percent, tt.ok)
+		}
+	}
+}

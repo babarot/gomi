@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,6 +25,24 @@ var ThemeNames = []string{"gomi", "catppuccin-mocha", "catppuccin-latte", "nord"
 // validateTheme validates the theme name
 func validateTheme(fl validator.FieldLevel) bool {
 	return slices.Contains(ThemeNames, fl.Field().String())
+}
+
+// validateHeight validates a height: rows ("30") or a share of the
+// terminal from 1% to 100% ("40%")
+func validateHeight(fl validator.FieldLevel) bool {
+	_, _, ok := ParseHeight(fl.Field().String())
+	return ok
+}
+
+// ParseHeight reads a height as rows, or as a percentage when percent is
+// true
+func ParseHeight(s string) (n int, percent bool, ok bool) {
+	num, percent := strings.CutSuffix(s, "%")
+	n, err := strconv.Atoi(num)
+	if err != nil || n < 1 || (percent && n > 100) {
+		return 0, false, false
+	}
+	return n, percent, true
 }
 
 // validateAllowEmpty allows empty values for optional fields
