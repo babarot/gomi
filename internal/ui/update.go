@@ -71,7 +71,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case previewDueMsg:
 		// the cursor rested on the file the preview shows
-		if msg.seq == m.previewSeq && m.state.current == ListView {
+		if msg.seq == m.previewSeq && m.state.current == ListView && m.detailFile.File != nil {
 			return m, tea.Batch(m.loadDetail(m.detailFile)...)
 		}
 		return m, nil

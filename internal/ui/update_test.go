@@ -687,3 +687,24 @@ func TestNextView(t *testing.T) {
 		t.Errorf("nextView after recent = %q, want batches (the views wrap)", got)
 	}
 }
+
+// Moving from a file to its fold before the file's preview is due must
+// drop the read: the preview then shows no file.
+func TestUpdate_PreviewDueAfterMovingToFold(t *testing.T) {
+	m := newTestModel()
+	m.width = 140 // the preview shows right of the list
+	a, b := listFile("a", time.Hour, "run"), listFile("b", time.Hour+time.Second, "run")
+	m.list.setFiles([]File{a, b}, listNow)
+	m.list.setView(viewBatches, listNow)
+	m.list.move(1, listNow) // on a, in the open fold
+	m, _ = m.followCursor(nil)
+	due := previewDueMsg{seq: m.previewSeq}
+
+	m.list.toggle(false, listNow) // close the fold, the cursor on it
+	m, _ = m.followCursor(nil)
+	updated, cmd := m.Update(due) // must not panic
+	if cmd != nil {
+		t.Errorf("a read started for the file the cursor left")
+	}
+	_ = updated
+}

@@ -93,8 +93,10 @@ func (m Model) followCursor(cmd tea.Cmd) (Model, tea.Cmd) {
 	}
 	if r, ok := m.list.currentRow(now()); ok && r.kind == rowFold {
 		// a fold's preview is what is in it, drawn from the list; a file is
-		// read again when the cursor comes back to one
+		// read again when the cursor comes back to one. A read due for the
+		// file the cursor left is dropped.
 		m.detailFile = File{}
+		m.previewSeq++
 		return m, cmd
 	}
 	f, ok := m.list.current(now())
