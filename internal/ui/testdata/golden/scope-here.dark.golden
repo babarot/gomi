@@ -1,0 +1,117 @@
+-- screen --
+ gomi  12 in the trash · 1.7K                 in ~/projects/gomi · view: recent
+── Today ─────────────────────────────────────────────────────── 1 file · 72B ──
+▎   10:00   main.go                    ~/projects/gomi                    72B   
+── Friday ───────────────────────────────────────────────────── 1 file · 1.4K ──
+    10:00   long.txt                   ~/projects/gomi                   1.4K
+── Thursday ─────────────────────────────────────────────────── 2 files · 78B ──
+    10:00 ┌ README.md                  ~/projects/gomi                    44B
+          └ config.yaml                ~/projects/gomi                    34B !
+── Tuesday ────────────────────────────────────────────────────── 1 file · 2B ──
+    10:00   a-very-long-file-name-fo…  ~/projects/gomi                     2B
+── Monday ─────────────────────────────────────────────────────── 1 file · 2B ──
+    10:00   another-quite-long-file-…  ~/projects/gomi                     2B
+── Sun, Jun 8 ─────────────────────────────────────────────────── 1 file · 2B ──
+    10:00   yet-another-long-file-na…  ~/projects/gomi                     2B
+── Thu, Jun 5 ─────────────────────────────────────────────────── 1 file · 9B ──
+    12:00   todo.txt                   ~/projects/gomi                     9B
+
+
+
+
+
+
+
+
+
+
+
+  8 files   ! a file has its name now   + its folder is gone
+
+  ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter …
+-- styles --
+L1 1-5 fg=#ad58b4 bold
+L1 7-29 fg=#777777
+L1 46-64 fg=#7aa2f7
+L1 65-79 fg=#777777
+L2 0-2 fg=#3c3c3c
+L2 3-8 fg=#bbbbbb bold
+L2 9-64 fg=#3c3c3c
+L2 65-77 fg=#777777
+L2 78-80 fg=#3c3c3c
+L3 0-4 fg=#ad58b4 bg=#2e2e2e
+L3 4-12 fg=#777777 bg=#2e2e2e
+L3 12-39 fg=#e4e4e4 bg=#2e2e2e bold
+L3 39-80 fg=#777777 bg=#2e2e2e
+L4 0-2 fg=#3c3c3c
+L4 3-9 fg=#bbbbbb bold
+L4 10-63 fg=#3c3c3c
+L4 64-77 fg=#777777
+L4 78-80 fg=#3c3c3c
+L5 4-9 fg=#777777
+L5 12-20 fg=#e4e4e4 bold
+L5 39-77 fg=#777777
+L6 0-2 fg=#3c3c3c
+L6 3-11 fg=#bbbbbb bold
+L6 12-63 fg=#3c3c3c
+L6 64-77 fg=#777777
+L6 78-80 fg=#3c3c3c
+L7 4-9 fg=#777777
+L7 10-11 fg=#3c3c3c
+L7 12-21 fg=#e4e4e4 bold
+L7 39-77 fg=#777777
+L8 10-11 fg=#3c3c3c
+L8 12-23 fg=#e4e4e4 bold
+L8 39-77 fg=#777777
+L8 78-79 fg=#ff007f bold
+L9 0-2 fg=#3c3c3c
+L9 3-10 fg=#bbbbbb bold
+L9 11-65 fg=#3c3c3c
+L9 66-77 fg=#777777
+L9 78-80 fg=#3c3c3c
+L10 4-9 fg=#777777
+L10 12-37 fg=#e4e4e4 bold
+L10 39-77 fg=#777777
+L11 0-2 fg=#3c3c3c
+L11 3-9 fg=#bbbbbb bold
+L11 10-65 fg=#3c3c3c
+L11 66-77 fg=#777777
+L11 78-80 fg=#3c3c3c
+L12 4-9 fg=#777777
+L12 12-37 fg=#e4e4e4 bold
+L12 39-77 fg=#777777
+L13 0-2 fg=#3c3c3c
+L13 3-13 fg=#bbbbbb bold
+L13 14-65 fg=#3c3c3c
+L13 66-77 fg=#777777
+L13 78-80 fg=#3c3c3c
+L14 4-9 fg=#777777
+L14 12-37 fg=#e4e4e4 bold
+L14 39-77 fg=#777777
+L15 0-2 fg=#3c3c3c
+L15 3-13 fg=#bbbbbb bold
+L15 14-65 fg=#3c3c3c
+L15 66-77 fg=#777777
+L15 78-80 fg=#3c3c3c
+L16 4-9 fg=#777777
+L16 12-20 fg=#e4e4e4 bold
+L16 39-77 fg=#777777
+L28 2-60 fg=#777777
+L30 2-5 fg=#626262
+L30 6-8 fg=#4a4a4a
+L30 9-10 fg=#3c3c3c
+L30 11-14 fg=#626262
+L30 15-19 fg=#4a4a4a
+L30 20-21 fg=#3c3c3c
+L30 22-27 fg=#626262
+L30 28-35 fg=#4a4a4a
+L30 36-37 fg=#3c3c3c
+L30 38-43 fg=#626262
+L30 44-50 fg=#4a4a4a
+L30 51-52 fg=#3c3c3c
+L30 53-56 fg=#626262
+L30 57-63 fg=#4a4a4a
+L30 64-65 fg=#3c3c3c
+L30 66-67 fg=#626262
+L30 68-74 fg=#4a4a4a
+L30 75-76 fg=#3c3c3c

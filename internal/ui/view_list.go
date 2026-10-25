@@ -94,8 +94,11 @@ func (m Model) sidePane(l layout) string {
 }
 
 func (m Model) emptyText() string {
-	if m.list.filter.Value() != "" {
+	switch {
+	case m.list.filter.Value() != "":
 		return fmt.Sprintf("No files match %q", m.list.filter.Value())
+	case m.list.scoped:
+		return "Nothing was deleted here; . shows every file"
 	}
 	return "The trash is empty"
 }
@@ -106,6 +109,10 @@ func (m Model) headerLine() string {
 	left := m.fg(m.palette.Cursor).Bold(true).Render("gomi") +
 		m.fg(m.palette.Description).Render(fmt.Sprintf("  %d in the trash · %s", len(m.list.files), m.totalSize()))
 	right := m.fg(m.palette.Description).Render("view: " + m.list.view)
+	if m.list.scoped {
+		where := shortPath(m.displayPath(m.list.cwd), max(8, m.width/3))
+		right = m.fg(m.palette.FilterPrompt).Render("in "+where) + m.fg(m.palette.Description).Render(" · ") + right
+	}
 	if n := len(m.selection.items); n > 0 {
 		right = m.fg(m.palette.Selected).Render(fmt.Sprintf("%d selected", n)) + m.fg(m.palette.Description).Render(" · ") + right
 	}

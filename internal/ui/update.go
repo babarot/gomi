@@ -29,6 +29,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.sortMenu {
 			return m.updateSortMenu(msg)
 		}
+		if m.helpOpen {
+			// the key list takes the keys until it is closed
+			switch msg.String() {
+			case "?", "esc", "q":
+				m.helpOpen = false
+			}
+			return m, nil
+		}
 		switch m.state.current {
 		case ListView:
 			next, cmd := m.updateListView(msg)
@@ -101,6 +109,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case statusClearMsg:
+		if msg.seq == m.statusSeq {
+			m.status = ""
+		}
+		return m, nil
+
 	case originsCheckedMsg:
 		maps.Copy(m.origins, msg.origins)
 		return m, nil
@@ -128,7 +142,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.list.setFiles(msg.files, now())
 		if msg.deleted > 0 {
-			m.status = fmt.Sprintf("Deleted %d %s permanently", msg.deleted, plural(msg.deleted, "file"))
+			cmds = append(cmds, m.setStatus(fmt.Sprintf("Deleted %d %s permanently", msg.deleted, plural(msg.deleted, "file"))))
 		}
 		cmds = append(cmds, m.queueSizes(m.list.files)...)
 		cmds = append(cmds, checkOriginsCmd(m.uncheckedOrigins(msg.files)))
@@ -265,8 +279,19 @@ func (m Model) updateListView(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case key.Matches(msg, m.keyMap.Common.Help):
-		m.help.ShowAll = !m.help.ShowAll
+		m.helpOpen = true
 		return m, nil
+
+	case key.Matches(msg, m.keyMap.List.Scope):
+		if m.list.cwd == "" {
+			return m, nil
+		}
+		m.list.setScope(!m.list.scoped, t)
+		text := "Every file in the trash"
+		if m.list.scoped {
+			text = "Files deleted in " + m.displayPath(m.list.cwd)
+		}
+		return m, m.setStatus(text)
 
 	case key.Matches(msg, keys.DefaultKeyMapListFilter):
 		m.list.filtering = true
@@ -400,9 +425,7 @@ func (m Model) updateDetailView(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case key.Matches(msg, m.keyMap.Common.Help):
-		m.help.ShowAll = !m.help.ShowAll
-		// the full help takes rows from the pane
-		m.resizePreview()
+		m.helpOpen = true
 		return m, nil
 
 	}
@@ -540,4 +563,18 @@ func (m Model) updateSortMenu(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.sortMenu = false
 	}
 	return m.followCursor(nil)
+}
+
+// statusFor is how long the status line shows what was just done
+var statusFor = 3 * time.Second
+
+// statusClearMsg clears the status line, when no newer status came
+type statusClearMsg struct{ seq int }
+
+// setStatus shows text on the status line for a while
+func (m *Model) setStatus(text string) tea.Cmd {
+	m.status = text
+	m.statusSeq++
+	seq := m.statusSeq
+	return tea.Tick(statusFor, func(time.Time) tea.Msg { return statusClearMsg{seq: seq} })
 }

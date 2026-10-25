@@ -10,8 +10,8 @@
     another-quite-long-file-…  ~/projects/gomi                 6d ago      2B
     yet-another-long-file-na…  ~/projects/gomi                  Jun 8      2B
     todo.txt                   ~/projects/gomi                  Jun 5      9B
-                        ╭─────────────────────────────╮
-                        │ Sort                        │
+    report.csv          ╭─────────────────────────────╮        May 26     17B +
+    old.log             │ Sort                        │         May 6      4B +
                         │ 1 Deleted, newest first   ✓ │
                         │ 2 Deleted, oldest first     │
                         │ 3 Name                      │
@@ -54,10 +54,14 @@ L10 4-29 fg=#e4e4e4 bold
 L10 31-77 fg=#777777
 L11 4-12 fg=#e4e4e4 bold
 L11 31-77 fg=#777777
+L12 4-14 fg=#e4e4e4 bold
 L12 24-55 fg=#ad58b4
+L12 63-79 fg=#777777
+L13 4-11 fg=#e4e4e4 bold
 L13 24-25 fg=#ad58b4
 L13 26-30 fg=#bbbbbb bold
 L13 54-55 fg=#ad58b4
+L13 64-79 fg=#777777
 L14 24-25 fg=#ad58b4
 L14 26-27 fg=#ad58b4 bold
 L14 28-49 fg=#e4e4e4

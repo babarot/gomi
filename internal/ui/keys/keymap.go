@@ -26,6 +26,7 @@ type List struct {
 	DeSelect key.Binding
 	View     key.Binding
 	Sort     key.Binding
+	Scope    key.Binding
 	Open     key.Binding
 	Close    key.Binding
 	Enter    key.Binding
@@ -122,6 +123,10 @@ func NewKeyMap(cfg KeyMapConfig) *KeyMap {
 		View: key.NewBinding(
 			key.WithKeys("v"),
 			key.WithHelp("v", "view"),
+		),
+		Scope: key.NewBinding(
+			key.WithKeys("."),
+			key.WithHelp(".", "here / all"),
 		),
 		Sort: key.NewBinding(
 			key.WithKeys("s"),

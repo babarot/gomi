@@ -8,18 +8,18 @@
 │ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │
 │ cannot preview (application/octet-stream)                                    │
 │                                                                              │
-                 ╭────────────────────────────────────────────╮
-                 │                                            │
-                 │ Are you sure you want to completely delete │
-                 │            'main.go', 'notes/'?            │
-                 │                                            │
-                 │             Type YES to confirm            │
-                 │                                            │
-                 │                    ___ ✗                   │
-                 │                                            │
-                 │      (ESC to cancel, Enter to confirm)     │
-                 │                                            │
-                 ╰────────────────────────────────────────────╯
+│                ╭────────────────────────────────────────────╮                │
+│                │                                            │                │
+│                │ Are you sure you want to completely delete │                │
+│                │            'main.go', 'notes/'?            │                │
+│                │                                            │                │
+│                │             Type YES to confirm            │                │
+│                │                                            │                │
+│                │                    ___ ✗                   │                │
+│                │                                            │                │
+│                │      (ESC to cancel, Enter to confirm)     │                │
+│                │                                            │                │
+│                ╰────────────────────────────────────────────╯                │
 │                                                                              │
 │                                                                              │
 │                                                                              │
@@ -62,30 +62,54 @@ L8 0-1 fg=#eeeedd
 L8 2-43 fg=c8
 L8 79-80 fg=#eeeedd
 L9 0-80 fg=#eeeedd
+L10 0-1 fg=#eeeedd
 L10 17-63 fg=#ff007f
+L10 79-80 fg=#eeeedd
+L11 0-1 fg=#eeeedd
 L11 17-63 fg=#ff007f
+L11 79-80 fg=#eeeedd
+L12 0-1 fg=#eeeedd
 L12 17-18 fg=#ff007f
 L12 19-61 fg=#ff007f bold
 L12 62-63 fg=#ff007f
+L12 79-80 fg=#eeeedd
+L13 0-1 fg=#eeeedd
 L13 17-18 fg=#ff007f
 L13 30-50 fg=#ff007f bold
 L13 62-63 fg=#ff007f
+L13 79-80 fg=#eeeedd
+L14 0-1 fg=#eeeedd
 L14 17-63 fg=#ff007f
+L14 79-80 fg=#eeeedd
+L15 0-1 fg=#eeeedd
 L15 17-18 fg=#ff007f
 L15 31-50 fg=#ff007f bold
 L15 62-63 fg=#ff007f
+L15 79-80 fg=#eeeedd
+L16 0-1 fg=#eeeedd
 L16 17-63 fg=#ff007f
+L16 79-80 fg=#eeeedd
+L17 0-1 fg=#eeeedd
 L17 17-18 fg=#ff007f
 L17 38-39 fg=#777777 bold
 L17 39-41 fg=#777777
 L17 42-43 fg=#ff0000
 L17 62-63 fg=#ff007f
+L17 79-80 fg=#eeeedd
+L18 0-1 fg=#eeeedd
 L18 17-63 fg=#ff007f
+L18 79-80 fg=#eeeedd
+L19 0-1 fg=#eeeedd
 L19 17-18 fg=#ff007f
 L19 24-57 fg=#ff007f bold
 L19 62-63 fg=#ff007f
+L19 79-80 fg=#eeeedd
+L20 0-1 fg=#eeeedd
 L20 17-63 fg=#ff007f
+L20 79-80 fg=#eeeedd
+L21 0-1 fg=#eeeedd
 L21 17-63 fg=#ff007f
+L21 79-80 fg=#eeeedd
 L22 0-80 fg=#eeeedd
 L23 0-80 fg=#eeeedd
 L24 0-80 fg=#eeeedd

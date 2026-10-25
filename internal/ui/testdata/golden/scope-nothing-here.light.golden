@@ -1,0 +1,58 @@
+-- screen --
+ gomi  12 in the trash · 1.7K                 in ~/projects/gomi · view: recent
+ / zzz 
+  No files match "zzz"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  0 of 12 files
+
+  ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter …
+-- styles --
+L1 1-5 fg=#ad58b4 bold
+L1 7-29 fg=#626262
+L1 46-64 fg=#7aa2f7
+L1 65-79 fg=#626262
+L2 1-2 fg=#7aa2f7 bold
+L2 6-7 fg=c7 reverse
+L3 2-22 fg=#626262
+L28 2-15 fg=#626262
+L30 2-5 fg=#626262
+L30 6-8 fg=#808080
+L30 9-10 fg=#999999
+L30 11-14 fg=#626262
+L30 15-19 fg=#808080
+L30 20-21 fg=#999999
+L30 22-27 fg=#626262
+L30 28-35 fg=#808080
+L30 36-37 fg=#999999
+L30 38-43 fg=#626262
+L30 44-50 fg=#808080
+L30 51-52 fg=#999999
+L30 53-56 fg=#626262
+L30 57-63 fg=#808080
+L30 64-65 fg=#999999
+L30 66-67 fg=#626262
+L30 68-74 fg=#808080
+L30 75-76 fg=#dddada

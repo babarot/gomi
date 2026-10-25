@@ -321,3 +321,42 @@ func TestShortAgo(t *testing.T) {
 		}
 	}
 }
+
+func TestFileList_Scope(t *testing.T) {
+	sub := listFile("sub", time.Hour, "")
+	sub.OriginalPath = filepath.FromSlash("/home/user/src/sub")
+	other := listFile("other", 2*time.Hour, "")
+	other.OriginalPath = filepath.FromSlash("/var/other")
+	files := []File{sub, other}
+
+	l := newFileList()
+	l.cwd = filepath.FromSlash("/home/user")
+	l.setFiles(files, listNow)
+	if !l.scoped || len(l.shown()) != 1 {
+		t.Fatalf("scoped %v with %d files; want true with 1", l.scoped, len(l.shown()))
+	}
+	l.setScope(false, listNow)
+	if f, _ := l.current(listNow); f.Name != "sub" || len(l.shown()) != 2 {
+		t.Errorf("all: cursor on %q with %d files; want sub with 2", f.Name, len(l.shown()))
+	}
+	// a later load keeps the scope it has
+	l.setFiles(files, listNow)
+	if l.scoped {
+		t.Error("a reload scoped the list again")
+	}
+
+	// nothing was deleted here: start with everything
+	l = newFileList()
+	l.cwd = filepath.FromSlash("/srv")
+	l.setFiles(files, listNow)
+	if l.scoped {
+		t.Error("scoped with nothing deleted in the directory")
+	}
+
+	// the root holds everything
+	l = newFileList()
+	l.cwd = string(filepath.Separator)
+	if !l.underCwd(filepath.FromSlash("/var")) {
+		t.Error("/var is not under /")
+	}
+}

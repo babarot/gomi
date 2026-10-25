@@ -238,6 +238,9 @@ type goldenCase struct {
 	keys  []string
 	// width is the terminal's width; zero is 80
 	width int
+	// cwd is where gomi was started; empty is a directory with nothing
+	// deleted in it
+	cwd string
 	// loading renders the view before what is read in the background comes
 	loading bool
 }
@@ -319,6 +322,12 @@ var goldenCases = []goldenCase{
 	{name: "picker-sort-menu", opts: withView("picker"), keys: []string{"esc", "s", "j", "j"}},
 	{name: "picker-sorted", opts: withView("picker"), keys: []string{"esc", "s", "3"}},
 	{name: "view-to-picker", keys: []string{"v", "v", "v"}},
+	{name: "scope-here", cwd: "/home/user/projects/gomi"},
+	{name: "scope-all", cwd: "/home/user/projects/gomi", keys: []string{"."}},
+	{name: "scope-places", cwd: "/home/user/docs", opts: withView("places")},
+	{name: "scope-nothing-here", cwd: "/home/user/projects/gomi", keys: []string{"/", "z", "z", "z"}},
+	{name: "help-overlay", keys: []string{"?"}},
+	{name: "help-overlay-detail", width: 120, keys: []string{"space", "?"}},
 	{name: "list-preview-none", width: 120, opts: func(o *RenderOptions) { o.Config.Preview.Position = "none" }},
 	{name: "list-height", opts: func(o *RenderOptions) { o.Config.Height = "12" }},
 	{name: "list-next-page", opts: func(o *RenderOptions) { o.Config.Height = "12" }, keys: []string{"right"}},
@@ -437,6 +446,10 @@ func TestGolden(t *testing.T) {
 	for _, bg := range backgrounds {
 		for _, c := range goldenCases {
 			t.Run(c.name+"."+bg.name, func(t *testing.T) {
+				defer func(f func() (string, error)) { getwd = f }(getwd)
+				if c.cwd != "" {
+					getwd = func() (string, error) { return c.cwd, nil }
+				}
 				var m tea.Model
 				if c.model != nil {
 					m = c.model(t, files)

@@ -38,6 +38,11 @@ type Model struct {
 	// origins is what restoring each file would meet, by trash path, once
 	// its place is looked at
 	origins map[string]origin
+	// helpOpen is set while ? shows the keys over the view
+	helpOpen bool
+	// statusSeq counts the statuses, so that only the last one is cleared
+	statusSeq int
+
 	// sortMenu is set while the picker's sort menu is open, on sortSel
 	sortMenu bool
 	sortSel  int
@@ -108,6 +113,9 @@ func NewModel(t trash.Trash, files []*trash.File, opts RenderOptions) Model {
 	home, _ := os.UserHomeDir()
 	list := newFileList()
 	list.view = startView(uiCfg)
+	if wd, err := getwd(); err == nil {
+		list.cwd = wd
+	}
 	if list.view == viewPicker {
 		// the picker starts with the focus in the filter
 		list.filtering = true
@@ -199,3 +207,6 @@ func startView(cfg config.UI) string {
 	}
 	return views[0]
 }
+
+// getwd is where gomi was started; tests replace it
+var getwd = os.Getwd

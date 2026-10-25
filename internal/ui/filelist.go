@@ -47,6 +47,13 @@ type fileList struct {
 	// sizeOf is the size of a file's contents as far as it is known, for
 	// the order by size
 	sizeOf func(File) (int64, bool)
+
+	// cwd is the directory gomi was started in; while scoped, the list
+	// shows only what was deleted in it and under it. scopeSet is set once
+	// the list has decided whether to start scoped.
+	cwd      string
+	scoped   bool
+	scopeSet bool
 	// open has the folds opened in places and batches, by their key
 	open map[string]bool
 
@@ -125,6 +132,12 @@ func (l *fileList) setFiles(files []File, now time.Time) {
 	sort.SliceStable(l.files, func(i, j int) bool {
 		return l.files[i].DeletedAt.After(l.files[j].DeletedAt)
 	})
+	if !l.scopeSet {
+		// start with what was deleted where gomi was started, when there is
+		// any; else with everything
+		l.scopeSet = true
+		l.scoped = slices.ContainsFunc(l.files, l.here)
+	}
 	if l.view != viewRecent && !l.opened(l.view) {
 		l.setView(l.view, now)
 		return
@@ -145,6 +158,12 @@ func (l *fileList) setView(view string, now time.Time) {
 	rows := l.rows(now)
 	if view != viewRecent && len(rows) > 0 && !l.opened(view) {
 		l.open[foldKey(view, rows[0].key)] = true
+		// places opens the directories under where gomi was started too
+		for _, r := range rows {
+			if view == viewPlaces && r.kind == rowFold && l.underCwd(r.key) {
+				l.open[foldKey(view, r.key)] = true
+			}
+		}
 		l.open[view] = true // the view was shown
 	}
 	if !onFile {
@@ -190,6 +209,9 @@ func (l fileList) query() string {
 // matches reports whether f is shown under the filter: its name or the
 // directory it was deleted from has the filter in it.
 func (l fileList) matches(f File) bool {
+	if l.scoped && !l.here(f) {
+		return false
+	}
 	q := l.query()
 	if q == "" {
 		return true
@@ -543,4 +565,29 @@ func fuzzyRunes(s, q string) []int {
 // and close; elsewhere they move by a page
 func (l fileList) folds() bool {
 	return l.view == viewPlaces || l.view == viewBatches
+}
+
+// here reports whether f was deleted where gomi was started or under it
+func (l fileList) here(f File) bool {
+	return l.underCwd(filepath.Dir(f.OriginalPath))
+}
+
+// underCwd reports whether dir is where gomi was started or under it
+func (l fileList) underCwd(dir string) bool {
+	if l.cwd == "" {
+		return false
+	}
+	prefix := l.cwd
+	if !strings.HasSuffix(prefix, string(filepath.Separator)) {
+		prefix += string(filepath.Separator)
+	}
+	return dir == l.cwd || strings.HasPrefix(dir, prefix)
+}
+
+// setScope shows only what was deleted where gomi was started, or
+// everything, keeping the cursor on its file when it is still shown
+func (l *fileList) setScope(scoped bool, now time.Time) {
+	on := l.cursorKey(now)
+	l.scoped = scoped
+	l.find(on, now)
 }
