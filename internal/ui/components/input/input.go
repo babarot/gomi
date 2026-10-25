@@ -10,6 +10,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/jimschubert/answer/colors"
 	"github.com/jimschubert/answer/validate"
+	"golang.org/x/text/unicode/norm"
 )
 
 /*
@@ -143,7 +144,10 @@ func (m *Model) setup() {
 	} else {
 		input.Prompt = m.Prompt
 	}
-	input.Placeholder = m.Placeholder
+	// composed, so that each character is one rune: bubbles draws the
+	// placeholder by runes and sizes it by width, and drops the end of one
+	// with combining characters (an NFD "é")
+	input.Placeholder = norm.NFC.String(m.Placeholder)
 	input.SetStyles(inputStyles(m.Styles.Prompt, m.Styles.Placeholder, m.Styles.Text))
 	input.EchoMode = m.EchoMode
 	input.Focus()
