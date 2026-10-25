@@ -1,0 +1,33 @@
+# Tasks for developing gomi: mise tasks lists them, mise run <task> runs one.
+# Go comes from wherever you have it (go.mod sets the minimum), the other
+# tools from [tools] below.
+
+[tools]
+golangci-lint = "2.14.0"
+
+[tasks.build]
+description = "Build ./gomi"
+run = 'go build -ldflags "$(scripts/ldflags.sh)" -o gomi .'
+
+[tasks.install]
+description = "Install gomi into $GOBIN (or $GOPATH/bin)"
+run = 'go install -ldflags "$(scripts/ldflags.sh)" .'
+
+[tasks.clean]
+description = "Remove ./gomi and coverage.out"
+run = "rm -f gomi coverage.out"
+
+[tasks.test]
+description = "Check formatting, and run the Go tests, writing coverage.out"
+run = '''
+test -z "$(gofmt -l .)" || { gofmt -l .; echo "gofmt: the files above are not formatted"; exit 1; }
+go test ./... -coverprofile=coverage.out -covermode=count
+'''
+
+[tasks.lint]
+description = "Run golangci-lint"
+run = "golangci-lint run ./..."
+
+[tasks.demo]
+description = "Record the demo GIFs with VHS in Docker and copy them to docs/demo: mise run demo [-e KEY=VAL ...] [TAPE ...]"
+file = "scripts/demo.sh"
