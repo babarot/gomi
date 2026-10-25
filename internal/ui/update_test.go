@@ -47,6 +47,7 @@ func newTestModel() Model {
 		previews:  map[string]previewResult{},
 		sizes:     map[string]int64{},
 		reading:   map[string]bool{},
+		origins:   map[string]origin{},
 		styles:    styles.New(styles.NewPalette(cfg.UI), true),
 		help:      help.New(),
 	}

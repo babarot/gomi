@@ -4,9 +4,9 @@
 │ From     ~/Downloads                                                         │
 │ Deleted  2025-06-14 10:00  1 day ago                                         │
 │ Size     12B  file                                                           │
+│ Restore  back to where it was                                                │
 │ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │
 │ cannot preview (application/octet-stream)                                    │
-│                                                                              │
 │                                                                              │
                  ╭────────────────────────────────────────────╮
                  │                                            │
@@ -52,12 +52,15 @@ L5 11-14 fg=#262626
 L5 16-20 fg=#626262
 L5 79-80 fg=#eeeedd
 L6 0-1 fg=#eeeedd
-L6 2-78 fg=#3c3c3c
+L6 2-9 fg=#626262
+L6 11-31 fg=#5fb458
 L6 79-80 fg=#eeeedd
 L7 0-1 fg=#eeeedd
-L7 2-43 fg=c8
+L7 2-78 fg=#3c3c3c
 L7 79-80 fg=#eeeedd
-L8 0-80 fg=#eeeedd
+L8 0-1 fg=#eeeedd
+L8 2-43 fg=c8
+L8 79-80 fg=#eeeedd
 L9 0-80 fg=#eeeedd
 L10 17-63 fg=#ff007f
 L11 17-63 fg=#ff007f

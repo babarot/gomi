@@ -282,7 +282,7 @@ func (m Model) foldFileLine(r row, onCursor bool, w int) string {
 		right = fmt.Sprintf("%6s", size)
 	}
 	line := m.rowStart(onCursor, mark) + plain.Render("  ") + on(m.fg(m.palette.HelpSeparator)).Render(tree) + plain.Render(" ")
-	room := max(0, w-1-ansi.StringWidth(line)-ansi.StringWidth(right)-2)
+	room := max(0, w-3-ansi.StringWidth(line)-ansi.StringWidth(right)-2)
 	if m.list.view == viewBatches {
 		nameW := room / 2
 		line += m.nameCell(f, nameW, on)
@@ -291,8 +291,8 @@ func (m Model) foldFileLine(r row, onCursor bool, w int) string {
 	} else {
 		line += m.nameCell(f, room, on)
 	}
-	line += plain.Render(strings.Repeat(" ", max(1, w-1-ansi.StringWidth(line)-ansi.StringWidth(right))))
-	line += on(m.fg(m.palette.Description)).Render(right)
+	line += plain.Render(strings.Repeat(" ", max(1, w-3-ansi.StringWidth(line)-ansi.StringWidth(right))))
+	line += on(m.fg(m.palette.Description)).Render(right) + plain.Render(" ") + m.originMark(f, on)
 	return m.fillRow(line, onCursor, w)
 }
 
@@ -380,7 +380,7 @@ func (m Model) fileLine(r row, onCursor bool, w int) string {
 	}
 	b.WriteString(on(m.fg(m.palette.HelpSeparator)).Render(join) + plain.Render(" "))
 
-	avail := max(0, w-colName-2-sizeWidth-1)
+	avail := max(0, w-colName-2-sizeWidth-3)
 	nameW := max(minNameCol, avail*nameShare/100)
 	placeW := max(0, avail-nameW)
 	b.WriteString(pad(m.nameCell(f, nameW, on), nameW))
@@ -392,7 +392,7 @@ func (m Model) fileLine(r row, onCursor bool, w int) string {
 		size = compactBytes(s)
 	}
 	b.WriteString(plain.Render(strings.Repeat(" ", max(0, sizeWidth-ansi.StringWidth(size)))))
-	b.WriteString(on(m.fg(m.palette.Description)).Render(size) + plain.Render(" "))
+	b.WriteString(on(m.fg(m.palette.Description)).Render(size) + plain.Render(" ") + m.originMark(f, on) + plain.Render(" "))
 	return ansi.Truncate(b.String(), w, "")
 }
 
@@ -518,6 +518,9 @@ func (m Model) countLine(rows []row, n int) string {
 	}
 	if below > 0 {
 		s += fmt.Sprintf(" · ↓ %d more", below)
+	}
+	if m.hasMarks(files) {
+		s += "   ! a file has its name now   + its folder is gone"
 	}
 	return "  " + m.fg(m.palette.Description).Render(s)
 }

@@ -4,12 +4,12 @@
 │ From     ~/projects/gomi                                                     │
 │ Deleted  2025-06-15 10:00  2 hours ago                                       │
 │ Size     72B  file                                                           │
+│ Restore  back to where it was                                                │
 │ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │
 │ package main                                                                 │
 │                                                                              │
 │ import "fmt"                                                                 │
 │                                                                              │
-│ func main() {                                                                │
                           ╭──────────────────────────╮
                           │                          │
                           │ Are you sure you want to │
@@ -50,23 +50,22 @@ L5 11-14 fg=#e4e4e4
 L5 16-20 fg=#777777
 L5 79-80 fg=#eeeedd
 L6 0-1 fg=#eeeedd
-L6 2-78 fg=#3c3c3c
+L6 2-9 fg=#777777
+L6 11-31 fg=#5fb458
 L6 79-80 fg=#eeeedd
 L7 0-1 fg=#eeeedd
-L7 2-9 fg=#81a1c1 bold
-L7 10-14 fg=#d8dee9
+L7 2-78 fg=#3c3c3c
 L7 79-80 fg=#eeeedd
-L8 0-80 fg=#eeeedd
-L9 0-1 fg=#eeeedd
-L9 2-8 fg=#81a1c1 bold
-L9 9-14 fg=#a3be8c
-L9 79-80 fg=#eeeedd
-L10 0-80 fg=#eeeedd
-L11 0-1 fg=#eeeedd
-L11 2-6 fg=#81a1c1 bold
-L11 7-11 fg=#88c0d0
-L11 11-15 fg=#eceff4
-L11 79-80 fg=#eeeedd
+L8 0-1 fg=#eeeedd
+L8 2-9 fg=#81a1c1 bold
+L8 10-14 fg=#d8dee9
+L8 79-80 fg=#eeeedd
+L9 0-80 fg=#eeeedd
+L10 0-1 fg=#eeeedd
+L10 2-8 fg=#81a1c1 bold
+L10 9-14 fg=#a3be8c
+L10 79-80 fg=#eeeedd
+L11 0-80 fg=#eeeedd
 L12 26-54 fg=#ff007f
 L13 26-54 fg=#ff007f
 L14 26-27 fg=#ff007f

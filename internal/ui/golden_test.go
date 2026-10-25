@@ -331,6 +331,8 @@ var goldenCases = []goldenCase{
 	{name: "detail-selected", keys: []string{"tab", "up", "space"}},
 	{name: "detail-help", keys: []string{"space", "?"}},
 	{name: "detail-loading", keys: []string{"down", "space"}, loading: true},
+	{name: "detail-taken", keys: []string{"down", "down", "down", "down", "down", "space"}},
+	{name: "view-places-marks", width: 120, opts: withView("places"), keys: []string{"G"}},
 
 	// delete confirmation
 	{name: "confirm-list", opts: withDelete, keys: []string{"D"}},
@@ -401,6 +403,18 @@ func TestGolden(t *testing.T) {
 	cursorWait = 0
 	defer func(d time.Duration) { previewDelay = d }(previewDelay)
 	previewDelay = 0
+	// what restoring meets: config.yaml has a file in its place, and the
+	// folder of the files from /tmp is gone
+	defer func(f func(string) origin) { checkOrigin = f }(checkOrigin)
+	checkOrigin = func(path string) origin {
+		switch {
+		case strings.HasSuffix(path, "/config.yaml"):
+			return originTaken
+		case strings.HasPrefix(path, "/tmp/"):
+			return originGone
+		}
+		return originBack
+	}
 	files := makeFixtures(t)
 
 	defer func(f func() time.Time) { now = f }(now)

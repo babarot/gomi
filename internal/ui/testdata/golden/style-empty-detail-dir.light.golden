@@ -4,12 +4,12 @@
 │ From     ~/docs                                                              │
 │ Deleted  2025-06-15 07:00  5 hours ago                                       │
 │ Size     94B  directory                                                      │
+│ Restore  back to where it was                                                │
 │ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │
 │ -rw-r--r--    11 B  a.txt                                                    │
 │ -rw-r--r--    25 B  b.md                                                     │
 │ -rw-r--r--    38 B  c.log                                                    │
 │ -rw-r--r--    20 B  todo.md                                                  │
-│                                                                              │
 │                                                                              │
 │                                                                              │
 │                                                                              │
@@ -50,9 +50,11 @@ L5 11-14 fg=#262626
 L5 16-25 fg=#626262
 L5 79-80 fg=#eeeedd
 L6 0-1 fg=#eeeedd
-L6 2-78 fg=#3c3c3c
+L6 2-9 fg=#626262
+L6 11-31 fg=#5fb458
 L6 79-80 fg=#eeeedd
 L7 0-1 fg=#eeeedd
+L7 2-78 fg=#3c3c3c
 L7 79-80 fg=#eeeedd
 L8 0-1 fg=#eeeedd
 L8 79-80 fg=#eeeedd
@@ -60,7 +62,8 @@ L9 0-1 fg=#eeeedd
 L9 79-80 fg=#eeeedd
 L10 0-1 fg=#eeeedd
 L10 79-80 fg=#eeeedd
-L11 0-80 fg=#eeeedd
+L11 0-1 fg=#eeeedd
+L11 79-80 fg=#eeeedd
 L12 0-80 fg=#eeeedd
 L13 0-80 fg=#eeeedd
 L14 0-80 fg=#eeeedd

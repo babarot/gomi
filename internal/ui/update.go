@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"log/slog"
+	"maps"
 	"slices"
 	"strings"
 	"time"
@@ -97,6 +98,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case originsCheckedMsg:
+		maps.Copy(m.origins, msg.origins)
+		return m, nil
+
 	case sizeLoadedMsg:
 		delete(m.reading, sizeKey(msg.path))
 		m.sizes[msg.path] = msg.size
@@ -119,6 +124,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.status = fmt.Sprintf("Deleted %d %s permanently", msg.deleted, plural(msg.deleted, "file"))
 		}
 		cmds = append(cmds, m.queueSizes(m.list.files)...)
+		cmds = append(cmds, checkOriginsCmd(m.uncheckedOrigins(msg.files)))
 		return m.followCursor(tea.Batch(cmds...))
 
 	case errorMsg:

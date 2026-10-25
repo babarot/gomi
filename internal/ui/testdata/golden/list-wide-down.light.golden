@@ -1,32 +1,32 @@
 -- screen --
  gomi  12 in the trash · 1.7K                                                                              view: recent
 ── Today ────────────────────────────────────────── 2 files · 166B ── ╭─ notes/ ───────────────────────────────────────╮
-    10:00   main.go                ~/projects/gomi               72B  │ From     ~/docs                                │
-▎   07:00   notes/                 ~/docs                        94B  │ Deleted  2025-06-15 07:00  5 hours ago         │
+    10:00   main.go               ~/projects/gomi              72B    │ From     ~/docs                                │
+▎   07:00   notes/                ~/docs                       94B    │ Deleted  2025-06-15 07:00  5 hours ago         │
 ── Yesterday ──────────────────────────────────────── 1 file · 12B ── │ Size     94B  directory                        │
-    10:00   archive.bin            ~/Downloads                   12B  │ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │
-── Friday ────────────────────────────────────────── 1 file · 1.4K ── │ -rw-r--r--    11 B  a.txt                      │
-    10:00   long.txt               ~/projects/gomi              1.4K  │ -rw-r--r--    25 B  b.md                       │
-── Thursday ──────────────────────────────────────── 2 files · 78B ── │ -rw-r--r--    38 B  c.log                      │
-    10:00 ┌ README.md              ~/projects/gomi               44B  │ -rw-r--r--    20 B  todo.md                    │
-          └ config.yaml            ~/projects/gomi               34B  │                                                │
+    10:00   archive.bin           ~/Downloads                  12B    │ Restore  back to where it was                  │
+── Friday ────────────────────────────────────────── 1 file · 1.4K ── │ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │
+    10:00   long.txt              ~/projects/gomi             1.4K    │ -rw-r--r--    11 B  a.txt                      │
+── Thursday ──────────────────────────────────────── 2 files · 78B ── │ -rw-r--r--    25 B  b.md                       │
+    10:00 ┌ README.md             ~/projects/gomi              44B    │ -rw-r--r--    38 B  c.log                      │
+          └ config.yaml           ~/projects/gomi              34B !  │ -rw-r--r--    20 B  todo.md                    │
 ── Tuesday ─────────────────────────────────────────── 1 file · 2B ── │                                                │
-    10:00   a-very-long-file-nam…  ~/projects/gomi                2B  │                                                │
+    10:00   a-very-long-file-na…  ~/projects/gomi               2B    │                                                │
 ── Monday ──────────────────────────────────────────── 1 file · 2B ── │                                                │
-    10:00   another-quite-long-f…  ~/projects/gomi                2B  │                                                │
+    10:00   another-quite-long-…  ~/projects/gomi               2B    │                                                │
 ── Sun, Jun 8 ──────────────────────────────────────── 1 file · 2B ── │                                                │
-    10:00   yet-another-long-fil…  ~/projects/gomi                2B  │                                                │
+    10:00   yet-another-long-fi…  ~/projects/gomi               2B    │                                                │
 ── Thu, Jun 5 ──────────────────────────────────────── 1 file · 9B ── │                                                │
-    12:00   todo.txt               ~/projects/gomi                9B  │                                                │
+    12:00   todo.txt              ~/projects/gomi               9B    │                                                │
 ── Mon, May 26 ────────────────────────────────────── 1 file · 17B ── │                                                │
-    12:00   report.csv             /tmp                          17B  │                                                │
+    12:00   report.csv            /tmp                         17B +  │                                                │
 ── Tue, May 6 ──────────────────────────────────────── 1 file · 4B ── │                                                │
-    12:00   old.log                /tmp                           4B  │                                                │
+    12:00   old.log               /tmp                          4B +  │                                                │
                                                                       │                                                │
                                                                       │                                                │
                                                                       │                                                │
                                                                       ╰────────────────────────────────────────────────╯
-  12 files
+  12 files   ! a file has its name now   + its folder is gone
 
   ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter • v view • ? more
 -- styles --
@@ -42,15 +42,15 @@ L2 73-79 fg=#1f6fb2 bold
 L2 80-120 fg=#eeeedd
 L3 4-9 fg=#626262
 L3 12-19 fg=#262626 bold
-L3 35-68 fg=#626262
+L3 34-66 fg=#626262
 L3 70-71 fg=#eeeedd
 L3 72-76 fg=#626262
 L3 81-87 fg=#262626
 L3 119-120 fg=#eeeedd
 L4 0-4 fg=#ad58b4 bg=#e8e8e8
 L4 4-12 fg=#626262 bg=#e8e8e8
-L4 12-35 fg=#1f6fb2 bg=#e8e8e8 bold
-L4 35-69 fg=#626262 bg=#e8e8e8
+L4 12-34 fg=#1f6fb2 bg=#e8e8e8 bold
+L4 34-69 fg=#626262 bg=#e8e8e8
 L4 70-71 fg=#eeeedd
 L4 72-79 fg=#626262
 L4 81-97 fg=#262626
@@ -68,9 +68,10 @@ L5 86-95 fg=#626262
 L5 119-120 fg=#eeeedd
 L6 4-9 fg=#626262
 L6 12-23 fg=#262626 bold
-L6 35-68 fg=#626262
+L6 34-66 fg=#626262
 L6 70-71 fg=#eeeedd
-L6 72-118 fg=#3c3c3c
+L6 72-79 fg=#626262
+L6 81-101 fg=#5fb458
 L6 119-120 fg=#eeeedd
 L7 0-2 fg=#999999
 L7 3-9 fg=#4a4a4a bold
@@ -78,10 +79,11 @@ L7 10-52 fg=#999999
 L7 53-66 fg=#626262
 L7 67-69 fg=#999999
 L7 70-71 fg=#eeeedd
+L7 72-118 fg=#3c3c3c
 L7 119-120 fg=#eeeedd
 L8 4-9 fg=#626262
 L8 12-20 fg=#262626 bold
-L8 35-68 fg=#626262
+L8 34-66 fg=#626262
 L8 70-71 fg=#eeeedd
 L8 119-120 fg=#eeeedd
 L9 0-2 fg=#999999
@@ -94,13 +96,15 @@ L9 119-120 fg=#eeeedd
 L10 4-9 fg=#626262
 L10 10-11 fg=#999999
 L10 12-21 fg=#262626 bold
-L10 35-68 fg=#626262
+L10 34-66 fg=#626262
 L10 70-71 fg=#eeeedd
 L10 119-120 fg=#eeeedd
 L11 10-11 fg=#999999
 L11 12-23 fg=#262626 bold
-L11 35-68 fg=#626262
-L11 70-120 fg=#eeeedd
+L11 34-66 fg=#626262
+L11 67-68 fg=#ff007f bold
+L11 70-71 fg=#eeeedd
+L11 119-120 fg=#eeeedd
 L12 0-2 fg=#999999
 L12 3-10 fg=#4a4a4a bold
 L12 11-54 fg=#999999
@@ -108,8 +112,8 @@ L12 55-66 fg=#626262
 L12 67-69 fg=#999999
 L12 70-120 fg=#eeeedd
 L13 4-9 fg=#626262
-L13 12-33 fg=#262626 bold
-L13 35-68 fg=#626262
+L13 12-32 fg=#262626 bold
+L13 34-66 fg=#626262
 L13 70-120 fg=#eeeedd
 L14 0-2 fg=#999999
 L14 3-9 fg=#4a4a4a bold
@@ -118,8 +122,8 @@ L14 55-66 fg=#626262
 L14 67-69 fg=#999999
 L14 70-120 fg=#eeeedd
 L15 4-9 fg=#626262
-L15 12-33 fg=#262626 bold
-L15 35-68 fg=#626262
+L15 12-32 fg=#262626 bold
+L15 34-66 fg=#626262
 L15 70-120 fg=#eeeedd
 L16 0-2 fg=#999999
 L16 3-13 fg=#4a4a4a bold
@@ -128,8 +132,8 @@ L16 55-66 fg=#626262
 L16 67-69 fg=#999999
 L16 70-120 fg=#eeeedd
 L17 4-9 fg=#626262
-L17 12-33 fg=#262626 bold
-L17 35-68 fg=#626262
+L17 12-32 fg=#262626 bold
+L17 34-66 fg=#626262
 L17 70-120 fg=#eeeedd
 L18 0-2 fg=#999999
 L18 3-13 fg=#4a4a4a bold
@@ -139,7 +143,7 @@ L18 67-69 fg=#999999
 L18 70-120 fg=#eeeedd
 L19 4-9 fg=#626262
 L19 12-20 fg=#262626 bold
-L19 35-68 fg=#626262
+L19 34-66 fg=#626262
 L19 70-120 fg=#eeeedd
 L20 0-2 fg=#999999
 L20 3-14 fg=#4a4a4a bold
@@ -149,7 +153,7 @@ L20 67-69 fg=#999999
 L20 70-120 fg=#eeeedd
 L21 4-9 fg=#626262
 L21 12-22 fg=#262626 bold
-L21 35-68 fg=#626262
+L21 34-68 fg=#626262
 L21 70-120 fg=#eeeedd
 L22 0-2 fg=#999999
 L22 3-13 fg=#4a4a4a bold
@@ -159,13 +163,13 @@ L22 67-69 fg=#999999
 L22 70-120 fg=#eeeedd
 L23 4-9 fg=#626262
 L23 12-19 fg=#262626 bold
-L23 35-68 fg=#626262
+L23 34-68 fg=#626262
 L23 70-120 fg=#eeeedd
 L24 70-120 fg=#eeeedd
 L25 70-120 fg=#eeeedd
 L26 70-120 fg=#eeeedd
 L27 70-120 fg=#eeeedd
-L28 2-10 fg=#626262
+L28 2-61 fg=#626262
 L30 2-5 fg=#626262
 L30 6-8 fg=#808080
 L30 9-10 fg=#999999

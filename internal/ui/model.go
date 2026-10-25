@@ -35,6 +35,9 @@ type Model struct {
 	sizes    map[string]int64
 	// reading has the reads started and not yet returned
 	reading map[string]bool
+	// origins is what restoring each file would meet, by trash path, once
+	// its place is looked at
+	origins map[string]origin
 	// previewSeq counts the cursor's moves, so that only the preview of the
 	// file it rests on is read
 	previewSeq int
@@ -114,6 +117,7 @@ func NewModel(t trash.Trash, files []*trash.File, opts RenderOptions) Model {
 		previews:  map[string]previewResult{},
 		sizes:     map[string]int64{},
 		reading:   map[string]bool{},
+		origins:   map[string]origin{},
 		help:      help.New(),
 		width:     defaultWidth,
 		height:    defaultHeight,
