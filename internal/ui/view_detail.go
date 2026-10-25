@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gabriel-vasile/mimetype"
 	"github.com/muesli/reflow/wordwrap"
 )
 
@@ -64,13 +63,17 @@ func (m Model) renderDeletedAt() string {
 func (m Model) renderPreview() string {
 	content := m.viewport.View()
 
-	if !m.state.preview.available {
-		mtype, _ := mimetype.DetectFile(m.detailFile.TrashPath)
+	const height = defaultHeight - 11 - 1 // info pane height (11) + preview border (1)
+	r, loaded := m.previews[m.detailFile.TrashPath]
+	switch {
+	case !loaded:
+		content = m.styles.RenderLoadingPreview(defaultWidth, height)
+	case !r.available:
 		content = m.styles.RenderErrorPreview(
 			ErrCannotPreview.Error(),
-			mtype.String(),
+			r.mimeType,
 			defaultWidth,
-			defaultHeight-11-1, // info pane height (11) + preview border (1)
+			height,
 		)
 	}
 
@@ -84,7 +87,7 @@ func (m Model) renderPreview() string {
 // previewHeader renders the header of the preview section
 func (m Model) previewHeader() string {
 	return m.styles.RenderPreviewFrame(
-		m.detailSize,
+		m.sizeText(m.detailFile),
 		true,
 		defaultWidth,
 	)
@@ -92,7 +95,7 @@ func (m Model) previewHeader() string {
 
 // previewFooter renders the footer of the preview section
 func (m Model) previewFooter() string {
-	if !m.state.preview.available {
+	if r, ok := m.previews[m.detailFile.TrashPath]; !ok || !r.available {
 		return m.styles.RenderPreviewFrame(
 			"", // do not show percentage if cannot preview
 			false,

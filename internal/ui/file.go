@@ -15,7 +15,6 @@ import (
 	"strings"
 
 	"github.com/babarot/gomi/internal/trash"
-	"github.com/babarot/gomi/internal/utils/fs"
 	"github.com/babarot/gomi/internal/utils/shell"
 
 	"al.essio.dev/pkg/shellescape"
@@ -56,17 +55,6 @@ func (f File) FilterValue() string {
 	return f.Name
 }
 
-func (f File) Size() string {
-	var sizeStr string
-	size, err := fs.DirSize(f.TrashPath)
-	if err != nil {
-		sizeStr = "(cannot be calculated)"
-	} else {
-		sizeStr = humanize.Bytes(uint64(size))
-	}
-	return sizeStr
-}
-
 func (f File) Browse() (string, error) {
 	var content string
 
@@ -79,9 +67,17 @@ func (f File) Browse() (string, error) {
 		if f.dirListCommand == "" {
 			slog.Debug("preview dir command is not set, fallback to builtin dir func")
 			lines := []string{}
-			dirs, _ := os.ReadDir(f.TrashPath)
+			// the preview is read in the background, so the directory may be
+			// deleted while it is listed
+			dirs, err := os.ReadDir(f.TrashPath)
+			if err != nil {
+				return content, ErrCannotPreview
+			}
 			for _, dir := range dirs {
-				info, _ := dir.Info()
+				info, err := dir.Info()
+				if err != nil {
+					continue
+				}
 				name := dir.Name()
 				if info.IsDir() {
 					name += "/"

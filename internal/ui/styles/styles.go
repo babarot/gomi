@@ -174,6 +174,15 @@ func (s *Styles) RenderDetailTitle(title string, width int, selected bool) strin
 	return lipgloss.JoinHorizontal(lipgloss.Center, renderedTitle, line)
 }
 
+// RenderLoadingPreview fills the preview while its content is read
+func (s *Styles) RenderLoadingPreview(width, height int) string {
+	return lipgloss.Place(
+		width, height,
+		lipgloss.Center, lipgloss.Center,
+		s.Detail.Preview.Error.Title.Render("Loading…"),
+	)
+}
+
 func (s *Styles) RenderErrorPreview(errorMsg, mime string, width, height int) string {
 	title := s.Detail.Preview.Error.Content.Render(errorMsg)
 	content := s.Detail.Preview.Error.Title.Render("(" + mime + ")")

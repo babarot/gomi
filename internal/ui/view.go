@@ -86,11 +86,8 @@ func (m *Model) newViewportModel(file File) viewport.Model {
 	)
 	viewportModel.KeyMap = keys.PreviewKeys
 
-	content, err := file.Browse()
-	if err != nil {
-		slog.Warn("file.Browse returned error", "content", err)
-		m.state.preview.available = false
+	if r, ok := m.previews[file.TrashPath]; ok {
+		viewportModel.SetContent(r.content)
 	}
-	viewportModel.SetContent(content)
 	return viewportModel
 }
