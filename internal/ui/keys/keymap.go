@@ -40,7 +40,6 @@ type Detail struct {
 	Prev         key.Binding
 	GotoTop      key.Binding
 	GotoBottom   key.Binding
-	AtSign       key.Binding
 	Delete       *key.Binding // Optional key based on configuration
 }
 
@@ -164,10 +163,6 @@ func NewKeyMap(cfg KeyMapConfig) *KeyMap {
 			key.WithKeys("G"),
 			key.WithHelp("G", "go to end"),
 		),
-		AtSign: key.NewBinding(
-			key.WithKeys("@"),
-			key.WithHelp("@", "info"),
-		),
 	}
 
 	// Add delete key if enabled
@@ -279,7 +274,7 @@ func (k KeyMap) AsDetailKeyMap() KeyMap {
 				k.Detail.HalfPageUp, k.Detail.HalfPageDown,
 				k.Detail.GotoTop, k.Detail.GotoBottom,
 			},
-			{k.Detail.AtSign, k.Common.Quit, DefaultKeyMapListCloseFullHelp},
+			{k.Common.Quit, DefaultKeyMapListCloseFullHelp},
 		}
 		if k.Detail.Delete != nil {
 			bindings[0] = append(bindings[0], *k.Detail.Delete)

@@ -1,9 +1,5 @@
 package ui
 
-import (
-	"time"
-)
-
 // ViewType represents the current view state
 type ViewType uint8
 
@@ -25,23 +21,9 @@ func (v ViewType) String() string {
 	return "unknown"
 }
 
-// DateFormat represents the date display format
-type DateFormat string
-
-const (
-	DateFormatRelative DateFormat = "relative"
-	DateFormatAbsolute DateFormat = "absolute"
-)
-
 type ViewState struct {
 	current      ViewType
-	detail       detail
 	confirmation confirmation
-}
-
-type detail struct {
-	showOrigin bool
-	dateFormat DateFormat
 }
 
 // confirmation is the delete confirmation dialog, drawn over the current
@@ -65,10 +47,6 @@ const (
 func NewViewState() *ViewState {
 	return &ViewState{
 		current: ListView,
-		detail: detail{
-			showOrigin: true,
-			dateFormat: DateFormatRelative,
-		},
 		confirmation: confirmation{
 			state: ConfirmStateYesNo,
 		},
@@ -78,28 +56,6 @@ func NewViewState() *ViewState {
 // SetView changes the current view
 func (v *ViewState) SetView(newView ViewType) {
 	v.current = newView
-}
-
-// ToggleDateFormat switches between relative and absolute date formats
-func (v *ViewState) ToggleDateFormat() {
-	if v.detail.dateFormat == DateFormatRelative {
-		v.detail.dateFormat = DateFormatAbsolute
-		return
-	}
-	v.detail.dateFormat = DateFormatRelative
-}
-
-// ToggleOriginPath switches between showing origin and trash paths
-func (v *ViewState) ToggleOriginPath() {
-	v.detail.showOrigin = !v.detail.showOrigin
-}
-
-// FormatDate formats the given time according to the current date format
-func (v *ViewState) FormatDate(t time.Time) string {
-	if v.detail.dateFormat == DateFormatAbsolute {
-		return t.Format(time.DateTime)
-	}
-	return relativeTime(t)
 }
 
 // OpenConfirm opens the confirmation dialog for files over the current view

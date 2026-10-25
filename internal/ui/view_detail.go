@@ -4,114 +4,116 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-	"time"
 
-	"github.com/muesli/reflow/wordwrap"
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 )
 
-// detailView renders the detail view of a file
+// paneInfoRows are the rows of the pane above the file's contents: From,
+// Deleted and Size, then a rule
+const paneInfoRows = 4
+
+// detailView is the preview of the file on the cursor, opened over the
+// whole of the UI: the header, the pane, and the status and the key help
+// at the bottom.
 func (m Model) detailView() string {
-	return m.styles.Detail.View(
-		m.renderHeader(),
-		m.renderDeletedFrom(),
-		m.renderDeletedAt(),
-		m.renderPreview(),
-		m.renderFooter(),
-	)
+	lines := []string{m.headerLine()}
+	lines = append(lines, m.pane(m.detailFile, m.width, m.paneHeight()))
+	lines = append(lines, m.statusLine(), m.helpView())
+	return strings.Join(lines, "\n")
 }
 
-// renderHeader renders the header section with the current file title
-func (m Model) renderHeader() string {
-	return m.styles.RenderDetailTitle(
-		m.detailFile.Title(),
-		defaultWidth,
-		m.selection.Contains(m.detailFile),
-	)
+// paneHeight is the rows the pane takes when it is opened over the UI
+func (m Model) paneHeight() int {
+	return max(paneInfoRows+3, m.height-2-lipgloss.Height(m.helpView()))
 }
 
-// renderDeletedFrom renders the section showing where the file was deleted from
-func (m Model) renderDeletedFrom() string {
-	text := filepath.Dir(m.detailFile.OriginalPath)
-	title := "Deleted From"
-	if !m.state.detail.showOrigin {
-		title = "Trash Path"
-		text = filepath.Dir(m.detailFile.TrashPath)
+// previewSize is the columns and rows of a pane's contents
+func previewSize(w, h int) (int, int) {
+	return max(0, w-4), max(0, h-2-paneInfoRows)
+}
+
+// resizePreview fits the viewport to the pane the detail view opens
+func (m *Model) resizePreview() {
+	w, h := previewSize(m.width, m.paneHeight())
+	m.viewport.SetWidth(w)
+	m.viewport.SetHeight(h)
+}
+
+// pane draws f in a frame of w columns and h rows: its name on the frame,
+// where and when it was deleted and its size, then its contents, and how
+// far they are scrolled on the bottom of the frame.
+func (m Model) pane(f File, w, h int) string {
+	border := m.fg(m.palette.Border)
+	inner, bodyH := previewSize(w, h)
+
+	var lines []string
+	// the top of the frame, with the name on it
+	name := f.Name
+	nameColor := m.palette.Name
+	if f.IsDir {
+		name += "/"
+		nameColor = m.palette.DirName
+	}
+	title := m.fg(nameColor).Bold(true).Render(ansi.Truncate(name, max(0, w-8), ellipsis))
+	if m.selection.Contains(f) {
+		title += " " + m.fg(m.palette.Selected).Bold(true).Render("✓")
+	}
+	top := border.Render("╭─ ") + title + " "
+	lines = append(lines, top+border.Render(strings.Repeat("─", max(0, w-1-ansi.StringWidth(top)))+"╮"))
+
+	row := func(s string) string {
+		return border.Render("│") + " " + s + strings.Repeat(" ", max(0, inner-ansi.StringWidth(s))) + " " + border.Render("│")
+	}
+	label := func(k string) string { return m.fg(m.palette.Description).Render(fmt.Sprintf("%-9s", k)) }
+	value := m.fg(m.palette.Name)
+	dim := m.fg(m.palette.Description)
+
+	place := shortPath(m.displayPath(filepath.Dir(f.OriginalPath)), max(0, inner-9))
+	lines = append(lines, row(label("From")+value.Render(place)))
+	when := f.DeletedAt.In(now().Location())
+	lines = append(lines, row(ansi.Truncate(label("Deleted")+value.Render(when.Format("2006-01-02 15:04"))+dim.Render("  "+relativeTime(f.DeletedAt)), inner, ellipsis)))
+	kind := "file"
+	if f.IsDir {
+		kind = "directory"
+	}
+	lines = append(lines, row(label("Size")+value.Render(m.sizeText(f))+dim.Render("  "+kind)))
+	lines = append(lines, row(m.fg(m.palette.PreviewBorder).Render(strings.Repeat("╌", inner))))
+
+	for _, l := range m.paneBody(f, inner, bodyH) {
+		lines = append(lines, row(l))
 	}
 
-	w := wordwrap.NewWriter(46)
-	w.Breakpoints = []rune{'/', '.'}
-	w.KeepNewlines = false
-	_, _ = w.Write([]byte(text))
-	_ = w.Close()
-
-	return m.styles.RenderDeletedFrom(title, w.String())
-}
-
-// renderDeletedAt renders the section showing when the file was deleted
-func (m Model) renderDeletedAt() string {
-	var ts string
-	switch m.state.detail.dateFormat {
-	case DateFormatAbsolute:
-		ts = m.detailFile.DeletedAt.Format(time.DateTime)
-	default:
-		ts = relativeTime(m.detailFile.DeletedAt)
+	// the bottom of the frame, with how far the contents are scrolled
+	pos := ""
+	if r, ok := m.previews[f.TrashPath]; ok && r.available && m.viewport.TotalLineCount() > bodyH {
+		last := min(m.viewport.YOffset()+bodyH, m.viewport.TotalLineCount())
+		pos = fmt.Sprintf(" %d–%d/%d ", m.viewport.YOffset()+1, last, m.viewport.TotalLineCount())
 	}
-	return m.styles.RenderDeletedAt("Deleted At", ts)
+	bottom := "╰" + strings.Repeat("─", max(0, w-3-ansi.StringWidth(pos))) + pos + "─╯"
+	lines = append(lines, border.Render(bottom))
+	return strings.Join(lines, "\n")
 }
 
-// renderPreview renders the preview section of the file
-func (m Model) renderPreview() string {
-	content := m.viewport.View()
-
-	const height = defaultHeight - 11 - 1 // info pane height (11) + preview border (1)
-	r, loaded := m.previews[m.detailFile.TrashPath]
+// paneBody is the h rows of f's contents, each cut to w: the preview, or
+// what is there while it is read or when it cannot be shown.
+func (m Model) paneBody(f File, w, h int) []string {
+	dim := m.fg(m.palette.PreviewError)
+	var lines []string
+	r, ok := m.previews[f.TrashPath]
 	switch {
-	case !loaded:
-		content = m.styles.RenderLoadingPreview(defaultWidth, height)
+	case !ok:
+		lines = []string{dim.Render("Loading…")}
 	case !r.available:
-		content = m.styles.RenderErrorPreview(
-			ErrCannotPreview.Error(),
-			r.mimeType,
-			defaultWidth,
-			height,
-		)
+		lines = []string{dim.Render(ErrCannotPreview.Error() + " (" + r.mimeType + ")")}
+	default:
+		lines = strings.Split(m.viewport.View(), "\n")
 	}
-
-	return fmt.Sprintf("%s\n%s\n%s",
-		m.previewHeader(),
-		content,
-		m.previewFooter(),
-	)
-}
-
-// previewHeader renders the header of the preview section
-func (m Model) previewHeader() string {
-	return m.styles.RenderPreviewFrame(
-		m.sizeText(m.detailFile),
-		true,
-		defaultWidth,
-	)
-}
-
-// previewFooter renders the footer of the preview section
-func (m Model) previewFooter() string {
-	if r, ok := m.previews[m.detailFile.TrashPath]; !ok || !r.available {
-		return m.styles.RenderPreviewFrame(
-			"", // do not show percentage if cannot preview
-			false,
-			defaultWidth,
-		)
+	out := make([]string, h)
+	for i := range out {
+		if i < len(lines) {
+			out[i] = ansi.Truncate(lines[i], w, "")
+		}
 	}
-	return m.styles.RenderPreviewFrame(
-		fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100),
-		false,
-		defaultWidth,
-	)
-}
-
-// renderFooter renders the footer section
-func (m Model) renderFooter() string {
-	return m.styles.Dialog.Separator.Render(
-		strings.Repeat("─", defaultWidth),
-	)
+	return out
 }

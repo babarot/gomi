@@ -253,26 +253,6 @@ func TestUpdate_DetailView_Quit(t *testing.T) {
 	}
 }
 
-func TestUpdate_DetailView_AtSignToggles(t *testing.T) {
-	m := newTestModel()
-	m.state.SetView(DetailView)
-
-	// Initial state
-	initialDateFormat := m.state.detail.dateFormat
-	initialShowOrigin := m.state.detail.showOrigin
-
-	msg := tea.KeyPressMsg{Code: '@', Text: "@"}
-	updated, _ := m.Update(msg)
-	model := asModel(t, updated)
-
-	if model.state.detail.dateFormat == initialDateFormat {
-		t.Error("date format should have toggled")
-	}
-	if model.state.detail.showOrigin == initialShowOrigin {
-		t.Error("showOrigin should have toggled")
-	}
-}
-
 func TestUpdate_ConfirmView_YesNo_No(t *testing.T) {
 	m := newTestModel()
 	// Reset global selection manager for test isolation
@@ -431,8 +411,8 @@ func TestUpdate_ShowDetailMsg_ReadsOnce(t *testing.T) {
 	if got := len(model.loadDetail(dir)); got != 0 {
 		t.Errorf("commands after reading = %d, want 0", got)
 	}
-	if got := model.sizeText(dir); got != "42 B" {
-		t.Errorf("sizeText = %q, want %q", got, "42 B")
+	if got := model.sizeText(dir); got != "42B" {
+		t.Errorf("sizeText = %q, want %q", got, "42B")
 	}
 }
 
@@ -664,5 +644,17 @@ func TestUpdate_HeightFromCursor(t *testing.T) {
 	m = asModel(t, updated)
 	if !m.settled || m.height != 36 {
 		t.Errorf("settled %v, height %d; want true, 36 (the rows below the prompt)", m.settled, m.height)
+	}
+}
+
+func TestUpdate_DetailView_HelpResizesPreview(t *testing.T) {
+	m := newTestModel()
+	updated, _ := m.Update(ShowDetailMsg{file: newTestFile("a.txt")})
+	m = asModel(t, updated)
+	before := m.viewport.Height()
+	updated, _ = m.Update(tea.KeyPressMsg{Code: '?', Text: "?"})
+	m = asModel(t, updated)
+	if m.viewport.Height() >= before {
+		t.Errorf("preview height = %d with the full help, want less than %d", m.viewport.Height(), before)
 	}
 }

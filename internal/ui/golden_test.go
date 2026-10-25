@@ -306,7 +306,6 @@ var goldenCases = []goldenCase{
 	{name: "detail-text", keys: []string{"space"}},
 	{name: "detail-dir", keys: []string{"down", "space"}},
 	{name: "detail-binary", keys: []string{"down", "down", "space"}},
-	{name: "detail-toggle", keys: []string{"space", "@"}},
 	{name: "detail-scroll", keys: []string{"down", "down", "down", "space", "d"}},
 	{name: "detail-selected", keys: []string{"tab", "up", "space"}},
 	{name: "detail-help", keys: []string{"space", "?"}},
