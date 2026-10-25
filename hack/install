@@ -115,18 +115,12 @@ try_go() {
   trap 'rm -rf "${tmp_dir}"' EXIT
 
   git clone https://github.com/babarot/gomi "${tmp_dir}"
-  (
-    cd "${tmp_dir}" &&
-    if make install; then
-      echo "Build completed successfully"
-      return 0
-    else
-      echo "Source code build failed" >&2
-      return 1
-    fi
-  )
-
-  return 0
+  if (cd "${tmp_dir}" && go install -ldflags "$(scripts/ldflags.sh)" .); then
+    echo "Build completed successfully"
+    return 0
+  fi
+  echo "Source code build failed" >&2
+  return 1
 }
 
 main "${@}"
