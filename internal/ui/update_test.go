@@ -810,7 +810,7 @@ func TestUpdate_HelpOverlay(t *testing.T) {
 
 func TestUpdate_ScopeStatusClears(t *testing.T) {
 	m := newTestModel()
-	m.list.cwd = "/home/user"
+	m.list.cwd = filepath.FromSlash("/home/user")
 	m.list.setFiles([]File{listFile("a", time.Hour, "")}, listNow)
 	updated, _ := m.Update(tea.KeyPressMsg{Code: '.', Text: "."})
 	m = asModel(t, updated)
