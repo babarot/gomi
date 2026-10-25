@@ -338,8 +338,7 @@ func (c *Config) validate() error {
 	_ = validate.RegisterValidation("validDirPath", validateDirPath)
 
 	if err := validate.Struct(c); err != nil {
-		var validationErrors validator.ValidationErrors
-		if errors.As(err, &validationErrors) {
+		if validationErrors, ok := errors.AsType[validator.ValidationErrors](err); ok {
 			for _, err := range validationErrors {
 				return fmt.Errorf("validation error: Field %s, %q is invalid", err.Field(), err.Value())
 			}
