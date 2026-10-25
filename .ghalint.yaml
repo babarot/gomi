@@ -1,0 +1,8 @@
+# Policies of ghalint (https://github.com/suzuki-shunsuke/ghalint) that a
+# workflow is let off, with the reason.
+excludes:
+  # tagpr pushes the release commit and its tag with git, using the
+  # credentials actions/checkout leaves in the repository
+  - policy_name: checkout_persist_credentials_should_be_false
+    workflow_file_path: .github/workflows/release.yaml
+    job_name: tagpr
