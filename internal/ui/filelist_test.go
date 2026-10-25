@@ -353,6 +353,20 @@ func TestFileList_Scope(t *testing.T) {
 		t.Error("scoped with nothing deleted in the directory")
 	}
 
+	// ui.scope decides it, whatever was deleted here
+	for scope, want := range map[string]bool{"here": true, "all": false} {
+		l = newFileList()
+		l.cwd = filepath.FromSlash("/srv")
+		if scope == "all" {
+			l.cwd = filepath.FromSlash("/home/user")
+		}
+		l.startScope = scope
+		l.setFiles(files, listNow)
+		if l.scoped != want {
+			t.Errorf("scope %s: scoped %v, want %v", scope, l.scoped, want)
+		}
+	}
+
 	// the root holds everything
 	l = newFileList()
 	l.cwd = string(filepath.Separator)

@@ -100,6 +100,12 @@ type UI struct {
 	// Views are the views v goes through, in order; empty is all of them
 	Views []string `yaml:"views" validate:"omitempty,dive,oneof=recent places batches picker"`
 
+	// Scope is what the list starts with: "here" for the files deleted
+	// where gomi was started and under it, "all" for every file, or
+	// "auto" for here when anything was deleted there, else all; empty is
+	// "auto"
+	Scope string `yaml:"scope" validate:"omitempty,oneof=auto here all"`
+
 	// Theme names the colors the UI is drawn with; empty is "gomi"
 	Theme string `yaml:"theme" validate:"validTheme|allowEmpty"`
 

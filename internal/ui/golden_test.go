@@ -293,6 +293,10 @@ func withView(name string) func(o *RenderOptions) {
 	return func(o *RenderOptions) { o.Config.View = name }
 }
 
+func withScope(scope string) func(o *RenderOptions) {
+	return func(o *RenderOptions) { o.Config.Scope = scope }
+}
+
 // withTheme draws with the named theme
 func withTheme(name string) func(o *RenderOptions) {
 	return func(o *RenderOptions) {
@@ -324,6 +328,8 @@ var goldenCases = []goldenCase{
 	{name: "view-to-picker", keys: []string{"v", "v", "v"}},
 	{name: "scope-here", cwd: "/home/user/projects/gomi"},
 	{name: "scope-all", cwd: "/home/user/projects/gomi", keys: []string{"."}},
+	{name: "scope-config-here", cwd: "/srv", opts: withScope("here")},
+	{name: "scope-config-all", cwd: "/home/user/projects/gomi", opts: withScope("all")},
 	{name: "scope-places", cwd: "/home/user/docs", opts: withView("places")},
 	{name: "scope-nothing-here", cwd: "/home/user/projects/gomi", keys: []string{"/", "z", "z", "z"}},
 	{name: "help-overlay", keys: []string{"?"}},

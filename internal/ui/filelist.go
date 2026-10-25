@@ -50,10 +50,12 @@ type fileList struct {
 
 	// cwd is the directory gomi was started in; while scoped, the list
 	// shows only what was deleted in it and under it. scopeSet is set once
-	// the list has decided whether to start scoped.
-	cwd      string
-	scoped   bool
-	scopeSet bool
+	// the list has decided whether to start scoped, as startScope (the
+	// ui.scope setting) says.
+	cwd        string
+	scoped     bool
+	scopeSet   bool
+	startScope string
 	// open has the folds opened in places and batches, by their key
 	open map[string]bool
 
@@ -133,10 +135,17 @@ func (l *fileList) setFiles(files []File, now time.Time) {
 		return l.files[i].DeletedAt.After(l.files[j].DeletedAt)
 	})
 	if !l.scopeSet {
-		// start with what was deleted where gomi was started, when there is
-		// any; else with everything
 		l.scopeSet = true
-		l.scoped = slices.ContainsFunc(l.files, l.here)
+		switch l.startScope {
+		case "here":
+			l.scoped = l.cwd != ""
+		case "all":
+			l.scoped = false
+		default:
+			// what was deleted where gomi was started, when there is any;
+			// else everything
+			l.scoped = slices.ContainsFunc(l.files, l.here)
+		}
 	}
 	if l.view != viewRecent && !l.opened(l.view) {
 		l.setView(l.view, now)

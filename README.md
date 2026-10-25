@@ -216,6 +216,7 @@ ui:
   height: auto # rows below the prompt, at least half the terminal; or a number ("30") or a share ("40%")
   view: recent # the view the list starts in: recent, places, batches or picker
   views: [recent, places, batches, picker] # the views v goes through
+  scope: auto # what the list starts with: here (files deleted in this directory), all, or auto (here when there are any)
   theme: gomi # or catppuccin-mocha, catppuccin-latte, nord
   density: spacious # or compact
   preview:

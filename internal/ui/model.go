@@ -113,6 +113,7 @@ func NewModel(t trash.Trash, files []*trash.File, opts RenderOptions) Model {
 	home, _ := os.UserHomeDir()
 	list := newFileList()
 	list.view = startView(uiCfg)
+	list.startScope = uiCfg.Scope
 	if wd, err := getwd(); err == nil {
 		list.cwd = wd
 	}
