@@ -1,0 +1,56 @@
+-- screen --
+ gomi  12 in the trash · 1.7K                            in /srv · view: recent
+  Nothing was deleted here; . shows every file
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  0 files
+
+  ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter …
+-- styles --
+L1 1-5 fg=#ad58b4 bold
+L1 7-29 fg=#777777
+L1 57-64 fg=#7aa2f7
+L1 65-79 fg=#777777
+L2 2-46 fg=#777777
+L28 2-9 fg=#777777
+L30 2-5 fg=#626262
+L30 6-8 fg=#4a4a4a
+L30 9-10 fg=#3c3c3c
+L30 11-14 fg=#626262
+L30 15-19 fg=#4a4a4a
+L30 20-21 fg=#3c3c3c
+L30 22-27 fg=#626262
+L30 28-35 fg=#4a4a4a
+L30 36-37 fg=#3c3c3c
+L30 38-43 fg=#626262
+L30 44-50 fg=#4a4a4a
+L30 51-52 fg=#3c3c3c
+L30 53-56 fg=#626262
+L30 57-63 fg=#4a4a4a
+L30 64-65 fg=#3c3c3c
+L30 66-67 fg=#626262
+L30 68-74 fg=#4a4a4a
+L30 75-76 fg=#3c3c3c

@@ -8,10 +8,10 @@
       ├ a-very-long-file-name-for-testing.txt                  5d ago      2B
       ├ another-quite-long-file-name.txt                       6d ago      2B
       ├ yet-another-long-file-name-here.txt                     Jun 8      2B
-                   ╭───────────────────────────────────────╮
-                   │                                       │
-                   │        Are you sure you want to       │
-                   │       completely delete 8 files?      │
+      └ todo.txt   ╭───────────────────────────────────────╮    Jun 5      9B
+    ▸ ~/docs       │                                       │file · 94B   5h ago
+    ▸ ~/Downloads  │        Are you sure you want to       │file · 12B   1d ago
+    ▸ /tmp         │       completely delete 8 files?      │iles · 21B   May 26
                    │                                       │
                    │          Type YES to confirm          │
                    │                                       │
@@ -57,14 +57,26 @@ L8 63-77 fg=#777777
 L9 6-7 fg=#3c3c3c
 L9 8-43 fg=#e4e4e4 bold
 L9 64-77 fg=#777777
+L10 6-7 fg=#3c3c3c
+L10 8-16 fg=#e4e4e4 bold
 L10 19-60 fg=#ff007f
+L10 64-77 fg=#777777
+L11 4-5 fg=#ad58b4
+L11 6-12 fg=#e4e4e4 bold
 L11 19-60 fg=#ff007f
+L11 60-79 fg=#777777
+L12 4-5 fg=#ad58b4
+L12 6-17 fg=#e4e4e4 bold
 L12 19-20 fg=#ff007f
 L12 28-52 fg=#ff007f bold
 L12 59-60 fg=#ff007f
+L12 60-79 fg=#777777
+L13 4-5 fg=#ad58b4
+L13 6-10 fg=#e4e4e4 bold
 L13 19-20 fg=#ff007f
 L13 27-53 fg=#ff007f bold
 L13 59-60 fg=#ff007f
+L13 60-79 fg=#777777
 L14 19-60 fg=#ff007f
 L15 19-20 fg=#ff007f
 L15 30-49 fg=#ff007f bold

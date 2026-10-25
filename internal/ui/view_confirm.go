@@ -114,25 +114,3 @@ func (m Model) formatConfirmationTypeYES(files []File) string {
 		lipgloss.JoinVertical(lipgloss.Center, contents...),
 	)
 }
-
-// renderDialogOverBase renders dialog box centered over base view. A
-// dialog taller than the view, as with a low ui.height, is shown alone so
-// that what it asks can be read whole.
-func (m Model) renderDialogOverBase(baseView, dialogContent string) string {
-	listLines := strings.Split(baseView, "\n")
-	dialogLines := strings.Split(dialogContent, "\n")
-	center := lipgloss.NewStyle().Width(m.width).Align(lipgloss.Center)
-
-	if len(dialogLines) >= len(listLines) {
-		for i, line := range dialogLines {
-			dialogLines[i] = center.Render(line)
-		}
-		return strings.Join(dialogLines, "\n")
-	}
-
-	dialogStartLine := (len(listLines) - len(dialogLines)) / 2
-	for i, line := range dialogLines {
-		listLines[dialogStartLine+i] = center.Render(line)
-	}
-	return strings.Join(listLines, "\n")
-}

@@ -61,11 +61,13 @@ func (m Model) view() string {
 		return ""
 	}
 
-	if m.state.Confirming() {
-		view = m.renderDialogOverBase(view, m.confirmDialog())
-	}
-	if m.sortMenu {
-		view = m.renderDialogOverBase(view, m.sortMenuView())
+	switch {
+	case m.state.Confirming():
+		view = overlay(view, m.confirmDialog(), m.width)
+	case m.sortMenu:
+		view = overlay(view, m.sortMenuView(), m.width)
+	case m.helpOpen:
+		view = overlay(view, m.helpBox(), m.width)
 	}
 	return view
 }

@@ -264,6 +264,21 @@ func TestConfig_Validate_PreviewPosition(t *testing.T) {
 	}
 }
 
+func TestConfig_Validate_Scope(t *testing.T) {
+	for _, scope := range []string{"", "auto", "here", "all"} {
+		cfg := NewDefaultConfig()
+		cfg.UI.Scope = scope
+		if err := cfg.validate(); err != nil {
+			t.Errorf("scope %q: %v", scope, err)
+		}
+	}
+	cfg := NewDefaultConfig()
+	cfg.UI.Scope = "there"
+	if err := cfg.validate(); err == nil {
+		t.Error("expected validation error for scope there")
+	}
+}
+
 func TestConfig_Validate_Views(t *testing.T) {
 	cfg := NewDefaultConfig()
 	cfg.UI.View = "places"

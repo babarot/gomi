@@ -650,18 +650,6 @@ func TestUpdate_HeightFromCursor(t *testing.T) {
 	}
 }
 
-func TestUpdate_DetailView_HelpResizesPreview(t *testing.T) {
-	m := newTestModel()
-	updated, _ := m.Update(ShowDetailMsg{file: newTestFile("a.txt")})
-	m = asModel(t, updated)
-	before := m.viewport.Height()
-	updated, _ = m.Update(tea.KeyPressMsg{Code: '?', Text: "?"})
-	m = asModel(t, updated)
-	if m.viewport.Height() >= before {
-		t.Errorf("preview height = %d with the full help, want less than %d", m.viewport.Height(), before)
-	}
-}
-
 func TestTargets(t *testing.T) {
 	m := newTestModel()
 	a, b := listFile("a", time.Hour, "run"), listFile("b", time.Hour+time.Second, "run")
@@ -793,5 +781,66 @@ func TestUpdate_PickerHMovesByPage(t *testing.T) {
 	// a page up from f4, not back to the top
 	if f, _ := m.list.current(listNow); f.Name != "f2" {
 		t.Errorf("cursor on %q after h, want f2", f.Name)
+	}
+}
+
+func TestUpdate_HelpOverlay(t *testing.T) {
+	for _, closeKey := range []tea.KeyPressMsg{
+		{Code: '?', Text: "?"}, {Code: tea.KeyEscape}, {Code: 'q', Text: "q"},
+	} {
+		m := newTestModel()
+		updated, _ := m.Update(tea.KeyPressMsg{Code: '?', Text: "?"})
+		m = asModel(t, updated)
+		if !m.helpOpen {
+			t.Fatal("? did not open the key list")
+		}
+		// the keys go to the key list, not the view under it
+		updated, _ = m.Update(tea.KeyPressMsg{Code: 'v', Text: "v"})
+		m = asModel(t, updated)
+		if m.list.view != viewRecent {
+			t.Error("v changed the view under the key list")
+		}
+		updated, cmd := m.Update(closeKey)
+		m = asModel(t, updated)
+		if m.helpOpen || cmd != nil {
+			t.Errorf("%s: open %v, cmd %v; want closed, no quit", closeKey.String(), m.helpOpen, cmd != nil)
+		}
+	}
+}
+
+func TestUpdate_ScopeStatusClears(t *testing.T) {
+	m := newTestModel()
+	m.list.cwd = filepath.FromSlash("/home/user")
+	m.list.setFiles([]File{listFile("a", time.Hour, "")}, listNow)
+	updated, _ := m.Update(tea.KeyPressMsg{Code: '.', Text: "."})
+	m = asModel(t, updated)
+	if m.list.scoped || m.status == "" {
+		t.Fatalf("after .: scoped %v, status %q; want false and a status", m.list.scoped, m.status)
+	}
+	first := m.statusSeq
+	updated, _ = m.Update(tea.KeyPressMsg{Code: '.', Text: "."})
+	m = asModel(t, updated)
+	// the first status's timer does not clear the second
+	updated, _ = m.Update(statusClearMsg{seq: first})
+	if m = asModel(t, updated); m.status == "" {
+		t.Error("an older timer cleared the status")
+	}
+	updated, _ = m.Update(statusClearMsg{seq: m.statusSeq})
+	if m = asModel(t, updated); m.status != "" {
+		t.Errorf("status %q after its time, want none", m.status)
+	}
+}
+
+func TestUpdate_CtrlCQuitsOverMenus(t *testing.T) {
+	for name, open := range map[string]func(*Model){
+		"help": func(m *Model) { m.helpOpen = true },
+		"sort": func(m *Model) { m.sortMenu = true },
+	} {
+		m := newTestModel()
+		open(&m)
+		updated, cmd := m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+		if asModel(t, updated).state.current != Quitting || cmd == nil {
+			t.Errorf("%s: ctrl+c did not quit", name)
+		}
 	}
 }
