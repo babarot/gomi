@@ -102,12 +102,19 @@ func (s *Storage) Put(src string) error {
 		return trash.NewStorageError("put", src, err)
 	}
 
+	// Files removed in one run share the run ID, so they can be told apart
+	// from other runs later
+	runID := s.config.RunID
+	if runID == "" {
+		runID = id
+	}
+
 	// Add to history (protected by mutex for concurrent Put calls)
 	s.mu.Lock()
 	s.history.Add(history.File{
 		Name:      filepath.Base(abs),
 		ID:        id,
-		RunID:     id, // For compatibility with old format
+		RunID:     runID,
 		From:      abs,
 		To:        trashPath,
 		Timestamp: time.Now(),
@@ -147,6 +154,7 @@ func (s *Storage) List() ([]*trash.File, error) {
 			OriginalPath: f.From,
 			TrashPath:    f.To,
 			DeletedAt:    f.Timestamp,
+			RunID:        f.RunID,
 		}
 
 		// Get additional file info

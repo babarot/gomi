@@ -19,6 +19,10 @@ const (
 	// According to XDG spec
 	trashInfoHeader = "[Trash Info]"
 	timeFormat      = "2006-01-02T15:04:05"
+
+	// runIDKey is gomi's own key; the spec has implementations ignore keys
+	// other than Path and DeletionDate
+	runIDKey = "X-Gomi-RunID"
 )
 
 // TrashInfo represents the contents of a .trashinfo file
@@ -31,6 +35,10 @@ type TrashInfo struct {
 
 	// DeletionDate is when the file was moved to trash
 	DeletionDate time.Time
+
+	// RunID identifies the gomi run that moved the file to trash. Empty
+	// for files trashed by other tools or older gomi
+	RunID string
 
 	// MountRoot is the root path of the mount point containing this trash
 	// This is used to resolve relative paths
@@ -86,6 +94,9 @@ func NewInfo(r io.Reader) (*TrashInfo, error) {
 				return nil, fmt.Errorf("invalid DeletionDate format: %w", err)
 			}
 			info.DeletionDate = date
+
+		case runIDKey:
+			info.RunID = value
 		}
 	}
 
@@ -150,6 +161,9 @@ func (i *TrashInfo) Save(path string) error {
 	fmt.Fprintln(content, trashInfoHeader)
 	fmt.Fprintf(content, "Path=%s\n", encodeTrashPath(i.GetRelativePath()))
 	fmt.Fprintf(content, "DeletionDate=%s\n", i.DeletionDate.Format(timeFormat))
+	if i.RunID != "" {
+		fmt.Fprintf(content, "%s=%s\n", runIDKey, i.RunID)
+	}
 
 	// Write atomically using O_EXCL flag to prevent overwriting existing files
 	f, err := fs.Create(path, 0600)

@@ -13,6 +13,8 @@ import (
 	"github.com/babarot/gomi/internal/trash"
 )
 
+const testRunID = "test-run"
+
 func newTestStorage(t *testing.T) (trash.Storage, string) {
 	t.Helper()
 
@@ -29,6 +31,7 @@ func newTestStorage(t *testing.T) (trash.Storage, string) {
 		HomeFallback:   true,
 		ForceHomeTrash: true, // skip external trash scan
 		History:        config.History{},
+		RunID:          testRunID,
 	}
 
 	s, err := NewStorage(cfg)
@@ -104,6 +107,9 @@ func TestStorage_PutAndList(t *testing.T) {
 	}
 	if files[0].OriginalPath != srcFile {
 		t.Errorf("OriginalPath = %q, want %q", files[0].OriginalPath, srcFile)
+	}
+	if files[0].RunID != testRunID {
+		t.Errorf("RunID = %q, want %q", files[0].RunID, testRunID)
 	}
 }
 
@@ -444,6 +450,7 @@ func TestTrashInfo_Save_And_Load(t *testing.T) {
 	info := &TrashInfo{
 		Path:         "/home/user/test file.txt",
 		DeletionDate: fixedTime(),
+		RunID:        testRunID,
 	}
 
 	if err := info.Save(infoPath); err != nil {
@@ -460,6 +467,31 @@ func TestTrashInfo_Save_And_Load(t *testing.T) {
 	}
 	if !loaded.DeletionDate.Equal(info.DeletionDate) {
 		t.Errorf("DeletionDate = %v, want %v", loaded.DeletionDate, info.DeletionDate)
+	}
+	if loaded.RunID != info.RunID {
+		t.Errorf("RunID = %q, want %q", loaded.RunID, info.RunID)
+	}
+}
+
+func TestTrashInfo_Save_WithoutRunID(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix-specific test")
+	}
+
+	infoPath := filepath.Join(t.TempDir(), "test.trashinfo")
+	info := &TrashInfo{Path: "/home/user/a.txt", DeletionDate: fixedTime()}
+	if err := info.Save(infoPath); err != nil {
+		t.Fatalf("Save() error = %v", err)
+	}
+
+	// Without a run ID the file is just what the spec defines
+	b, err := os.ReadFile(infoPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "[Trash Info]\nPath=/home/user/a.txt\nDeletionDate=" + fixedTime().Format(timeFormat) + "\n"
+	if string(b) != want {
+		t.Errorf("content = %q, want %q", b, want)
 	}
 }
 
