@@ -144,9 +144,9 @@ func (m *Model) setup() {
 	} else {
 		input.Prompt = m.Prompt
 	}
-	// composed, so that each character is one rune: bubbles draws the
-	// placeholder by runes and sizes it by width, and drops the end of one
-	// with combining characters (an NFD "é")
+	// composed: bubbles draws the placeholder by runes and sizes it by
+	// width, and drops the end of one with more runes than columns, as an
+	// NFD "é" has. Combining characters NFC cannot compose still do.
 	input.Placeholder = norm.NFC.String(m.Placeholder)
 	input.SetStyles(inputStyles(m.Styles.Prompt, m.Styles.Placeholder, m.Styles.Text))
 	input.EchoMode = m.EchoMode
