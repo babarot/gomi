@@ -522,7 +522,7 @@ func (m Model) countLine(rows []row, n int) string {
 	if m.hasMarks(files) {
 		s += "   ! a file has its name now   + its folder is gone"
 	}
-	return "  " + m.fg(m.palette.Description).Render(s)
+	return ansi.Truncate("  "+m.fg(m.palette.Description).Render(s), m.width, ellipsis)
 }
 
 // statusLine tells what was just done, such as deleting files
