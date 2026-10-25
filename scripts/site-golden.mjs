@@ -3,7 +3,7 @@
 // the keys of its cases, and compares the screen with the text of the
 // golden files. Colors are not compared, since the site has its own.
 //
-// Usage: node scripts/site-golden.mjs [CASE ...]   (mise run site-golden)
+// Usage: node scripts/site-golden.mjs [CASE ...]   (mise run site:golden)
 process.env.TZ = 'UTC';
 
 import { readFileSync } from 'node:fs';

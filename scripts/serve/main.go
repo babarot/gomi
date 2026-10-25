@@ -3,7 +3,7 @@
 // and /install is hack/install, which the Pages workflow copies in when it
 // deploys. Nothing is cached, so an edit shows on the next reload.
 //
-// Run it from the root of the repository: mise run serve. -dir serves
+// Run it from the root of the repository: mise run site:serve. -dir serves
 // another directory the same way, such as the root, where
 // scripts/ogimage/preview.html shows the share images.
 package main
