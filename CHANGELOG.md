@@ -1,5 +1,21 @@
 # Changelog
 
+## [v1.9.0](https://github.com/babarot/gomi/compare/v1.8.0...v1.9.0) - 2026-10-25
+### New Features
+- List the trash by the day files were deleted on by @babarot in https://github.com/babarot/gomi/pull/154
+- Open the preview over the whole UI with space by @babarot in https://github.com/babarot/gomi/pull/156
+- Show the preview beside the list by @babarot in https://github.com/babarot/gomi/pull/157
+- Switch the list between recent, places and batches with v by @babarot in https://github.com/babarot/gomi/pull/158
+- Mark what restoring each file would meet by @babarot in https://github.com/babarot/gomi/pull/159
+- Add the picker view by @babarot in https://github.com/babarot/gomi/pull/160
+- Show the files deleted here first and the keys over the view by @babarot in https://github.com/babarot/gomi/pull/161
+### Bug fixes
+- Clear the browser off the screen when it closes by @babarot in https://github.com/babarot/gomi/pull/164
+### Improvements
+- Describe the new browser in the README by @babarot in https://github.com/babarot/gomi/pull/162
+- Generate the favicons from a pixel map of the icon by @babarot in https://github.com/babarot/gomi/pull/163
+- Record the demo GIFs in Docker with mise run demo by @babarot in https://github.com/babarot/gomi/pull/165
+
 ## [v1.8.0](https://github.com/babarot/gomi/compare/v1.7.0...v1.8.0) - 2026-10-25
 ### New Features
 - Choose the TUI's colors with ui.theme by @babarot in https://github.com/babarot/gomi/pull/153
