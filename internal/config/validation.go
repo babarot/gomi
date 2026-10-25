@@ -27,19 +27,23 @@ func validateTheme(fl validator.FieldLevel) bool {
 	return slices.Contains(ThemeNames, fl.Field().String())
 }
 
-// validateHeight validates a height: rows ("30") or a share of the
-// terminal from 1% to 100% ("40%")
+// validateHeight validates a height: "auto", rows ("30") or a share of
+// the terminal from 1% to 100% ("40%")
 func validateHeight(fl validator.FieldLevel) bool {
-	_, _, ok := ParseHeight(fl.Field().String())
-	return ok
+	s := fl.Field().String()
+	_, _, ok := ParseHeight(s)
+	return ok || s == HeightAuto
 }
 
-// DefaultHeight is the height of the UI when the config sets none: half
-// the terminal, which leaves what was printed before it in sight
-const DefaultHeight = "50%"
+// HeightAuto takes the rows below the prompt, and at least half the
+// terminal when the prompt is near its bottom
+const HeightAuto = "auto"
+
+// DefaultHeight is the height of the UI when the config sets none
+const DefaultHeight = HeightAuto
 
 // ParseHeight reads a height as rows, or as a percentage when percent is
-// true
+// true. It does not read HeightAuto.
 func ParseHeight(s string) (n int, percent bool, ok bool) {
 	num, percent := strings.CutSuffix(s, "%")
 	n, err := strconv.Atoi(num)

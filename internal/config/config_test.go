@@ -233,3 +233,18 @@ func TestParseHeight(t *testing.T) {
 		}
 	}
 }
+
+func TestConfig_Validate_Height(t *testing.T) {
+	for _, h := range []string{"auto", "30", "40%", ""} {
+		cfg := NewDefaultConfig()
+		cfg.UI.Height = h
+		if err := cfg.validate(); err != nil {
+			t.Errorf("height %q: %v", h, err)
+		}
+	}
+	cfg := NewDefaultConfig()
+	cfg.UI.Height = "full"
+	if err := cfg.validate(); err == nil {
+		t.Error("expected validation error for height full")
+	}
+}

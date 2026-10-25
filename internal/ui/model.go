@@ -57,6 +57,13 @@ type Model struct {
 
 	// width and height are the columns and rows the UI takes
 	width, height int
+	// termHeight is the terminal's rows, and cursorY the row the prompt
+	// left the cursor on, or -1 until the terminal tells it
+	termHeight, cursorY int
+	// settled is set once the height no longer waits for cursorY; nothing
+	// is drawn before, so that the terminal reports the cursor where the
+	// prompt left it
+	settled bool
 	// home is the home directory, written as ~ in paths
 	home string
 	// status tells what was just done, such as deleting files
@@ -104,8 +111,10 @@ func NewModel(t trash.Trash, files []*trash.File, opts RenderOptions) Model {
 		help:      help.New(),
 		width:     defaultWidth,
 		height:    defaultHeight,
+		cursorY:   -1,
 		home:      home,
 	}
+	m.settled = !m.waitsForCursor()
 	// Until the terminal reports its background, assume a dark one
 	m.setBackground(true)
 	return m
@@ -124,17 +133,35 @@ func (m *Model) setBackground(isDark bool) {
 }
 
 // uiHeight is how many rows the UI takes in a terminal of termHeight
-// rows, as ui.height says: a number of rows or a share of the terminal,
-// never more than the terminal.
-func uiHeight(spec string, termHeight int) int {
-	n, percent, ok := config.ParseHeight(spec)
-	if !ok {
-		n, percent, _ = config.ParseHeight(config.DefaultHeight)
+// rows, as ui.height says: "auto" for the rows from cursorY, the row the
+// prompt left the cursor on, to the bottom, but at least half the
+// terminal; a number of rows; or a share of the terminal. A cursorY below
+// zero is not known yet, and "auto" takes half the terminal. The UI is
+// never taller than the terminal.
+func uiHeight(spec string, termHeight, cursorY int) int {
+	if spec == "" {
+		spec = config.DefaultHeight
 	}
-	switch {
+	var n int
+	switch rows, percent, ok := config.ParseHeight(spec); {
+	case spec == config.HeightAuto:
+		n = termHeight / 2
+		if cursorY >= 0 {
+			n = max(n, termHeight-cursorY)
+		}
+	case !ok:
+		n = termHeight
 	case percent:
-		n = termHeight * n / 100
+		n = termHeight * rows / 100
+	default:
+		n = rows
 	}
 	// the header, a row and the three lines at the bottom
 	return min(max(n, minHeight), termHeight)
+}
+
+// waitsForCursor reports whether the height waits for the terminal to
+// tell where the prompt left the cursor
+func (m Model) waitsForCursor() bool {
+	return m.config.Height == config.HeightAuto || m.config.Height == ""
 }

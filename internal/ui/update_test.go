@@ -41,6 +41,7 @@ func newTestModel() Model {
 		list:      &l,
 		width:     80,
 		height:    40,
+		settled:   true,
 		viewport:  viewport.Model{},
 		previews:  map[string]previewResult{},
 		sizes:     map[string]int64{},
@@ -648,5 +649,20 @@ func TestUpdate_Filter_CtrlCQuits(t *testing.T) {
 	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	if asModel(t, updated).state.current != Quitting || cmd == nil {
 		t.Error("ctrl+c while filtering does not quit")
+	}
+}
+
+func TestUpdate_HeightFromCursor(t *testing.T) {
+	m := newTestModel()
+	m.settled = false
+	m.cursorY = -1
+	if v := m.View().Content; v != "" {
+		t.Errorf("drawn before the cursor is known:\n%s", v)
+	}
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 40})
+	updated, _ = updated.Update(tea.CursorPositionMsg{Y: 4})
+	m = asModel(t, updated)
+	if !m.settled || m.height != 36 {
+		t.Errorf("settled %v, height %d; want true, 36 (the rows below the prompt)", m.settled, m.height)
 	}
 }

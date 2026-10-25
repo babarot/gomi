@@ -1,5 +1,13 @@
 -- screen --
  gomi  12 in the trash · 1.7K                                        3 selected
+── Today ───────────────────────────────────────────────────── 2 files · 166B ──
+    10:00   main.go                     ~/projects/gomi                     72B
+    07:00   notes/                      ~/projects/gomi                     94B
+── Yesterday ─────────────────────────────────────────────────── 1 file · 12B ──
+    10:00   archive.bin                 ~/projects/gomi                     12B
+── Friday ───────────────────────────────────────────────────── 1 file · 1.4K ──
+    10:00   long.txt                    ~/projects/gomi                    1.4K
+── Thursday ─────────────────────────────────────────────────── 2 files · 78B ──
                    ╭───────────────────────────────────────╮
                    │                                       │
                    │        Are you sure you want to       │
@@ -12,51 +20,99 @@
                    │   (ESC to cancel, Enter to confirm)   │
                    │                                       │
                    ╰───────────────────────────────────────╯
+── Tue, May 6 ─────────────────────────────────────────────────── 1 file · 4B ──
+    12:00   old.log                     ~/projects/gomi                      4B
+
+
+
+
+  12 files
 
   ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter …
 -- styles --
 L1 1-5 fg=#ad58b4 bold
 L1 7-29 fg=#777777
 L1 69-79 fg=#5fb458
-L2 19-60 fg=#ff007f
-L3 19-60 fg=#ff007f
-L4 19-20 fg=#ff007f
-L4 28-52 fg=#ff007f bold
-L4 59-60 fg=#ff007f
-L5 19-20 fg=#ff007f
-L5 27-53 fg=#ff007f bold
-L5 59-60 fg=#ff007f
-L6 19-60 fg=#ff007f
-L7 19-20 fg=#ff007f
-L7 30-49 fg=#ff007f bold
-L7 59-60 fg=#ff007f
-L8 19-60 fg=#ff007f
-L9 19-20 fg=#ff007f
-L9 37-38 fg=#777777 bold
-L9 38-40 fg=#777777
-L9 41-42 fg=#ff0000
-L9 59-60 fg=#ff007f
+L2 0-2 fg=#3c3c3c
+L2 3-8 fg=#bbbbbb bold
+L2 9-62 fg=#3c3c3c
+L2 63-77 fg=#777777
+L2 78-80 fg=#3c3c3c
+L3 4-9 fg=#777777
+L3 12-19 fg=#e4e4e4 bold
+L3 40-79 fg=#777777
+L4 4-9 fg=#777777
+L4 12-18 fg=#7aa2f7 bold
+L4 40-79 fg=#777777
+L5 0-2 fg=#3c3c3c
+L5 3-12 fg=#bbbbbb bold
+L5 13-64 fg=#3c3c3c
+L5 65-77 fg=#777777
+L5 78-80 fg=#3c3c3c
+L6 4-9 fg=#777777
+L6 12-23 fg=#e4e4e4 bold
+L6 40-79 fg=#777777
+L7 0-2 fg=#3c3c3c
+L7 3-9 fg=#bbbbbb bold
+L7 10-63 fg=#3c3c3c
+L7 64-77 fg=#777777
+L7 78-80 fg=#3c3c3c
+L8 4-9 fg=#777777
+L8 12-20 fg=#e4e4e4 bold
+L8 40-79 fg=#777777
+L9 0-2 fg=#3c3c3c
+L9 3-11 fg=#bbbbbb bold
+L9 12-63 fg=#3c3c3c
+L9 64-77 fg=#777777
+L9 78-80 fg=#3c3c3c
 L10 19-60 fg=#ff007f
-L11 19-20 fg=#ff007f
-L11 23-56 fg=#ff007f bold
-L11 59-60 fg=#ff007f
-L12 19-60 fg=#ff007f
-L13 19-60 fg=#ff007f
-L15 2-5 fg=#626262
-L15 6-8 fg=#4a4a4a
-L15 9-10 fg=#3c3c3c
-L15 11-14 fg=#626262
-L15 15-19 fg=#4a4a4a
-L15 20-21 fg=#3c3c3c
-L15 22-27 fg=#626262
-L15 28-35 fg=#4a4a4a
-L15 36-37 fg=#3c3c3c
-L15 38-43 fg=#626262
-L15 44-50 fg=#4a4a4a
-L15 51-52 fg=#3c3c3c
-L15 53-56 fg=#626262
-L15 57-63 fg=#4a4a4a
-L15 64-65 fg=#3c3c3c
-L15 66-67 fg=#626262
-L15 68-74 fg=#4a4a4a
-L15 75-76 fg=#3c3c3c
+L11 19-60 fg=#ff007f
+L12 19-20 fg=#ff007f
+L12 28-52 fg=#ff007f bold
+L12 59-60 fg=#ff007f
+L13 19-20 fg=#ff007f
+L13 27-53 fg=#ff007f bold
+L13 59-60 fg=#ff007f
+L14 19-60 fg=#ff007f
+L15 19-20 fg=#ff007f
+L15 30-49 fg=#ff007f bold
+L15 59-60 fg=#ff007f
+L16 19-60 fg=#ff007f
+L17 19-20 fg=#ff007f
+L17 37-38 fg=#777777 bold
+L17 38-40 fg=#777777
+L17 41-42 fg=#ff0000
+L17 59-60 fg=#ff007f
+L18 19-60 fg=#ff007f
+L19 19-20 fg=#ff007f
+L19 23-56 fg=#ff007f bold
+L19 59-60 fg=#ff007f
+L20 19-60 fg=#ff007f
+L21 19-60 fg=#ff007f
+L22 0-2 fg=#3c3c3c
+L22 3-13 fg=#bbbbbb bold
+L22 14-65 fg=#3c3c3c
+L22 66-77 fg=#777777
+L22 78-80 fg=#3c3c3c
+L23 4-9 fg=#777777
+L23 12-19 fg=#e4e4e4 bold
+L23 40-79 fg=#777777
+L28 2-10 fg=#777777
+L30 2-5 fg=#626262
+L30 6-8 fg=#4a4a4a
+L30 9-10 fg=#3c3c3c
+L30 11-14 fg=#626262
+L30 15-19 fg=#4a4a4a
+L30 20-21 fg=#3c3c3c
+L30 22-27 fg=#626262
+L30 28-35 fg=#4a4a4a
+L30 36-37 fg=#3c3c3c
+L30 38-43 fg=#626262
+L30 44-50 fg=#4a4a4a
+L30 51-52 fg=#3c3c3c
+L30 53-56 fg=#626262
+L30 57-63 fg=#4a4a4a
+L30 64-65 fg=#3c3c3c
+L30 66-67 fg=#626262
+L30 68-74 fg=#4a4a4a
+L30 75-76 fg=#3c3c3c

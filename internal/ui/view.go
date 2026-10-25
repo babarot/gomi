@@ -46,6 +46,11 @@ func (m Model) view() string {
 		return ""
 	}
 
+	// nothing is drawn until the terminal tells where the cursor is
+	if !m.settled {
+		return ""
+	}
+
 	var view string
 	switch m.state.current {
 	case ListView:

@@ -69,14 +69,28 @@ type RenderOptions struct {
 
 // Init implements tea.Model
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(
+	cmds := []tea.Cmd{
 		// load files
 		loadFileListCmd(m.files),
 		// styles depend on whether the background is dark
 		tea.RequestBackgroundColor,
-		// other cmds...
-	)
+	}
+	if m.waitsForCursor() {
+		// the height reaches from the prompt down; a terminal that does not
+		// tell where the cursor is gets half its rows after a while
+		cmds = append(cmds, tea.RequestCursorPosition, tea.Tick(cursorWait, func(time.Time) tea.Msg {
+			return cursorWaitedMsg{}
+		}))
+	}
+	return tea.Batch(cmds...)
 }
+
+// cursorWait is how long the UI waits for the terminal to tell where the
+// cursor is before drawing without it
+var cursorWait = 250 * time.Millisecond
+
+// cursorWaitedMsg says the wait for the cursor position is over
+type cursorWaitedMsg struct{}
 
 // Render displays the file selection interface and returns the selected files
 func Render(t trash.Trash, files []*trash.File, opts RenderOptions) ([]*trash.File, error) {

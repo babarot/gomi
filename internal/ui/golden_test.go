@@ -377,6 +377,8 @@ func TestGolden(t *testing.T) {
 	t.Chdir(t.TempDir())
 	// places under the home directory are written with ~
 	t.Setenv("HOME", "/home/user")
+	defer func(d time.Duration) { cursorWait = d }(cursorWait)
+	cursorWait = 0
 	files := makeFixtures(t)
 
 	defer func(f func() time.Time) { now = f }(now)
@@ -406,6 +408,8 @@ func TestGolden(t *testing.T) {
 					width = 80
 				}
 				d.send(tea.WindowSizeMsg{Width: width, Height: 30})
+				// the prompt left the cursor at the top
+				d.send(tea.CursorPositionMsg{})
 				d.keys(c.keys...)
 				compareGolden(t, filepath.Join(dir, c.name+"."+bg.name+".golden"), normalize(t, d.m.View().Content))
 			})

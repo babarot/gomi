@@ -42,9 +42,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.help.SetWidth(max(msg.Width-2, 0))
 		}
 		if msg.Height > 0 {
-			m.height = uiHeight(m.config.Height, msg.Height)
+			m.termHeight = msg.Height
+			m.height = uiHeight(m.config.Height, m.termHeight, m.cursorY)
 		}
 		return m, tea.Batch(cmds...)
+
+	case tea.CursorPositionMsg:
+		// it may come after the wait; asked before anything was drawn, it
+		// still tells where the prompt left the cursor
+		m.cursorY = msg.Y
+		m.settled = true
+		if m.termHeight > 0 {
+			m.height = uiHeight(m.config.Height, m.termHeight, m.cursorY)
+		}
+		return m, nil
+
+	case cursorWaitedMsg:
+		m.settled = true
+		return m, nil
 
 	case ShowDetailMsg:
 		m.state.SetView(DetailView)

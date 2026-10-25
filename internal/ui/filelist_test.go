@@ -131,20 +131,24 @@ func TestSameRun(t *testing.T) {
 
 func TestUIHeight(t *testing.T) {
 	tests := []struct {
-		spec string
-		term int
-		want int
+		spec    string
+		term    int
+		cursorY int
+		want    int
 	}{
-		{"100%", 40, 40},
-		{"50%", 40, 20},
-		{"30", 40, 30},
-		{"30", 20, 20}, // never taller than the terminal
-		{"1", 40, minHeight},
-		{"", 40, 20}, // half the terminal by default
+		{"auto", 40, 10, 30}, // the rows below the prompt
+		{"auto", 40, 38, 20}, // at least half the terminal
+		{"auto", 40, -1, 20}, // the cursor is not known
+		{"", 40, 0, 40},      // auto by default
+		{"100%", 40, 30, 40},
+		{"50%", 40, 0, 20},
+		{"30", 40, 0, 30},
+		{"30", 20, 0, 20}, // never taller than the terminal
+		{"1", 40, 0, minHeight},
 	}
 	for _, tt := range tests {
-		if got := uiHeight(tt.spec, tt.term); got != tt.want {
-			t.Errorf("uiHeight(%q, %d) = %d, want %d", tt.spec, tt.term, got, tt.want)
+		if got := uiHeight(tt.spec, tt.term, tt.cursorY); got != tt.want {
+			t.Errorf("uiHeight(%q, %d, %d) = %d, want %d", tt.spec, tt.term, tt.cursorY, got, tt.want)
 		}
 	}
 }
