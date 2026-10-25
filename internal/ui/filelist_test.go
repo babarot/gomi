@@ -300,3 +300,24 @@ func TestFileList_PickerRanksCloseMatchesFirst(t *testing.T) {
 		t.Errorf("first match = %q, want notes", rows[0].file.Name)
 	}
 }
+
+func TestShortAgo(t *testing.T) {
+	defer func(f func() time.Time) { now = f }(now)
+	now = func() time.Time { return listNow }
+	tests := []struct {
+		ago  time.Duration
+		want string
+	}{
+		{30 * time.Second, "now"},
+		{33 * time.Minute, "33m ago"},
+		{23 * time.Hour, "23h ago"},
+		{6 * 24 * time.Hour, "6d ago"},
+		{30 * 24 * time.Hour, "May 16"},
+	}
+	for _, tt := range tests {
+		got := shortAgo(listNow.Add(-tt.ago))
+		if got != tt.want || len(got) > agoWidth {
+			t.Errorf("shortAgo(%v ago) = %q, want %q within %d columns", tt.ago, got, tt.want, agoWidth)
+		}
+	}
+}

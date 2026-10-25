@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 	"unicode"
 
 	"charm.land/lipgloss/v2"
@@ -159,7 +160,7 @@ func (m Model) pickLine(r row, onCursor bool, w int) string {
 	if n, ok := m.knownSize(f); ok {
 		size = compactBytes(n)
 	}
-	right := fmt.Sprintf("%11s  %6s", relativeTime(f.DeletedAt), size)
+	right := fmt.Sprintf("%*s  %6s", agoWidth, shortAgo(f.DeletedAt), size)
 	line := m.rowStart(onCursor, mark)
 	room := max(0, w-3-ansi.StringWidth(line)-ansi.StringWidth(right)-2)
 	nameW := max(minNameCol, room*nameShare/100)
@@ -237,7 +238,7 @@ func (m Model) foldLine(r row, onCursor bool, w int) string {
 	}
 	right := count + " · " + m.sizeOfFiles(r.files)
 	if m.list.view == viewPlaces {
-		right += "  " + fmt.Sprintf("%11s", relativeTime(r.files[0].DeletedAt))
+		right += "  " + fmt.Sprintf("%*s", agoWidth, shortAgo(r.files[0].DeletedAt))
 	}
 	room := max(0, w-6-ansi.StringWidth(right)-2)
 
@@ -305,7 +306,7 @@ func (m Model) foldFileLine(r row, onCursor bool, w int) string {
 	if n, ok := m.knownSize(f); ok {
 		size = compactBytes(n)
 	}
-	right := fmt.Sprintf("%11s  %6s", relativeTime(f.DeletedAt), size)
+	right := fmt.Sprintf("%*s  %6s", agoWidth, shortAgo(f.DeletedAt), size)
 	if m.list.view == viewBatches {
 		right = fmt.Sprintf("%6s", size)
 	}
@@ -606,4 +607,25 @@ func (m Model) sortMenuView() string {
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(m.palette.Cursor.Of(m.isDark)).
 		Render(m.fg(m.palette.Heading).Bold(true).Render(" Sort") + "\n" + strings.Join(lines, "\n"))
+}
+
+// agoWidth is the widest shortAgo: "23h ago"
+const agoWidth = 7
+
+// shortAgo writes how long ago t was in at most agoWidth columns, so that
+// the columns of the rows line up: now, 33m ago, 5h ago, 6d ago, then the
+// date
+func shortAgo(t time.Time) string {
+	n := now()
+	switch d := n.Sub(t); {
+	case d < time.Minute:
+		return "now"
+	case d < time.Hour:
+		return fmt.Sprintf("%dm ago", int(d.Minutes()))
+	case d < 24*time.Hour:
+		return fmt.Sprintf("%dh ago", int(d.Hours()))
+	case d < 7*24*time.Hour:
+		return fmt.Sprintf("%dd ago", int(d.Hours()/24))
+	}
+	return t.In(n.Location()).Format("Jan 2")
 }

@@ -1,8 +1,8 @@
 -- screen --
  gomi  12 in the trash · 1.7K                                      view: picker
  ❯ nts 
-▎   notes/                   ~/docs                       5 hours ago     94B   
-    a-very-long-file-name-…  ~/projects/gomi               5 days ago      2B
+▎   notes/                     ~/docs                          5h ago     94B   
+    a-very-long-file-name-fo…  ~/projects/gomi                 5d ago      2B
 
 
 
@@ -40,10 +40,10 @@ L3 5-6 fg=#1f6fb2 bg=#e8e8e8 bold
 L3 6-7 fg=#f39c12 bg=#e8e8e8 bold underline
 L3 7-8 fg=#1f6fb2 bg=#e8e8e8 bold
 L3 8-9 fg=#f39c12 bg=#e8e8e8 bold underline
-L3 9-29 fg=#1f6fb2 bg=#e8e8e8 bold
-L3 29-80 fg=#626262 bg=#e8e8e8
-L4 4-27 fg=#262626 bold
-L4 29-77 fg=#626262
+L3 9-31 fg=#1f6fb2 bg=#e8e8e8 bold
+L3 31-80 fg=#626262 bg=#e8e8e8
+L4 4-29 fg=#262626 bold
+L4 31-77 fg=#626262
 L28 2-15 fg=#626262
 L30 2-5 fg=#626262
 L30 6-8 fg=#808080

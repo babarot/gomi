@@ -1,13 +1,13 @@
 -- screen --
  gomi  12 in the trash · 1.7K                                      view: places
-▎   ▾ ~/projects/gomi                               8 files · 1.6K  2 hours ago 
-      ├ main.go                                           2 hours ago     72B
-      ├ long.txt                                           2 days ago    1.4K
-      ├ README.md                                          3 days ago     44B
-      ├ config.yaml                                        3 days ago     34B !
-      ├ a-very-long-file-name-for-testing.txt              5 days ago      2B
-      ├ another-quite-long-file-name.txt                   6 days ago      2B
-      ├ yet-another-long-file-name-here.txt                1 week ago      2B
+▎   ▾ ~/projects/gomi                                   8 files · 1.6K   2h ago 
+      ├ main.go                                                2h ago     72B
+      ├ long.txt                                               2d ago    1.4K
+      ├ README.md                                              3d ago     44B
+      ├ config.yaml                                            3d ago     34B !
+      ├ a-very-long-file-name-for-testing.txt                  5d ago      2B
+      ├ another-quite-long-file-name.txt                       6d ago      2B
+      ├ yet-another-long-file-name-here.txt                     Jun 8      2B
                    ╭───────────────────────────────────────╮
                    │                                       │
                    │        Are you sure you want to       │
@@ -33,30 +33,30 @@
 L1 1-5 fg=#ad58b4 bold
 L1 7-79 fg=#626262
 L2 0-6 fg=#ad58b4 bg=#e8e8e8
-L2 6-52 fg=#262626 bg=#e8e8e8 bold
-L2 52-80 fg=#626262 bg=#e8e8e8
+L2 6-56 fg=#262626 bg=#e8e8e8 bold
+L2 56-80 fg=#626262 bg=#e8e8e8
 L3 6-7 fg=#999999
 L3 8-15 fg=#262626 bold
-L3 58-77 fg=#626262
+L3 63-77 fg=#626262
 L4 6-7 fg=#999999
 L4 8-16 fg=#262626 bold
-L4 59-77 fg=#626262
+L4 63-77 fg=#626262
 L5 6-7 fg=#999999
 L5 8-17 fg=#262626 bold
-L5 59-77 fg=#626262
+L5 63-77 fg=#626262
 L6 6-7 fg=#999999
 L6 8-19 fg=#262626 bold
-L6 59-77 fg=#626262
+L6 63-77 fg=#626262
 L6 78-79 fg=#ff007f bold
 L7 6-7 fg=#999999
 L7 8-45 fg=#262626 bold
-L7 59-77 fg=#626262
+L7 63-77 fg=#626262
 L8 6-7 fg=#999999
 L8 8-40 fg=#262626 bold
-L8 59-77 fg=#626262
+L8 63-77 fg=#626262
 L9 6-7 fg=#999999
 L9 8-43 fg=#262626 bold
-L9 59-77 fg=#626262
+L9 64-77 fg=#626262
 L10 19-60 fg=#ff007f
 L11 19-60 fg=#ff007f
 L12 19-20 fg=#ff007f

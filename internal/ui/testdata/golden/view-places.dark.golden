@@ -1,17 +1,17 @@
 -- screen --
  gomi  12 in the trash · 1.7K                                      view: places
-▎   ▾ ~/projects/gomi                               8 files · 1.6K  2 hours ago 
-      ├ main.go                                           2 hours ago     72B
-      ├ long.txt                                           2 days ago    1.4K
-      ├ README.md                                          3 days ago     44B
-      ├ config.yaml                                        3 days ago     34B !
-      ├ a-very-long-file-name-for-testing.txt              5 days ago      2B
-      ├ another-quite-long-file-name.txt                   6 days ago      2B
-      ├ yet-another-long-file-name-here.txt                1 week ago      2B
-      └ todo.txt                                           1 week ago      9B
-    ▸ ~/docs                                          1 file · 94B  5 hours ago
-    ▸ ~/Downloads                                     1 file · 12B    1 day ago
-    ▸ /tmp                                           2 files · 21B  2 weeks ago
+▎   ▾ ~/projects/gomi                                   8 files · 1.6K   2h ago 
+      ├ main.go                                                2h ago     72B
+      ├ long.txt                                               2d ago    1.4K
+      ├ README.md                                              3d ago     44B
+      ├ config.yaml                                            3d ago     34B !
+      ├ a-very-long-file-name-for-testing.txt                  5d ago      2B
+      ├ another-quite-long-file-name.txt                       6d ago      2B
+      ├ yet-another-long-file-name-here.txt                     Jun 8      2B
+      └ todo.txt                                                Jun 5      9B
+    ▸ ~/docs                                              1 file · 94B   5h ago
+    ▸ ~/Downloads                                         1 file · 12B   1d ago
+    ▸ /tmp                                               2 files · 21B   May 26
 
 
 
@@ -33,42 +33,42 @@
 L1 1-5 fg=#ad58b4 bold
 L1 7-79 fg=#777777
 L2 0-6 fg=#ad58b4 bg=#2e2e2e
-L2 6-52 fg=#e4e4e4 bg=#2e2e2e bold
-L2 52-80 fg=#777777 bg=#2e2e2e
+L2 6-56 fg=#e4e4e4 bg=#2e2e2e bold
+L2 56-80 fg=#777777 bg=#2e2e2e
 L3 6-7 fg=#3c3c3c
 L3 8-15 fg=#e4e4e4 bold
-L3 58-77 fg=#777777
+L3 63-77 fg=#777777
 L4 6-7 fg=#3c3c3c
 L4 8-16 fg=#e4e4e4 bold
-L4 59-77 fg=#777777
+L4 63-77 fg=#777777
 L5 6-7 fg=#3c3c3c
 L5 8-17 fg=#e4e4e4 bold
-L5 59-77 fg=#777777
+L5 63-77 fg=#777777
 L6 6-7 fg=#3c3c3c
 L6 8-19 fg=#e4e4e4 bold
-L6 59-77 fg=#777777
+L6 63-77 fg=#777777
 L6 78-79 fg=#ff007f bold
 L7 6-7 fg=#3c3c3c
 L7 8-45 fg=#e4e4e4 bold
-L7 59-77 fg=#777777
+L7 63-77 fg=#777777
 L8 6-7 fg=#3c3c3c
 L8 8-40 fg=#e4e4e4 bold
-L8 59-77 fg=#777777
+L8 63-77 fg=#777777
 L9 6-7 fg=#3c3c3c
 L9 8-43 fg=#e4e4e4 bold
-L9 59-77 fg=#777777
+L9 64-77 fg=#777777
 L10 6-7 fg=#3c3c3c
 L10 8-16 fg=#e4e4e4 bold
-L10 59-77 fg=#777777
+L10 64-77 fg=#777777
 L11 4-5 fg=#ad58b4
 L11 6-12 fg=#e4e4e4 bold
-L11 54-79 fg=#777777
+L11 58-79 fg=#777777
 L12 4-5 fg=#ad58b4
 L12 6-17 fg=#e4e4e4 bold
-L12 54-79 fg=#777777
+L12 58-79 fg=#777777
 L13 4-5 fg=#ad58b4
 L13 6-10 fg=#e4e4e4 bold
-L13 53-79 fg=#777777
+L13 57-79 fg=#777777
 L28 2-61 fg=#777777
 L30 2-5 fg=#626262
 L30 6-8 fg=#4a4a4a

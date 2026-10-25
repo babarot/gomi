@@ -1,8 +1,8 @@
 -- screen --
  gomi  12 in the trash · 1.7K                                      view: picker
  ❯ tmp 
-▎   report.csv               /tmp                         2 weeks ago     17B + 
-    old.log                  /tmp                         1 month ago      4B +
+▎   report.csv                 /tmp                            May 26     17B + 
+    old.log                    /tmp                             May 6      4B +
 
 
 
@@ -35,10 +35,10 @@ L1 7-79 fg=#777777
 L2 1-2 fg=#7aa2f7 bold
 L2 6-7 fg=c7 reverse
 L3 0-4 fg=#ad58b4 bg=#2e2e2e
-L3 4-29 fg=#e4e4e4 bg=#2e2e2e bold
-L3 29-80 fg=#777777 bg=#2e2e2e
+L3 4-31 fg=#e4e4e4 bg=#2e2e2e bold
+L3 31-80 fg=#777777 bg=#2e2e2e
 L4 4-11 fg=#e4e4e4 bold
-L4 29-79 fg=#777777
+L4 31-79 fg=#777777
 L28 2-66 fg=#777777
 L30 2-5 fg=#626262
 L30 6-8 fg=#4a4a4a

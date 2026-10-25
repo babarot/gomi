@@ -1,15 +1,15 @@
 -- screen --
  gomi  12 in the trash · 1.7K                                      view: picker
-▎   main.go                  ~/projects/gomi              2 hours ago     72B   
-    notes/                   ~/docs                       5 hours ago     94B
-    archive.bin              ~/Downloads                    1 day ago     12B
-    long.txt                 ~/projects/gomi               2 days ago    1.4K
-    README.md                ~/projects/gomi               3 days ago     44B
-    config.yaml              ~/projects/gomi               3 days ago     34B !
-    a-very-long-file-name-…  ~/projects/gomi               5 days ago      2B
-    another-quite-long-fil…  ~/projects/gomi               6 days ago      2B
-    yet-another-long-file-…  ~/projects/gomi               1 week ago      2B
-    todo.txt                 ~/projects/gomi               1 week ago      9B
+▎   main.go                    ~/projects/gomi                 2h ago     72B   
+    notes/                     ~/docs                          5h ago     94B
+    archive.bin                ~/Downloads                     1d ago     12B
+    long.txt                   ~/projects/gomi                 2d ago    1.4K
+    README.md                  ~/projects/gomi                 3d ago     44B
+    config.yaml                ~/projects/gomi                 3d ago     34B !
+    a-very-long-file-name-fo…  ~/projects/gomi                 5d ago      2B
+    another-quite-long-file-…  ~/projects/gomi                 6d ago      2B
+    yet-another-long-file-na…  ~/projects/gomi                  Jun 8      2B
+    todo.txt                   ~/projects/gomi                  Jun 5      9B
                         ╭─────────────────────────────╮
                         │ Sort                        │
                         │ 1 Deleted, newest first   ✓ │
@@ -33,27 +33,27 @@
 L1 1-5 fg=#ad58b4 bold
 L1 7-79 fg=#626262
 L2 0-4 fg=#ad58b4 bg=#e8e8e8
-L2 4-29 fg=#262626 bg=#e8e8e8 bold
-L2 29-80 fg=#626262 bg=#e8e8e8
+L2 4-31 fg=#262626 bg=#e8e8e8 bold
+L2 31-80 fg=#626262 bg=#e8e8e8
 L3 4-10 fg=#1f6fb2 bold
-L3 29-77 fg=#626262
+L3 31-77 fg=#626262
 L4 4-15 fg=#262626 bold
-L4 29-77 fg=#626262
+L4 31-77 fg=#626262
 L5 4-12 fg=#262626 bold
-L5 29-77 fg=#626262
+L5 31-77 fg=#626262
 L6 4-13 fg=#262626 bold
-L6 29-77 fg=#626262
+L6 31-77 fg=#626262
 L7 4-15 fg=#262626 bold
-L7 29-77 fg=#626262
+L7 31-77 fg=#626262
 L7 78-79 fg=#ff007f bold
-L8 4-27 fg=#262626 bold
-L8 29-77 fg=#626262
-L9 4-27 fg=#262626 bold
-L9 29-77 fg=#626262
-L10 4-27 fg=#262626 bold
-L10 29-77 fg=#626262
+L8 4-29 fg=#262626 bold
+L8 31-77 fg=#626262
+L9 4-29 fg=#262626 bold
+L9 31-77 fg=#626262
+L10 4-29 fg=#262626 bold
+L10 31-77 fg=#626262
 L11 4-12 fg=#262626 bold
-L11 29-77 fg=#626262
+L11 31-77 fg=#626262
 L12 24-55 fg=#ad58b4
 L13 24-25 fg=#ad58b4
 L13 26-30 fg=#4a4a4a bold
