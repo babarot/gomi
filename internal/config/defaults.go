@@ -45,6 +45,7 @@ func NewDefaultConfig() *Config {
 			},
 		},
 		UI: UI{
+			Height:  DefaultHeight,
 			Theme:   "gomi",
 			Density: "spacious",
 			Preview: PreviewConfig{

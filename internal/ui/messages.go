@@ -1,7 +1,5 @@
 package ui
 
-import "charm.land/bubbles/v2/list"
-
 // ShowDetailMsg represents a request to switch to detail view
 type ShowDetailMsg struct {
 	file File
@@ -15,8 +13,10 @@ func newShowDetailMsg(file File) ShowDetailMsg {
 // FileListLoadedMsg carries the file list, loaded at start or reloaded
 // after files are deleted
 type FileListLoadedMsg struct {
-	files []list.Item
-	err   error
+	files []File
+	// deleted is how many files were deleted before the list was reloaded
+	deleted int
+	err     error
 }
 
 // errorMsg represents any error that occurred during UI operations

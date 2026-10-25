@@ -1,23 +1,12 @@
 -- screen --
-  Filter: re 
-
-  README.md
-  3 days ago • /home/user/projects/gomi
-
-  report.csv
-  2 weeks ago • /home/user/projects/gomi
-
-  archive.bin
-  1 day ago • /home/user/projects/gomi
-
-  another-quite-long-file-name.txt
-  6 days ago • /home/user/projects/gomi
-
-  yet-another-long-file-name-here.txt
-  1 week ago • /home/user/projects/gomi
-
-  a-very-long-file-name-for-testing.txt
-  5 days ago • /home/user/projects/gomi
+ gomi  12 in the trash · 1.7K
+ / re 
+── Thursday ──────────────────────────────────────────────────── 1 file · 44B ──
+▎   10:00   README.md                   ~/projects/gomi                     44B 
+── Sun, Jun 8 ─────────────────────────────────────────────────── 1 file · 2B ──
+    10:00   yet-another-long-file-nam…  ~/projects/gomi                      2B
+── Mon, May 26 ───────────────────────────────────────────────── 1 file · 17B ──
+    12:00   report.csv                  ~/projects/gomi                     17B
 
 
 
@@ -26,42 +15,68 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+  3 of 12 files
 
   ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter …
 -- styles --
-L1 2-9 fg=#7aa2f7 bold
-L1 12-13 fg=#ee6ff8 reverse
-L3 2-4 fg=#f39c12 underline
-L4 2-39 fg=#777777
-L6 2-4 fg=#f39c12 underline
-L7 2-40 fg=#777777
-L9 3-4 fg=#f39c12 underline
-L9 8-9 fg=#f39c12 underline
-L10 2-38 fg=#777777
-L12 8-9 fg=#f39c12 underline
-L12 14-15 fg=#f39c12 underline
-L13 2-39 fg=#777777
-L15 12-13 fg=#f39c12 underline
-L15 22-23 fg=#f39c12 underline
-L16 2-39 fg=#777777
-L18 6-7 fg=#f39c12 underline
-L18 17-18 fg=#f39c12 underline
-L19 2-39 fg=#777777
-L29 2-5 fg=#626262
-L29 6-8 fg=#4a4a4a
-L29 9-10 fg=#3c3c3c
-L29 11-14 fg=#626262
-L29 15-19 fg=#4a4a4a
-L29 20-21 fg=#3c3c3c
-L29 22-27 fg=#626262
-L29 28-35 fg=#4a4a4a
-L29 36-37 fg=#3c3c3c
-L29 38-43 fg=#626262
-L29 44-50 fg=#4a4a4a
-L29 51-52 fg=#3c3c3c
-L29 53-56 fg=#626262
-L29 57-63 fg=#4a4a4a
-L29 64-65 fg=#3c3c3c
-L29 66-67 fg=#626262
-L29 68-74 fg=#4a4a4a
-L29 75-76 fg=#3c3c3c
+L1 1-5 fg=#ad58b4 bold
+L1 7-29 fg=#777777
+L2 1-2 fg=#7aa2f7 bold
+L2 5-6 fg=c7 reverse
+L3 0-2 fg=#3c3c3c
+L3 3-11 fg=#bbbbbb bold
+L3 12-64 fg=#3c3c3c
+L3 65-77 fg=#777777
+L3 78-80 fg=#3c3c3c
+L4 0-4 fg=#ad58b4 bg=#2e2e2e
+L4 4-12 fg=#777777 bg=#2e2e2e
+L4 12-14 fg=#f39c12 bg=#2e2e2e bold underline
+L4 14-40 fg=#e4e4e4 bg=#2e2e2e bold
+L4 40-80 fg=#777777 bg=#2e2e2e
+L5 0-2 fg=#3c3c3c
+L5 3-13 fg=#bbbbbb bold
+L5 14-65 fg=#3c3c3c
+L5 66-77 fg=#777777
+L5 78-80 fg=#3c3c3c
+L6 4-9 fg=#777777
+L6 12-38 fg=#e4e4e4 bold
+L6 40-79 fg=#777777
+L7 0-2 fg=#3c3c3c
+L7 3-14 fg=#bbbbbb bold
+L7 15-64 fg=#3c3c3c
+L7 65-77 fg=#777777
+L7 78-80 fg=#3c3c3c
+L8 4-9 fg=#777777
+L8 12-14 fg=#f39c12 bold underline
+L8 14-22 fg=#e4e4e4 bold
+L8 40-79 fg=#777777
+L28 2-15 fg=#777777
+L30 2-5 fg=#626262
+L30 6-8 fg=#4a4a4a
+L30 9-10 fg=#3c3c3c
+L30 11-14 fg=#626262
+L30 15-19 fg=#4a4a4a
+L30 20-21 fg=#3c3c3c
+L30 22-27 fg=#626262
+L30 28-35 fg=#4a4a4a
+L30 36-37 fg=#3c3c3c
+L30 38-43 fg=#626262
+L30 44-50 fg=#4a4a4a
+L30 51-52 fg=#3c3c3c
+L30 53-56 fg=#626262
+L30 57-63 fg=#4a4a4a
+L30 64-65 fg=#3c3c3c
+L30 66-67 fg=#626262
+L30 68-74 fg=#4a4a4a
+L30 75-76 fg=#3c3c3c

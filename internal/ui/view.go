@@ -46,34 +46,23 @@ func (m Model) view() string {
 		return ""
 	}
 
-	var view string
-	var keyMap keys.KeyMap
+	// nothing is drawn until the terminal tells where the cursor is
+	if !m.settled {
+		return ""
+	}
 
-	// Render different views based on current state
+	var view string
 	switch m.state.current {
 	case ListView:
-		view = m.list.View()
-		keyMap = m.keyMap.AsListKeyMap()
+		view = m.listView()
 	case DetailView:
-		view = m.detailView()
-		keyMap = m.keyMap.AsDetailKeyMap()
-
-	case Quitting:
-		return ""
-
+		view = m.detailView() + "\n\n" + m.helpView()
 	default:
 		return ""
 	}
 
 	if m.state.Confirming() {
 		view = m.renderDialogOverBase(view, m.confirmDialog())
-	}
-
-	if view != "" {
-		helpView := lipgloss.NewStyle().
-			Margin(1, 2).
-			Render(m.help.View(keyMap))
-		view += "\n" + helpView
 	}
 	return view
 }

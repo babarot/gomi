@@ -1,14 +1,16 @@
 package ui
 
 import (
+	"fmt"
 	"log/slog"
 	"slices"
 	"strings"
 
 	"charm.land/bubbles/v2/key"
-	"charm.land/bubbles/v2/list"
 	tea "charm.land/bubbletea/v2"
 	"github.com/samber/lo"
+
+	"github.com/babarot/gomi/internal/ui/keys"
 )
 
 // Update handles all UI state updates based on incoming messages
@@ -34,21 +36,30 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.WindowSizeMsg:
-		// view.go appends a help block wrapped in lipgloss Margin(1, 2)
-		// below the list: 1 row top margin + 1 row content + 1 row bottom
-		// margin = 3 rows tall, and 2 cols on each side = 4 cols total.
-		const (
-			helpReservedRows = 3
-			helpReservedCols = 4
-		)
 		if msg.Width > 0 {
-			m.list.SetWidth(msg.Width)
-			m.help.SetWidth(max(msg.Width-helpReservedCols, 0))
+			m.width = msg.Width
+			// the help is indented by two columns
+			m.help.SetWidth(max(msg.Width-2, 0))
 		}
 		if msg.Height > 0 {
-			m.list.SetHeight(max(msg.Height-helpReservedRows, 1))
+			m.termHeight = msg.Height
+			m.height = uiHeight(m.config.Height, m.termHeight, m.cursorY)
 		}
 		return m, tea.Batch(cmds...)
+
+	case tea.CursorPositionMsg:
+		// it may come after the wait; asked before anything was drawn, it
+		// still tells where the prompt left the cursor
+		m.cursorY = msg.Y
+		m.settled = true
+		if m.termHeight > 0 {
+			m.height = uiHeight(m.config.Height, m.termHeight, m.cursorY)
+		}
+		return m, nil
+
+	case cursorWaitedMsg:
+		m.settled = true
+		return m, nil
 
 	case ShowDetailMsg:
 		m.state.SetView(DetailView)
@@ -72,6 +83,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err != nil {
 			m.sizes[msg.path] = -1
 		}
+		if msg.queued {
+			m.sizing--
+			return m, tea.Batch(m.nextSizes()...)
+		}
 		return m, nil
 
 	case FileListLoadedMsg:
@@ -79,7 +94,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.err = msg.err
 			return m, tea.Quit
 		}
-		m.list.SetItems(msg.files)
+		m.list.setFiles(msg.files, now())
+		if msg.deleted > 0 {
+			m.status = fmt.Sprintf("Deleted %d %s permanently", msg.deleted, plural(msg.deleted, "file"))
+		}
+		cmds = append(cmds, m.queueSizes(m.list.files)...)
 		return m, tea.Batch(cmds...)
 
 	case errorMsg:
@@ -88,114 +107,146 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	}
 
-	// update default list always
-	slog.Debug("update default list")
-	var listCmd tea.Cmd
-	m.list, listCmd = m.list.Update(msg)
-	if listCmd != nil {
-		cmds = append(cmds, listCmd)
+	// the filter takes what else comes, such as the cursor's blink
+	if m.list.filtering {
+		var cmd tea.Cmd
+		m.list.filter, cmd = m.list.filter.Update(msg)
+		cmds = append(cmds, cmd)
 	}
-
 	return m, tea.Batch(cmds...)
 }
 
 // updateListView handles updates specific to the list view
 func (m Model) updateListView(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	if m.list.filtering {
+		return m.updateFilter(msg)
+	}
+	t := now()
+	file, onFile := m.list.current(t)
+
 	switch {
 	case key.Matches(msg, m.keyMap.Common.Quit):
 		m.state.SetView(Quitting)
 		return m, tea.Quit
 
 	case m.keyMap.List.Delete != nil && key.Matches(msg, *m.keyMap.List.Delete):
-		if m.list.FilterState() != list.Filtering {
-			file, ok := m.list.SelectedItem().(File)
-			if !ok && len(m.selection.items) == 0 {
-				slog.Warn("cannot get file on cursor")
-				return m, nil
-			}
-			m.openDeleteConfirm(file)
+		if !onFile && len(m.selection.items) == 0 {
+			slog.Warn("cannot get file on cursor")
+			return m, nil
 		}
+		m.openDeleteConfirm(file)
 		return m, nil
 
 	case key.Matches(msg, m.keyMap.List.Select):
-		if m.list.FilterState() != list.Filtering {
-			item, ok := m.list.SelectedItem().(File)
-			if !ok {
-				return m, nil
-			}
-			if m.selection.Contains(item) {
-				m.selection.Remove(item)
+		if onFile {
+			if m.selection.Contains(file) {
+				m.selection.Remove(file)
 			} else {
-				m.selection.Add(item)
+				m.selection.Add(file)
 			}
-			m.list.CursorDown()
+			m.list.move(1, t)
 		}
 		return m, nil
 
 	case key.Matches(msg, m.keyMap.List.DeSelect):
-		if m.list.FilterState() != list.Filtering {
-			item, ok := m.list.SelectedItem().(File)
-			if !ok {
-				return m, nil
-			}
-			if m.selection.Contains(item) {
-				m.selection.Remove(item)
-			}
-			m.list.CursorUp()
+		if onFile {
+			m.selection.Remove(file)
+			m.list.move(-1, t)
 		}
 		return m, nil
 
 	case key.Matches(msg, m.keyMap.List.Space):
-		if m.list.FilterState() != list.Filtering {
-			file, ok := m.list.SelectedItem().(File)
-			if ok {
-				return m, func() tea.Msg { return newShowDetailMsg(file) }
-			}
+		if onFile {
+			return m, func() tea.Msg { return newShowDetailMsg(file) }
 		}
 		return m, nil
 
 	case key.Matches(msg, m.keyMap.List.Esc):
-		if m.list.FilterState() != list.Filtering {
-			if len(m.selection.items) > 0 {
-				m.selection = &SelectionManager{items: []File{}}
-				return m, nil
-			}
+		switch {
+		case m.list.filter.Value() != "":
+			m.list.filter.SetValue("")
+			m.list.fixCursor(m.list.rows(t))
+		case len(m.selection.items) > 0:
+			m.selection = &SelectionManager{items: []File{}}
 		}
-		// DO NOT RETURN HERE
-		// to allow to update default list navigation
+		return m, nil
 
 	case key.Matches(msg, m.keyMap.List.Enter):
-		if m.list.FilterState() != list.Filtering {
-			files := m.selection.items
-			if len(files) == 0 {
-				file, ok := m.list.SelectedItem().(File)
-				if ok {
-					m.choices = append(m.choices, file)
-				}
-			} else {
-				m.choices = files
-			}
-			slog.Debug("key input: enter",
-				"files",
-				strings.Join(lo.Map(m.choices, func(file File, _ int) string {
-					return file.OriginalPath
-				}), "\n"),
-			)
-			return m, tea.Quit
+		files := m.selection.items
+		if len(files) == 0 && onFile {
+			files = []File{file}
 		}
-		// DO NOT RETURN HERE
-		// to allow to update default list navigation
+		m.choices = files
+		slog.Debug("key input: enter",
+			"files",
+			strings.Join(lo.Map(m.choices, func(file File, _ int) string {
+				return file.OriginalPath
+			}), "\n"),
+		)
+		return m, tea.Quit
 
 	case key.Matches(msg, m.keyMap.Common.Help):
-		// do not use default help of list model
 		m.help.ShowAll = !m.help.ShowAll
 		return m, nil
-	}
 
-	// Handle default list navigation
+	case key.Matches(msg, keys.DefaultKeyMapListFilter):
+		m.list.filtering = true
+		return m, m.list.filter.Focus()
+
+	case key.Matches(msg, keys.DefaultKeyMapListCursorUp):
+		m.list.move(-1, t)
+	case key.Matches(msg, keys.DefaultKeyMapListCursorDown):
+		m.list.move(1, t)
+	case key.Matches(msg, keys.DefaultKeyMapListPrevPage):
+		m.list.move(-m.pageSize(), t)
+	case key.Matches(msg, keys.DefaultKeyMapListNextPage):
+		m.list.move(m.pageSize(), t)
+	case key.Matches(msg, keys.DefaultKeyMapListGoToStart):
+		m.list.toStart(t)
+	case key.Matches(msg, keys.DefaultKeyMapListGoToEnd):
+		m.list.toEnd(t)
+	}
+	return m, nil
+}
+
+// updateFilter handles keys while the filter has the focus: enter keeps
+// what was typed, esc drops it, and the arrows still move the cursor.
+func (m Model) updateFilter(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	t := now()
+	switch msg.String() {
+	case "ctrl+c":
+		m.state.SetView(Quitting)
+		return m, tea.Quit
+	case "enter":
+		m.list.filtering = false
+		m.list.filter.Blur()
+		return m, nil
+	case "esc":
+		m.list.filtering = false
+		m.list.filter.Blur()
+		m.list.filter.SetValue("")
+		m.list.fixCursor(m.list.rows(t))
+		return m, nil
+	case "up":
+		m.list.move(-1, t)
+		return m, nil
+	case "down":
+		m.list.move(1, t)
+		return m, nil
+	}
+	before := m.list.filter.Value()
 	var cmd tea.Cmd
-	m.list, cmd = m.list.Update(msg)
+	m.list.filter, cmd = m.list.filter.Update(msg)
+	if m.list.filter.Value() != before {
+		m.list.top = 0
+		m.list.toStart(t)
+	}
 	return m, cmd
+}
+
+// pageSize is how many files a page moves by: the rows the list shows
+func (m Model) pageSize() int {
+	return max(1, m.list.shownN)
 }
 
 // updateDetailView handles updates specific to the detail view
@@ -231,17 +282,13 @@ func (m Model) updateDetailView(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.viewport.GotoBottom()
 		return m, nil
 
-	case key.Matches(msg, m.keyMap.Detail.Prev):
-		m.list.CursorUp()
-		file, ok := m.list.SelectedItem().(File)
-		if ok {
-			return m, func() tea.Msg { return newShowDetailMsg(file) }
+	case key.Matches(msg, m.keyMap.Detail.Prev, m.keyMap.Detail.Next):
+		n := 1
+		if key.Matches(msg, m.keyMap.Detail.Prev) {
+			n = -1
 		}
-		return m, nil
-
-	case key.Matches(msg, m.keyMap.Detail.Next):
-		m.list.CursorDown()
-		file, ok := m.list.SelectedItem().(File)
+		m.list.move(n, now())
+		file, ok := m.list.current(now())
 		if ok {
 			return m, func() tea.Msg { return newShowDetailMsg(file) }
 		}

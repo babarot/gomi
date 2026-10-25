@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"charm.land/bubbles/v2/help"
-	"charm.land/bubbles/v2/list"
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -32,18 +31,17 @@ func newTestModel() Model {
 	cfg := config.NewDefaultConfig()
 	km := keys.NewKeyMap(keys.KeyMapConfig{DeleteEnabled: true})
 
-	delegate := list.NewDefaultDelegate()
-	l := list.New(nil, delegate, 80, 40)
-	l.SetShowStatusBar(false)
-	l.SetShowTitle(false)
-	l.DisableQuitKeybindings()
+	l := newFileList()
 
 	return Model{
 		state:     NewViewState(),
 		keyMap:    km,
 		selection: &SelectionManager{items: []File{}},
 		config:    cfg.UI,
-		list:      l,
+		list:      &l,
+		width:     80,
+		height:    40,
+		settled:   true,
 		viewport:  viewport.Model{},
 		previews:  map[string]previewResult{},
 		sizes:     map[string]int64{},
@@ -60,8 +58,8 @@ func TestUpdate_WindowSizeMsg(t *testing.T) {
 	updated, _ := m.Update(msg)
 	model := asModel(t, updated)
 
-	if model.list.Width() != 120 {
-		t.Errorf("list width = %d, want 120", model.list.Width())
+	if model.width != 120 {
+		t.Errorf("width = %d, want 120", model.width)
 	}
 }
 
@@ -73,10 +71,10 @@ func TestUpdate_WindowSizeMsg_ShrinksListHeight(t *testing.T) {
 	updated, _ := m.Update(msg)
 	model := asModel(t, updated)
 
-	if model.list.Height() > termHeight {
-		t.Errorf("list height = %d, want <= %d (terminal height); "+
-			"list is not following the terminal height and will push items off-screen",
-			model.list.Height(), termHeight)
+	if model.height > termHeight {
+		t.Errorf("height = %d, want <= %d (terminal height); "+
+			"the UI is not following the terminal height and will push items off-screen",
+			model.height, termHeight)
 	}
 }
 
@@ -134,16 +132,16 @@ func TestUpdate_WindowSizeMsg_HeightZero(t *testing.T) {
 	// First, set a real terminal size.
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
 	m = asModel(t, updated)
-	prevHeight := m.list.Height()
+	prevHeight := m.height
 
 	// Then send a width-only message (Height == 0).
-	updated, _ = m.Update(tea.WindowSizeMsg{Width: m.list.Width()})
+	updated, _ = m.Update(tea.WindowSizeMsg{Width: m.width})
 	model := asModel(t, updated)
 
-	if model.list.Height() != prevHeight {
-		t.Errorf("list height = %d, want %d; "+
-			"width-only WindowSizeMsg must not change list height",
-			model.list.Height(), prevHeight)
+	if model.height != prevHeight {
+		t.Errorf("height = %d, want %d; "+
+			"width-only WindowSizeMsg must not change the height",
+			model.height, prevHeight)
 	}
 }
 
@@ -169,11 +167,11 @@ func TestUpdate_FileListLoadedMsg(t *testing.T) {
 	m := newTestModel()
 
 	file := newTestFile("loaded.txt")
-	msg := FileListLoadedMsg{files: []list.Item{file}}
+	msg := FileListLoadedMsg{files: []File{file}}
 	updated, _ := m.Update(msg)
 	model := asModel(t, updated)
 
-	items := model.list.Items()
+	items := model.list.files
 	if len(items) != 1 {
 		t.Errorf("items = %d, want 1", len(items))
 	}
@@ -356,7 +354,7 @@ func TestUpdate_ListView_Enter_NoFiles(t *testing.T) {
 
 	// Add an item to the list so SelectedItem works
 	f := newTestFile("test.txt")
-	m.list.SetItems([]list.Item{f})
+	m.list.setFiles([]File{f}, now())
 
 	msg := tea.KeyPressMsg{Code: tea.KeyEnter}
 	updated, cmd := m.Update(msg)
@@ -378,7 +376,7 @@ func TestUpdate_ListView_Enter_WithSelection(t *testing.T) {
 	f2 := newTestFile("b.txt")
 	m.selection = &SelectionManager{items: []File{f1, f2}}
 	m.state.SetView(ListView)
-	m.list.SetItems([]list.Item{f1, f2})
+	m.list.setFiles([]File{f1, f2}, now())
 
 	msg := tea.KeyPressMsg{Code: tea.KeyEnter}
 	updated, cmd := m.Update(msg)
@@ -521,7 +519,7 @@ func TestUpdate_ConfirmView_DeletesConfirmedFiles(t *testing.T) {
 	m.trash = rec
 	confirmed := File{File: &trash.File{Name: "confirmed.txt"}}
 	other := File{File: &trash.File{Name: "other.txt"}}
-	m.list.SetItems([]list.Item{other})
+	m.list.setFiles([]File{other}, now())
 	m.selection.Add(confirmed)
 	m.state.SetView(ListView)
 
@@ -549,7 +547,7 @@ func TestUpdate_ConfirmView_TypeYES_DeletesConfirmedFiles(t *testing.T) {
 	f1 := File{File: &trash.File{Name: "a.txt"}}
 	f2 := File{File: &trash.File{Name: "b.txt"}}
 	kept := File{File: &trash.File{Name: "kept.txt"}}
-	m.list.SetItems([]list.Item{kept})
+	m.list.setFiles([]File{kept}, now())
 	m.selection.Add(f1)
 	m.selection.Add(f2)
 	m.state.SetView(ListView)
@@ -602,7 +600,7 @@ func TestUpdate_DetailView_DeleteRemovesSelectionNotCursor(t *testing.T) {
 	f1 := File{File: &trash.File{Name: "a.txt"}}
 	f2 := File{File: &trash.File{Name: "b.txt"}}
 	cursor := File{File: &trash.File{Name: "cursor.txt"}}
-	m.list.SetItems([]list.Item{cursor})
+	m.list.setFiles([]File{cursor}, now())
 	m.selection.Add(f1)
 	m.selection.Add(f2)
 	m.detailFile = cursor
@@ -642,5 +640,29 @@ func TestLoadPreviewCmd_DirectoryGone(t *testing.T) {
 	}
 	if msg.available {
 		t.Error("a deleted directory has a preview")
+	}
+}
+
+func TestUpdate_Filter_CtrlCQuits(t *testing.T) {
+	m := newTestModel()
+	m.list.filtering = true
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+	if asModel(t, updated).state.current != Quitting || cmd == nil {
+		t.Error("ctrl+c while filtering does not quit")
+	}
+}
+
+func TestUpdate_HeightFromCursor(t *testing.T) {
+	m := newTestModel()
+	m.settled = false
+	m.cursorY = -1
+	if v := m.View().Content; v != "" {
+		t.Errorf("drawn before the cursor is known:\n%s", v)
+	}
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 40})
+	updated, _ = updated.Update(tea.CursorPositionMsg{Y: 4})
+	m = asModel(t, updated)
+	if !m.settled || m.height != 36 {
+		t.Errorf("settled %v, height %d; want true, 36 (the rows below the prompt)", m.settled, m.height)
 	}
 }

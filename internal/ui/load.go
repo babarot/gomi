@@ -30,6 +30,8 @@ type sizeLoadedMsg struct {
 	path string
 	size int64
 	err  error
+	// queued is set when the list's queue sized it, so the next one starts
+	queued bool
 }
 
 // loadSlots bounds how many previews and sizes are read at once, since
@@ -88,6 +90,45 @@ func (m Model) loadDetail(f File) []tea.Cmd {
 // previewKey and sizeKey name the reads in Model.reading
 func previewKey(path string) string { return "preview:" + path }
 func sizeKey(path string) string    { return "size:" + path }
+
+// listSizers is how many directories of the list are sized at once. They
+// are sized apart from loadSlots, so that the detail view does not wait
+// behind them.
+const listSizers = 2
+
+// queueSizes queues the directories among files whose size is not known,
+// in the order the list shows them, and starts sizing as many as there is
+// room for; the list is queued again after files are deleted, while some
+// are still being sized
+func (m *Model) queueSizes(files []File) []tea.Cmd {
+	m.sizeQueue = nil
+	for _, f := range files {
+		if !f.SizeKnown {
+			m.sizeQueue = append(m.sizeQueue, f)
+		}
+	}
+	return m.nextSizes()
+}
+
+// nextSizes starts sizing directories of the queue until listSizers are
+// being sized, skipping those sized or being sized already
+func (m *Model) nextSizes() []tea.Cmd {
+	var cmds []tea.Cmd
+	for m.sizing < listSizers && len(m.sizeQueue) > 0 {
+		f := m.sizeQueue[0]
+		m.sizeQueue = m.sizeQueue[1:]
+		if _, ok := m.sizes[f.TrashPath]; ok || m.reading[sizeKey(f.TrashPath)] {
+			continue
+		}
+		m.reading[sizeKey(f.TrashPath)] = true
+		m.sizing++
+		cmds = append(cmds, func() tea.Msg {
+			size, err := fs.DirSize(f.TrashPath)
+			return sizeLoadedMsg{path: f.TrashPath, size: size, err: err, queued: true}
+		})
+	}
+	return cmds
+}
 
 // sizeText is the size of f as the detail view shows it
 func (m Model) sizeText(f File) string {
