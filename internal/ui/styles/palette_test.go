@@ -16,7 +16,7 @@ func TestNewPalette_EveryColor(t *testing.T) {
 		p := NewPalette(config.UI{Theme: name})
 		v := reflect.ValueOf(p)
 		for i := range v.NumField() {
-			c, ok := v.Field(i).Interface().(Color)
+			c, ok := reflect.TypeAssert[Color](v.Field(i))
 			if !ok {
 				t.Fatalf("%s is not a Color", v.Type().Field(i).Name)
 			}
