@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.8.0](https://github.com/babarot/gomi/compare/v1.7.0...v1.8.0) - 2026-10-25
+### New Features
+- Choose the TUI's colors with ui.theme by @babarot in https://github.com/babarot/gomi/pull/153
+### Improvements
+- Filter the trash by period first and by size last by @babarot in https://github.com/babarot/gomi/pull/149
+- Record which run trashed each file by @babarot in https://github.com/babarot/gomi/pull/151
+- Read the detail view in the background by @babarot in https://github.com/babarot/gomi/pull/152
+
 ## [v1.7.0](https://github.com/babarot/gomi/compare/v1.6.5...v1.7.0) - 2026-10-24
 ### New Features
 - Add --dry-run to show what --prune would remove by @babarot in https://github.com/babarot/gomi/pull/138
