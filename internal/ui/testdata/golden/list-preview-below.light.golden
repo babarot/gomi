@@ -1,0 +1,153 @@
+-- screen --
+ gomi  12 in the trash · 1.7K
+── Today ───────────────────────────────────────────────────── 2 files · 166B ──
+▎   10:00   main.go                     ~/projects/gomi                     72B 
+    07:00   notes/                      ~/projects/gomi                     94B
+── Yesterday ─────────────────────────────────────────────────── 1 file · 12B ──
+    10:00   archive.bin                 ~/projects/gomi                     12B
+── Friday ───────────────────────────────────────────────────── 1 file · 1.4K ──
+    10:00   long.txt                    ~/projects/gomi                    1.4K
+── Thursday ─────────────────────────────────────────────────── 2 files · 78B ──
+    10:00 ┌ README.md                   ~/projects/gomi                     44B
+          └ config.yaml                 ~/projects/gomi                     34B
+── Tuesday ────────────────────────────────────────────────────── 1 file · 2B ──
+    10:00   a-very-long-file-name-for…  ~/projects/gomi                      2B
+── Monday ─────────────────────────────────────────────────────── 1 file · 2B ──
+  12 files · ↓ 5 more
+╭─ main.go ────────────────────────────────────────────────────────────────────╮
+│ From     ~/projects/gomi                                                     │
+│ Deleted  2025-06-15 10:00  2 hours ago                                       │
+│ Size     72B  file                                                           │
+│ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │
+│ package main                                                                 │
+│                                                                              │
+│ import "fmt"                                                                 │
+│                                                                              │
+│ func main() {                                                                │
+│     fmt.Println("hello, gomi")                                               │
+│ }                                                                            │
+╰────────────────────────────────────────────────────────────────────── 1–7/8 ─╯
+
+  ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter …
+-- styles --
+L1 1-5 fg=#ad58b4 bold
+L1 7-29 fg=#626262
+L2 0-2 fg=#999999
+L2 3-8 fg=#4a4a4a bold
+L2 9-62 fg=#999999
+L2 63-77 fg=#626262
+L2 78-80 fg=#999999
+L3 0-4 fg=#ad58b4 bg=#e8e8e8
+L3 4-12 fg=#626262 bg=#e8e8e8
+L3 12-40 fg=#262626 bg=#e8e8e8 bold
+L3 40-80 fg=#626262 bg=#e8e8e8
+L4 4-9 fg=#626262
+L4 12-18 fg=#1f6fb2 bold
+L4 40-79 fg=#626262
+L5 0-2 fg=#999999
+L5 3-12 fg=#4a4a4a bold
+L5 13-64 fg=#999999
+L5 65-77 fg=#626262
+L5 78-80 fg=#999999
+L6 4-9 fg=#626262
+L6 12-23 fg=#262626 bold
+L6 40-79 fg=#626262
+L7 0-2 fg=#999999
+L7 3-9 fg=#4a4a4a bold
+L7 10-63 fg=#999999
+L7 64-77 fg=#626262
+L7 78-80 fg=#999999
+L8 4-9 fg=#626262
+L8 12-20 fg=#262626 bold
+L8 40-79 fg=#626262
+L9 0-2 fg=#999999
+L9 3-11 fg=#4a4a4a bold
+L9 12-63 fg=#999999
+L9 64-77 fg=#626262
+L9 78-80 fg=#999999
+L10 4-9 fg=#626262
+L10 10-11 fg=#999999
+L10 12-21 fg=#262626 bold
+L10 40-79 fg=#626262
+L11 10-11 fg=#999999
+L11 12-23 fg=#262626 bold
+L11 40-79 fg=#626262
+L12 0-2 fg=#999999
+L12 3-10 fg=#4a4a4a bold
+L12 11-65 fg=#999999
+L12 66-77 fg=#626262
+L12 78-80 fg=#999999
+L13 4-9 fg=#626262
+L13 12-38 fg=#262626 bold
+L13 40-79 fg=#626262
+L14 0-2 fg=#999999
+L14 3-9 fg=#4a4a4a bold
+L14 10-65 fg=#999999
+L14 66-77 fg=#626262
+L14 78-80 fg=#999999
+L15 2-21 fg=#626262
+L16 0-2 fg=#eeeedd
+L16 3-10 fg=#262626 bold
+L16 11-80 fg=#eeeedd
+L17 0-1 fg=#eeeedd
+L17 2-6 fg=#626262
+L17 11-26 fg=#262626
+L17 79-80 fg=#eeeedd
+L18 0-1 fg=#eeeedd
+L18 2-9 fg=#626262
+L18 11-27 fg=#262626
+L18 29-40 fg=#626262
+L18 79-80 fg=#eeeedd
+L19 0-1 fg=#eeeedd
+L19 2-6 fg=#626262
+L19 11-14 fg=#262626
+L19 16-20 fg=#626262
+L19 79-80 fg=#eeeedd
+L20 0-1 fg=#eeeedd
+L20 2-78 fg=#3c3c3c
+L20 79-80 fg=#eeeedd
+L21 0-1 fg=#eeeedd
+L21 2-9 fg=#81a1c1 bold
+L21 10-14 fg=#d8dee9
+L21 79-80 fg=#eeeedd
+L22 0-80 fg=#eeeedd
+L23 0-1 fg=#eeeedd
+L23 2-8 fg=#81a1c1 bold
+L23 9-14 fg=#a3be8c
+L23 79-80 fg=#eeeedd
+L24 0-80 fg=#eeeedd
+L25 0-1 fg=#eeeedd
+L25 2-6 fg=#81a1c1 bold
+L25 7-11 fg=#88c0d0
+L25 11-15 fg=#eceff4
+L25 79-80 fg=#eeeedd
+L26 0-1 fg=#eeeedd
+L26 6-9 fg=#d8dee9
+L26 9-10 fg=#eceff4
+L26 10-17 fg=#88c0d0
+L26 17-18 fg=#eceff4
+L26 18-31 fg=#a3be8c
+L26 31-32 fg=#eceff4
+L26 79-80 fg=#eeeedd
+L27 0-1 fg=#eeeedd
+L27 2-3 fg=#eceff4
+L27 79-80 fg=#eeeedd
+L28 0-80 fg=#eeeedd
+L30 2-5 fg=#626262
+L30 6-8 fg=#808080
+L30 9-10 fg=#999999
+L30 11-14 fg=#626262
+L30 15-19 fg=#808080
+L30 20-21 fg=#999999
+L30 22-27 fg=#626262
+L30 28-35 fg=#808080
+L30 36-37 fg=#999999
+L30 38-43 fg=#626262
+L30 44-50 fg=#808080
+L30 51-52 fg=#999999
+L30 53-56 fg=#626262
+L30 57-63 fg=#808080
+L30 64-65 fg=#999999
+L30 66-67 fg=#626262
+L30 68-74 fg=#808080
+L30 75-76 fg=#dddada

@@ -292,6 +292,10 @@ var goldenCases = []goldenCase{
 	// list view
 	{name: "list"},
 	{name: "list-wide", width: 120},
+	{name: "list-wide-down", width: 120, keys: []string{"down"}},
+	{name: "list-preview-below", opts: func(o *RenderOptions) { o.Config.Preview.Position = "below" }},
+	{name: "list-preview-right", width: 100, opts: func(o *RenderOptions) { o.Config.Preview.Position = "right" }, keys: []string{"down", "down", "down"}},
+	{name: "list-preview-none", width: 120, opts: func(o *RenderOptions) { o.Config.Preview.Position = "none" }},
 	{name: "list-height", opts: func(o *RenderOptions) { o.Config.Height = "12" }},
 	{name: "list-next-page", opts: func(o *RenderOptions) { o.Config.Height = "12" }, keys: []string{"right"}},
 	{name: "list-end", keys: []string{"G"}},
@@ -378,6 +382,8 @@ func TestGolden(t *testing.T) {
 	t.Setenv("HOME", "/home/user")
 	defer func(d time.Duration) { cursorWait = d }(cursorWait)
 	cursorWait = 0
+	defer func(d time.Duration) { previewDelay = d }(previewDelay)
+	previewDelay = 0
 	files := makeFixtures(t)
 
 	defer func(f func() time.Time) { now = f }(now)

@@ -33,30 +33,58 @@ func (m Model) fg(c styles.Color) lipgloss.Style {
 // listView draws the list: a header, the rows, and the count, the status
 // and the key help at the bottom, in the rows the UI has.
 func (m Model) listView() string {
-	help := m.helpView()
 	lines := []string{m.headerLine()}
 	if m.list.filtering || m.list.filter.Value() != "" {
 		lines = append(lines, " "+m.list.filter.View())
 	}
-	n := max(1, m.height-len(lines)-2-lipgloss.Height(help))
+	l := m.listLayout()
+	n := l.rows
 
 	rows := m.list.rows(now())
 	m.list.scroll(rows, n)
 	m.list.shownN = n
+	var shown []string
 	for i := range n {
 		j := m.list.top + i
 		if j >= len(rows) {
-			lines = append(lines, "")
+			shown = append(shown, "")
 			continue
 		}
-		lines = append(lines, m.rowLine(rows[j], j == m.list.cursor))
+		shown = append(shown, m.rowLine(rows[j], j == m.list.cursor, l.listW))
 	}
 	if len(rows) == 0 {
-		lines[len(lines)-n] = "  " + m.fg(m.palette.Description).Render(m.emptyText())
+		shown[0] = "  " + m.fg(m.palette.Description).Render(m.emptyText())
 	}
 
-	lines = append(lines, m.countLine(rows, n), m.statusLine(), help)
+	switch l.side {
+	case sideRight:
+		pane := strings.Split(m.sidePane(l), "\n")
+		for i, s := range shown {
+			s += strings.Repeat(" ", max(0, l.listW-ansi.StringWidth(s)))
+			if i < len(pane) {
+				s += " " + pane[i]
+			}
+			shown[i] = s
+		}
+		lines = append(lines, shown...)
+		lines = append(lines, m.countLine(rows, n))
+	case sideBelow:
+		lines = append(lines, shown...)
+		lines = append(lines, m.countLine(rows, n), m.sidePane(l))
+	default:
+		lines = append(lines, shown...)
+		lines = append(lines, m.countLine(rows, n))
+	}
+	lines = append(lines, m.statusLine(), m.helpView())
 	return strings.Join(lines, "\n")
+}
+
+// sidePane is the preview beside the list, of the file on the cursor
+func (m Model) sidePane(l layout) string {
+	if _, ok := m.list.current(now()); !ok {
+		return ""
+	}
+	return m.pane(m.detailFile, l.paneW, l.paneH)
 }
 
 func (m Model) emptyText() string {
@@ -97,20 +125,20 @@ func (m Model) knownSize(f File) (int64, bool) {
 	return size, ok && size >= 0
 }
 
-// rowLine draws a day heading or a file
-func (m Model) rowLine(r row, onCursor bool) string {
+// rowLine draws a day heading or a file, w columns wide
+func (m Model) rowLine(r row, onCursor bool, w int) string {
 	if r.kind == rowDay {
-		return m.dayLine(r)
+		return m.dayLine(r, w)
 	}
-	return m.fileLine(r, onCursor)
+	return m.fileLine(r, onCursor, w)
 }
 
 // dayLine is a rule with the day and what was deleted on it
-func (m Model) dayLine(r row) string {
+func (m Model) dayLine(r row, w int) string {
 	rule := m.fg(m.palette.HelpSeparator)
 	label := m.fg(m.palette.Heading).Bold(true).Render(r.day)
 	right := m.fg(m.palette.Description).Render(fmt.Sprintf("%d %s · %s", len(r.files), plural(len(r.files), "file"), m.sizeOfFiles(r.files)))
-	fill := m.width - 3 - ansi.StringWidth(r.day) - 2 - ansi.StringWidth(right) - 3
+	fill := w - 3 - ansi.StringWidth(r.day) - 2 - ansi.StringWidth(right) - 3
 	if fill < 1 {
 		return rule.Render("── ") + label
 	}
@@ -147,7 +175,7 @@ func plural(n int, word string) string {
 // fileLine is one file: the time it was deleted, its name, where it was
 // deleted from and its size. The row under the cursor is drawn on a
 // background of its own, across the whole width.
-func (m Model) fileLine(r row, onCursor bool) string {
+func (m Model) fileLine(r row, onCursor bool, w int) string {
 	f := r.file
 	on := func(s lipgloss.Style) lipgloss.Style {
 		if onCursor {
@@ -189,7 +217,7 @@ func (m Model) fileLine(r row, onCursor bool) string {
 	}
 	b.WriteString(on(m.fg(m.palette.HelpSeparator)).Render(join) + plain.Render(" "))
 
-	avail := max(0, m.width-colName-2-sizeWidth-1)
+	avail := max(0, w-colName-2-sizeWidth-1)
 	nameW := max(minNameCol, avail*nameShare/100)
 	placeW := max(0, avail-nameW)
 	b.WriteString(pad(m.nameCell(f, nameW, on), nameW))
@@ -202,7 +230,7 @@ func (m Model) fileLine(r row, onCursor bool) string {
 	}
 	b.WriteString(plain.Render(strings.Repeat(" ", max(0, sizeWidth-ansi.StringWidth(size)))))
 	b.WriteString(on(m.fg(m.palette.Description)).Render(size) + plain.Render(" "))
-	return ansi.Truncate(b.String(), m.width, "")
+	return ansi.Truncate(b.String(), w, "")
 }
 
 // nameCell is the file name cut to w, a directory marked with a slash, and

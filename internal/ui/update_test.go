@@ -614,7 +614,7 @@ func TestUpdate_DetailView_DeleteRemovesSelectionNotCursor(t *testing.T) {
 func TestLoadPreviewCmd_DirectoryGone(t *testing.T) {
 	// the directory is deleted before its preview is read
 	f := File{File: &trash.File{Name: "gone", TrashPath: filepath.Join(t.TempDir(), "gone"), IsDir: true}}
-	msg, ok := loadPreviewCmd(f)().(previewLoadedMsg)
+	msg, ok := loadPreviewCmd(f, 60, 20)().(previewLoadedMsg)
 	if !ok {
 		t.Fatalf("got %T, want previewLoadedMsg", msg)
 	}

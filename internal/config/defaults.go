@@ -52,6 +52,7 @@ func NewDefaultConfig() *Config {
 				SyntaxHighlight:  true,
 				Colorscheme:      "nord",
 				DirectoryCommand: "ls -GF -1 -A --color=always",
+				Position:         "auto",
 			},
 			Paginator: "dots",
 			Style: StyleConfig{

@@ -55,7 +55,13 @@ func (f File) FilterValue() string {
 	return f.Name
 }
 
-func (f File) Browse() (string, error) {
+// maxPreviewLines is the most lines of a text file the preview reads and
+// highlights; the preview is read again for each file the cursor rests on
+const maxPreviewLines = 1000
+
+// Browse reads the preview of f for a pane whose contents are w columns
+// by h rows: an image is drawn to fit them.
+func (f File) Browse(w, h int) (string, error) {
 	var content string
 
 	fi, err := os.Lstat(f.TrashPath)
@@ -106,9 +112,10 @@ func (f File) Browse() (string, error) {
 	}
 	if isImageFile(mtype.String()) {
 		slog.Debug("file is an image, trying to preview", "mimetype", mtype.String())
-		// Preview the image to match the height of the preview panel
-		// defaultHeight(30) - 11 - 1 = 18, adjusting to a height of 18
-		return f.previewImage(f.TrashPath, defaultWidth, 18)
+		if w <= 0 || h <= 0 {
+			w, h = defaultWidth, defaultHeight
+		}
+		return f.previewImage(f.TrashPath, w, h)
 	}
 	if mtype.Is("text/plain") || (mtype.Parent() != nil && mtype.Parent().Is("text/plain")) {
 		// ok
@@ -123,7 +130,11 @@ func (f File) Browse() (string, error) {
 	defer fp.Close()
 	var fileContent strings.Builder
 	scanner := bufio.NewScanner(fp)
-	for scanner.Scan() {
+	for lines := 0; scanner.Scan(); lines++ {
+		if lines == maxPreviewLines {
+			fmt.Fprintf(&fileContent, "… (only the first %d lines are shown)\n", maxPreviewLines)
+			break
+		}
 		fileContent.WriteString(scanner.Text() + "\n")
 	}
 	if err := scanner.Err(); err != nil {
@@ -190,7 +201,8 @@ func (f File) previewImage(path string, maxWidth, maxHeight int) (string, error)
 
 	// Set the background color to transparent.
 	bgColor := imgcolor.RGBA{0, 0, 0, 0}
-	height := max(defaultHeight, maxHeight*2+2)
+	// a row of half blocks is two pixels high; the last row tells the size
+	height := max(2, (maxHeight-1)*2)
 
 	pix, err := ansimage.NewScaledFromImage(
 		img,

@@ -45,10 +45,10 @@ func slot() func() {
 
 // loadPreviewCmd reads the preview of f, which may run a command, decode
 // an image or highlight a whole file
-func loadPreviewCmd(f File) tea.Cmd {
+func loadPreviewCmd(f File, w, h int) tea.Cmd {
 	return func() tea.Msg {
 		defer slot()()
-		content, err := f.Browse()
+		content, err := f.Browse(w, h)
 		r := previewResult{content: content, available: err == nil}
 		if err != nil {
 			slog.Warn("file.Browse returned error", "content", err)
@@ -77,7 +77,8 @@ func (m Model) loadDetail(f File) []tea.Cmd {
 	path := f.TrashPath
 	if _, ok := m.previews[path]; !ok && !m.reading[previewKey(path)] {
 		m.reading[previewKey(path)] = true
-		cmds = append(cmds, loadPreviewCmd(f))
+		// the viewport is sized for the pane f is shown in
+		cmds = append(cmds, loadPreviewCmd(f, m.viewport.Width(), m.viewport.Height()))
 	}
 	if _, ok := m.sizes[path]; !ok && !f.SizeKnown && !m.reading[sizeKey(path)] {
 		m.reading[sizeKey(path)] = true

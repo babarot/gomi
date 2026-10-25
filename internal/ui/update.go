@@ -26,9 +26,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		switch m.state.current {
 		case ListView:
-			return m.updateListView(msg)
+			next, cmd := m.updateListView(msg)
+			if nm, ok := next.(Model); ok {
+				return nm.followCursor(cmd)
+			}
+			return next, cmd
 		case DetailView:
-			return m.updateDetailView(msg)
+			next, cmd := m.updateDetailView(msg)
+			if nm, ok := next.(Model); ok && nm.state.current == ListView {
+				// back in the list, the preview beside it takes its size again
+				return nm.followCursor(cmd)
+			}
+			return next, cmd
 		}
 
 	case tea.BackgroundColorMsg:
@@ -46,7 +55,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.height = uiHeight(m.config.Height, m.termHeight, m.cursorY)
 		}
 		m.resizePreview()
-		return m, tea.Batch(cmds...)
+		return m.followCursor(tea.Batch(cmds...))
 
 	case tea.CursorPositionMsg:
 		// it may come after the wait; asked before anything was drawn, it
@@ -56,6 +65,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.termHeight > 0 {
 			m.height = uiHeight(m.config.Height, m.termHeight, m.cursorY)
 			m.resizePreview()
+		}
+		return m.followCursor(nil)
+
+	case previewDueMsg:
+		// the cursor rested on the file the preview shows
+		if msg.seq == m.previewSeq && m.state.current == ListView {
+			return m, tea.Batch(m.loadDetail(m.detailFile)...)
 		}
 		return m, nil
 
@@ -74,8 +90,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case previewLoadedMsg:
 		delete(m.reading, previewKey(msg.path))
 		m.previews[msg.path] = msg.previewResult
-		// the result may come after the view moved to another file
-		if m.state.current == DetailView && m.detailFile.TrashPath == msg.path {
+		// the result may come after the preview moved to another file
+		if m.detailFile.File != nil && m.detailFile.TrashPath == msg.path {
 			m.viewport.SetContent(msg.content)
 		}
 		return m, nil
@@ -102,7 +118,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.status = fmt.Sprintf("Deleted %d %s permanently", msg.deleted, plural(msg.deleted, "file"))
 		}
 		cmds = append(cmds, m.queueSizes(m.list.files)...)
-		return m, tea.Batch(cmds...)
+		return m.followCursor(tea.Batch(cmds...))
 
 	case errorMsg:
 		m.state.SetView(Quitting)
