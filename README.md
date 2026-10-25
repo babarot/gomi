@@ -76,12 +76,12 @@ This opens the trash under the prompt, using the rows below it (see `ui.height`)
 
 - `enter` restores the file under the cursor, or the selected files. `tab` selects and `shift+tab` de-selects.
 - `space` opens the preview of the file in full; `n` and `p` move to the next and previous file there. When the terminal is wide enough, the list shows a preview on its right as well (see `ui.preview.position`).
-- `/` narrows the list by name. `esc` clears what was typed, then the selection.
+- `/` narrows the list by name or by the directory a file was deleted from. `esc` clears what was typed, then the selection.
 - `.` switches between the files deleted in the current directory and every file. The list starts with the files deleted here when there are any (see `ui.scope`).
 - `v` goes to the next view:
   - `recent`: the files by the day they were deleted, the files deleted by one command drawn together
-  - `places`: the files by the directory they were deleted from; `l` and `h` open and close a directory
-  - `batches`: the files by the command that deleted them; `l` and `h` open and close a batch
+  - `places`: the files by the directory they were deleted from; `l` and `h` (or `space`) open and close a directory
+  - `batches`: the files by the command that deleted them; `l` and `h` (or `space`) open and close a batch
   - `picker`: one row a file, typing to find it as in fzf; `esc` hands the keys to the list and `s` chooses the order
 - `?` shows every key.
 
@@ -265,7 +265,7 @@ ui:
         scroll:                 # not used
           fg: "#EEEEDD"
           bg: "#3C3C3C"
-    deletion_dialog: "#FF007F" # pink - the frame of the confirm dialog
+    deletion_dialog: "#FF007F" # pink - the frame of the confirm dialog and the ! mark
   exit_message: bye!   # Customizable exit message
   paginator_type: dots # not used; the list scrolls instead of paging
 
