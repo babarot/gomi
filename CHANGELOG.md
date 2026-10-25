@@ -1,5 +1,17 @@
 # Changelog
 
+## [v1.9.1](https://github.com/babarot/gomi/compare/v1.9.0...v1.9.1) - 2026-10-25
+### Bug fixes
+- Ask for a new name when a broken symlink has the restored file's name by @babarot in https://github.com/babarot/gomi/pull/166
+- Draw the whole placeholder of a name with combining characters by @babarot in https://github.com/babarot/gomi/pull/167
+- Judge XDG directories by their disk usage in the size filter by @babarot in https://github.com/babarot/gomi/pull/169
+- Give the site's scripts a URL of each deploy's own by @babarot in https://github.com/babarot/gomi/pull/174
+### Improvements
+- Redesign gomi.dev around the trash can and a working rm -b by @babarot in https://github.com/babarot/gomi/pull/170
+### Refactorings
+- Split the site's terminal into modules and check it against the goldens by @babarot in https://github.com/babarot/gomi/pull/171
+- Write each color of the site once, with light-dark() by @babarot in https://github.com/babarot/gomi/pull/172
+
 ## [v1.9.0](https://github.com/babarot/gomi/compare/v1.8.0...v1.9.0) - 2026-10-25
 ### New Features
 - List the trash by the day files were deleted on by @babarot in https://github.com/babarot/gomi/pull/154
