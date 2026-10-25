@@ -248,3 +248,18 @@ func TestConfig_Validate_Height(t *testing.T) {
 		t.Error("expected validation error for height full")
 	}
 }
+
+func TestConfig_Validate_PreviewPosition(t *testing.T) {
+	for _, pos := range []string{"auto", "right", "below", "none", ""} {
+		cfg := NewDefaultConfig()
+		cfg.UI.Preview.Position = pos
+		if err := cfg.validate(); err != nil {
+			t.Errorf("position %q: %v", pos, err)
+		}
+	}
+	cfg := NewDefaultConfig()
+	cfg.UI.Preview.Position = "left"
+	if err := cfg.validate(); err == nil {
+		t.Error("expected validation error for position left")
+	}
+}

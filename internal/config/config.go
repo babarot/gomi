@@ -162,6 +162,11 @@ type PreviewConfig struct {
 
 	// DirectoryCommand is the command used to list directory contents
 	DirectoryCommand string `yaml:"directory_command"`
+
+	// Position is where the list shows the preview of the file on the
+	// cursor: "auto" (right of the list when the terminal is wide enough,
+	// else nowhere), "right", "below" or "none"; empty is "auto"
+	Position string `yaml:"position" validate:"omitempty,oneof=auto right below none"`
 }
 
 // History configures history management and filtering

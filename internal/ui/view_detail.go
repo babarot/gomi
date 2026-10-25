@@ -33,9 +33,15 @@ func previewSize(w, h int) (int, int) {
 	return max(0, w-4), max(0, h-2-paneInfoRows)
 }
 
-// resizePreview fits the viewport to the pane the detail view opens
+// resizePreview fits the viewport to the pane it is shown in: the one
+// opened over the UI, or the one beside the list
 func (m *Model) resizePreview() {
-	w, h := previewSize(m.width, m.paneHeight())
+	pw, ph := m.width, m.paneHeight()
+	if m.state.current == ListView {
+		l := m.listLayout()
+		pw, ph = l.paneW, l.paneH
+	}
+	w, h := previewSize(pw, ph)
 	m.viewport.SetWidth(w)
 	m.viewport.SetHeight(h)
 }

@@ -34,6 +34,10 @@ type Model struct {
 	sizes    map[string]int64
 	// reading has the reads started and not yet returned
 	reading map[string]bool
+	// previewSeq counts the cursor's moves, so that only the preview of the
+	// file it rests on is read
+	previewSeq int
+
 	// sizeQueue is the directories of the list waiting to be sized, and
 	// sizing how many of the list's are being sized
 	sizeQueue []File
