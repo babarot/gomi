@@ -1,0 +1,31 @@
+name: Site
+
+# The terminal on gomi.dev (docs/tui) draws what gomi draws; this checks it
+# against the golden views of internal/ui, so that a change to either side
+# that breaks the match shows up.
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'internal/ui/**'
+      - 'scripts/site-golden.mjs'
+      - '.github/workflows/site.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  golden:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Compare the site's terminal with the golden views
+        run: node scripts/site-golden.mjs

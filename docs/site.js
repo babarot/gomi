@@ -1,45 +1,46 @@
+// The page: the desk and the can in the hero, the terminal below them, the
+// install menu and the theme.
+import { createTerminal } from './tui/terminal.js';
+import { fit } from './tui/fit.js';
+import { SEED, DESK_FILES } from './trash.js';
+
 const $ = id => document.getElementById(id);
 const desk = $('desk'), can = $('can'), bubble = $('bubble'), log = $('log'), count = $('count'), screen = $('screen');
-const say = t => bubble.textContent = t;
+const say = t => { bubble.textContent = t; };
 const bump = cls => { can.classList.remove('gulp', 'spit'); void can.offsetWidth; can.classList.add(cls); };
 let logLines = [];
 const out = t => { logLines.push(t); log.textContent = logLines.slice(-2).join('\n'); };
 let deskFiles = [], runN = 0;
 
 // ---- the terminal ----
-const term = GomiTerm, st = term.state;
-function measure() {
-  const width = text => {
-    const probe = document.createElement('span');
-    probe.textContent = text;
-    probe.style.visibility = 'hidden'; probe.style.position = 'absolute';
-    screen.appendChild(probe);
-    const w = probe.getBoundingClientRect().width;
-    probe.remove();
-    return w;
-  };
-  const cw = width('0'.repeat(100)) / 100;
-  // a font whose i and M differ in width is not monospaced; the terminal
-  // then puts every letter in a cell of its own
-  st.cells = Math.abs(width('i'.repeat(50)) - width('M'.repeat(50))) > 1;
-  // a cell is exactly as wide as a character of the font, so that lines
-  // drawn cell by cell meet the text around them
-  screen.style.setProperty('--cw', cw + 'px');
-  const cs = getComputedStyle(screen);
-  const inner = screen.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-  // as wide as the screen allows, as gomi takes the terminal's width
-  return Math.max(40, Math.min(160, Math.floor(inner / cw)));
-}
+const term = createTerminal({
+  shell: {
+    ls: () => deskFiles.map(f => f.name + (f.isDir ? '/' : '')),
+    // rm typed at the prompt throws out a file on the desk
+    rm(name) {
+      const f = deskFiles.find(x => x.name === name.replace(/\/$/, ''));
+      if (f) throwOut(f, true);
+      return !!f;
+    },
+  },
+});
+
 function draw() {
   const P = term.palette();
   screen.style.background = P.bg; screen.style.color = P.fg;
-  screen.innerHTML = term.render();
+  screen.innerHTML = term.html();
   count.textContent = term.files.length;
-  const v = term.view();
-  document.querySelectorAll('#viewButtons button').forEach(b => b.setAttribute('aria-pressed', b.dataset.view === v));
+  document.querySelectorAll('#viewButtons button').forEach(b => b.setAttribute('aria-pressed', b.dataset.view === term.view));
 }
-st.onChange = draw;
-function resize() { term.setSize(measure(), 32); draw(); }
+term.on('change', draw);
+
+// the terminal is as wide as the screen allows, as gomi takes the terminal's width
+function resize() {
+  const f = fit(screen);
+  term.setCells(f.cells);
+  term.size(Math.max(40, Math.min(160, f.cols)), 32);
+  draw();
+}
 new ResizeObserver(resize).observe(screen);
 document.fonts.ready.then(resize);
 
@@ -68,16 +69,19 @@ function chip(f, pop) {
   deskFiles.push(f);
   desk.appendChild(b);
 }
-// throwOut runs rm on a desk file: typed in the terminal, or clicked
+
+// throwOut runs rm on a desk file, typed at the prompt or clicked. An open
+// TUI is left first, and opened again with the file in it.
 function throwOut(f, typed) {
   if (!deskFiles.includes(f)) return;
   deskFiles = deskFiles.filter(x => x !== f);
   f.el.classList.add('fly');
-  const wasOpen = term.isOpen();
+  const wasOpen = term.isOpen;
   if (wasOpen) term.quit();
-  if (!typed) term.cmdLine('rm ' + (f.isDir ? '-r ' : '') + f.name + (f.isDir ? '/' : ''));
-  term.add({ name: f.name, dir: '~/work', at: new Date(), run: 'd' + (runN++), size: f.size, isDir: !!f.isDir, text: f.text, img: f.img });
-  if (wasOpen) term.openTui();
+  if (!typed) term.echo('rm ' + (f.isDir ? '-r ' : '') + f.name + (f.isDir ? '/' : ''));
+  const { el, ...file } = f;
+  term.add(Object.assign(file, { dir: '~/work', at: new Date(), run: 'd' + runN++, isDir: !!f.isDir }));
+  if (wasOpen) term.run();
   draw();
   setTimeout(() => {
     f.el.remove();
@@ -86,21 +90,18 @@ function throwOut(f, typed) {
     say(deskFiles.length ? 'Got it. ' + f.name + ' is safe with me.' : 'Desk is clear. Click me to get things back.');
   }, 330);
 }
-st.desk = () => deskFiles.map(f => f.name + (f.isDir ? '/' : ''));
-st.throwByName = (name, typed) => {
-  const f = deskFiles.find(x => x.name === name.replace(/\/$/, ''));
-  if (!f) return false;
-  throwOut(f, typed); return true;
-};
-st.onRestore = f => {
+
+// what is restored to ~/work lands back on the desk
+term.on('restore', f => {
   if (f.dir !== '~/work') { say('Sent ' + f.name + ' back to ' + f.dir + '.'); return; }
   setTimeout(() => {
-    chip({ name: f.name, size: f.size, isDir: f.isDir, text: f.text, img: f.img }, true);
+    chip({ name: f.name, size: f.size, isDir: f.isDir, text: f.text, img: f.img, ls: f.ls }, true);
     bump('spit');
     out('Restored ' + f.name);
     say('Here you go: ' + f.name + '.');
   }, 120);
-};
+});
+
 // the can gives back what is on top of it, the way rm -b and enter do
 can.addEventListener('click', () => {
   if (!term.files.length) { say("I'm empty. Nothing to give back."); return; }
@@ -114,17 +115,15 @@ can.addEventListener('click', () => {
 });
 
 function reset() {
-  term.quit();
-  st.history = []; st.shellBuf = ''; st.ask = null; st.mode = 'shell';
-  term.files.splice(0);
+  term.reset();
   SEED.forEach(s => term.add(Object.assign({}, s, { at: new Date(Date.now() - s.m * 60000) })));
   desk.innerHTML = ''; deskFiles = []; logLines = []; log.textContent = '';
   DESK_FILES.forEach(f => chip(Object.assign({}, f)));
-  term.cmdLine('git status --short');
-  term.say([' M site/index.html', {}]);
-  term.cmdLine('ls');
-  term.say([st.desk().join('  '), {}]);
-  term.openTui();
+  term.echo('git status --short');
+  term.print(' M site/index.html');
+  term.echo('ls');
+  term.print(deskFiles.map(f => f.name + (f.isDir ? '/' : '')).join('  '));
+  term.run();
   say('Click a file to throw it out.');
   draw();
 }
@@ -137,21 +136,20 @@ document.querySelectorAll('.menu li button').forEach(b => b.addEventListener('cl
   cmd.textContent = b.dataset.cmd; note.textContent = b.dataset.note;
 }));
 $('copy').addEventListener('click', e => {
-  navigator.clipboard.writeText(cmd.textContent).then(() => { e.target.textContent = 'Copied!'; setTimeout(() => e.target.textContent = 'Copy', 2000); });
+  navigator.clipboard.writeText(cmd.textContent).then(() => { e.target.textContent = 'Copied!'; setTimeout(() => { e.target.textContent = 'Copy'; }, 2000); });
 });
 
-// ---- site theme: follows the OS until the visitor picks one ----
+// ---- the theme: follows the OS until the visitor picks one ----
 const root = document.documentElement, themeBtn = $('theme');
-const dark = () => root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+const dark = () => (root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches);
 // the terminal follows the page's theme
-const label = () => { const d = dark(); themeBtn.textContent = d ? 'light' : 'dark'; root.dataset.theme = d ? 'dark' : 'light'; st.dark = d; draw(); };
+const label = () => { const d = dark(); themeBtn.textContent = d ? 'light' : 'dark'; root.dataset.theme = d ? 'dark' : 'light'; term.setDark(d); draw(); };
 themeBtn.addEventListener('click', () => {
   root.dataset.theme = dark() ? 'light' : 'dark';
   try { localStorage.setItem('gomi-theme', root.dataset.theme); } catch (e) {}
   label();
 });
 label();
-
 
 reset();
 resize();

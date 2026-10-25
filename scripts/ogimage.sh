@@ -39,8 +39,10 @@ for pattern in "${patterns[@]}"; do
     can | terminal | spit) ;;
     *) echo "ogimage: no pattern $pattern; can, terminal or spit" >&2; exit 1 ;;
   esac
-  # the time budget lets the web fonts and the terminal's preview come in
+  # the time budget lets the web fonts come in; file access lets the page
+  # load the site's terminal as modules from file://
   "$chrome" --headless=new --disable-gpu --hide-scrollbars --no-first-run \
+    --allow-file-access-from-files \
     --user-data-dir="$profile" --force-device-scale-factor=1 \
     --window-size=1200,630 --virtual-time-budget=6000 \
     --screenshot="$out_dir/$pattern.png" \
