@@ -85,7 +85,7 @@ type RotationConfig struct {
 
 // UI holds all user interface related configurations
 type UI struct {
-	// Density controls the compactness of the UI (compact or spacious)
+	// Density is not used; it is read so that configs that have it load
 	Density string `yaml:"density" validate:"omitempty,oneof=compact spacious"`
 
 	// Height is how many rows the UI takes under the prompt: "auto" for
@@ -119,7 +119,7 @@ type UI struct {
 	// Preview configures file preview behavior
 	Preview PreviewConfig `yaml:"preview"`
 
-	// Paginator specifies the type of pagination (dots or arabic)
+	// Paginator is not used; it is read so that configs that have it load
 	Paginator string `yaml:"paginator_type" validate:"omitempty,oneof=dots arabic"`
 }
 
@@ -132,7 +132,7 @@ type StyleConfig struct {
 
 // ListViewConfig configures the file list view
 type ListViewConfig struct {
-	IndentOnSelect bool   `yaml:"indent_on_select"`
+	IndentOnSelect bool   `yaml:"indent_on_select"` // not used
 	Cursor         string `yaml:"cursor" validate:"validColorCode|allowEmpty"`
 	Selected       string `yaml:"selected" validate:"validColorCode|allowEmpty"`
 	FilterMatch    string `yaml:"filter_match" validate:"validColorCode|allowEmpty"`
@@ -142,7 +142,7 @@ type ListViewConfig struct {
 // DetailViewConfig configures the detailed file view
 type DetailViewConfig struct {
 	Border      string            `yaml:"border" validate:"validColorCode|allowEmpty"`
-	InfoPane    InfoPaneConfig    `yaml:"info_pane"`
+	InfoPane    InfoPaneConfig    `yaml:"info_pane"` // not used
 	PreviewPane PreviewPaneConfig `yaml:"preview_pane"`
 }
 
@@ -155,8 +155,8 @@ type InfoPaneConfig struct {
 // PreviewPaneConfig configures the file preview panel
 type PreviewPaneConfig struct {
 	Border string      `yaml:"border" validate:"validColorCode|allowEmpty"`
-	Size   ColorConfig `yaml:"size"`
-	Scroll ColorConfig `yaml:"scroll"`
+	Size   ColorConfig `yaml:"size"`   // not used
+	Scroll ColorConfig `yaml:"scroll"` // not used
 }
 
 // ColorConfig defines foreground and background colors
