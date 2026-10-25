@@ -519,3 +519,33 @@ func TestTrashInfo_Save_NoOverwrite(t *testing.T) {
 func fixedTime() time.Time {
 	return time.Date(2024, 6, 15, 10, 30, 0, 0, time.Local)
 }
+
+func TestStorage_List_SizeKnown(t *testing.T) {
+	s, _ := newTestStorage(t)
+
+	srcDir := t.TempDir()
+	file := filepath.Join(srcDir, "a.txt")
+	if err := os.WriteFile(file, []byte("hello"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	dir := filepath.Join(srcDir, "d")
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range []string{file, dir} {
+		if err := s.Put(p); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	files, err := s.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range files {
+		// stat gives a file's size, not a directory's total
+		if want := !f.IsDir; f.SizeKnown != want {
+			t.Errorf("%s: SizeKnown = %v, want %v", f.Name, f.SizeKnown, want)
+		}
+	}
+}

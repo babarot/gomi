@@ -131,6 +131,12 @@ func rejectByGlobs[T Filterable](items []T, globs []string) []T {
 	return filtered
 }
 
+// sizeSetter is implemented by items that keep the size the filter walks
+// them for, so it is not walked again
+type sizeSetter interface {
+	SetSize(int64)
+}
+
 func rejectBySize[T Filterable](items []T, size config.SizeConfig) []T {
 	if size.Min == "" && size.Max == "" {
 		return items
@@ -145,6 +151,9 @@ func rejectBySize[T Filterable](items []T, size config.SizeConfig) []T {
 			fileSize, err = fs.DirSize(item.GetPath())
 			if err != nil {
 				continue // Skip items we can't size
+			}
+			if s, ok := any(item).(sizeSetter); ok {
+				s.SetSize(fileSize)
 			}
 		}
 
