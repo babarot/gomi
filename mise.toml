@@ -28,6 +28,10 @@ go test ./... -coverprofile=coverage.out -covermode=count
 description = "Run golangci-lint"
 run = "golangci-lint run ./..."
 
+[tasks.serve]
+description = "Serve docs/ (gomi.dev) at http://localhost:4664 as GitHub Pages does: mise run serve [-addr HOST:PORT]"
+run = "go run ./scripts/serve"
+
 [tasks.demo]
 description = "Record the demo GIFs with VHS in Docker and copy them to docs/demo: mise run demo [-e KEY=VAL ...] [TAPE ...]"
 file = "scripts/demo.sh"
