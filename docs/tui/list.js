@@ -23,6 +23,9 @@ export function newList(files, { scope = 'auto', view = 'recent' } = {}) {
     filter: '', filtering: false, cursor: 0, top: 0, sel: new Set(),
     detail: false, overlay: null, sortSel: 0, vy: 0, previewed: new Set(), status: '',
   };
+  // a view set in the config starts on its first row, a fold in places
+  // and batches, as setFiles does
+  m.view = view;
   if (view !== 'recent') setView(m, view);
   fixCursor(m, rows(m));
   return m;
@@ -177,9 +180,16 @@ export function scroll(m, rs, n) {
   m.top = Math.max(0, Math.min(m.top, Math.max(0, rs.length - n)));
 }
 
-// select selects or unselects the file on the cursor, or a fold's files
-export function select(m, on) {
+// select selects the file on the cursor, or a fold's files, and moves down
+export function select(m) {
   const r = currentRow(m); if (!r) return;
-  (r.kind === 'fold' ? r.files : [r.file]).forEach(f => (on ? m.sel.add(f.id) : m.sel.delete(f.id)));
-  if (on) move(m, 1);
+  (r.kind === 'fold' ? r.files : [r.file]).forEach(f => m.sel.add(f.id));
+  move(m, 1);
+}
+
+// unselect unselects the file on the cursor and moves up
+export function unselect(m) {
+  const r = currentRow(m); if (!r || r.kind !== 'file') return;
+  m.sel.delete(r.file.id);
+  move(m, -1);
 }

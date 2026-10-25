@@ -1,7 +1,8 @@
 // What a key does in the TUI (update.go). update changes the state and
 // returns what has to happen outside it, as a tea.Cmd would: restore files,
 // or quit with a message; nothing when the TUI goes on.
-import { VIEWS, SORTS, rows, keyOf, fixCursor, find, currentRow, currentFile, setView, move, moveFile, foldOf, select } from './list.js';
+import { VIEWS, SORTS, rows, keyOf, fixCursor, find, currentRow, currentFile, setView, move, moveFile, foldOf, select, unselect } from './list.js';
+import { env } from './env.js';
 import { layout } from './layout.js';
 
 // chosen is what enter restores: the selected files, or the row's
@@ -38,12 +39,18 @@ export function update(m, k, W, H) {
       if (r && r.kind === 'fold') m.open[m.view + ':' + r.key] = !r.open;
       else if (r) { m.detail = true; m.vy = 0; }
       break;
-    case 'Tab': select(m, true); break;
-    case 'BackTab': select(m, false); break;
+    case 'Tab': select(m); break;
+    case 'BackTab': unselect(m); break;
     case 'Enter': { const files = chosen(m, r); return files.length ? { restore: files } : null; }
     case '/': m.filtering = true; break;
     case 'v': setView(m, VIEWS[(VIEWS.indexOf(m.view) + 1) % VIEWS.length]); break;
-    case '.': { const key = r ? keyOf(r) : ''; m.scoped = !m.scoped; find(m, key); break; }
+    case '.': {
+      const key = r ? keyOf(r) : '';
+      m.scoped = !m.scoped;
+      find(m, key);
+      m.status = m.scoped ? 'Files deleted in ' + env.cwd : 'Every file in the trash';
+      break;
+    }
     case 's': if (m.view === 'picker') { m.overlay = 'sort'; m.sortSel = m.sort; } break;
     case '?': m.overlay = 'help'; break;
     case 'Escape': if (m.filter) m.filter = ''; else m.sel.clear(); break;
@@ -73,7 +80,7 @@ function filterKey(m, k) {
   } else if (k === 'Backspace') { m.filter = m.filter.slice(0, -1); m.cursor = 0; }
   else if (k === 'ArrowDown') move(m, 1);
   else if (k === 'ArrowUp') move(m, -1);
-  else if (k === 'Tab') select(m, true);
+  else if (k === 'Tab') select(m);
   else if (k.length === 1) { m.filter += k; m.cursor = 0; fixCursor(m, rows(m)); }
   return null;
 }
@@ -88,7 +95,7 @@ function detailKey(m, k) {
     case 'n': moveFile(m, 1); break;
     case 'p': moveFile(m, -1); break;
     case ' ': case 'Escape': m.detail = false; m.vy = 0; break;
-    case 'Tab': select(m, true); break;
+    case 'Tab': select(m); break;
     case 'Enter': { const f = currentFile(m); if (f) return { restore: chosen(m, { kind: 'file', file: f }) }; break; }
     case '?': m.overlay = 'help'; break;
     case 'q': return { quit: 'bye!' };

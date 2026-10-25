@@ -32,6 +32,10 @@ run = "golangci-lint run ./..."
 description = "Serve docs/ (gomi.dev) at http://localhost:4664 as GitHub Pages does: mise run serve [-addr HOST:PORT] [-dir DIR]"
 run = "go run ./scripts/serve"
 
+[tasks.site-golden]
+description = "Check that the terminal on gomi.dev draws what the golden views of internal/ui have (needs Node): mise run site-golden [CASE ...]"
+run = "node scripts/site-golden.mjs"
+
 [tasks.ogimage]
 description = "Draw the share images of gomi.dev into docs/ogimage with headless Chrome: mise run ogimage [can|terminal|spit ...]"
 file = "scripts/ogimage.sh"

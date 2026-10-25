@@ -28,7 +28,8 @@ export function helpBox(m) {
   const views = { name: 'Views', b: [k('v', 'view'), k('/', 'filter'), k('.', 'here / all')] };
   if (m.view === 'picker') views.b.push(k('s', 'sort (picker)'));
   const preview = { name: 'Preview', b: [k('↑/k', 'preview up'), k('↓/j', 'preview down'), k('u', '½ page up'), k('d', '½ page down'), k('n', 'next'), k('p', 'prev'), k('space', 'back')] };
-  const other = { name: 'Other', b: [k('esc', 'reset'), k('?', 'more'), k('q', 'quit')] };
+  // ? itself is not listed: its binding has no help of its own
+  const other = { name: 'Other', b: [k('esc', 'reset'), k('q', 'quit')] };
   const groups = m.detail ? [preview, files, move, views, other] : [move, files, views, preview, other];
   const blocks = groups.map((g, i) => {
     const head = [[g.name, { fg: P.Heading, b: true }]];
