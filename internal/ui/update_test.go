@@ -830,3 +830,17 @@ func TestUpdate_ScopeStatusClears(t *testing.T) {
 		t.Errorf("status %q after its time, want none", m.status)
 	}
 }
+
+func TestUpdate_CtrlCQuitsOverMenus(t *testing.T) {
+	for name, open := range map[string]func(*Model){
+		"help": func(m *Model) { m.helpOpen = true },
+		"sort": func(m *Model) { m.sortMenu = true },
+	} {
+		m := newTestModel()
+		open(&m)
+		updated, cmd := m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+		if asModel(t, updated).state.current != Quitting || cmd == nil {
+			t.Errorf("%s: ctrl+c did not quit", name)
+		}
+	}
+}

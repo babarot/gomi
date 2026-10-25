@@ -26,6 +26,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.state.Confirming() {
 			return m.updateConfirmView(msg)
 		}
+		if (m.sortMenu || m.helpOpen) && msg.String() == "ctrl+c" {
+			m.state.SetView(Quitting)
+			return m, tea.Quit
+		}
 		if m.sortMenu {
 			return m.updateSortMenu(msg)
 		}
