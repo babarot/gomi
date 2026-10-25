@@ -30,6 +30,7 @@ require (
 	github.com/rs/xid v1.6.0
 	github.com/samber/lo v1.49.1
 	golang.org/x/sync v0.22.0
+	golang.org/x/text v0.37.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -63,6 +64,5 @@ require (
 	golang.org/x/image v0.41.0 // indirect
 	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/text v0.37.0 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 )
