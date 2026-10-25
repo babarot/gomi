@@ -27,7 +27,8 @@ function measure() {
   screen.style.setProperty('--cw', cw + 'px');
   const cs = getComputedStyle(screen);
   const inner = screen.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-  return Math.max(60, Math.min(160, Math.floor(inner / cw)));
+  // as wide as the screen allows, as gomi takes the terminal's width
+  return Math.max(40, Math.min(160, Math.floor(inner / cw)));
 }
 function draw() {
   const P = term.palette();
