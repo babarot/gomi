@@ -203,8 +203,7 @@ func printFailedDeletions(failed []failedDeletion) {
 // removeErrorReason returns a short description of why a removal failed,
 // including the exact path that caused the failure when available
 func removeErrorReason(err error) string {
-	var pathErr *fs.PathError
-	if errors.As(err, &pathErr) {
+	if pathErr, ok := errors.AsType[*fs.PathError](err); ok {
 		return fmt.Sprintf("%v: %s", pathErr.Err, pathErr.Path)
 	}
 	return err.Error()
