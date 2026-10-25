@@ -3,7 +3,9 @@
 // and /install is hack/install, which the Pages workflow copies in when it
 // deploys. Nothing is cached, so an edit shows on the next reload.
 //
-// Run it from the root of the repository: mise run serve.
+// Run it from the root of the repository: mise run serve. -dir serves
+// another directory the same way, such as the root, where
+// scripts/ogimage/preview.html shows the share images.
 package main
 
 import (
@@ -20,12 +22,13 @@ import (
 
 func main() {
 	addr := flag.String("addr", "localhost:4664", "the address to listen on; 4664 is gomi on a phone keypad")
+	dir := flag.String("dir", "docs", "the directory to serve")
 	flag.Parse()
 
-	docs := os.DirFS("docs")
-	if _, err := fs.Stat(docs, "index.html"); err != nil {
-		log.Fatalf("docs/index.html: %v; run this from the root of the repository", err)
+	if _, err := os.Stat("hack/install"); err != nil {
+		log.Fatalf("%v; run this from the root of the repository", err)
 	}
+	docs := os.DirFS(*dir)
 	files := http.FileServerFS(docs)
 
 	mux := http.NewServeMux()
@@ -51,7 +54,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("%v; another server may be running there, or pass -addr HOST:PORT", err)
 	}
-	log.Printf("serving docs/ at http://%s", ln.Addr())
+	log.Printf("serving %s/ at http://%s", *dir, ln.Addr())
 	log.Fatal(http.Serve(ln, mux))
 }
 

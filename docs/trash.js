@@ -1,6 +1,7 @@
 // What is in the trash when the page opens: made-up files, deleted over the
-// last six weeks, some by one rm together (run), some with a mark.
-const SEED_TEXT = {
+// last six weeks, some by one rm together (run), some with a mark. A
+// directory's ls is what its preview lists, as ls -F does.
+const TEXT = {
   go: `package ui
 
 import (
@@ -187,50 +188,50 @@ func main() {
 };
 
 // m is minutes before now
-const SEED = [
-  { m: 25,    dir: '~/projects/gomi/internal/ui', name: 'zz_probe_test.go', size: 794, run: 'r1', text: SEED_TEXT.go },
-  { m: 25,    dir: '~/projects/gomi/internal/ui', name: 'zz_probe2_test.go', size: 806, run: 'r1', text: SEED_TEXT.go.replace('TestProbe', 'TestProbe2') },
-  { m: 70,    dir: '~/projects/site', name: 'dist', isDir: true, size: 421000, run: 'r2' },
-  { m: 70,    dir: '~/projects/site', name: 'build.log', size: 3400, run: 'r2', text: SEED_TEXT.build },
+export const SEED = [
+  { m: 25,    dir: '~/projects/gomi/internal/ui', name: 'zz_probe_test.go', size: 794, run: 'r1', text: TEXT.go },
+  { m: 25,    dir: '~/projects/gomi/internal/ui', name: 'zz_probe2_test.go', size: 806, run: 'r1', text: TEXT.go.replace('TestProbe', 'TestProbe2') },
+  { m: 70,    dir: '~/projects/site', name: 'dist', isDir: true, ls: ['assets/', 'favicon.svg', 'index.html', 'robots.txt'], size: 421000, run: 'r2' },
+  { m: 70,    dir: '~/projects/site', name: 'build.log', size: 3400, run: 'r2', text: TEXT.build },
   { m: 190,   dir: '~/Downloads', name: 'invoice-2026-10.pdf', size: 186000, run: 'r3' },
-  { m: 300,   dir: '~/projects/gomi', name: 'coverage.out', size: 12300, run: 'r4', text: SEED_TEXT.coverage },
-  { m: 1500,  dir: '~/notes', name: 'inbox.md', size: 1900, run: 'r5', origin: 'taken', text: SEED_TEXT.inbox },
-  { m: 1500,  dir: '~/notes', name: '2026-10-23.md', size: 820, run: 'r5', text: SEED_TEXT.daily },
-  { m: 1500,  dir: '~/notes', name: 'scratch.txt', size: 140, run: 'r5', text: SEED_TEXT.scratch },
+  { m: 300,   dir: '~/projects/gomi', name: 'coverage.out', size: 12300, run: 'r4', text: TEXT.coverage },
+  { m: 1500,  dir: '~/notes', name: 'inbox.md', size: 1900, run: 'r5', origin: 'taken', text: TEXT.inbox },
+  { m: 1500,  dir: '~/notes', name: '2026-10-23.md', size: 820, run: 'r5', text: TEXT.daily },
+  { m: 1500,  dir: '~/notes', name: 'scratch.txt', size: 140, run: 'r5', text: TEXT.scratch },
   { m: 1650,  dir: '~/Desktop', name: 'Screenshot 2026-10-24 at 09.12.png', size: 384000, run: 'r6', img: 'ogimage/can.png' },
   { m: 1650,  dir: '~/Desktop', name: 'Screenshot 2026-10-24 at 09.15.png', size: 401000, run: 'r6', img: 'favicon/web-app-manifest-512x512.png' },
-  { m: 2900,  dir: '~/projects/api', name: '.env.local', size: 210, run: 'r7', origin: 'taken', text: SEED_TEXT.env },
-  { m: 2960,  dir: '~/projects/api', name: 'docker-compose.override.yml', size: 640, run: 'r8', text: SEED_TEXT.compose },
-  { m: 3100,  dir: '~/projects/api/tmp', name: 'dump.sql', size: 2400000, run: 'r9', origin: 'gone', text: SEED_TEXT.sql },
-  { m: 4400,  dir: '~/src/github.com/you/dotfiles', name: '.zshrc.bak', size: 4100, run: 'r10', origin: 'taken', text: SEED_TEXT.zshrc, lang: 'sh' },
-  { m: 4410,  dir: '~/src/github.com/you/dotfiles', name: 'nvim', isDir: true, size: 98000, run: 'r11' },
+  { m: 2900,  dir: '~/projects/api', name: '.env.local', size: 210, run: 'r7', origin: 'taken', text: TEXT.env },
+  { m: 2960,  dir: '~/projects/api', name: 'docker-compose.override.yml', size: 640, run: 'r8', text: TEXT.compose },
+  { m: 3100,  dir: '~/projects/api/tmp', name: 'dump.sql', size: 2400000, run: 'r9', origin: 'gone', text: TEXT.sql },
+  { m: 4400,  dir: '~/src/github.com/you/dotfiles', name: '.zshrc.bak', size: 4100, run: 'r10', origin: 'taken', text: TEXT.zshrc, lang: 'sh' },
+  { m: 4410,  dir: '~/src/github.com/you/dotfiles', name: 'nvim', isDir: true, ls: ['after/', 'init.lua', 'lazy-lock.json', 'lua/'], size: 98000, run: 'r11' },
   { m: 5800,  dir: '~/Documents/old-report', name: 'report-v1.docx', size: 48200, run: 'r12', origin: 'gone' },
-  { m: 5800,  dir: '~/Documents/old-report', name: 'figures', isDir: true, size: 2300000, run: 'r12', origin: 'gone' },
-  { m: 5800,  dir: '~/Documents/old-report', name: 'data.csv', size: 9800, run: 'r12', origin: 'gone', text: SEED_TEXT.csv },
+  { m: 5800,  dir: '~/Documents/old-report', name: 'figures', isDir: true, ls: ['fig1-latency.png', 'fig2-throughput.png', 'fig3-errors.png', 'raw/'], size: 2300000, run: 'r12', origin: 'gone' },
+  { m: 5800,  dir: '~/Documents/old-report', name: 'data.csv', size: 9800, run: 'r12', origin: 'gone', text: TEXT.csv },
   { m: 7300,  dir: '~/projects/gomi/docs/tapes', name: 'demo-main.gif', size: 1250000, run: 'r13', img: 'demo/main.gif' },
   { m: 7300,  dir: '~/projects/gomi/docs/tapes', name: 'demo-prune.gif', size: 880000, run: 'r13', img: 'demo/prune.gif' },
   { m: 7300,  dir: '~/projects/gomi/docs/tapes', name: 'demo-debug.gif', size: 640000, run: 'r13', img: 'demo/debug.gif' },
-  { m: 8700,  dir: '/tmp', name: 'go-build4123', isDir: true, size: 18800000, run: 'r14' },
-  { m: 8800,  dir: '~/projects/site', name: 'package-lock.json', size: 410000, run: 'r15', text: SEED_TEXT.lock },
+  { m: 8700,  dir: '/tmp', name: 'go-build4123', isDir: true, ls: ['b001/', 'b002/', 'b003/', 'b004/', 'b005/', 'importcfg', 'importcfg.link'], size: 18800000, run: 'r14' },
+  { m: 8800,  dir: '~/projects/site', name: 'package-lock.json', size: 410000, run: 'r15', text: TEXT.lock },
   { m: 14500, dir: '~/Downloads', name: 'gomi_1.8.0_darwin_arm64.tar.gz', size: 3900000, run: 'r16' },
-  { m: 14500, dir: '~/Downloads', name: 'gomi_1.8.0_darwin_arm64', isDir: true, size: 9100000, run: 'r16' },
-  { m: 17300, dir: '~/projects/api', name: 'main.py', size: 3300, run: 'r17', text: SEED_TEXT.py },
-  { m: 17300, dir: '~/projects/api', name: 'requirements.txt', size: 120, run: 'r17', text: SEED_TEXT.req },
-  { m: 21600, dir: '~/notes/archive', name: '2026-q3.md', size: 12000, run: 'r18', text: SEED_TEXT.q3 },
-  { m: 27400, dir: '~/.config/gomi', name: 'config.yaml.orig', size: 4600, run: 'r19', text: SEED_TEXT.config, lang: 'yaml' },
-  { m: 31700, dir: '~/projects/site/src', name: 'Header.tsx', size: 2400, run: 'r20', text: SEED_TEXT.header },
-  { m: 31700, dir: '~/projects/site/src', name: 'Footer.tsx', size: 1100, run: 'r20', text: SEED_TEXT.footer },
-  { m: 31700, dir: '~/projects/site/src', name: 'styles.css', size: 5600, run: 'r20', text: SEED_TEXT.css },
-  { m: 43200, dir: '~/Desktop', name: 'todo.txt', size: 300, run: 'r21', origin: 'taken', text: SEED_TEXT.todo },
-  { m: 57600, dir: '/tmp', name: 'trace.log', size: 88000, run: 'r22', text: SEED_TEXT.trace },
+  { m: 14500, dir: '~/Downloads', name: 'gomi_1.8.0_darwin_arm64', isDir: true, ls: ['CHANGELOG.md', 'LICENSE', 'README.md', 'gomi*'], size: 9100000, run: 'r16' },
+  { m: 17300, dir: '~/projects/api', name: 'main.py', size: 3300, run: 'r17', text: TEXT.py },
+  { m: 17300, dir: '~/projects/api', name: 'requirements.txt', size: 120, run: 'r17', text: TEXT.req },
+  { m: 21600, dir: '~/notes/archive', name: '2026-q3.md', size: 12000, run: 'r18', text: TEXT.q3 },
+  { m: 27400, dir: '~/.config/gomi', name: 'config.yaml.orig', size: 4600, run: 'r19', text: TEXT.config, lang: 'yaml' },
+  { m: 31700, dir: '~/projects/site/src', name: 'Header.tsx', size: 2400, run: 'r20', text: TEXT.header },
+  { m: 31700, dir: '~/projects/site/src', name: 'Footer.tsx', size: 1100, run: 'r20', text: TEXT.footer },
+  { m: 31700, dir: '~/projects/site/src', name: 'styles.css', size: 5600, run: 'r20', text: TEXT.css },
+  { m: 43200, dir: '~/Desktop', name: 'todo.txt', size: 300, run: 'r21', origin: 'taken', text: TEXT.todo },
+  { m: 57600, dir: '/tmp', name: 'trace.log', size: 88000, run: 'r22', text: TEXT.trace },
 ];
 
 // the files on the desk in the hero, in ~/work
-const DESK_FILES = [
-  { name: 'notes.txt', size: 1230, text: SEED_TEXT.notes },
-  { name: 'main.go', size: 72, text: SEED_TEXT.maingo },
-  { name: '.env', size: 210, text: SEED_TEXT.env },
-  { name: 'build', isDir: true, size: 421000 },
+export const DESK_FILES = [
+  { name: 'notes.txt', size: 1230, text: TEXT.notes },
+  { name: 'main.go', size: 72, text: TEXT.maingo },
+  { name: '.env', size: 210, text: TEXT.env },
+  { name: 'build', isDir: true, ls: ['app*', 'app.dSYM/', 'obj/', 'version.txt'], size: 421000 },
   { name: 'photo.png', size: 2300000, img: 'favicon/web-app-manifest-512x512.png' },
   { name: 'thesis_final_v3.docx', size: 48200 },
 ];

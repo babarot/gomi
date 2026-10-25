@@ -90,45 +90,33 @@ body { color: var(--text); font: 28px/1.4 var(--body); }
   </div>
 </section>
 
-<script>
-// the images are drawn at one moment, so that the terminal's days and
-// times come out the same each time they are made
-const FROZEN = Date.parse('2026-10-25T21:00:00+09:00');
-window.Date = class extends Date {
-  constructor(...args) { if (args.length) super(...args); else super(FROZEN); }
-  static now() { return FROZEN; }
-};
-</script>
-<script src="../../docs/trash.js"></script>
-<script src="../../docs/tui.js"></script>
-<script>
+<script type="module">
+import { createTerminal } from '../../docs/tui/terminal.js';
+import { fit } from '../../docs/tui/fit.js';
+import { SEED } from '../../docs/trash.js';
+
 const q = new URLSearchParams(location.search);
 const v = q.get('v') || 'can';
 document.querySelector('[data-v="' + v + '"]').hidden = false;
 
 if (v === 'terminal') {
   // rm -b as the site's terminal draws it, the cursor on a Go file so that
-  // the preview has colors
+  // the preview has colors. The clock stands still, so that the days and
+  // times come out the same each time the image is drawn.
+  const now = Date.parse('2026-10-25T21:00:00+09:00');
+  const term = createTerminal({ now: () => new Date(now), previewDelay: 0 });
   const screen = document.getElementById('screen');
-  document.fonts.ready.then(() => {
-    const probe = document.createElement('span');
-    probe.textContent = '0'.repeat(100);
-    screen.appendChild(probe);
-    const cw = probe.getBoundingClientRect().width / 100;
-    probe.remove();
-    screen.style.setProperty('--cw', cw + 'px');
-    const P = GomiTerm.palette();
-    screen.style.background = P.bg; screen.style.color = P.fg;
-    GomiTerm.setSize(Math.floor((screen.clientWidth - 28) / cw), 23);
-    SEED.forEach(s => GomiTerm.add(Object.assign({}, s, { at: new Date(Date.now() - s.m * 60000) })));
-    // the lines above it, as a shell would have them
-    GomiTerm.cmdLine('rm zz_probe_test.go zz_probe2_test.go');
-    GomiTerm.cmdLine('go test ./internal/ui');
-    GomiTerm.say(['ok  \tgithub.com/babarot/gomi/internal/ui\t0.412s'.replace(/\t/g, '  '), {}]);
-    GomiTerm.openTui();
-    GomiTerm.state.onChange = () => { screen.innerHTML = GomiTerm.render(); };
-    screen.innerHTML = GomiTerm.render();
-  });
+  await document.fonts.ready;
+  const P = term.palette();
+  screen.style.background = P.bg; screen.style.color = P.fg;
+  term.size(fit(screen).cols, 23);
+  SEED.forEach(s => term.add(Object.assign({}, s, { at: new Date(now - s.m * 60000) })));
+  // the lines above it, as a shell would have them
+  term.echo('rm zz_probe_test.go zz_probe2_test.go');
+  term.echo('go test ./internal/ui');
+  term.print('ok    github.com/babarot/gomi/internal/ui  0.412s');
+  term.run();
+  screen.innerHTML = term.html();
 }
 </script>
 </body>

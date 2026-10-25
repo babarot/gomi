@@ -29,7 +29,7 @@ description = "Run golangci-lint"
 run = "golangci-lint run ./..."
 
 [tasks.serve]
-description = "Serve docs/ (gomi.dev) at http://localhost:4664 as GitHub Pages does: mise run serve [-addr HOST:PORT]"
+description = "Serve docs/ (gomi.dev) at http://localhost:4664 as GitHub Pages does: mise run serve [-addr HOST:PORT] [-dir DIR]"
 run = "go run ./scripts/serve"
 
 [tasks.ogimage]
