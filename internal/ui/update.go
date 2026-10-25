@@ -53,10 +53,26 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case ShowDetailMsg:
 		m.state.SetView(DetailView)
 		m.detailFile = msg.file
-		m.detailSize = msg.file.Size()
-		m.state.preview.available = true
 		m.viewport = m.newViewportModel(msg.file)
+		cmds = append(cmds, m.loadDetail(msg.file)...)
 		return m, tea.Batch(cmds...)
+
+	case previewLoadedMsg:
+		delete(m.reading, previewKey(msg.path))
+		m.previews[msg.path] = msg.previewResult
+		// the result may come after the view moved to another file
+		if m.state.current == DetailView && m.detailFile.TrashPath == msg.path {
+			m.viewport.SetContent(msg.content)
+		}
+		return m, nil
+
+	case sizeLoadedMsg:
+		delete(m.reading, sizeKey(msg.path))
+		m.sizes[msg.path] = msg.size
+		if msg.err != nil {
+			m.sizes[msg.path] = -1
+		}
+		return m, nil
 
 	case FileListLoadedMsg:
 		if msg.err != nil {

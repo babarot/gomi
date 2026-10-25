@@ -36,17 +36,12 @@ const (
 type ViewState struct {
 	current      ViewType
 	detail       detail
-	preview      preview
 	confirmation confirmation
 }
 
 type detail struct {
 	showOrigin bool
 	dateFormat DateFormat
-}
-
-type preview struct {
-	available bool
 }
 
 // confirmation is the delete confirmation dialog, drawn over the current
@@ -73,9 +68,6 @@ func NewViewState() *ViewState {
 		detail: detail{
 			showOrigin: true,
 			dateFormat: DateFormatRelative,
-		},
-		preview: preview{
-			available: true,
 		},
 		confirmation: confirmation{
 			state: ConfirmStateYesNo,

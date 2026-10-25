@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"sync"
 	"time"
 
@@ -142,29 +143,37 @@ func (s *Storage) Put(src string) error {
 
 func (s *Storage) List() ([]*trash.File, error) {
 	s.mu.Lock()
-	filtered := s.history.Filter()
+	entries := slices.Clone(s.history.Files)
 	s.mu.Unlock()
 
-	var files []*trash.File
-
-	for _, f := range filtered {
-		// Convert legacy File to trash.File
-		file := &trash.File{
+	// Size is left zero so that the size filter, if set, walks each entry
+	// and keeps the total it finds
+	files := make([]*trash.File, 0, len(entries))
+	for _, f := range entries {
+		files = append(files, &trash.File{
 			Name:         f.Name,
 			OriginalPath: f.From,
 			TrashPath:    f.To,
 			DeletedAt:    f.Timestamp,
 			RunID:        f.RunID,
-		}
+		})
+	}
+	files = trash.Filter(files, trash.FilterOptions{
+		Include: s.config.History.Include,
+		Exclude: s.config.History.Exclude,
+	})
 
-		// Get additional file info
-		if info, err := os.Stat(f.To); err == nil {
-			file.Size = info.Size()
-			file.IsDir = info.IsDir()
-			file.FileMode = info.Mode()
+	// Get additional file info, only for the files the filter kept
+	for _, file := range files {
+		info, err := os.Stat(file.TrashPath)
+		if err != nil {
+			continue
 		}
-
-		files = append(files, file)
+		file.IsDir = info.IsDir()
+		file.FileMode = info.Mode()
+		if !info.IsDir() {
+			file.SetSize(info.Size())
+		}
 	}
 
 	return files, nil

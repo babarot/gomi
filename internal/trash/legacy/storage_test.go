@@ -330,3 +330,87 @@ func TestStorage_PutRecordsRunID(t *testing.T) {
 		}
 	}
 }
+
+// putDir trashes a directory holding size bytes and returns its path
+func putDir(t *testing.T, s trash.Storage, name string, size int) string {
+	t.Helper()
+	dir := filepath.Join(t.TempDir(), name)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "data"), make([]byte, size), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Put(dir); err != nil {
+		t.Fatalf("Put(%s) error = %v", name, err)
+	}
+	return dir
+}
+
+func TestStorage_ListSizes(t *testing.T) {
+	tests := []struct {
+		name    string
+		size    config.SizeConfig
+		want    []string // names listed
+		knowDir bool     // whether the directory's size is known
+	}{
+		{
+			name:    "no size filter",
+			want:    []string{"big", "small", "file.txt"},
+			knowDir: false,
+		},
+		{
+			// a directory is sized by its contents, not by what stat says
+			name:    "size filter",
+			size:    config.SizeConfig{Max: "2KB"},
+			want:    []string{"small", "file.txt"},
+			knowDir: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := newTestConfig(t.TempDir())
+			cfg.History.Exclude.Size = tt.size
+			s, err := NewStorage(cfg)
+			if err != nil {
+				t.Fatal(err)
+			}
+			putDir(t, s, "big", 4096)
+			putDir(t, s, "small", 100)
+			src := filepath.Join(t.TempDir(), "file.txt")
+			if err := os.WriteFile(src, []byte("hello"), 0644); err != nil {
+				t.Fatal(err)
+			}
+			if err := s.Put(src); err != nil {
+				t.Fatal(err)
+			}
+
+			files, err := s.List()
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := map[string]*trash.File{}
+			for _, f := range files {
+				got[f.Name] = f
+			}
+			if len(got) != len(tt.want) {
+				t.Fatalf("listed %d files, want %v", len(got), tt.want)
+			}
+			for _, name := range tt.want {
+				if got[name] == nil {
+					t.Fatalf("%s is not listed", name)
+				}
+			}
+			if f := got["file.txt"]; !f.SizeKnown || f.Size != 5 {
+				t.Errorf("file.txt: Size = %d, SizeKnown = %v, want 5, true", f.Size, f.SizeKnown)
+			}
+			small := got["small"]
+			if small.SizeKnown != tt.knowDir {
+				t.Errorf("small: SizeKnown = %v, want %v", small.SizeKnown, tt.knowDir)
+			}
+			if tt.knowDir && small.Size != 100 {
+				t.Errorf("small: Size = %d, want 100", small.Size)
+			}
+		})
+	}
+}

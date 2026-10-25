@@ -2,6 +2,7 @@ package ui
 
 import (
 	"errors"
+	"path/filepath"
 	"testing"
 
 	"charm.land/bubbles/v2/help"
@@ -44,6 +45,9 @@ func newTestModel() Model {
 		config:    cfg.UI,
 		list:      l,
 		viewport:  viewport.Model{},
+		previews:  map[string]previewResult{},
+		sizes:     map[string]int64{},
+		reading:   map[string]bool{},
 		styles:    styles.New(styles.NewPalette(cfg.UI.Style), true),
 		help:      help.New(),
 	}
@@ -404,6 +408,62 @@ func TestUpdate_ShowDetailMsg(t *testing.T) {
 	}
 }
 
+func TestUpdate_ShowDetailMsg_ReadsOnce(t *testing.T) {
+	m := newTestModel()
+	dir := File{File: &trash.File{Name: "d", TrashPath: "/trash/d", IsDir: true}}
+	file := File{File: &trash.File{Name: "f", TrashPath: "/trash/f", Size: 5, SizeKnown: true}}
+
+	// a directory's preview and size are read; a file's size is known
+	if got := len(m.loadDetail(dir)); got != 2 {
+		t.Errorf("commands for a directory = %d, want 2", got)
+	}
+	if got := len(m.loadDetail(file)); got != 1 {
+		t.Errorf("commands for a file = %d, want 1", got)
+	}
+
+	// a read that has started is not started again
+	if got := len(m.loadDetail(dir)); got != 0 {
+		t.Errorf("commands while reading = %d, want 0", got)
+	}
+
+	// what was read is not read again
+	updated, _ := m.Update(previewLoadedMsg{path: "/trash/d", previewResult: previewResult{content: "a/", available: true}})
+	updated, _ = updated.Update(sizeLoadedMsg{path: "/trash/d", size: 42})
+	model := asModel(t, updated)
+	if got := len(model.loadDetail(dir)); got != 0 {
+		t.Errorf("commands after reading = %d, want 0", got)
+	}
+	if got := model.sizeText(dir); got != "42 B" {
+		t.Errorf("sizeText = %q, want %q", got, "42 B")
+	}
+}
+
+func TestUpdate_PreviewLoadedMsg_AfterMovingOn(t *testing.T) {
+	m := newTestModel()
+	a := File{File: &trash.File{Name: "a", TrashPath: "/trash/a"}}
+	b := File{File: &trash.File{Name: "b", TrashPath: "/trash/b"}}
+
+	updated, _ := m.Update(ShowDetailMsg{file: a})
+	updated, _ = updated.Update(ShowDetailMsg{file: b})
+	// a's preview comes after the view moved on to b
+	updated, _ = updated.Update(previewLoadedMsg{path: "/trash/a", previewResult: previewResult{content: "content of a", available: true}})
+	model := asModel(t, updated)
+
+	if got := model.viewport.GetContent(); got == "content of a" {
+		t.Error("b's view shows a's preview")
+	}
+	if _, ok := model.previews["/trash/a"]; !ok {
+		t.Error("a's preview is not kept")
+	}
+
+	// going back to a shows it without reading it again
+	updated, _ = model.Update(ShowDetailMsg{file: a})
+	model = asModel(t, updated)
+	if got := model.viewport.GetContent(); got != "content of a" {
+		t.Errorf("viewport = %q, want a's preview", got)
+	}
+}
+
 // removeRecorder is a trash that records which files are removed.
 type removeRecorder struct {
 	trash.Trash
@@ -570,5 +630,17 @@ func TestUpdate_DetailView_DeleteRemovesSelectionNotCursor(t *testing.T) {
 	cmd()
 	if len(rec.removed) != 2 || rec.removed[0] != "a.txt" || rec.removed[1] != "b.txt" {
 		t.Errorf("removed = %v, want [a.txt b.txt]", rec.removed)
+	}
+}
+
+func TestLoadPreviewCmd_DirectoryGone(t *testing.T) {
+	// the directory is deleted before its preview is read
+	f := File{File: &trash.File{Name: "gone", TrashPath: filepath.Join(t.TempDir(), "gone"), IsDir: true}}
+	msg, ok := loadPreviewCmd(f)().(previewLoadedMsg)
+	if !ok {
+		t.Fatalf("got %T, want previewLoadedMsg", msg)
+	}
+	if msg.available {
+		t.Error("a deleted directory has a preview")
 	}
 }

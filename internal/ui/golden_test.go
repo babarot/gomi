@@ -151,6 +151,9 @@ func keyMsg(name string) tea.KeyPressMsg {
 type driver struct {
 	t *testing.T
 	m tea.Model
+	// loading drops what is read in the background, as if it had not
+	// come yet
+	loading bool
 }
 
 func (d *driver) send(msg tea.Msg) {
@@ -185,6 +188,12 @@ func (d *driver) run(cmd tea.Cmd) {
 		}
 		switch msg := msg.(type) {
 		case nil, tea.QuitMsg, cursor.BlinkMsg:
+		case previewLoadedMsg, sizeLoadedMsg:
+			if !d.loading {
+				m, next := d.m.Update(msg)
+				d.m = m
+				queue = append(queue, next)
+			}
 		case tea.BatchMsg:
 			queue = append(queue, msg...)
 		default:
@@ -217,6 +226,8 @@ type goldenCase struct {
 	model func(t *testing.T, files []*trash.File) tea.Model
 	opts  func(o *RenderOptions)
 	keys  []string
+	// loading renders the view before what is read in the background comes
+	loading bool
 }
 
 func mainModel(files []*trash.File, opts func(o *RenderOptions)) tea.Model {
@@ -283,6 +294,7 @@ var goldenCases = []goldenCase{
 	{name: "detail-scroll", keys: []string{"down", "down", "down", "space", "d"}},
 	{name: "detail-selected", keys: []string{"tab", "up", "space"}},
 	{name: "detail-help", keys: []string{"space", "?"}},
+	{name: "detail-loading", keys: []string{"down", "space"}, loading: true},
 
 	// delete confirmation
 	{name: "confirm-list", opts: withDelete, keys: []string{"D"}},
@@ -363,7 +375,7 @@ func TestGolden(t *testing.T) {
 				} else {
 					m = mainModel(files, c.opts)
 				}
-				d := &driver{t: t, m: m}
+				d := &driver{t: t, m: m, loading: c.loading}
 				d.run(d.m.Init())
 				d.send(tea.BackgroundColorMsg{Color: bg.color})
 				d.send(tea.WindowSizeMsg{Width: 80, Height: 30})

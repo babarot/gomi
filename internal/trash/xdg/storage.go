@@ -329,6 +329,7 @@ func (s *Storage) listLocation(loc *trashLocation) ([]*trash.File, error) {
 			DeletedAt:    info.DeletionDate,
 			RunID:        info.RunID,
 			Size:         fileInfo.Size(),
+			SizeKnown:    !fileInfo.IsDir(),
 			IsDir:        fileInfo.IsDir(),
 			FileMode:     fileInfo.Mode(),
 		}

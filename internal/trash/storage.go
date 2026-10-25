@@ -80,6 +80,10 @@ type File struct {
 	// Size is the size of the file in bytes
 	Size int64
 
+	// SizeKnown reports whether Size is the total size of the contents. For
+	// a directory, what stat reports is not, so it starts unknown
+	SizeKnown bool
+
 	// IsDir indicates if this is a directory
 	IsDir bool
 
@@ -105,6 +109,13 @@ func (f *File) GetDeletedAt() time.Time {
 
 func (f *File) GetSize() int64 {
 	return f.Size
+}
+
+// SetSize records the total size of the contents, as the size filter
+// computes it
+func (f *File) SetSize(n int64) {
+	f.Size = n
+	f.SizeKnown = true
 }
 
 // Exists checks if the file still exists in the trash

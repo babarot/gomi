@@ -16,9 +16,6 @@ func TestNewViewState(t *testing.T) {
 	if !s.detail.showOrigin {
 		t.Error("showOrigin should be true")
 	}
-	if !s.preview.available {
-		t.Error("preview.available should be true")
-	}
 	if s.confirmation.state != ConfirmStateYesNo {
 		t.Errorf("confirmation.state = %v, want ConfirmStateYesNo", s.confirmation.state)
 	}

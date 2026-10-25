@@ -26,9 +26,13 @@ type Model struct {
 
 	// Current detail view file if any
 	detailFile File
-	// detailSize is the size of detailFile, computed once when the detail
-	// view opens since a directory has to be walked
-	detailSize string
+
+	// previews and sizes keep what was read in the background, by trash
+	// path; a size that could not be computed is -1
+	previews map[string]previewResult
+	sizes    map[string]int64
+	// reading has the reads started and not yet returned
+	reading map[string]bool
 
 	// File data
 	files   []File
@@ -102,6 +106,9 @@ func NewModel(t trash.Trash, files []*trash.File, opts RenderOptions) Model {
 		palette:   palette,
 		list:      l,
 		viewport:  viewport.Model{},
+		previews:  map[string]previewResult{},
+		sizes:     map[string]int64{},
+		reading:   map[string]bool{},
 		help:      help.New(),
 	}
 	// Until the terminal reports its background, assume a dark one
