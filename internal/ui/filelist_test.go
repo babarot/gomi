@@ -140,7 +140,7 @@ func TestUIHeight(t *testing.T) {
 		{"30", 40, 30},
 		{"30", 20, 20}, // never taller than the terminal
 		{"1", 40, minHeight},
-		{"", 40, 40},
+		{"", 40, 20}, // half the terminal by default
 	}
 	for _, tt := range tests {
 		if got := uiHeight(tt.spec, tt.term); got != tt.want {

@@ -34,6 +34,10 @@ func validateHeight(fl validator.FieldLevel) bool {
 	return ok
 }
 
+// DefaultHeight is the height of the UI when the config sets none: half
+// the terminal, which leaves what was printed before it in sight
+const DefaultHeight = "50%"
+
 // ParseHeight reads a height as rows, or as a percentage when percent is
 // true
 func ParseHeight(s string) (n int, percent bool, ok bool) {

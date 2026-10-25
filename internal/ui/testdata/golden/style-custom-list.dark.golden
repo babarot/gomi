@@ -11,22 +11,7 @@
     10:00 ┌ README.md                   ~/projects/gomi                     44B
           └ config.yaml                 ~/projects/gomi                     34B
 ── Tuesday ────────────────────────────────────────────────────── 1 file · 2B ──
-    10:00   a-very-long-file-name-for…  ~/projects/gomi                      2B
-── Monday ─────────────────────────────────────────────────────── 1 file · 2B ──
-    10:00   another-quite-long-file-n…  ~/projects/gomi                      2B
-── Sun, Jun 8 ─────────────────────────────────────────────────── 1 file · 2B ──
-    10:00   yet-another-long-file-nam…  ~/projects/gomi                      2B
-── Thu, Jun 5 ─────────────────────────────────────────────────── 1 file · 9B ──
-    12:00   todo.txt                    ~/projects/gomi                      9B
-── Mon, May 26 ───────────────────────────────────────────────── 1 file · 17B ──
-    12:00   report.csv                  ~/projects/gomi                     17B
-── Tue, May 6 ─────────────────────────────────────────────────── 1 file · 4B ──
-    12:00   old.log                     ~/projects/gomi                      4B
-
-
-
-
-  12 files
+  12 files · ↓ 6 more
 
   ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter …
 -- styles --
@@ -80,65 +65,22 @@ L12 3-10 fg=#bbbbbb bold
 L12 11-65 fg=#3c3c3c
 L12 66-77 fg=#777777
 L12 78-80 fg=#3c3c3c
-L13 4-9 fg=#777777
-L13 12-38 fg=#e4e4e4 bold
-L13 40-79 fg=#777777
-L14 0-2 fg=#3c3c3c
-L14 3-9 fg=#bbbbbb bold
-L14 10-65 fg=#3c3c3c
-L14 66-77 fg=#777777
-L14 78-80 fg=#3c3c3c
-L15 4-9 fg=#777777
-L15 12-38 fg=#e4e4e4 bold
-L15 40-79 fg=#777777
-L16 0-2 fg=#3c3c3c
-L16 3-13 fg=#bbbbbb bold
-L16 14-65 fg=#3c3c3c
-L16 66-77 fg=#777777
-L16 78-80 fg=#3c3c3c
-L17 4-9 fg=#777777
-L17 12-38 fg=#e4e4e4 bold
-L17 40-79 fg=#777777
-L18 0-2 fg=#3c3c3c
-L18 3-13 fg=#bbbbbb bold
-L18 14-65 fg=#3c3c3c
-L18 66-77 fg=#777777
-L18 78-80 fg=#3c3c3c
-L19 4-9 fg=#777777
-L19 12-20 fg=#e4e4e4 bold
-L19 40-79 fg=#777777
-L20 0-2 fg=#3c3c3c
-L20 3-14 fg=#bbbbbb bold
-L20 15-64 fg=#3c3c3c
-L20 65-77 fg=#777777
-L20 78-80 fg=#3c3c3c
-L21 4-9 fg=#777777
-L21 12-22 fg=#e4e4e4 bold
-L21 40-79 fg=#777777
-L22 0-2 fg=#3c3c3c
-L22 3-13 fg=#bbbbbb bold
-L22 14-65 fg=#3c3c3c
-L22 66-77 fg=#777777
-L22 78-80 fg=#3c3c3c
-L23 4-9 fg=#777777
-L23 12-19 fg=#e4e4e4 bold
-L23 40-79 fg=#777777
-L28 2-10 fg=#777777
-L30 2-5 fg=#626262
-L30 6-8 fg=#4a4a4a
-L30 9-10 fg=#3c3c3c
-L30 11-14 fg=#626262
-L30 15-19 fg=#4a4a4a
-L30 20-21 fg=#3c3c3c
-L30 22-27 fg=#626262
-L30 28-35 fg=#4a4a4a
-L30 36-37 fg=#3c3c3c
-L30 38-43 fg=#626262
-L30 44-50 fg=#4a4a4a
-L30 51-52 fg=#3c3c3c
-L30 53-56 fg=#626262
-L30 57-63 fg=#4a4a4a
-L30 64-65 fg=#3c3c3c
-L30 66-67 fg=#626262
-L30 68-74 fg=#4a4a4a
-L30 75-76 fg=#3c3c3c
+L13 2-21 fg=#777777
+L15 2-5 fg=#626262
+L15 6-8 fg=#4a4a4a
+L15 9-10 fg=#3c3c3c
+L15 11-14 fg=#626262
+L15 15-19 fg=#4a4a4a
+L15 20-21 fg=#3c3c3c
+L15 22-27 fg=#626262
+L15 28-35 fg=#4a4a4a
+L15 36-37 fg=#3c3c3c
+L15 38-43 fg=#626262
+L15 44-50 fg=#4a4a4a
+L15 51-52 fg=#3c3c3c
+L15 53-56 fg=#626262
+L15 57-63 fg=#4a4a4a
+L15 64-65 fg=#3c3c3c
+L15 66-67 fg=#626262
+L15 68-74 fg=#4a4a4a
+L15 75-76 fg=#3c3c3c

@@ -213,7 +213,7 @@ core:
 # Provides detailed customization of colors, layouts, and preview features.
 # Controls how files and directories are displayed in both list and detail views.
 ui:
-  height: 100% # rows under the prompt: a number ("30") or a share of the terminal ("40%")
+  height: 50% # rows under the prompt: a number ("30") or a share of the terminal ("40%")
   theme: gomi # or catppuccin-mocha, catppuccin-latte, nord
   density: spacious # or compact
   preview:

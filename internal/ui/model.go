@@ -128,9 +128,10 @@ func (m *Model) setBackground(isDark bool) {
 // never more than the terminal.
 func uiHeight(spec string, termHeight int) int {
 	n, percent, ok := config.ParseHeight(spec)
+	if !ok {
+		n, percent, _ = config.ParseHeight(config.DefaultHeight)
+	}
 	switch {
-	case !ok:
-		return termHeight
 	case percent:
 		n = termHeight * n / 100
 	}

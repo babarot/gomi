@@ -89,7 +89,7 @@ type UI struct {
 	Density string `yaml:"density" validate:"omitempty,oneof=compact spacious"`
 
 	// Height is how many rows the UI takes under the prompt: a number of
-	// rows ("30") or a share of the terminal ("40%"); empty is "100%"
+	// rows ("30") or a share of the terminal ("40%"); empty is DefaultHeight
 	Height string `yaml:"height" validate:"validHeight|allowEmpty"`
 
 	// Theme names the colors the UI is drawn with; empty is "gomi"
