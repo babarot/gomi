@@ -84,6 +84,14 @@ type File struct {
 	// a directory, what stat reports is not, so it starts unknown
 	SizeKnown bool
 
+	// FilterSize is the size the size filter judges the file by, when
+	// FilterSizeKnown; else Measure, when set, measures it. The XDG trash
+	// sets them for a directory, which it judges by its disk usage; the
+	// others leave them, and the filter goes by Size
+	FilterSize      int64
+	FilterSizeKnown bool
+	Measure         func() (int64, error)
+
 	// IsDir indicates if this is a directory
 	IsDir bool
 
@@ -116,6 +124,24 @@ func (f *File) GetSize() int64 {
 func (f *File) SetSize(n int64) {
 	f.Size = n
 	f.SizeKnown = true
+}
+
+// MeasuredSize returns the size the size filter judges the file by, which
+// it measures once when needed. ok is false when the file has no such
+// size, and the filter is to go by its contents
+func (f *File) MeasuredSize() (size int64, ok bool, err error) {
+	if f.FilterSizeKnown {
+		return f.FilterSize, true, nil
+	}
+	if f.Measure == nil {
+		return 0, false, nil
+	}
+	n, err := f.Measure()
+	if err != nil {
+		return 0, true, err
+	}
+	f.FilterSize, f.FilterSizeKnown = n, true
+	return n, true, nil
 }
 
 // Exists checks if the file still exists in the trash
