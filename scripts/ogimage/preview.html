@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<!-- The og:image patterns side by side: at half size, at the size of a
+     link card, and at the size of a phone's timeline. Open it in a browser. -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>gomi og:image patterns</title>
+<style>
+body { margin: 0; padding: 32px; background: #e9e7ee; color: #222; font: 15px/1.5 system-ui, sans-serif; }
+h2 { margin: 40px 0 10px; font-size: 18px; }
+h2:first-child { margin-top: 0; }
+.row { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+figure { margin: 0; }
+figcaption { margin-top: 6px; color: #666; font-size: 13px; }
+.shot { overflow: hidden; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.15); background: #000; }
+.shot iframe { width: 1200px; height: 630px; border: 0; transform-origin: 0 0; display: block; }
+</style>
+</head>
+<body>
+<script>
+const patterns = [
+  ['can', '1. The can and the headline'],
+  ['terminal', '2. The terminal'],
+  ['spit', '3. The can gives a file back'],
+];
+// widths: half size, a link card on a desktop, a phone's timeline
+const sizes = [[600, 'half size'], [400, 'link card'], [260, 'phone timeline']];
+for (const [v, title] of patterns) {
+  const h = document.createElement('h2');
+  h.textContent = title;
+  document.body.appendChild(h);
+  const row = document.createElement('div');
+  row.className = 'row';
+  for (const [w, label] of sizes) {
+    const s = w / 1200;
+    row.insertAdjacentHTML('beforeend',
+      `<figure><div class="shot" style="width:${w}px;height:${Math.round(630 * s)}px">` +
+      `<iframe src="og.html?v=${v}" style="transform:scale(${s})" loading="lazy"></iframe></div>` +
+      `<figcaption>${w}px, ${label}</figcaption></figure>`);
+  }
+  document.body.appendChild(row);
+}
+</script>
+</body>
+</html>
