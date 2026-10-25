@@ -197,7 +197,7 @@ const SEED = [
   { m: 1500,  dir: '~/notes', name: 'inbox.md', size: 1900, run: 'r5', origin: 'taken', text: SEED_TEXT.inbox },
   { m: 1500,  dir: '~/notes', name: '2026-10-23.md', size: 820, run: 'r5', text: SEED_TEXT.daily },
   { m: 1500,  dir: '~/notes', name: 'scratch.txt', size: 140, run: 'r5', text: SEED_TEXT.scratch },
-  { m: 1650,  dir: '~/Desktop', name: 'Screenshot 2026-10-24 at 09.12.png', size: 384000, run: 'r6', img: 'ogimage.png' },
+  { m: 1650,  dir: '~/Desktop', name: 'Screenshot 2026-10-24 at 09.12.png', size: 384000, run: 'r6', img: 'ogimage/can.png' },
   { m: 1650,  dir: '~/Desktop', name: 'Screenshot 2026-10-24 at 09.15.png', size: 401000, run: 'r6', img: 'favicon/web-app-manifest-512x512.png' },
   { m: 2900,  dir: '~/projects/api', name: '.env.local', size: 210, run: 'r7', origin: 'taken', text: SEED_TEXT.env },
   { m: 2960,  dir: '~/projects/api', name: 'docker-compose.override.yml', size: 640, run: 'r8', text: SEED_TEXT.compose },
