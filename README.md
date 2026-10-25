@@ -22,7 +22,7 @@ In a typical CLI, there’s no "trash" folder like in graphical file managers. T
 - 🎨 Syntax highlighting for previewing trashed files
 - 🔍 Powerful search and filtering capabilities
 - 💽 Multi-Volume Support - Handle file deletions across multiple mount points effortlessly
-- ⚙️  Rich Configuration - Customize everything from file filters and color schemes to preview options and UI density
+- ⚙️  Rich Configuration - Customize everything from file filters and color schemes to preview options, views and themes
 
 <!--
 - Functions like the `rm` command but moves files to the trash instead of permanently deleting them.
@@ -63,12 +63,29 @@ Restore a file to its original location. The `--restore` flag is a bit long, so 
 rm -b
 ```
 
-This launches an interactive file browser where you can:
-- Navigate through trashed files using arrow keys
-- Press `/` to start searching/filtering files by name
-- Press `Tab` to select multiple files for restoration
-- Press `Space` to preview file contents
-- Press `Enter` to restore selected files
+This opens the trash under the prompt, using the rows below it (see `ui.height`):
+
+```
+ gomi  12 in the trash · 1.7K                 in ~/projects/gomi · view: recent
+── Today ─────────────────────────────────────────────────────── 1 file · 72B ──
+▎   10:00   main.go                    ~/projects/gomi                    72B
+── Thursday ─────────────────────────────────────────────────── 2 files · 78B ──
+    10:00 ┌ README.md                  ~/projects/gomi                    44B
+          └ config.yaml                ~/projects/gomi                    34B !
+```
+
+- `enter` restores the file under the cursor, or the selected files. `tab` selects and `shift+tab` de-selects.
+- `space` opens the preview of the file in full; `n` and `p` move to the next and previous file there. When the terminal is wide enough, the list shows a preview on its right as well (see `ui.preview.position`).
+- `/` narrows the list by name. `esc` clears what was typed, then the selection.
+- `.` switches between the files deleted in the current directory and every file. The list starts with the files deleted here when there are any (see `ui.scope`).
+- `v` goes to the next view:
+  - `recent`: the files by the day they were deleted, the files deleted by one command drawn together
+  - `places`: the files by the directory they were deleted from; `l` and `h` open and close a directory
+  - `batches`: the files by the command that deleted them; `l` and `h` open and close a batch
+  - `picker`: one row a file, typing to find it as in fzf; `esc` hands the keys to the list and `s` chooses the order
+- `?` shows every key.
+
+A mark at the end of a row tells what restoring the file would meet: `!` means something has its name there now, so gomi asks for a new name, and `+` means its directory is gone, so gomi makes it again. The marks look at each file alone: when two files from the same path are restored at once, the second one asks for a new name without a mark.
 
 ## Installation
 
@@ -218,7 +235,7 @@ ui:
   views: [recent, places, batches, picker] # the views v goes through
   scope: auto # what the list starts with: here (files deleted in this directory), all, or auto (here when there are any)
   theme: gomi # or catppuccin-mocha, catppuccin-latte, nord
-  density: spacious # or compact
+  density: spacious # not used; each file takes one row
   preview:
     syntax_highlight: true
     colorscheme: nord  # Available themes: https://xyproto.github.io/splash/docs/index.html
@@ -229,11 +246,11 @@ ui:
       cursor: "#AD58B4"         # purple - color of the cursor border and text
       selected: "#5FB458"       # green - color of selected files
       filter_match: "#F39C12"   # orange - color of matched text when searching
-      filter_prompt: "#7AA2F7"  # blue - color of the "Filter:" prompt text
-      indent_on_select: false
+      filter_prompt: "#7AA2F7"  # blue - color of the "/" and "❯" prompts
+      indent_on_select: false   # not used
     detail_view:
-      border: "#FFFFFF"
-      info_pane:
+      border: "#FFFFFF"         # the frame of the preview
+      info_pane:                # not used
         deleted_from:
           fg: "#EEEEEE"
           bg: "#1C1C1C"
@@ -241,16 +258,16 @@ ui:
           fg: "#EEEEEE"
           bg: "#1C1C1C"
       preview_pane:
-        border: "#3C3C3C"
-        size:
+        border: "#3C3C3C"       # the line between the file's details and its content
+        size:                   # not used
           fg: "#EEEEDD"
           bg: "#3C3C3C"
-        scroll:
+        scroll:                 # not used
           fg: "#EEEEDD"
           bg: "#3C3C3C"
-    deletion_dialog: "#FF007F" # pink
+    deletion_dialog: "#FF007F" # pink - the frame of the confirm dialog
   exit_message: bye!   # Customizable exit message
-  paginator_type: dots # or arabic
+  paginator_type: dots # not used; the list scrolls instead of paging
 
 # Configures which files appear in the restoration list.
 # Note: While all trash operations are recorded in history,
