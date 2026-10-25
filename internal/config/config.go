@@ -88,7 +88,11 @@ type UI struct {
 	// Density controls the compactness of the UI (compact or spacious)
 	Density string `yaml:"density" validate:"omitempty,oneof=compact spacious"`
 
-	// Style contains UI styling configuration
+	// Theme names the colors the UI is drawn with; empty is "gomi"
+	Theme string `yaml:"theme" validate:"validTheme|allowEmpty"`
+
+	// Style contains UI styling configuration. It adjusts the "gomi"
+	// theme; other themes ignore it
 	Style StyleConfig `yaml:"style"`
 
 	// ExitMessage is displayed when the application exits
@@ -224,9 +228,6 @@ func Load(path string) (*Config, error) {
 		return nil, err
 	}
 
-	// Set default value if empty
-	cfg.setDefault()
-
 	slog.Debug("config successfully loaded")
 	return cfg, nil
 }
@@ -308,6 +309,7 @@ func (c *Config) validate() error {
 	_ = validate.RegisterValidation("allowEmpty", validateAllowEmpty)
 	_ = validate.RegisterValidation("validSize", validateSize)
 	_ = validate.RegisterValidation("validColorCode", validateColorCode)
+	_ = validate.RegisterValidation("validTheme", validateTheme)
 	_ = validate.RegisterValidation("deprecated", validateDeprecated)
 	_ = validate.RegisterValidation("validDirPath", validateDirPath)
 
@@ -337,22 +339,4 @@ func (c *Config) expandPaths() error {
 	}
 
 	return nil
-}
-
-func (c *Config) setDefault() {
-	// Set color for deletion confirmation dialog
-	// Since deletion is a potentially destructive operation, use a distinctive color to emphasize caution
-	if c.UI.Style.DeletionDialog == "" {
-		c.UI.Style.DeletionDialog = "205"
-	}
-
-	// Set color for filter match highlighting
-	if c.UI.Style.ListView.FilterMatch == "" {
-		c.UI.Style.ListView.FilterMatch = "#F39C12"
-	}
-
-	// Set color for filter prompt
-	if c.UI.Style.ListView.FilterPrompt == "" {
-		c.UI.Style.ListView.FilterPrompt = "#7AA2F7"
-	}
 }

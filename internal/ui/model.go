@@ -81,7 +81,7 @@ func NewModel(t trash.Trash, files []*trash.File, opts RenderOptions) Model {
 
 	// Create and configure list; setBackground replaces its delegate and
 	// styles
-	palette := styles.NewPalette(uiCfg.Style)
+	palette := styles.NewPalette(uiCfg)
 	l := list.New(items, NewRestoreDelegate(uiCfg, palette, fileList, selection, true), defaultWidth, defaultHeight)
 	l.SetShowStatusBar(false)
 	l.SetShowTitle(false)

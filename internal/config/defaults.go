@@ -45,6 +45,7 @@ func NewDefaultConfig() *Config {
 			},
 		},
 		UI: UI{
+			Theme:   "gomi",
 			Density: "spacious",
 			Preview: PreviewConfig{
 				SyntaxHighlight:  true,

@@ -64,36 +64,50 @@ type Palette struct {
 	HelpEllipsis  Color // the "…" when the help is cut off
 }
 
-// NewPalette returns the palette for the colors in the config's ui.style.
-//
-// A config color is used as it is, even when empty: a config file is
-// written with every color when it is created, and a color later left out of
-// it is no color, as it always has been. Colors the config has no setting for
-// are fixed here.
-func NewPalette(cfg config.StyleConfig) Palette {
+// NewPalette returns the palette of the config's ui.theme. The "gomi"
+// theme, also used when no theme is set, takes the colors set in ui.style
+// over its own; other themes ignore ui.style. A config file is written with
+// every ui.style color when it is created, so those colors would otherwise
+// hide any theme chosen later.
+func NewPalette(cfg config.UI) Palette {
+	if s, ok := schemes[cfg.Theme]; ok {
+		return s.palette()
+	}
+	return gomiPalette(cfg.Style)
+}
+
+// gomiPalette is gomi's own colors, with the colors set in st over them.
+func gomiPalette(st config.StyleConfig) Palette {
+	// or is the config's color when it is set, else def
+	or := func(c string, def Color) Color {
+		if c == "" {
+			return def
+		}
+		return same(c)
+	}
 	return Palette{
-		Cursor:            same(cfg.ListView.Cursor),
-		Selected:          same(cfg.ListView.Selected),
-		FilterMatch:       same(cfg.ListView.FilterMatch),
-		FilterPrompt:      same(cfg.ListView.FilterPrompt),
+		Cursor:            or(st.ListView.Cursor, same("#AD58B4")),
+		Selected:          or(st.ListView.Selected, same("#5FB458")),
+		FilterMatch:       or(st.ListView.FilterMatch, same("#F39C12")),
+		FilterPrompt:      or(st.ListView.FilterPrompt, same("#7AA2F7")),
 		Description:       Color{Light: "#626262", Dark: "#777777"},
 		Dimmed:            Color{Light: "#808080", Dark: "#777777"},
 		DimmedDescription: Color{Light: "#999999", Dark: "#4D4D4D"},
 
-		Border:                  same(cfg.DetailView.Border),
+		Border:                  or(st.DetailView.Border, same("#EEEEDD")),
 		SelectedTitle:           same("#000000"),
-		DeletedFrom:             same(cfg.DetailView.InfoPane.DeletedFrom.Foreground),
-		DeletedFromBackground:   same(cfg.DetailView.InfoPane.DeletedFrom.Background),
-		DeletedAt:               same(cfg.DetailView.InfoPane.DeletedAt.Foreground),
-		DeletedAtBackground:     same(cfg.DetailView.InfoPane.DeletedAt.Background),
-		PreviewBorder:           same(cfg.DetailView.PreviewPane.Border),
-		PreviewSize:             same(cfg.DetailView.PreviewPane.Size.Foreground),
-		PreviewSizeBackground:   same(cfg.DetailView.PreviewPane.Size.Background),
-		PreviewScroll:           same(cfg.DetailView.PreviewPane.Scroll.Foreground),
-		PreviewScrollBackground: same(cfg.DetailView.PreviewPane.Scroll.Background),
+		DeletedFrom:             or(st.DetailView.InfoPane.DeletedFrom.Foreground, same("#EEEEEE")),
+		DeletedFromBackground:   or(st.DetailView.InfoPane.DeletedFrom.Background, same("#1C1C1C")),
+		DeletedAt:               or(st.DetailView.InfoPane.DeletedAt.Foreground, same("#EEEEEE")),
+		DeletedAtBackground:     or(st.DetailView.InfoPane.DeletedAt.Background, same("#1C1C1C")),
+		PreviewBorder:           or(st.DetailView.PreviewPane.Border, same("#3C3C3C")),
+		PreviewSize:             or(st.DetailView.PreviewPane.Size.Foreground, same("#EEEEDD")),
+		PreviewSizeBackground:   or(st.DetailView.PreviewPane.Size.Background, same("#3C3C3C")),
+		PreviewScroll:           or(st.DetailView.PreviewPane.Scroll.Foreground, same("#EEEEDD")),
+		PreviewScrollBackground: or(st.DetailView.PreviewPane.Scroll.Background, same("#3C3C3C")),
 		PreviewError:            same("8"),
 
-		Dialog:            same(cfg.DeletionDialog),
+		Dialog:            or(st.DeletionDialog, same("#FF007F")),
 		DialogInput:       Color{Light: "#1F1F1F", Dark: "#FFFFFF"},
 		DialogPlaceholder: Color{Light: "#A49FA5", Dark: "#777777"},
 		DialogValid:       same("#00FF00"),
@@ -104,5 +118,78 @@ func NewPalette(cfg config.StyleConfig) Palette {
 		HelpSeparator: Color{Light: "#999999", Dark: "#3C3C3C"},
 		// Bubbles v2 made its default a little lighter; this is v1's
 		HelpEllipsis: Color{Light: "#DDDADA", Dark: "#3C3C3C"},
+	}
+}
+
+// scheme is a theme of a few colors named by what they are for; every
+// color of the palette is one of them. A scheme is made for one
+// background, so it draws the same on either.
+type scheme struct {
+	Base    string // the terminal background the scheme is made for
+	Surface string // labels and bars drawn on a background of their own
+	Border  string // frames and lines
+	Muted   string // the line under a file name, help
+	Dim     string // what matters least
+	Subtle  string // the frame around the file name
+	Text    string // text on Surface, typed text
+	Accent  string // the cursor, the filter prompt
+	OK      string // selected files
+	Prompt  string // filter matches
+	Warn    string // the delete confirmation
+	Error   string // the mark until YES is typed
+}
+
+// schemes are the themes besides "gomi", by name
+var schemes = map[string]scheme{
+	"catppuccin-mocha": {
+		Base: "#1e1e2e", Surface: "#3b3b52", Border: "#525270", Muted: "#8888a4", Dim: "#706f87",
+		Subtle: "#b0b8d1", Text: "#e0e4f0", Accent: "#96bfff", OK: "#a6e3a1", Prompt: "#f9e2af",
+		Warn: "#f5a3b5", Error: "#f38ba8",
+	},
+	"catppuccin-latte": {
+		Base: "#eff1f5", Surface: "#ccd0da", Border: "#bcc0cc", Muted: "#8c8fa1", Dim: "#9ca0b0",
+		Subtle: "#6c6f85", Text: "#4c4f69", Accent: "#1e66f5", OK: "#40a02b", Prompt: "#df8e1d",
+		Warn: "#d20f39", Error: "#d20f39",
+	},
+	"nord": {
+		Base: "#2e3440", Surface: "#3b4252", Border: "#4c566a", Muted: "#7b88a1", Dim: "#616e88",
+		Subtle: "#d8dee9", Text: "#eceff4", Accent: "#88c0d0", OK: "#a3be8c", Prompt: "#ebcb8b",
+		Warn: "#b48ead", Error: "#bf616a",
+	},
+}
+
+func (s scheme) palette() Palette {
+	return Palette{
+		Cursor:            same(s.Accent),
+		Selected:          same(s.OK),
+		FilterMatch:       same(s.Prompt),
+		FilterPrompt:      same(s.Accent),
+		Description:       same(s.Muted),
+		Dimmed:            same(s.Muted),
+		DimmedDescription: same(s.Dim),
+
+		Border:                  same(s.Subtle),
+		SelectedTitle:           same(s.Base),
+		DeletedFrom:             same(s.Text),
+		DeletedFromBackground:   same(s.Surface),
+		DeletedAt:               same(s.Text),
+		DeletedAtBackground:     same(s.Surface),
+		PreviewBorder:           same(s.Border),
+		PreviewSize:             same(s.Text),
+		PreviewSizeBackground:   same(s.Surface),
+		PreviewScroll:           same(s.Text),
+		PreviewScrollBackground: same(s.Surface),
+		PreviewError:            same(s.Dim),
+
+		Dialog:            same(s.Warn),
+		DialogInput:       same(s.Text),
+		DialogPlaceholder: same(s.Muted),
+		DialogValid:       same(s.OK),
+		DialogInvalid:     same(s.Error),
+
+		HelpKey:       same(s.Muted),
+		HelpDesc:      same(s.Dim),
+		HelpSeparator: same(s.Border),
+		HelpEllipsis:  same(s.Border),
 	}
 }

@@ -29,6 +29,12 @@
 
   ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter …
 -- styles --
+L2 3-10 fg=#5fb458
+L3 3-41 fg=#5fb458
+L5 0-1 fg=#ad58b4
+L5 2-8 fg=#5fb458
+L6 0-1 fg=#ad58b4
+L6 2-40 fg=#5fb458
 L9 2-38 fg=#777777
 L12 2-39 fg=#777777
 L15 2-39 fg=#777777

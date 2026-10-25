@@ -132,18 +132,18 @@ func TestConfig_Validate_InvalidColor(t *testing.T) {
 	}
 }
 
-func TestConfig_SetDefault(t *testing.T) {
-	cfg := &Config{}
-	cfg.setDefault()
-
-	if cfg.UI.Style.DeletionDialog == "" {
-		t.Error("DeletionDialog should have default value")
+func TestConfig_Validate_Theme(t *testing.T) {
+	for _, name := range append(ThemeNames, "") {
+		cfg := NewDefaultConfig()
+		cfg.UI.Theme = name
+		if err := cfg.validate(); err != nil {
+			t.Errorf("theme %q: %v", name, err)
+		}
 	}
-	if cfg.UI.Style.ListView.FilterMatch == "" {
-		t.Error("FilterMatch should have default value")
-	}
-	if cfg.UI.Style.ListView.FilterPrompt == "" {
-		t.Error("FilterPrompt should have default value")
+	cfg := NewDefaultConfig()
+	cfg.UI.Theme = "solarized"
+	if err := cfg.validate(); err == nil {
+		t.Error("expected validation error for an unknown theme")
 	}
 }
 
