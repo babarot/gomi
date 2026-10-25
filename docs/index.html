@@ -26,6 +26,10 @@ try { const t = localStorage.getItem('gomi-theme'); if (t) document.documentElem
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=DotGothic16&family=Bitcount+Prop+Single:wght@300..700&family=Fira+Code:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="site.css">
+<!-- filled with ?v=VERSION for each module by scripts/site-stamp.py as
+     Pages deploys, so that a deploy reaches browsers that cached the old
+     scripts; empty, the modules load as they are -->
+<script type="importmap">{"imports": {}}</script>
 </head>
 <body>
 <header class="wrap top">
@@ -129,6 +133,7 @@ try { const t = localStorage.getItem('gomi-theme'); if (t) document.documentElem
   </div>
 </footer>
 
-<script type="module" src="site.js"></script>
+<!-- imported, not src=, so that the import map applies to site.js too -->
+<script type="module">import './site.js';</script>
 </body>
 </html>
