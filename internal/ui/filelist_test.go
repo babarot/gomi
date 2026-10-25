@@ -277,3 +277,47 @@ func TestStartView(t *testing.T) {
 		t.Errorf("startView = %q, want places", got)
 	}
 }
+
+func TestFuzzyRunes(t *testing.T) {
+	if got := fuzzyRunes("notes.txt", "nts"); len(got) != 3 || got[0] != 0 || got[1] != 2 || got[2] != 4 {
+		t.Errorf("fuzzyRunes = %v, want [0 2 4]", got)
+	}
+	if got := fuzzyRunes("notes", "x"); got != nil {
+		t.Errorf("fuzzyRunes found %v of a letter not there", got)
+	}
+}
+
+func TestFileList_PickerRanksCloseMatchesFirst(t *testing.T) {
+	l := newFileList()
+	l.setFiles([]File{
+		listFile("n-o-t-e-s", time.Hour, ""), // the letters far apart, newer
+		listFile("notes", 2*time.Hour, ""),   // close together
+	}, listNow)
+	l.setView(viewPicker, listNow)
+	l.filter.SetValue("note")
+	rows := l.rows(listNow)
+	if len(rows) != 2 || rows[0].file.Name != "notes" {
+		t.Errorf("first match = %q, want notes", rows[0].file.Name)
+	}
+}
+
+func TestShortAgo(t *testing.T) {
+	defer func(f func() time.Time) { now = f }(now)
+	now = func() time.Time { return listNow }
+	tests := []struct {
+		ago  time.Duration
+		want string
+	}{
+		{30 * time.Second, "now"},
+		{33 * time.Minute, "33m ago"},
+		{23 * time.Hour, "23h ago"},
+		{6 * 24 * time.Hour, "6d ago"},
+		{30 * 24 * time.Hour, "May 16"},
+	}
+	for _, tt := range tests {
+		got := shortAgo(listNow.Add(-tt.ago))
+		if got != tt.want || len(got) > agoWidth {
+			t.Errorf("shortAgo(%v ago) = %q, want %q within %d columns", tt.ago, got, tt.want, agoWidth)
+		}
+	}
+}

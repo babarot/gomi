@@ -1,10 +1,10 @@
 -- screen --
  gomi  12 in the trash · 1.7K                                      view: places
-    ▸ ~/projects/gomi                               8 files · 1.6K  2 hours ago
-▎   ▾ ~/docs                                          1 file · 94B  5 hours ago 
-      └ notes/                                            5 hours ago     94B
-    ▸ ~/Downloads                                       1 file · 12B  1 day ago
-    ▸ /tmp                                           2 files · 21B  2 weeks ago
+    ▸ ~/projects/gomi                                   8 files · 1.6K   2h ago
+▎   ▾ ~/docs                                              1 file · 94B   5h ago 
+      └ notes/                                                 5h ago     94B
+    ▸ ~/Downloads                                         1 file · 12B   1d ago
+    ▸ /tmp                                               2 files · 21B   May 26
 
 
 
@@ -34,19 +34,19 @@ L1 1-5 fg=#ad58b4 bold
 L1 7-79 fg=#777777
 L2 4-5 fg=#ad58b4
 L2 6-21 fg=#e4e4e4 bold
-L2 52-79 fg=#777777
+L2 56-79 fg=#777777
 L3 0-6 fg=#ad58b4 bg=#2e2e2e
-L3 6-54 fg=#e4e4e4 bg=#2e2e2e bold
-L3 54-80 fg=#777777 bg=#2e2e2e
+L3 6-58 fg=#e4e4e4 bg=#2e2e2e bold
+L3 58-80 fg=#777777 bg=#2e2e2e
 L4 6-7 fg=#3c3c3c
 L4 8-14 fg=#7aa2f7 bold
-L4 58-77 fg=#777777
+L4 63-77 fg=#777777
 L5 4-5 fg=#ad58b4
 L5 6-17 fg=#e4e4e4 bold
-L5 56-79 fg=#777777
+L5 58-79 fg=#777777
 L6 4-5 fg=#ad58b4
 L6 6-10 fg=#e4e4e4 bold
-L6 53-79 fg=#777777
+L6 57-79 fg=#777777
 L28 2-61 fg=#777777
 L30 2-5 fg=#626262
 L30 6-8 fg=#4a4a4a

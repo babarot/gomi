@@ -93,12 +93,12 @@ type UI struct {
 	// terminal ("40%"); empty is DefaultHeight
 	Height string `yaml:"height" validate:"validHeight|allowEmpty"`
 
-	// View is the view the list starts in: "recent", "places" or
-	// "batches"; empty is the first of Views
-	View string `yaml:"view" validate:"omitempty,oneof=recent places batches"`
+	// View is the view the list starts in: "recent", "places", "batches"
+	// or "picker"; empty is the first of Views
+	View string `yaml:"view" validate:"omitempty,oneof=recent places batches picker"`
 
 	// Views are the views v goes through, in order; empty is all of them
-	Views []string `yaml:"views" validate:"omitempty,dive,oneof=recent places batches"`
+	Views []string `yaml:"views" validate:"omitempty,dive,oneof=recent places batches picker"`
 
 	// Theme names the colors the UI is drawn with; empty is "gomi"
 	Theme string `yaml:"theme" validate:"validTheme|allowEmpty"`

@@ -38,6 +38,10 @@ type Model struct {
 	// origins is what restoring each file would meet, by trash path, once
 	// its place is looked at
 	origins map[string]origin
+	// sortMenu is set while the picker's sort menu is open, on sortSel
+	sortMenu bool
+	sortSel  int
+
 	// previewSeq counts the cursor's moves, so that only the preview of the
 	// file it rests on is read
 	previewSeq int
@@ -104,6 +108,12 @@ func NewModel(t trash.Trash, files []*trash.File, opts RenderOptions) Model {
 	home, _ := os.UserHomeDir()
 	list := newFileList()
 	list.view = startView(uiCfg)
+	if list.view == viewPicker {
+		// the picker starts with the focus in the filter
+		list.filtering = true
+		list.filter.Prompt = pickerPrompt
+		list.filter.Focus()
+	}
 	m := Model{
 		trash:     t,
 		state:     NewViewState(),
@@ -125,6 +135,7 @@ func NewModel(t trash.Trash, files []*trash.File, opts RenderOptions) Model {
 		home:      home,
 	}
 	m.settled = !m.waitsForCursor()
+	m.list.sizeOf = m.knownSize
 	// Until the terminal reports its background, assume a dark one
 	m.setBackground(true)
 	return m
@@ -181,7 +192,7 @@ func (m Model) waitsForCursor() bool {
 func startView(cfg config.UI) string {
 	views := cfg.Views
 	if len(views) == 0 {
-		views = []string{viewRecent, viewPlaces, viewBatches}
+		views = []string{viewRecent, viewPlaces, viewBatches, viewPicker}
 	}
 	if slices.Contains(views, cfg.View) {
 		return cfg.View

@@ -1,17 +1,17 @@
 -- screen --
  gomi  12 in the trash · 1.7K                                                                              view: places
-    ▾ ~/projects/gomi                    8 files · 1.6K  2 hours ago  ╭─ /tmp ─────────────────────────────────────────╮
-      ├ main.go                                2 hours ago     72B    │ Files    2  21B                                │
-      ├ long.txt                                2 days ago    1.4K    │ Deleted  2025-05-06 – 2025-05-26               │
-      ├ README.md                               3 days ago     44B    │ Restore  enter restores them all               │
-      ├ config.yaml                             3 days ago     34B !  │ Marks    + 2 have no folder                    │
-      ├ a-very-long-file-name-for-testing.txt   5 days ago      2B    │ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │
-      ├ another-quite-long-file-name.txt        6 days ago      2B    │ report.csv                                 17B │
-      ├ yet-another-long-file-name-here.txt     1 week ago      2B    │ old.log                                     4B │
-      └ todo.txt                                1 week ago      9B    │                                                │
-    ▸ ~/docs                               1 file · 94B  5 hours ago  │                                                │
-    ▸ ~/Downloads                            1 file · 12B  1 day ago  │                                                │
-▎   ▸ /tmp                                2 files · 21B  2 weeks ago  │                                                │
+    ▾ ~/projects/gomi                        8 files · 1.6K   2h ago  ╭─ /tmp ─────────────────────────────────────────╮
+      ├ main.go                                     2h ago     72B    │ Files    2  21B                                │
+      ├ long.txt                                    2d ago    1.4K    │ Deleted  2025-05-06 – 2025-05-26               │
+      ├ README.md                                   3d ago     44B    │ Restore  enter restores them all               │
+      ├ config.yaml                                 3d ago     34B !  │ Marks    + 2 have no folder                    │
+      ├ a-very-long-file-name-for-testing.txt       5d ago      2B    │ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │
+      ├ another-quite-long-file-name.txt            6d ago      2B    │ report.csv                                 17B │
+      ├ yet-another-long-file-name-here.txt          Jun 8      2B    │ old.log                                     4B │
+      └ todo.txt                                     Jun 5      9B    │                                                │
+    ▸ ~/docs                                   1 file · 94B   5h ago  │                                                │
+    ▸ ~/Downloads                              1 file · 12B   1d ago  │                                                │
+▎   ▸ /tmp                                    2 files · 21B   May 26  │                                                │
                                                                       │                                                │
                                                                       │                                                │
                                                                       │                                                │
@@ -34,13 +34,13 @@ L1 1-5 fg=#ad58b4 bold
 L1 7-119 fg=#777777
 L2 4-5 fg=#ad58b4
 L2 6-21 fg=#e4e4e4 bold
-L2 41-68 fg=#777777
+L2 45-68 fg=#777777
 L2 70-72 fg=#eeeedd
 L2 73-77 fg=#e4e4e4 bold
 L2 78-120 fg=#eeeedd
 L3 6-7 fg=#3c3c3c
 L3 8-15 fg=#e4e4e4 bold
-L3 47-66 fg=#777777
+L3 52-66 fg=#777777
 L3 70-71 fg=#eeeedd
 L3 72-77 fg=#777777
 L3 81-82 fg=#e4e4e4
@@ -48,60 +48,60 @@ L3 84-87 fg=#777777
 L3 119-120 fg=#eeeedd
 L4 6-7 fg=#3c3c3c
 L4 8-16 fg=#e4e4e4 bold
-L4 48-66 fg=#777777
+L4 52-66 fg=#777777
 L4 70-71 fg=#eeeedd
 L4 72-79 fg=#777777
 L4 81-104 fg=#e4e4e4
 L4 119-120 fg=#eeeedd
 L5 6-7 fg=#3c3c3c
 L5 8-17 fg=#e4e4e4 bold
-L5 48-66 fg=#777777
+L5 52-66 fg=#777777
 L5 70-71 fg=#eeeedd
 L5 72-79 fg=#777777
 L5 81-104 fg=#5fb458
 L5 119-120 fg=#eeeedd
 L6 6-7 fg=#3c3c3c
 L6 8-19 fg=#e4e4e4 bold
-L6 48-66 fg=#777777
+L6 52-66 fg=#777777
 L6 67-68 fg=#ff007f bold
 L6 70-71 fg=#eeeedd
 L6 72-99 fg=#777777
 L6 119-120 fg=#eeeedd
 L7 6-7 fg=#3c3c3c
 L7 8-45 fg=#e4e4e4 bold
-L7 48-66 fg=#777777
+L7 52-66 fg=#777777
 L7 70-71 fg=#eeeedd
 L7 72-118 fg=#3c3c3c
 L7 119-120 fg=#eeeedd
 L8 6-7 fg=#3c3c3c
 L8 8-40 fg=#e4e4e4 bold
-L8 48-66 fg=#777777
+L8 52-66 fg=#777777
 L8 70-71 fg=#eeeedd
 L8 72-82 fg=#e4e4e4
 L8 115-118 fg=#777777
 L8 119-120 fg=#eeeedd
 L9 6-7 fg=#3c3c3c
 L9 8-43 fg=#e4e4e4 bold
-L9 48-66 fg=#777777
+L9 53-66 fg=#777777
 L9 70-71 fg=#eeeedd
 L9 72-79 fg=#e4e4e4
 L9 116-118 fg=#777777
 L9 119-120 fg=#eeeedd
 L10 6-7 fg=#3c3c3c
 L10 8-16 fg=#e4e4e4 bold
-L10 48-66 fg=#777777
+L10 53-66 fg=#777777
 L10 70-120 fg=#eeeedd
 L11 4-5 fg=#ad58b4
 L11 6-12 fg=#e4e4e4 bold
-L11 43-68 fg=#777777
+L11 47-68 fg=#777777
 L11 70-120 fg=#eeeedd
 L12 4-5 fg=#ad58b4
 L12 6-17 fg=#e4e4e4 bold
-L12 45-68 fg=#777777
+L12 47-68 fg=#777777
 L12 70-120 fg=#eeeedd
 L13 0-6 fg=#ad58b4 bg=#2e2e2e
-L13 6-42 fg=#e4e4e4 bg=#2e2e2e bold
-L13 42-69 fg=#777777 bg=#2e2e2e
+L13 6-46 fg=#e4e4e4 bg=#2e2e2e bold
+L13 46-69 fg=#777777 bg=#2e2e2e
 L13 70-120 fg=#eeeedd
 L14 70-120 fg=#eeeedd
 L15 70-120 fg=#eeeedd
