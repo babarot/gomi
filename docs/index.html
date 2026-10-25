@@ -1,348 +1,131 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
-    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
-    <link rel="apple-touch-icon" href="favicon.png">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>gomi - A Safer Alternative to the UNIX rm Command</title>
+<meta name="description" content="gomi is a trash can for the command line. Use it like rm; nothing is gone until you empty it, and rm -b brings files back to where they were.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://gomi.dev/">
+<meta property="og:title" content="gomi - A Safer Alternative to the UNIX rm Command">
+<meta property="og:description" content="gomi is a trash can for the command line. Use it like rm; nothing is gone until you empty it, and rm -b brings files back to where they were.">
+<meta property="og:image" content="https://storage.googleapis.com/zenn-user-upload/b3b2ba4ffc5b-20250208.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://storage.googleapis.com/zenn-user-upload/b3b2ba4ffc5b-20250208.png">
+<script>
+try { const t = localStorage.getItem('gomi-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
+<link rel="icon" href="favicon.ico" type="image/x-icon">
+<link rel="icon" href="favicon/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="favicon/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=DotGothic16&family=Bitcount+Prop+Single:wght@300..700&family=Fira+Code:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<header class="wrap top">
+  <span>gomi</span>
+  <nav><a href="#inside">Look inside</a><a href="#install">Install</a><a href="https://github.com/babarot/gomi">GitHub</a><button class="theme px" id="theme" type="button" aria-label="Switch color theme">dark</button></nav>
+</header>
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>gomi - A Safer Alternative to the UNIX rm Command</title>
+<main>
+  <section class="wrap hero">
+    <div>
+      <h1>I keep what you rm.</h1>
+      <p class="jp">ゴミ、あずかります。</p>
+      <p class="lede">gomi is a trash can for the command line. Use it like <code>rm</code>. Nothing is gone until you empty it, and <code>rm -b</code> brings things back to where they were.</p>
+      <p class="hint">Throw a file in, then <a href="#inside">look inside the can</a>.</p>
+    </div>
+    <div>
+      <div class="stage">
+        <div class="bubble px" id="bubble" aria-live="polite">Click a file to throw it out.</div>
+        <button class="can" id="can" type="button" aria-label="Open the trash in the terminal below">
+          <img src="favicon/web-app-manifest-512x512.png" alt="gomi, a purple pixel trash can">
+        </button>
+        <div class="count" id="count">0</div>
+      </div>
+      <div class="desk" id="desk" aria-label="Files in ~/work"></div>
+      <p class="log" id="log"></p>
+    </div>
+  </section>
 
-    <!-- SEO Meta Tags -->
-    <meta name="title" content="gomi - A Safer Alternative to the UNIX rm Command">
-    <meta name="description" content="Never worry about accidentally deleting important files again. gomi moves them to trash instead of permanent deletion, giving you peace of mind in the command line.">
-
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://github.com/babarot/gomi">
-    <meta property="og:title" content="gomi - A Safer Alternative to the UNIX rm Command">
-    <meta property="og:description" content="Never worry about accidentally deleting important files again. gomi moves them to trash instead of permanent deletion, giving you peace of mind in the command line.">
-    <meta property="og:image" content="https://storage.googleapis.com/zenn-user-upload/b3b2ba4ffc5b-20250208.png">
-
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://github.com/babarot/gomi">
-    <meta property="twitter:title" content="gomi - A Safer Alternative to the UNIX rm Command">
-    <meta property="twitter:description" content="Never worry about accidentally deleting important files again. gomi moves them to trash instead of permanent deletion, giving you peace of mind in the command line.">
-    <meta property="twitter:image" content="https://storage.googleapis.com/zenn-user-upload/b3b2ba4ffc5b-20250208.png">
-
-    <!-- External Resources -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hack-font/3.3.0/web/hack.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-    <!-- Custom Styles -->
-    <link rel="stylesheet" href="main.css">
-  </head>
-  <body>
-    <main>
-      <!-- Hero Section -->
-      <section class="hero">
-        <h1>gomi</h1>
-        <p><b>A Safer Alternative to the UNIX rm Command!</b></p>
-        <div class="hero-stats">
-          <img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/babarot/gomi?code=3560d65c55e427c319fe">
+  <section class="sec" id="inside">
+    <div class="wrap">
+      <h2>Look inside the can.</h2>
+      <p>This is <code>rm -b</code>, drawn the way gomi draws it: under your prompt, with the file on the cursor previewed on the right. What you threw out above is in here too. Click the terminal and use the keys; <code>enter</code> restores, and a file from <code>~/work</code> lands back on the desk.</p>
+      <div class="term">
+        <div class="term-bar">
+          <div class="dots"><i></i><i></i><i></i></div>
+          <span class="title">~/work — zsh</span>
+          <button id="reset" type="button">Reset</button>
         </div>
-      </section>
-
-      <!-- Demo Section -->
-      <section class="demo-section">
-        <h2 class="demo-heading">Safety First, Always</h2>
-        <p class="demo-description">Never worry about accidentally deleting important files again. gomi moves them to trash instead of permanent deletion, giving you peace of mind while working in the command line.</p>
-        <div class="demo-container">
-          <img src="demo/main.gif"
-          alt="gomi CLI demonstration"
-          class="demo-gif"
-          loading="lazy">
-        </div>
-      </section>
-
-      <!-- Features Section -->
-      <section class="features">
-        <div class="container">
-          <div class="features-grid">
-            <article class="feature">
-              <h3>📂 Safe File Handler</h3>
-              <p>Works exactly like <code>rm</code> but with a safety net. Seamlessly replace your existing <code>rm</code> command with gomi using a simple alias, maintaining all your familiar command flags.</p>
-            </article>
-            <article class="feature">
-              <h3>🔄 Quick Recovery</h3>
-              <p>Made a mistake? No problem. Quickly restore files to their original location with a simple <code>gomi --restore</code> command. Includes an intuitive interface for browsing and selecting files to restore.</p>
-            </article>
-            <article class="feature">
-              <h3>🗑️ XDG Trash Spec</h3>
-              <p>Fully compatible with the <a href="https://specifications.freedesktop.org/trash/latest/">XDG Trash specification</a>. Integrates seamlessly with other trash management tools like <a class="github" href="https://github.com/andreafrancia/trash-cli">trash-cli</a>, ensuring consistent file handling across different tools.</p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <!-- Installation Section -->
-      <section class="installation">
-        <h2>Installation</h2>
-        <div class="code-container">
-          <div class="code">
-            <pre><code>$ curl https://gomi.dev/install | bash</code></pre>
-          </div>
-          <button class="copy-button"
-            onclick="copyInstallCommand()"
-            aria-label="Copy installation command">
-            COPY
-          </button>
-        </div>
-
-        <h2>Usage</h2>
-        <div class="cli-demo">
-          <pre><span class="command">$ gomi example.txt</span>
-<span class="output">Moving example.txt to trash...</span>
-
-<span class="command">$ gomi --restore</span>
-<span class="output">Restored example.txt to original location</span></pre>
-        </div>
-      </section>
-    </main>
-
-    <section class="carousel-section">
-      <h2 id="carousel-title">See gomi in Action</h2>
-      <div class="carousel-container">
-        <div class="carousel">
-          <div class="carousel-slide active" data-title="Live Debugging">
-            <img src="demo/debug.gif" alt="gomi mode debugging" class="carousel-image">
-          </div>
-          <div class="carousel-slide" data-title="Permanent File Deletion">
-            <img src="demo/delete.gif" alt="gomi demo permanent-delete" class="carousel-image">
-          </div>
-          <div class="carousel-slide" data-title="Pruning Trash Files">
-            <img src="demo/prune.gif" alt="gomi demo pruning" class="carousel-image">
-          </div>
-        </div>
-
-        <div class="carousel-controls">
-          <div class="carousel-indicators">
-            <button class="indicator active" data-slide="0" aria-label="Show first slide"></button>
-            <button class="indicator" data-slide="1" aria-label="Show second slide"></button>
-            <button class="indicator" data-slide="2" aria-label="Show third slide"></button>
-          </div>
-          <button class="carousel-prev" aria-label="Previous slide">
-            <i class="fas fa-chevron-left"></i>
-          </button>
-          <button class="carousel-next" aria-label="Next slide">
-            <i class="fas fa-chevron-right"></i>
-          </button>
+        <div class="tscreen" id="screen" tabindex="0" role="application" aria-label="Terminal running gomi. Click and type."></div>
+        <div class="tkeys" id="tkeys">
+          <button data-k="k">↑ k</button><button data-k="j">↓ j</button>
+          <button data-k="h">← h</button><button data-k="l">→ l</button>
+          <button data-k="Enter">enter</button><button data-k="Tab">tab</button>
+          <button data-k=" ">space</button><button data-k="/">/</button>
+          <button data-k="v">v</button><button data-k=".">.</button>
+          <button data-k="?">?</button><button data-k="Escape">esc</button><button data-k="q">q</button>
+          <span>click the screen to type</span>
         </div>
       </div>
 
-      <div class="carousel-button-container">
-        <a href="https://github.com/babarot/gomi"
-          class="button"
-          target="_blank"
-          rel="noopener noreferrer">
-          EXPLORE ON GITHUB
-        </a>
+      <div class="views" id="viewButtons">
+        <button class="px" data-view="recent" aria-pressed="true"><strong>recent</strong><span>By the day you threw it out. One rm, one bracket.</span></button>
+        <button class="px" data-view="places" aria-pressed="false"><strong>places</strong><span>By the directory it came from.</span></button>
+        <button class="px" data-view="batches" aria-pressed="false"><strong>batches</strong><span>By the rm that did it. enter puts the whole rm back.</span></button>
+        <button class="px" data-view="picker" aria-pressed="false"><strong>picker</strong><span>One row a file. Type to find it, as in fzf.</span></button>
       </div>
-    </section>
+      <div class="marks">
+        <div><b style="color:#ff007f">!</b><span>Something has its name there now. gomi asks for a new name before restoring.</span></div>
+        <div><b style="color:var(--mid)">+</b><span>Its directory is gone. gomi makes it again on the way back.</span></div>
+      </div>
+    </div>
+  </section>
 
-    <div class="carousel-footer-spacer"></div>
+  <section class="sec" id="habits">
+    <div class="wrap">
+      <h2>Your rm habits stay.</h2>
+      <p>Put <code>alias rm=gomi</code> in your shell config. The flags you know keep their meaning, and the trash is the same XDG trash your desktop and trash-cli use. Linux, macOS and Windows.</p>
+      <div class="flags">
+        <div class="px"><code>rm file</code><p>Into the can, not into oblivion.</p></div>
+        <div class="px"><code>rm -rf dir/</code><p>Directories too, without a prompt.</p></div>
+        <div class="px"><code>rm -i *.log</code><p>Asks before each file.</p></div>
+        <div class="px"><code>gomi --prune=30d</code><p>Empties what is older than 30 days. <code>--dry-run</code> looks first.</p></div>
+      </div>
+    </div>
+  </section>
 
-    <!-- Footer -->
-    <footer class="footer">
-      <div class="footer-content">
-        <div class="footer-author">
-          <a href="https://babarot.me"
-            class="footer-avatar-link"
-            target="_blank"
-            rel="noopener noreferrer">
-            <img src="https://avatars.githubusercontent.com/babarot"
-            alt="babarot's profile picture"
-            class="footer-avatar"
-            loading="lazy"
-            onerror="this.src='/api/placeholder/40/40'">
-          </a>
-          <div class="footer-author-info">
-            <div class="footer-author-name">babarot</div>
-            <div class="footer-author-title">Tokyo-based SRE, turning chaos into reliability!</div>
-          </div>
-        </div>
-
-        <nav class="footer-links">
-          <a href="https://github.com/babarot"
-            class="footer-link"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="GitHub Profile">
-            <i class="fab fa-github"></i>
-          </a>
-          <span class="footer-link-separator" aria-hidden="true">•</span>
-          <a href="https://x.com/b4b4r07"
-            class="footer-link"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="X (Twitter) Profile">
-            <i class="fa-brands fa-x-twitter"></i>
-          </a>
-          <span class="footer-link-separator" aria-hidden="true">•</span>
-          <a href="https://tellme.tokyo/post/2025/01/29/gomi/"
-            class="footer-link"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Blog Post">
-            <i class="fa-solid fa-blog"></i>
-          </a>
-        </nav>
-
-        <div class="footer-copyright">
-          © 2024 gomi. Made with 💜 by babarot
+  <section class="sec" id="install">
+    <div class="wrap">
+      <h2>Pick up a can.</h2>
+      <div class="menu">
+        <ul role="tablist" aria-label="Install with">
+          <li><button role="tab" aria-selected="true" data-cmd="curl -fsSL https://gomi.dev/install | bash" data-note="Puts the binary in ~/bin. Set PREFIX to change it.">curl</button></li>
+          <li><button role="tab" aria-selected="false" data-cmd="brew install gomi" data-note="macOS and Linux.">Homebrew</button></li>
+          <li><button role="tab" aria-selected="false" data-cmd="scoop bucket add babarot https://github.com/babarot/scoop-bucket&#10;scoop install gomi" data-note="Windows.">Scoop</button></li>
+          <li><button role="tab" aria-selected="false" data-cmd="yay -S gomi" data-note="Arch Linux, from the AUR.">AUR</button></li>
+        </ul>
+        <div class="out">
+          <pre id="cmd">curl -fsSL https://gomi.dev/install | bash</pre>
+          <p id="note">Puts the binary in ~/bin. Set PREFIX to change it.</p>
+          <button class="btn px" id="copy" type="button">Copy</button>
         </div>
       </div>
-    </footer>
+    </div>
+  </section>
+</main>
 
-    <!-- Scripts -->
-    <script>
-      function copyInstallCommand() {
-        const command = "curl -fsSL https://gomi.dev/install | bash";
-        navigator.clipboard.writeText(command).then(() => {
-          const button = document.querySelector('.copy-button');
-          button.textContent = 'COPIED!';
-          button.classList.add('copied');
+<footer>
+  <div class="wrap">
+    <div class="sig"><img src="favicon/web-app-manifest-192x192.png" alt="">gomi v1.9.0, made by babarot in Tokyo</div>
+    <nav><a href="https://github.com/babarot/gomi">GitHub</a><a href="https://tellme.tokyo/post/2025/01/29/gomi/">Blog</a><a href="https://x.com/b4b4r07">X</a></nav>
+  </div>
+</footer>
 
-          setTimeout(() => {
-            button.textContent = 'COPY';
-            button.classList.remove('copied');
-          }, 3000);
-        });
-      }
-      document.addEventListener('DOMContentLoaded', function() {
-        const carousel = document.querySelector('.carousel');
-        const slides = document.querySelectorAll('.carousel-slide');
-        const indicators = document.querySelectorAll('.indicator');
-        const prevButton = document.querySelector('.carousel-prev');
-        const nextButton = document.querySelector('.carousel-next');
-        const carouselTitle = document.getElementById('carousel-title');
-        let currentSlide = 0;
-        let interval;
-
-        // Touch event variables
-        let touchStartX = 0;
-        let touchEndX = 0;
-        const minSwipeDistance = 50; // Minimum distance for a swipe to trigger a slide change
-
-        // Preload all images
-        function preloadImages() {
-          slides.forEach(slide => {
-            const img = slide.querySelector('img');
-            if (img) {
-              // Remove loading="lazy" to force loading
-              img.removeAttribute('loading');
-              // Create image object for preloading
-              const preloadImg = new Image();
-              preloadImg.src = img.src;
-            }
-          });
-        }
-
-        // Slide display function with title change animation
-        function showSlide(index) {
-          // Fade out title
-          carouselTitle.classList.add('title-change');
-
-          setTimeout(() => {
-            // Remove active state from current slide
-            slides[currentSlide].classList.remove('active');
-            indicators[currentSlide].classList.remove('active');
-
-            // Activate new slide
-            slides[index].classList.add('active');
-            indicators[index].classList.add('active');
-
-            // Update title
-            const title = slides[index].getAttribute('data-title');
-            carouselTitle.textContent = title || 'See gomi in Action';
-
-            // Fade in title
-            carouselTitle.classList.remove('title-change');
-            carouselTitle.classList.add('active');
-
-            currentSlide = index;
-          }, 300);
-        }
-
-        function nextSlide() {
-          let next = currentSlide + 1;
-          if (next >= slides.length) {
-            next = 0;
-          }
-          showSlide(next);
-        }
-
-        function prevSlide() {
-          let prev = currentSlide - 1;
-          if (prev < 0) {
-            prev = slides.length - 1;
-          }
-          showSlide(prev);
-        }
-
-        // Touch event handlers
-        function handleTouchStart(e) {
-          touchStartX = e.touches[0].clientX;
-        }
-
-        function handleTouchMove(e) {
-          touchEndX = e.touches[0].clientX;
-        }
-
-        function handleTouchEnd() {
-          const swipeDistance = touchEndX - touchStartX;
-
-          if (Math.abs(swipeDistance) > minSwipeDistance) {
-            if (swipeDistance > 0) {
-              // Swiped right, go to previous slide
-              prevSlide();
-            } else {
-              // Swiped left, go to next slide
-              nextSlide();
-            }
-          }
-
-          // Reset touch coordinates
-          touchStartX = 0;
-          touchEndX = 0;
-        }
-
-        // Event listeners for buttons and indicators
-        prevButton.addEventListener('click', prevSlide);
-        nextButton.addEventListener('click', nextSlide);
-
-        indicators.forEach((indicator, index) => {
-          indicator.addEventListener('click', () => {
-            showSlide(index);
-          });
-        });
-
-        // Touch event listeners
-        carousel.addEventListener('touchstart', handleTouchStart, { passive: true });
-        carousel.addEventListener('touchmove', handleTouchMove, { passive: true });
-        carousel.addEventListener('touchend', handleTouchEnd);
-
-        // Keyboard navigation
-        document.addEventListener('keydown', (e) => {
-          if (e.key === 'ArrowLeft') {
-            prevSlide();
-          } else if (e.key === 'ArrowRight') {
-            nextSlide();
-          }
-        });
-
-        // Preload images on page load
-        preloadImages();
-
-        // Activate first slide (without animation)
-        slides[0].classList.add('active');
-        indicators[0].classList.add('active');
-        carouselTitle.textContent = slides[0].getAttribute('data-title') || 'See gomi in Action';
-        carouselTitle.classList.add('active');
-      });
-    </script>
-  </body>
+<script src="trash.js"></script>
+<script src="tui.js"></script>
+<script src="site.js"></script>
+</body>
 </html>

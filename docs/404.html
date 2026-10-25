@@ -1,23 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hack-font/3.3.0/web/hack.min.css">
-    <link rel="stylesheet" href="main.css">
-    <title>gomi - A Safer Alternative to the UNIX rm Command</title>
-  </head>
-  <body>
-    <main>
-      <section class="notfound">
-        <div class="notfound-container">
-          <a href="/">
-            <img src="favicon.png" alt="gomi icon" class="notfound-icon">
-          </a>
-          <p>404 Not Found</p>
-        </div>
-      </section>
-    </main>
-  </body>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>gomi - Not found</title>
+<script>
+try { const t = localStorage.getItem('gomi-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
+<link rel="icon" href="/favicon.ico" type="image/x-icon">
+<link rel="icon" href="/favicon/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=DotGothic16&family=Bitcount+Prop+Single:wght@300..700&family=Fira+Code:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="/site.css">
+<style>
+.notfound { min-height: 100vh; display: grid; place-items: center; text-align: center; padding: 40px 20px; }
+.notfound img { width: min(220px, 50vw); image-rendering: pixelated; }
+.notfound h1 { margin-top: 18px; font: 700 clamp(28px, 5vw, 44px)/1.1 var(--px); }
+.notfound p { margin-top: 10px; color: var(--mid); }
+.notfound code { font: 500 .9em var(--mono); background: var(--pale); padding: 1px 6px; }
+</style>
+</head>
+<body>
+<main class="notfound">
+  <div>
+    <a href="/"><img src="/favicon/web-app-manifest-512x512.png" alt="gomi, a purple pixel trash can"></a>
+    <h1>Nothing here, not even in the trash.</h1>
+    <p>This page does not exist. <a href="/">Go back to gomi</a>, or try <code>rm -b</code>.</p>
+  </div>
+</main>
+</body>
 </html>
