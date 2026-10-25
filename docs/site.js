@@ -83,7 +83,7 @@ function throwOut(f, typed) {
     f.el.remove();
     bump('gulp');
     out('$ rm ' + f.name);
-    say(deskFiles.length ? 'Got it. ' + f.name + ' is safe with me.' : 'Desk is clear. Click me to look inside.');
+    say(deskFiles.length ? 'Got it. ' + f.name + ' is safe with me.' : 'Desk is clear. Click me to get things back.');
   }, 330);
 }
 st.desk = () => deskFiles.map(f => f.name + (f.isDir ? '/' : ''));
@@ -93,7 +93,7 @@ st.throwByName = (name, typed) => {
   throwOut(f, typed); return true;
 };
 st.onRestore = f => {
-  if (f.dir !== '~/work') return;
+  if (f.dir !== '~/work') { say('Sent ' + f.name + ' back to ' + f.dir + '.'); return; }
   setTimeout(() => {
     chip({ name: f.name, size: f.size, isDir: f.isDir, text: f.text, img: f.img }, true);
     bump('spit');
@@ -101,12 +101,16 @@ st.onRestore = f => {
     say('Here you go: ' + f.name + '.');
   }, 120);
 };
+// the can gives back what is on top of it, the way rm -b and enter do
 can.addEventListener('click', () => {
-  if (!term.isOpen()) term.openTui();
+  if (!term.files.length) { say("I'm empty. Nothing to give back."); return; }
+  const mode = term.restoreNewest();
   draw();
-  say('Have a look inside.');
-  $('inside').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  setTimeout(() => screen.focus({ preventScroll: true }), 400);
+  if (mode === 'ask') {
+    say('Its name is taken there. Give it a new one below.');
+    $('inside').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => screen.focus({ preventScroll: true }), 400);
+  }
 });
 
 function reset() {

@@ -1046,6 +1046,17 @@ const GomiTerm = (() => {
     isOpen: () => state.mode === 'tui',
     setView(v) { if (state.mode !== 'tui') openTui(); setView(state.tui, v); schedulePreview(); },
     view: () => state.tui && state.tui.view,
-    quit: () => { if (state.mode === 'tui') quitTui(''); },
+    // quit leaves the TUI as q does, which prints the exit message
+    quit: () => { if (state.mode === 'tui') quitTui('bye!'); },
+    // restoreNewest does by hand what a quick undo is in gomi: rm -b, then
+    // enter on the row the cursor starts on. It returns what the terminal
+    // is left doing: 'shell', or 'ask' when the name is taken there.
+    restoreNewest() {
+      if (state.mode === 'ask') return 'ask';
+      if (state.mode === 'tui') quitTui('bye!');
+      openTui();
+      if (state.mode === 'tui') key('Enter');
+      return state.mode;
+    },
   };
 })();
