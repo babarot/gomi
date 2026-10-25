@@ -2,9 +2,11 @@ package ui
 
 import (
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
+	"unicode"
 
 	"charm.land/bubbles/v2/textinput"
 )
@@ -14,13 +16,37 @@ const (
 	viewRecent  = "recent"  // under a heading for each day they were deleted on
 	viewPlaces  = "places"  // folded by the directory they were deleted from
 	viewBatches = "batches" // folded by the run of gomi that deleted them
+	viewPicker  = "picker"  // one row a file, best match of the filter first
 )
+
+// sortOrder is an order the picker lays the files out in when the filter
+// is empty
+type sortOrder struct {
+	name string
+	less func(a, b File) bool
+}
+
+// sortBySize is the order by size in sortOrders
+const sortBySize = 3
+
+// sortOrders are the orders s chooses from, newest first by default
+var sortOrders = []sortOrder{
+	{"Deleted, newest first", func(a, b File) bool { return a.DeletedAt.After(b.DeletedAt) }},
+	{"Deleted, oldest first", func(a, b File) bool { return a.DeletedAt.Before(b.DeletedAt) }},
+	{"Name", func(a, b File) bool { return strings.ToLower(a.Name) < strings.ToLower(b.Name) }},
+	{"Size, largest first", func(a, b File) bool { return a.Size > b.Size }},
+	{"Deleted from", func(a, b File) bool { return filepath.Dir(a.OriginalPath) < filepath.Dir(b.OriginalPath) }},
+}
 
 // fileList is the list of files the TUI shows, newest first, laid out by
 // the view and narrowed by the filter.
 type fileList struct {
 	files []File // newest first
 	view  string
+	sort  int // the picker's order, an index into sortOrders
+	// sizeOf is the size of a file's contents as far as it is known, for
+	// the order by size
+	sizeOf func(File) (int64, bool)
 	// open has the folds opened in places and batches, by their key
 	open map[string]bool
 
@@ -79,9 +105,15 @@ func (r row) cursorKey() string {
 	return ""
 }
 
+// the prompts of the filter, in the picker and in the other views
+const (
+	pickerPrompt = "❯ "
+	filterPrompt = "/ "
+)
+
 func newFileList() fileList {
 	ti := textinput.New()
-	ti.Prompt = "/ "
+	ti.Prompt = filterPrompt
 	return fileList{filter: ti, view: viewRecent, open: map[string]bool{}}
 }
 
@@ -106,6 +138,10 @@ func (l *fileList) setFiles(files []File, now time.Time) {
 func (l *fileList) setView(view string, now time.Time) {
 	f, onFile := l.current(now)
 	l.view = view
+	l.filter.Prompt = filterPrompt
+	if view == viewPicker {
+		l.filter.Prompt = pickerPrompt
+	}
 	rows := l.rows(now)
 	if view != viewRecent && len(rows) > 0 && !l.opened(view) {
 		l.open[foldKey(view, rows[0].key)] = true
@@ -158,6 +194,10 @@ func (l fileList) matches(f File) bool {
 	if q == "" {
 		return true
 	}
+	if l.view == viewPicker {
+		_, ok := pickScore(f, q)
+		return ok
+	}
 	return strings.Contains(strings.ToLower(f.Name), q) ||
 		strings.Contains(strings.ToLower(filepath.Dir(f.OriginalPath)), q)
 }
@@ -178,6 +218,8 @@ func (l fileList) rows(now time.Time) []row {
 	switch l.view {
 	case viewPlaces, viewBatches:
 		return l.foldRows()
+	case viewPicker:
+		return l.pickRows()
 	}
 	return l.dayRows(now)
 }
@@ -420,4 +462,79 @@ func (l *fileList) scroll(rows []row, n int) {
 	}
 	l.top = min(l.top, max(0, len(rows)-n))
 	l.top = max(l.top, 0)
+}
+
+// pickRows lays out the picker: a row a file, the best matches of the
+// filter first, or in the chosen order when the filter is empty
+func (l fileList) pickRows() []row {
+	files := l.shown()
+	q := l.query()
+	if q == "" {
+		less := sortOrders[l.sort].less
+		if l.sort == sortBySize && l.sizeOf != nil {
+			// sizes not known yet go last
+			size := func(f File) int64 {
+				if n, ok := l.sizeOf(f); ok {
+					return n
+				}
+				return -1
+			}
+			less = func(a, b File) bool { return size(a) > size(b) }
+		}
+		slices.SortStableFunc(files, func(a, b File) int {
+			switch {
+			case less(a, b):
+				return -1
+			case less(b, a):
+				return 1
+			}
+			return 0
+		})
+	} else {
+		slices.SortStableFunc(files, func(a, b File) int {
+			sa, _ := pickScore(a, q)
+			sb, _ := pickScore(b, q)
+			return sa - sb
+		})
+	}
+	rows := make([]row, len(files))
+	for i, f := range files {
+		rows[i] = row{kind: rowFile, file: f}
+	}
+	return rows
+}
+
+// pickScore tells how well q, lowercased, matches f, lower being better:
+// its letters in f's name in order, the closer together the better; else
+// in where f was deleted from and its name, after every name match.
+func pickScore(f File, q string) (int, bool) {
+	if pos := fuzzyRunes(f.Name, q); pos != nil {
+		return pos[len(pos)-1] - pos[0] - len(pos) + 1, true
+	}
+	if pos := fuzzyRunes(f.OriginalPath, q); pos != nil {
+		return 1000 + pos[len(pos)-1] - pos[0], true
+	}
+	return 0, false
+}
+
+// fuzzyRunes finds the runes of q, lowercased, in s in order, ignoring
+// case, and returns where they are in s, in runes; nil when they are not
+// all there. Each is taken as early as it can be.
+func fuzzyRunes(s, q string) []int {
+	rq := []rune(q)
+	if len(rq) == 0 {
+		return nil
+	}
+	var pos []int
+	j := 0
+	for i, c := range []rune(s) {
+		if j < len(rq) && unicode.ToLower(c) == rq[j] {
+			pos = append(pos, i)
+			j++
+		}
+	}
+	if j < len(rq) {
+		return nil
+	}
+	return pos
 }

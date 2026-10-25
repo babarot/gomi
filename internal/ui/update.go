@@ -26,6 +26,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.state.Confirming() {
 			return m.updateConfirmView(msg)
 		}
+		if m.sortMenu {
+			return m.updateSortMenu(msg)
+		}
 		switch m.state.current {
 		case ListView:
 			next, cmd := m.updateListView(msg)
@@ -194,6 +197,16 @@ func (m Model) updateListView(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 
 	case key.Matches(msg, m.keyMap.List.View):
 		m.list.setView(m.nextView(), t)
+		if m.list.view == viewPicker {
+			// the picker starts with the focus in the filter
+			m.list.filtering = true
+			return m, m.list.filter.Focus()
+		}
+		return m, nil
+
+	case m.list.view == viewPicker && key.Matches(msg, m.keyMap.List.Sort):
+		m.sortMenu = true
+		m.sortSel = m.list.sort
 		return m, nil
 
 	case m.list.view != viewRecent && key.Matches(msg, m.keyMap.List.Open):
@@ -265,9 +278,28 @@ func (m Model) updateListView(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 }
 
 // updateFilter handles keys while the filter has the focus: enter keeps
-// what was typed, esc drops it, and the arrows still move the cursor.
+// what was typed, esc drops it, and the arrows still move the cursor. In
+// the picker, enter restores and tab selects, as they do in the list, and
+// esc hands the focus to the list, keeping what was typed, so that keys
+// such as v work there.
 func (m Model) updateFilter(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	t := now()
+	if m.list.view == viewPicker {
+		switch {
+		case msg.String() == "esc":
+			m.list.filtering = false
+			m.list.filter.Blur()
+			return m, nil
+		case key.Matches(msg, m.keyMap.List.Enter), key.Matches(msg, m.keyMap.List.Select), key.Matches(msg, m.keyMap.List.DeSelect):
+			m.list.filtering = false
+			next, cmd := m.updateListView(msg)
+			if nm, ok := next.(Model); ok {
+				nm.list.filtering = nm.state.current == ListView
+				return nm, cmd
+			}
+			return next, cmd
+		}
+	}
 	switch msg.String() {
 	case "ctrl+c":
 		m.state.SetView(Quitting)
@@ -394,7 +426,7 @@ func (m Model) nextView() string {
 // views are the views v goes through, as ui.views says
 func (m Model) views() []string {
 	if len(m.config.Views) == 0 {
-		return []string{viewRecent, viewPlaces, viewBatches}
+		return []string{viewRecent, viewPlaces, viewBatches, viewPicker}
 	}
 	return m.config.Views
 }
@@ -473,4 +505,28 @@ func (m Model) handleYesNoConfirmation(msg tea.KeyPressMsg) (tea.Model, tea.Cmd)
 	}
 
 	return m, nil
+}
+
+// updateSortMenu handles keys while the sort menu is open: the arrows or
+// j k move, a number or enter chooses, esc, s or q closes it
+func (m Model) updateSortMenu(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	t := now()
+	choose := func(i int) {
+		m.list.sort = i
+		m.sortMenu = false
+		m.list.toStart(t)
+	}
+	switch s := msg.String(); {
+	case s == "up" || s == "k":
+		m.sortSel = (m.sortSel + len(sortOrders) - 1) % len(sortOrders)
+	case s == "down" || s == "j":
+		m.sortSel = (m.sortSel + 1) % len(sortOrders)
+	case s == "enter":
+		choose(m.sortSel)
+	case len(s) == 1 && s[0] >= '1' && int(s[0]-'1') < len(sortOrders):
+		choose(int(s[0] - '1'))
+	case s == "esc" || s == "s" || s == "q":
+		m.sortMenu = false
+	}
+	return m.followCursor(nil)
 }

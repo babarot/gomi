@@ -139,8 +139,36 @@ func (m Model) rowLine(r row, onCursor bool, w int) string {
 		return m.foldLine(r, onCursor, w)
 	case r.depth > 0:
 		return m.foldFileLine(r, onCursor, w)
+	case m.list.view == viewPicker:
+		return m.pickLine(r, onCursor, w)
 	}
 	return m.fileLine(r, onCursor, w)
+}
+
+// pickLine is a file in the picker: its name, where it was deleted from,
+// how long ago, its size and its mark
+func (m Model) pickLine(r row, onCursor bool, w int) string {
+	on := m.rowStyle(onCursor)
+	plain := on(lipgloss.NewStyle())
+	f := r.file
+	mark := ""
+	if m.selection.Contains(f) {
+		mark = "✓"
+	}
+	size := ellipsis
+	if n, ok := m.knownSize(f); ok {
+		size = compactBytes(n)
+	}
+	right := fmt.Sprintf("%11s  %6s", relativeTime(f.DeletedAt), size)
+	line := m.rowStart(onCursor, mark)
+	room := max(0, w-3-ansi.StringWidth(line)-ansi.StringWidth(right)-2)
+	nameW := max(minNameCol, room*nameShare/100)
+	name := m.nameCell(f, nameW, on)
+	line += name + plain.Render(strings.Repeat(" ", max(2, nameW+2-ansi.StringWidth(name))))
+	line += on(m.fg(m.palette.Description)).Render(shortPath(m.displayPath(filepath.Dir(f.OriginalPath)), max(0, room-nameW-2)))
+	line += plain.Render(strings.Repeat(" ", max(1, w-3-ansi.StringWidth(line)-ansi.StringWidth(right))))
+	line += on(m.fg(m.palette.Description)).Render(right) + plain.Render(" ") + m.originMark(f, on)
+	return m.fillRow(line, onCursor, w)
 }
 
 // rowStyle gives a row's styles the cursor row's background when it is
@@ -209,7 +237,7 @@ func (m Model) foldLine(r row, onCursor bool, w int) string {
 	}
 	right := count + " · " + m.sizeOfFiles(r.files)
 	if m.list.view == viewPlaces {
-		right += "  " + fmt.Sprintf("%9s", relativeTime(r.files[0].DeletedAt))
+		right += "  " + fmt.Sprintf("%11s", relativeTime(r.files[0].DeletedAt))
 	}
 	room := max(0, w-6-ansi.StringWidth(right)-2)
 
@@ -277,7 +305,7 @@ func (m Model) foldFileLine(r row, onCursor bool, w int) string {
 	if n, ok := m.knownSize(f); ok {
 		size = compactBytes(n)
 	}
-	right := fmt.Sprintf("%9s  %6s", relativeTime(f.DeletedAt), size)
+	right := fmt.Sprintf("%11s  %6s", relativeTime(f.DeletedAt), size)
 	if m.list.view == viewBatches {
 		right = fmt.Sprintf("%6s", size)
 	}
@@ -407,11 +435,28 @@ func (m Model) nameCell(f File, w int, on func(lipgloss.Style) lipgloss.Style) s
 	}
 	name = ansi.Truncate(name, w, ellipsis)
 	base := on(m.fg(color)).Bold(true)
-	i, n := matchRunes(name, m.list.query())
+	match := on(m.fg(m.palette.FilterMatch)).Bold(true).Underline(true)
+	q := m.list.query()
+	if m.list.view == viewPicker {
+		// the letters of the filter, wherever they are in the name
+		hit := map[int]bool{}
+		for _, i := range fuzzyRunes(name, q) {
+			hit[i] = true
+		}
+		var b strings.Builder
+		for i, c := range []rune(name) {
+			if hit[i] {
+				b.WriteString(match.Render(string(c)))
+			} else {
+				b.WriteString(base.Render(string(c)))
+			}
+		}
+		return b.String()
+	}
+	i, n := matchRunes(name, q)
 	if n == 0 {
 		return base.Render(name)
 	}
-	match := on(m.fg(m.palette.FilterMatch)).Bold(true).Underline(true)
 	r := []rune(name)
 	return base.Render(string(r[:i])) + match.Render(string(r[i:i+n])) + base.Render(string(r[i+n:]))
 }
@@ -540,4 +585,25 @@ func (m Model) helpView() string {
 		keyMap = m.keyMap.AsDetailKeyMap()
 	}
 	return lipgloss.NewStyle().PaddingLeft(2).Render(m.help.View(keyMap))
+}
+
+// sortMenuView is the picker's sort menu: the orders, numbered, the one in
+// use checked and the one under the cursor on the cursor's background
+func (m Model) sortMenuView() string {
+	var lines []string
+	for i, o := range sortOrders {
+		on := m.rowStyle(i == m.sortSel)
+		check := " "
+		if i == m.list.sort {
+			check = "✓"
+		}
+		line := on(m.fg(m.palette.Cursor)).Bold(true).Render(fmt.Sprintf(" %d ", i+1)) +
+			on(m.fg(m.palette.Name)).Render(fmt.Sprintf("%-24s", o.name)) +
+			on(m.fg(m.palette.Selected)).Render(check+" ")
+		lines = append(lines, line)
+	}
+	return lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(m.palette.Cursor.Of(m.isDark)).
+		Render(m.fg(m.palette.Heading).Bold(true).Render(" Sort") + "\n" + strings.Join(lines, "\n"))
 }

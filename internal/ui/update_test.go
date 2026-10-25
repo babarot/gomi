@@ -709,3 +709,36 @@ func TestUpdate_PreviewDueAfterMovingToFold(t *testing.T) {
 	}
 	_ = updated
 }
+
+func TestUpdate_PickerEscKeepsQuery(t *testing.T) {
+	m := newTestModel()
+	m.list.setFiles([]File{listFile("a", time.Hour, "")}, listNow)
+	m.list.setView(viewPicker, listNow)
+	m.list.filtering = true
+	m.list.filter.SetValue("a")
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	m = asModel(t, updated)
+	if m.list.filtering || m.list.filter.Value() != "a" {
+		t.Errorf("after esc: filtering %v, query %q; want false, a", m.list.filtering, m.list.filter.Value())
+	}
+	// v now works on the list
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'v', Text: "v"})
+	if got := asModel(t, updated).list.view; got == viewPicker {
+		t.Error("v did not change the view after esc")
+	}
+}
+
+func TestUpdate_SortMenu(t *testing.T) {
+	m := newTestModel()
+	m.list.setView(viewPicker, listNow)
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 's', Text: "s"})
+	m = asModel(t, updated)
+	if !m.sortMenu {
+		t.Fatal("s did not open the sort menu")
+	}
+	updated, _ = m.Update(tea.KeyPressMsg{Code: '3', Text: "3"})
+	m = asModel(t, updated)
+	if m.sortMenu || m.list.sort != 2 {
+		t.Errorf("after 3: menu %v, sort %d; want closed, 2", m.sortMenu, m.list.sort)
+	}
+}

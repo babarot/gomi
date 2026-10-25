@@ -1,0 +1,65 @@
+-- screen --
+ gomi  12 in the trash · 1.7K                                      view: picker
+ ❯ nts 
+▎   notes/                   ~/docs                       5 hours ago     94B   
+    a-very-long-file-name-…  ~/projects/gomi               5 days ago      2B
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  2 of 12 files
+
+  ↑/k up • ↓/j down • enter restore • space detail • tab select • / filter …
+-- styles --
+L1 1-5 fg=#ad58b4 bold
+L1 7-79 fg=#777777
+L2 1-2 fg=#7aa2f7 bold
+L2 6-7 fg=c7 reverse
+L3 0-4 fg=#ad58b4 bg=#2e2e2e
+L3 4-5 fg=#f39c12 bg=#2e2e2e bold underline
+L3 5-6 fg=#7aa2f7 bg=#2e2e2e bold
+L3 6-7 fg=#f39c12 bg=#2e2e2e bold underline
+L3 7-8 fg=#7aa2f7 bg=#2e2e2e bold
+L3 8-9 fg=#f39c12 bg=#2e2e2e bold underline
+L3 9-29 fg=#7aa2f7 bg=#2e2e2e bold
+L3 29-80 fg=#777777 bg=#2e2e2e
+L4 4-27 fg=#e4e4e4 bold
+L4 29-77 fg=#777777
+L28 2-15 fg=#777777
+L30 2-5 fg=#626262
+L30 6-8 fg=#4a4a4a
+L30 9-10 fg=#3c3c3c
+L30 11-14 fg=#626262
+L30 15-19 fg=#4a4a4a
+L30 20-21 fg=#3c3c3c
+L30 22-27 fg=#626262
+L30 28-35 fg=#4a4a4a
+L30 36-37 fg=#3c3c3c
+L30 38-43 fg=#626262
+L30 44-50 fg=#4a4a4a
+L30 51-52 fg=#3c3c3c
+L30 53-56 fg=#626262
+L30 57-63 fg=#4a4a4a
+L30 64-65 fg=#3c3c3c
+L30 66-67 fg=#626262
+L30 68-74 fg=#4a4a4a
+L30 75-76 fg=#3c3c3c

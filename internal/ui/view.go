@@ -64,6 +64,9 @@ func (m Model) view() string {
 	if m.state.Confirming() {
 		view = m.renderDialogOverBase(view, m.confirmDialog())
 	}
+	if m.sortMenu {
+		view = m.renderDialogOverBase(view, m.sortMenuView())
+	}
 	return view
 }
 

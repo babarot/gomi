@@ -47,7 +47,7 @@ func NewDefaultConfig() *Config {
 		UI: UI{
 			Height:  DefaultHeight,
 			View:    "recent",
-			Views:   []string{"recent", "places", "batches"},
+			Views:   []string{"recent", "places", "batches", "picker"},
 			Theme:   "gomi",
 			Density: "spacious",
 			Preview: PreviewConfig{

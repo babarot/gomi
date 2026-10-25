@@ -3,7 +3,7 @@
     ▸ ~/projects/gomi                               8 files · 1.6K  2 hours ago
 ▎   ▾ ~/docs                                          1 file · 94B  5 hours ago 
       └ notes/                                            5 hours ago     94B
-    ▸ ~/Downloads                                       1 file · 12B  1 day ago
+    ▸ ~/Downloads                                     1 file · 12B    1 day ago
     ▸ /tmp                                           2 files · 21B  2 weeks ago
 
 
@@ -43,7 +43,7 @@ L4 8-14 fg=#1f6fb2 bold
 L4 58-77 fg=#626262
 L5 4-5 fg=#ad58b4
 L5 6-17 fg=#262626 bold
-L5 56-79 fg=#626262
+L5 54-79 fg=#626262
 L6 4-5 fg=#ad58b4
 L6 6-10 fg=#262626 bold
 L6 53-79 fg=#626262

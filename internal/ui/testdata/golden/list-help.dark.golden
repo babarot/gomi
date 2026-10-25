@@ -26,9 +26,9 @@
   ↑/k      up             enter restore      v   view
   ↓/j      down           space detail       l/→ open
   →/l/pgdn next page      esc   reset        h/← close
-  ←/h/pgup prev page      tab   select       q   quit
-  g/home   go to start    s+tab de-select    ?   close help
-  G/end    go to end
+  ←/h/pgup prev page      tab   select       s   sort (picker)
+  g/home   go to start    s+tab de-select    q   quit
+  G/end    go to end                         ?   close help
 -- styles --
 L1 1-5 fg=#ad58b4 bold
 L1 7-79 fg=#777777
@@ -142,12 +142,14 @@ L28 11-20 fg=#4a4a4a
 L28 26-29 fg=#626262
 L28 32-38 fg=#4a4a4a
 L28 45-46 fg=#626262
-L28 49-53 fg=#4a4a4a
+L28 49-62 fg=#4a4a4a
 L29 2-8 fg=#626262
 L29 11-22 fg=#4a4a4a
 L29 26-31 fg=#626262
 L29 32-41 fg=#4a4a4a
 L29 45-46 fg=#626262
-L29 49-59 fg=#4a4a4a
+L29 49-53 fg=#4a4a4a
 L30 2-7 fg=#626262
 L30 11-20 fg=#4a4a4a
+L30 45-46 fg=#626262
+L30 49-59 fg=#4a4a4a

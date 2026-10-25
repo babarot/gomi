@@ -10,7 +10,7 @@
       ├ yet-another-long-file-name-here.txt                1 week ago      2B
       └ todo.txt                                           1 week ago      9B
     ▸ ~/docs                                          1 file · 94B  5 hours ago
-    ▸ ~/Downloads                                       1 file · 12B  1 day ago
+    ▸ ~/Downloads                                     1 file · 12B    1 day ago
     ▸ /tmp                                           2 files · 21B  2 weeks ago
 
 
@@ -65,7 +65,7 @@ L11 6-12 fg=#e4e4e4 bold
 L11 54-79 fg=#777777
 L12 4-5 fg=#ad58b4
 L12 6-17 fg=#e4e4e4 bold
-L12 56-79 fg=#777777
+L12 54-79 fg=#777777
 L13 4-5 fg=#ad58b4
 L13 6-10 fg=#e4e4e4 bold
 L13 53-79 fg=#777777
