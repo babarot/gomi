@@ -585,8 +585,17 @@ func TestRestoreFile_RestoreErrorPropagates(t *testing.T) {
 	assertExists(t, f.TrashPath)
 }
 
-// Restore returns before the file browser when there is nothing to show
+// Restore says why there is nothing to show once the file browser, which
+// reads the trash, ends without a file
 func TestRestore_BeforeTheBrowser(t *testing.T) {
+	// the file browser ends with what reading the trash returned
+	orig := render
+	render = func(_ trash.Trash, load ui.Loader, _ ui.RenderOptions) ([]*trash.File, error) {
+		_, err := load(nil)
+		return nil, err
+	}
+	t.Cleanup(func() { render = orig })
+
 	t.Run("list error", func(t *testing.T) {
 		tr := newDiskTrash(t)
 		tr.listErr = errors.New("cannot read trash")

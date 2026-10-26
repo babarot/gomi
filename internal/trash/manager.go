@@ -147,6 +147,12 @@ func (m *Manager) Put(src string) error {
 
 // List returns all files from all storage backends
 func (m *Manager) List() ([]*File, error) {
+	return m.ListWithProgress(nil)
+}
+
+// ListWithProgress lists as List does, and counts into p how far the
+// storages that can tell it have got
+func (m *Manager) ListWithProgress(p *Progress) ([]*File, error) {
 	slog.Debug("storage manager list")
 
 	type result struct {
@@ -157,7 +163,13 @@ func (m *Manager) List() ([]*File, error) {
 	ch := make(chan result, len(m.storages))
 	for _, storage := range m.storages {
 		go func(s Storage) {
-			files, err := s.List()
+			var files []*File
+			var err error
+			if l, ok := s.(progressLister); ok {
+				files, err = l.ListWithProgress(p)
+			} else {
+				files, err = s.List()
+			}
 			if err != nil {
 				ch <- result{err: fmt.Errorf("failed to list files from %s: %w",
 					s.Info().Trashes, err)}

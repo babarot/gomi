@@ -70,10 +70,13 @@ type RenderOptions struct {
 // Init implements tea.Model
 func (m Model) Init() tea.Cmd {
 	cmds := []tea.Cmd{
-		// load files
-		loadFileListCmd(m.files),
 		// styles depend on whether the background is dark
 		tea.RequestBackgroundColor,
+	}
+	if m.load != nil {
+		cmds = append(cmds, m.loadCmd(), loadTick())
+	} else {
+		cmds = append(cmds, loadFileListCmd(m.files))
 	}
 	if m.waitsForCursor() {
 		// the height reaches from the prompt down; a terminal that does not
@@ -92,10 +95,17 @@ var cursorWait = 250 * time.Millisecond
 // cursorWaitedMsg says the wait for the cursor position is over
 type cursorWaitedMsg struct{}
 
-// Render displays the file selection interface and returns the selected files
-func Render(t trash.Trash, files []*trash.File, opts RenderOptions) ([]*trash.File, error) {
+// Render displays the file selection interface and returns the selected
+// files. The UI starts at once and reads the files with load, showing that
+// it reads them until they are all read. The error load returns ends the
+// UI with nothing drawn, and is returned as it is.
+func Render(t trash.Trash, load Loader, opts RenderOptions) ([]*trash.File, error) {
 	// Create and initialize the model
-	m := NewModel(t, files, opts)
+	m := NewModel(t, nil, opts)
+	m.load = load
+	m.progress = &trash.Progress{}
+	m.loadStart = now()
+	m.state.SetView(Loading)
 
 	// Initialize UI program
 	p := tea.NewProgram(m)
@@ -103,13 +113,16 @@ func Render(t trash.Trash, files []*trash.File, opts RenderOptions) ([]*trash.Fi
 	// Run the UI
 	result, err := p.Run()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to show file selection UI: %w", err)
 	}
 
 	// Process results
 	finalModel, ok := result.(Model)
 	if !ok {
 		return nil, fmt.Errorf("unexpected model type: %T", result)
+	}
+	if finalModel.loadErr != nil {
+		return nil, finalModel.loadErr
 	}
 	if finalModel.state.current == Quitting {
 		if msg := opts.Config.ExitMessage; msg != "" {

@@ -22,6 +22,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		slog.Debug("Key pressed", "key", msg.String())
+		if m.state.current == Loading {
+			// only quitting works until the list is read
+			switch msg.String() {
+			case "q", "ctrl+c":
+				m.state.SetView(Quitting)
+				return m, tea.Quit
+			}
+			return m, nil
+		}
 		// Handle view-specific key updates
 		if m.state.Confirming() {
 			return m.updateConfirmView(msg)
@@ -59,6 +68,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.BackgroundColorMsg:
 		m.setBackground(msg.IsDark())
+		m.bgKnown = true
+		if m.loadErr != nil {
+			return m.quitWhenAnswered()
+		}
 		return m, nil
 
 	case tea.WindowSizeMsg:
@@ -79,6 +92,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// still tells where the prompt left the cursor
 		m.cursorY = msg.Y
 		m.settled = true
+		if m.loadErr != nil {
+			return m.quitWhenAnswered()
+		}
 		if m.termHeight > 0 {
 			m.height = uiHeight(m.config.Height, m.termHeight, m.cursorY)
 			m.resizePreview()
@@ -94,7 +110,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case cursorWaitedMsg:
 		m.settled = true
+		if m.loadErr != nil {
+			return m.quitWhenAnswered()
+		}
 		return m, nil
+
+	case answerWaitedMsg:
+		return m, tea.Quit
 
 	case ShowDetailMsg:
 		m.state.SetView(DetailView)
@@ -139,10 +161,28 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m.followCursor(nil)
 
+	case loadTickMsg:
+		if m.state.current == Loading {
+			return m, loadTick()
+		}
+		return m, nil
+
+	case loadFailedMsg:
+		// the UI ends with nothing drawn, and Render returns the error
+		m.loadErr = msg.err
+		m.state.SetView(Quitting)
+		return m, tea.Batch(m.waitAnswers(), m.quitWhenAnsweredCmd())
+
 	case FileListLoadedMsg:
 		if msg.err != nil {
 			m.err = msg.err
 			return m, tea.Quit
+		}
+		if m.state.current == Loading {
+			// the files the UI started without; deleting files lists the
+			// rest from them
+			m.state.SetView(ListView)
+			m.files = msg.files
 		}
 		m.list.setFiles(msg.files, now())
 		if msg.deleted > 0 {

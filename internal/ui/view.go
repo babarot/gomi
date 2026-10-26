@@ -53,6 +53,8 @@ func (m Model) view() string {
 
 	var view string
 	switch m.state.current {
+	case Loading:
+		return m.loadingView()
 	case ListView:
 		view = m.listView()
 	case DetailView:

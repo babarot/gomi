@@ -7,6 +7,8 @@ const (
 	ListView ViewType = iota
 	DetailView
 	Quitting
+	// Loading is while the files are read, before the list is shown
+	Loading
 )
 
 func (v ViewType) String() string {
@@ -17,6 +19,8 @@ func (v ViewType) String() string {
 		return "detail view"
 	case Quitting:
 		return "quit"
+	case Loading:
+		return "loading"
 	}
 	return "unknown"
 }

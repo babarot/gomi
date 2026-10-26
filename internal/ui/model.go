@@ -3,6 +3,7 @@ package ui
 import (
 	"os"
 	"slices"
+	"time"
 
 	"charm.land/bubbles/v2/help"
 	"charm.land/bubbles/v2/textinput"
@@ -88,6 +89,16 @@ type Model struct {
 
 	// Error state if any
 	err error
+
+	// load reads the files when the UI starts, counting into progress, and
+	// loadStart is when it started; loadErr is the error it returned. A
+	// model made with the files has no load.
+	load      Loader
+	progress  *trash.Progress
+	loadStart time.Time
+	loadErr   error
+	// bgKnown is set once the terminal has told its background
+	bgKnown bool
 }
 
 // NewModel creates a new UI model instance
@@ -97,12 +108,7 @@ func NewModel(t trash.Trash, files []*trash.File, opts RenderOptions) Model {
 	// Convert trash files to UI files
 	var fileList []File
 	for _, file := range files {
-		fileList = append(fileList, File{
-			File:            file,
-			dirListCommand:  uiCfg.Preview.DirectoryCommand,
-			syntaxHighlight: uiCfg.Preview.SyntaxHighlight,
-			colorscheme:     uiCfg.Preview.Colorscheme,
-		})
+		fileList = append(fileList, newFile(file, uiCfg))
 	}
 
 	// Initialize key map
