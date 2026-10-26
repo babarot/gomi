@@ -1,5 +1,15 @@
 # Changelog
 
+## [v1.10.1](https://github.com/babarot/gomi/compare/v1.10.0...v1.10.1) - 2026-10-26
+### Bug fixes
+- Use $topdir/.Trash/$uid only under a valid .Trash by @babarot in https://github.com/babarot/gomi/pull/184
+- Resolve .. in a path to put the way rm does by @babarot in https://github.com/babarot/gomi/pull/186
+- Keep strategy auto on the XDG trash when gomi_dir is set by @babarot in https://github.com/babarot/gomi/pull/190
+### Improvements
+- Read .trashinfo files in parallel when listing the XDG trash by @babarot in https://github.com/babarot/gomi/pull/182
+- Show the UI while the trash is read by @babarot in https://github.com/babarot/gomi/pull/183
+- List a directory with the builtin listing when the command lists nothing by @babarot in https://github.com/babarot/gomi/pull/189
+
 ## [v1.10.0](https://github.com/babarot/gomi/compare/v1.9.1...v1.10.0) - 2026-10-26
 ### Bug fixes
 - Keep the copy when Move cannot remove all of the source by @babarot in https://github.com/babarot/gomi/pull/177
