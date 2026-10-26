@@ -129,6 +129,15 @@ func isOnSameDevice(path1, path2 string) (bool, error) {
 
 // isValidExternalTrash checks if a directory is a valid trash directory according to the XDG spec
 func isValidExternalTrash(path string) bool {
+	// $topdir/.Trash/$uid is used only under a $topdir/.Trash that is a
+	// directory, not a symbolic link, and has the sticky bit set
+	if parent := filepath.Dir(path); filepath.Base(parent) == ".Trash" {
+		if !isValidSharedTrash(parent) {
+			slog.Debug("external trash directory not valid", "reason", "invalid .Trash", "path", path)
+			return false
+		}
+	}
+
 	info, err := os.Lstat(path)
 	if err != nil {
 		slog.Debug("no trash directory", "path", path)
@@ -180,6 +189,30 @@ func isValidExternalTrash(path string) bool {
 	}
 	slog.Debug("external trash directory is valid", "path", path)
 
+	return true
+}
+
+// isValidSharedTrash reports whether $topdir/.Trash at path may hold the
+// trash directories of users: the spec requires it to be a directory, not
+// a symbolic link, with the sticky bit set
+func isValidSharedTrash(path string) bool {
+	info, err := os.Lstat(path)
+	if err != nil {
+		slog.Debug("no shared trash directory", "path", path)
+		return false
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		slog.Debug("is a symbolic link", "path", path)
+		return false
+	}
+	if !info.IsDir() {
+		slog.Debug("not a directory", "path", path)
+		return false
+	}
+	if info.Mode()&os.ModeSticky == 0 {
+		slog.Debug("missing sticky bit", "path", path)
+		return false
+	}
 	return true
 }
 

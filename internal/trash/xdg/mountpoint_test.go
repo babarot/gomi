@@ -204,10 +204,7 @@ func TestIsValidExternalTrash_SharedTrashStickyBit(t *testing.T) {
 // scanExternalTrashes asks isValidExternalTrash about $topdir/.Trash/$uid,
 // and the spec says that one is not used unless $topdir/.Trash is a sticky,
 // non-symlink directory (the user falls back to $topdir/.Trash-$uid).
-// isValidExternalTrash only checks the sticky bit when given .Trash itself,
-// so it accepts $uid under a .Trash anyone can tamper with.
 func TestIsValidExternalTrash_UidDirUnderNonStickyTrash(t *testing.T) {
-	t.Skip("bug: isValidExternalTrash (mountpoint.go:151) checks the sticky bit only when the base name is .Trash, but scanExternalTrashes (storage.go:287) passes $topdir/.Trash/$uid, so the check never runs")
 	top := t.TempDir()
 	shared := makeSharedTrash(t, top, false)
 	uidDir := filepath.Join(shared, strconv.Itoa(os.Getuid()))
@@ -219,7 +216,6 @@ func TestIsValidExternalTrash_UidDirUnderNonStickyTrash(t *testing.T) {
 }
 
 func TestIsValidExternalTrash_UidDirUnderSymlinkedTrash(t *testing.T) {
-	t.Skip("bug: isValidExternalTrash (mountpoint.go:132) Lstats $topdir/.Trash/$uid, which follows a symlinked $topdir/.Trash, so the spec's no-symlink check on .Trash never runs")
 	top := t.TempDir()
 	elsewhere := makeSharedTrash(t, t.TempDir(), true)
 	if err := os.Symlink(elsewhere, filepath.Join(top, ".Trash")); err != nil {
