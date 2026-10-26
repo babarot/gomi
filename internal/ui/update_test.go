@@ -485,6 +485,37 @@ func TestUpdate_KittyGraphicsAnswer(t *testing.T) {
 	}
 }
 
+func TestLoadDetail_ImageOfAnotherSize(t *testing.T) {
+	m := newTestModel()
+	m.viewport.SetWidth(40)
+	m.viewport.SetHeight(20)
+	f := File{File: &trash.File{Name: "a.png", TrashPath: "/trash/a.png", SizeKnown: true}}
+
+	m.previews[f.TrashPath] = previewResult{available: true, kitty: true, imageID: 1, size: image.Pt(40, 20)}
+	if got := len(m.loadDetail(f)); got != 0 {
+		t.Errorf("commands for an image of the same size = %d, want 0", got)
+	}
+
+	// the pane grew, as when the detail view opens over the list
+	m.viewport.SetWidth(80)
+	if got := len(m.loadDetail(f)); got != 1 {
+		t.Fatalf("commands for an image of another size = %d, want 1", got)
+	}
+
+	// the image read again frees the one it replaces
+	updated, cmd := m.Update(previewLoadedMsg{path: f.TrashPath, previewResult: previewResult{available: true, kitty: true, imageID: 2, size: image.Pt(80, 20), graphics: "image"}})
+	if got := asModel(t, updated).previews[f.TrashPath].imageID; got != 2 {
+		t.Errorf("imageID = %d, want 2", got)
+	}
+	raw, ok := cmd().(tea.RawMsg)
+	if !ok {
+		t.Fatalf("got %T, want tea.RawMsg", cmd())
+	}
+	if want := "image" + deleteImages([]int{1}); raw.Msg != want {
+		t.Errorf("sent %q, want %q", raw.Msg, want)
+	}
+}
+
 // removeRecorder is a trash that records which files are removed.
 type removeRecorder struct {
 	trash.Trash

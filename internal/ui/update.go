@@ -105,7 +105,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case previewDueMsg:
 		// the cursor rested on the file the preview shows
-		if msg.seq == m.previewSeq && m.state.current == ListView && m.detailFile.File != nil {
+		if msg.seq == m.previewSeq && (m.state.current == ListView || m.state.current == DetailView) && m.detailFile.File != nil {
 			return m, tea.Batch(m.loadDetail(m.detailFile)...)
 		}
 		return m, nil
@@ -154,18 +154,25 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		// the image is sent once, even when the preview moved to another
-		// file, and stays in the terminal for when it comes back
+		// file, and stays in the terminal for when it comes back; the one
+		// drawn for another size is freed
 		graphics := msg.graphics
 		msg.graphics = ""
+		if old := m.previews[msg.path]; old.imageID != 0 {
+			graphics += deleteImages([]int{old.imageID})
+		}
 		m.previews[msg.path] = msg.previewResult
+		var cmds []tea.Cmd
+		if graphics != "" {
+			cmds = append(cmds, tea.Raw(graphics))
+		}
 		// the result may come after the preview moved to another file
 		if m.detailFile.File != nil && m.detailFile.TrashPath == msg.path {
 			m.viewport.SetContent(msg.content)
+			// the pane may have been resized while the image was read
+			cmds = append(cmds, m.loadDetail(m.detailFile)...)
 		}
-		if graphics != "" {
-			return m, tea.Raw(graphics)
-		}
-		return m, nil
+		return m, tea.Batch(cmds...)
 
 	case statusClearMsg:
 		if msg.seq == m.statusSeq {
@@ -492,13 +499,10 @@ func (m Model) updateDetailView(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
-	case key.Matches(msg, m.keyMap.Detail.Esc):
+	case key.Matches(msg, m.keyMap.Detail.Esc), key.Matches(msg, m.keyMap.Detail.Space):
+		// the pane beside the list is smaller than the detail view
 		m.state.SetView(ListView)
-		return m, nil
-
-	case key.Matches(msg, m.keyMap.Detail.Space):
-		m.state.SetView(ListView)
-		return m, nil
+		return m.followCursor(nil)
 
 	case key.Matches(msg, m.keyMap.Common.Help):
 		m.helpOpen = true

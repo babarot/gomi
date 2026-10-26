@@ -3,6 +3,7 @@ package ui
 import (
 	"image"
 	"log/slog"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/gabriel-vasile/mimetype"
@@ -24,6 +25,8 @@ type previewResult struct {
 	// kitty is whether the preview was read to draw images with the kitty
 	// graphics protocol
 	kitty bool
+	// size is the pane an image was drawn for, as columns by rows
+	size image.Point
 }
 
 // previewLoadedMsg carries the preview of the file at path
@@ -60,6 +63,7 @@ func loadPreviewCmd(f File, w, h int, kitty bool, cell image.Point) tea.Cmd {
 		if kitty {
 			if r, ok := kittyPreview(f.TrashPath, w, h, cell); ok {
 				r.kitty = true
+				r.size = image.Pt(w, h)
 				return previewLoadedMsg{path: f.TrashPath, previewResult: r}
 			}
 		}
@@ -86,11 +90,12 @@ func loadSizeCmd(f File) tea.Cmd {
 
 // loadDetail returns the commands that read what the detail view of f
 // shows and has been neither read nor started; moving back and forth
-// between files does not start the same read twice
+// between files does not start the same read twice. An image drawn for a
+// pane of another size is read again.
 func (m Model) loadDetail(f File) []tea.Cmd {
 	var cmds []tea.Cmd
 	path := f.TrashPath
-	if _, ok := m.previews[path]; !ok && !m.reading[previewKey(path)] {
+	if _, ok := m.previews[path]; (!ok || m.staleImage(path)) && !m.reading[previewKey(path)] {
 		m.reading[previewKey(path)] = true
 		// the viewport is sized for the pane f is shown in
 		cmds = append(cmds, loadPreviewCmd(f, m.viewport.Width(), m.viewport.Height(), m.kittyGraphics, m.cell))
@@ -100,6 +105,26 @@ func (m Model) loadDetail(f File) []tea.Cmd {
 		cmds = append(cmds, loadSizeCmd(f))
 	}
 	return cmds
+}
+
+// staleImage tells whether the preview of path is an image drawn for a
+// pane of another size than the viewport
+func (m Model) staleImage(path string) bool {
+	r, ok := m.previews[path]
+	return ok && r.imageID != 0 && r.size != image.Pt(m.viewport.Width(), m.viewport.Height())
+}
+
+// reloadStaleImage has the image of the preview read again once the pane
+// rests at a size it was not drawn for, so that resizing the terminal
+// does not read it at every size it passes
+func (m Model) reloadStaleImage(cmd tea.Cmd) (Model, tea.Cmd) {
+	if m.detailFile.File == nil || !m.staleImage(m.detailFile.TrashPath) {
+		return m, cmd
+	}
+	m.previewSeq++
+	seq := m.previewSeq
+	due := tea.Tick(previewDelay, func(time.Time) tea.Msg { return previewDueMsg{seq: seq} })
+	return m, tea.Batch(cmd, due)
 }
 
 // previewKey and sizeKey name the reads in Model.reading
