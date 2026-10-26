@@ -142,6 +142,12 @@ func (s *Storage) Put(src string) error {
 }
 
 func (s *Storage) List() ([]*trash.File, error) {
+	return s.ListWithProgress(nil)
+}
+
+// ListWithProgress lists as List does, and counts into p the entries of
+// each trash and those read
+func (s *Storage) ListWithProgress(p *trash.Progress) ([]*trash.File, error) {
 	var files []*trash.File
 
 	start := time.Now()
@@ -155,7 +161,7 @@ func (s *Storage) List() ([]*trash.File, error) {
 		if size := s.config.History.Exclude.Size; size.Min != "" || size.Max != "" {
 			c = newSizeCache(loc.root)
 		}
-		files, err := s.listLocation(loc, c)
+		files, err := s.listLocation(loc, c, p)
 		// a trash that could not be listed keeps its cache as it is
 		if err == nil && c != nil {
 			caches = append(caches, c)
@@ -353,9 +359,11 @@ func readEntry(loc *trashLocation, name string) entryInfo {
 	return entryInfo{info: info, fileInfo: fileInfo}
 }
 
-// readEntries reads the entries of files/ in loc, infoReaders at a time.
-// Each result is at the index of its entry, in the order of entries.
-func readEntries(loc *trashLocation, entries []os.DirEntry) []entryInfo {
+// readEntries reads the entries of files/ in loc, infoReaders at a time,
+// and counts them into p. Each result is at the index of its entry, in the
+// order of entries.
+func readEntries(loc *trashLocation, entries []os.DirEntry, p *trash.Progress) []entryInfo {
+	p.AddTotal(len(entries))
 	found := make([]entryInfo, len(entries))
 	next := make(chan int)
 	var wg sync.WaitGroup
@@ -363,6 +371,7 @@ func readEntries(loc *trashLocation, entries []os.DirEntry) []entryInfo {
 		wg.Go(func() {
 			for i := range next {
 				found[i] = readEntry(loc, entries[i].Name())
+				p.AddRead(1)
 			}
 		})
 	}
@@ -374,9 +383,9 @@ func readEntries(loc *trashLocation, entries []os.DirEntry) []entryInfo {
 	return found
 }
 
-// listLocation lists the trash at loc. With cache, the directories get the
-// size the size filter judges them by from it.
-func (s *Storage) listLocation(loc *trashLocation, cache *sizeCache) ([]*trash.File, error) {
+// listLocation lists the trash at loc, counting into p. With cache, the
+// directories get the size the size filter judges them by from it.
+func (s *Storage) listLocation(loc *trashLocation, cache *sizeCache, p *trash.Progress) ([]*trash.File, error) {
 	var files []*trash.File
 
 	// Read files directory
@@ -387,7 +396,7 @@ func (s *Storage) listLocation(loc *trashLocation, cache *sizeCache) ([]*trash.F
 
 	// the entries are read at once, and the cache is filled one by one
 	// after them, as it is not safe to share
-	found := readEntries(loc, entries)
+	found := readEntries(loc, entries, p)
 	for i, entry := range entries {
 		if cache != nil {
 			cache.names[entry.Name()] = true

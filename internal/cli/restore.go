@@ -16,31 +16,20 @@ func (c *CLI) Restore() error {
 	slog.Debug("cli.restore started")
 	defer slog.Debug("cli.restore finished")
 
-	// Get list of files in trash
-	files, err := c.trash.List()
-	if err != nil {
-		return fmt.Errorf("failed to list trash contents: %w", err)
-	}
-
-	if len(files) == 0 {
-		fmt.Println("The trash is empty. Let's try deleting a file first")
-		return nil
-	}
-
-	// Filter files based on configuration
-	filtered := c.filterFiles(files)
-	if len(filtered) == 0 {
-		fmt.Println("Could not find any files to display. The trash may be empty, or all files may be filtered out")
-		return nil
-	}
-
-	// Show UI for file selection
-	selected, err := ui.Render(c.trash, filtered, ui.RenderOptions{
+	// Show UI for file selection; it reads the trash once it has started
+	selected, err := render(c.trash, c.loadFiles, ui.RenderOptions{
 		Config:        c.config.UI,
 		DeleteEnabled: c.config.Core.PermanentDelete.Enable,
 	})
-	if err != nil {
-		return fmt.Errorf("failed to show file selection UI: %w", err)
+	switch {
+	case errors.Is(err, errTrashEmpty):
+		fmt.Println("The trash is empty. Let's try deleting a file first")
+		return nil
+	case errors.Is(err, errNothingToShow):
+		fmt.Println("Could not find any files to display. The trash may be empty, or all files may be filtered out")
+		return nil
+	case err != nil:
+		return err
 	}
 
 	// If no files were selected, exit early
@@ -55,6 +44,46 @@ func (c *CLI) Restore() error {
 	}
 
 	return nil
+}
+
+// render shows the UI; tests replace it
+var render = ui.Render
+
+var (
+	// errTrashEmpty and errNothingToShow end the UI when there is no file
+	// to show; Restore tells which after the UI is gone
+	errTrashEmpty    = errors.New("trash is empty")
+	errNothingToShow = errors.New("no files to show")
+)
+
+// progressLister is a Trash that counts how far its listing has got
+type progressLister interface {
+	ListWithProgress(p *trash.Progress) ([]*trash.File, error)
+}
+
+// loadFiles lists the files the UI shows, counting into p when the trash
+// can tell how far it has got
+func (c *CLI) loadFiles(p *trash.Progress) ([]*trash.File, error) {
+	var files []*trash.File
+	var err error
+	if l, ok := c.trash.(progressLister); ok {
+		files, err = l.ListWithProgress(p)
+	} else {
+		files, err = c.trash.List()
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to list trash contents: %w", err)
+	}
+	if len(files) == 0 {
+		return nil, errTrashEmpty
+	}
+
+	// Filter files based on configuration
+	filtered := c.filterFiles(files)
+	if len(filtered) == 0 {
+		return nil, errNothingToShow
+	}
+	return filtered, nil
 }
 
 // filterFiles applies configured filters to the list of files
