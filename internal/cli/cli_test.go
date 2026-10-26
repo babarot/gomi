@@ -520,3 +520,108 @@ func TestRestoreFile_BrokenSymlink(t *testing.T) {
 		t.Errorf("restored to %q, want %q", tr.dst, want)
 	}
 }
+
+// captureStderr runs fn with os.Stderr sent to a pipe and returns the output
+func captureStderr(t *testing.T, fn func()) string {
+	t.Helper()
+	old := os.Stderr
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stderr = w
+	done := make(chan string)
+	go func() {
+		var buf bytes.Buffer
+		_, _ = buf.ReadFrom(r)
+		done <- buf.String()
+	}()
+	defer func() {
+		os.Stderr = old
+	}()
+	fn()
+	w.Close()
+	return <-done
+}
+
+// The config gomi writes on its first run has gomi_dir, so it must not make
+// strategy auto leave the XDG trash; only strategy legacy uses gomi_dir.
+func TestNewTrashManager_GomiDir(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("XDG trash is not used on Windows")
+	}
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_DATA_HOME", filepath.Join(home, ".local", "share"))
+	defaultDir := filepath.Join(home, ".gomi")
+	customDir := filepath.Join(home, "elsewhere")
+
+	tests := []struct {
+		name     string
+		strategy string
+		gomiDir  string
+		want     trash.StorageType
+		warn     bool
+	}{
+		{"auto with the default gomi_dir", "auto", defaultDir, trash.StorageTypeXDG, false},
+		{"auto with no gomi_dir", "auto", "", trash.StorageTypeXDG, false},
+		{"auto with another gomi_dir", "auto", customDir, trash.StorageTypeXDG, true},
+		{"legacy with another gomi_dir", "legacy", customDir, trash.StorageTypeLegacy, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := config.NewDefaultConfig()
+			cfg.Core.Trash.Strategy = tt.strategy
+			cfg.Core.Trash.GomiDir = tt.gomiDir
+
+			var m *trash.Manager
+			var err error
+			out := captureStderr(t, func() { m, err = newTrashManager(cfg) })
+			if err != nil {
+				t.Fatal(err)
+			}
+			storages := m.ListStorages()
+			if len(storages) == 0 || storages[0].Type != tt.want {
+				t.Errorf("primary storage = %v, want %v", storages, tt.want)
+			}
+			if got := strings.Contains(out, "gomi_dir is used only with strategy"); got != tt.warn {
+				t.Errorf("warning = %v (stderr %q), want %v", got, out, tt.warn)
+			}
+		})
+	}
+}
+
+// With strategy auto, the legacy trash read beside the XDG one is the
+// ~/.gomi that was found, not another gomi_dir.
+func TestNewTrashManager_AutoReadsHomeGomi(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("XDG trash is not used on Windows")
+	}
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_DATA_HOME", filepath.Join(home, ".local", "share"))
+	defaultDir := filepath.Join(home, ".gomi")
+	if err := os.Mkdir(defaultDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.NewDefaultConfig()
+	cfg.Core.Trash.Strategy = "auto"
+	cfg.Core.Trash.GomiDir = filepath.Join(home, "elsewhere")
+
+	var m *trash.Manager
+	var err error
+	captureStderr(t, func() { m, err = newTrashManager(cfg) })
+	if err != nil {
+		t.Fatal(err)
+	}
+	var legacyTrashes []string
+	for _, s := range m.ListStorages() {
+		if s.Type == trash.StorageTypeLegacy {
+			legacyTrashes = append(legacyTrashes, s.Trashes...)
+		}
+	}
+	if len(legacyTrashes) != 1 || legacyTrashes[0] != defaultDir {
+		t.Errorf("legacy trashes = %v, want [%s]", legacyTrashes, defaultDir)
+	}
+}

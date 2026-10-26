@@ -251,6 +251,19 @@ func determineLogLevel(level string) log.Level {
 	}
 }
 
+// isDefaultGomiDir reports whether dir is empty or the default ~/.gomi,
+// which the config gomi writes on its first run has
+func isDefaultGomiDir(dir string) bool {
+	if dir == "" {
+		return true
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return false
+	}
+	return filepath.Clean(dir) == filepath.Join(home, ".gomi")
+}
+
 // newTrashManager creates and configures the trash manager
 func newTrashManager(cfg *config.Config) (*trash.Manager, error) {
 	trashConfig := trash.Config{
@@ -263,11 +276,14 @@ func newTrashManager(cfg *config.Config) (*trash.Manager, error) {
 
 	var opts []trash.ManagerOption
 
-	// If gomi_dir is explicitly set and strategy is auto, use legacy storage
-	// as the primary backend since gomi_dir only applies to legacy mode.
-	if trashConfig.GomiDir != "" && trashConfig.Strategy == trash.StrategyAuto {
-		slog.Info("gomi_dir is set, using legacy storage as primary", "gomi_dir", trashConfig.GomiDir)
-		trashConfig.Strategy = trash.StrategyLegacy
+	// gomi_dir is where the legacy trash is, so auto does not switch to the
+	// legacy trash for it: the config gomi writes on its first run has
+	// gomi_dir too. A gomi_dir that is not the default is told about, since
+	// it takes strategy legacy to put files there
+	if trashConfig.Strategy == trash.StrategyAuto && !isDefaultGomiDir(trashConfig.GomiDir) {
+		fmt.Fprintf(os.Stderr,
+			"gomi: gomi_dir is used only with strategy \"legacy\", so files are not put in %s; set strategy to \"legacy\" to use it\n",
+			trashConfig.GomiDir)
 	}
 
 	switch strategy := trashConfig.Strategy; strategy {
@@ -280,9 +296,11 @@ func newTrashManager(cfg *config.Config) (*trash.Manager, error) {
 		opts = append(opts, trash.WithStorage(legacy.NewStorage))
 
 	case trash.StrategyAuto:
-		// Default to XDG with optional legacy fallback
+		// Default to XDG with optional legacy fallback. The legacy trash is
+		// the ~/.gomi found here, whatever gomi_dir says
 		opts = append(opts, trash.WithStorage(xdg.NewStorage))
 		if exist, err := trash.IsExistLegacy(); err == nil && exist {
+			trashConfig.GomiDir = ""
 			opts = append(opts, trash.WithStorage(legacy.NewStorage))
 		}
 
