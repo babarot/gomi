@@ -775,8 +775,12 @@ func TestPut_RefusesDotAndDotDot(t *testing.T) {
 		t.Fatal(err)
 	}
 	writeFile(t, filepath.Join(cwd, "file"), "")
+	// "dir/inner/.." names dir, but rm refuses a path ending in ".."
+	if err := os.MkdirAll(filepath.Join(cwd, "dir", "inner"), 0o755); err != nil {
+		t.Fatal(err)
+	}
 
-	for _, arg := range []string{".", "./", "..", "../", "sub/..", filepath.Join("..", "..")} {
+	for _, arg := range []string{".", "./", "..", "../", "sub/..", filepath.Join("..", ".."), "dir/inner/..", "dir/inner/../"} {
 		t.Run(arg, func(t *testing.T) {
 			t.Chdir(cwd)
 			cli, tr := newPutCLI(t)
@@ -787,8 +791,35 @@ func TestPut_RefusesDotAndDotDot(t *testing.T) {
 				t.Errorf("moved %v to trash", tr.put)
 			}
 			assertExists(t, filepath.Join(cwd, "file"))
+			assertExists(t, filepath.Join(cwd, "dir"))
 		})
 	}
+}
+
+// rm cannot get through a directory that does not exist, so
+// "missing/../victim" does not exist, though Clean makes it "victim".
+func TestPut_DotDotAfterMissingDir(t *testing.T) {
+	root := t.TempDir()
+	victim := filepath.Join(root, "victim")
+	writeFile(t, victim, "victim")
+	t.Chdir(root)
+	arg := "missing/../victim"
+
+	cli, tr := newPutCLI(t)
+	if err := cli.Put([]string{arg}); err == nil || !strings.Contains(err.Error(), "no such file or directory") {
+		t.Errorf("Put(%q) = %v, want a no such file error", arg, err)
+	}
+
+	cli, tr2 := newPutCLI(t)
+	cli.option.Rm.Force = true
+	if err := cli.Put([]string{arg}); err != nil {
+		t.Errorf("Put(%q) with -f = %v, want nil", arg, err)
+	}
+
+	if len(tr.put)+len(tr2.put) != 0 {
+		t.Errorf("moved %v to trash", append(tr.put, tr2.put...))
+	}
+	assertContent(t, victim, "victim")
 }
 
 func TestPut_RefusesRoot(t *testing.T) {
@@ -835,7 +866,6 @@ func TestPut_DotDotAfterSymlink(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("symlinks need privileges on Windows")
 	}
-	t.Skip("bug: expandPath and filepath.Abs clean \"link/../victim\" lexically, so gomi trashes ./victim instead of the victim next to link's target (internal/cli/put.go:116, put.go:62)")
 
 	root := t.TempDir()
 	far := filepath.Join(root, "far", "inner")
@@ -852,7 +882,9 @@ func TestPut_DotDotAfterSymlink(t *testing.T) {
 	t.Chdir(root)
 	cli, _ := newPutCLI(t)
 
-	if err := cli.Put([]string{filepath.Join("link", "..", "victim")}); err != nil {
+	// Not filepath.Join, which would clean it to "victim"
+	sep := string(filepath.Separator)
+	if err := cli.Put([]string{"link" + sep + ".." + sep + "victim"}); err != nil {
 		t.Fatalf("Put() = %v", err)
 	}
 	assertContent(t, bystander, "bystander")

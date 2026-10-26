@@ -49,8 +49,23 @@ func (c *CLI) Put(args []string) error {
 
 // processFile handles the logic for moving a single file to trash
 func (c *CLI) processFile(arg string, failed *syncStringSlice) error {
-	// Expand path (replace environment variables)
+	// A file that does not exist is an error, unless -f is given as rm -f
+	notExist := func() error {
+		if !c.option.Rm.Force {
+			failed.Append(arg)
+			return fmt.Errorf("%s: no such file or directory", arg)
+		}
+		if c.option.Rm.Verbose {
+			fmt.Fprintf(os.Stderr, "skipping %s: no such file or directory\n", arg)
+		}
+		return nil
+	}
+
+	// Resolve the path the way rm does; environment variables are not expanded
 	expandedPath, err := expandPath(arg)
+	if errors.Is(err, os.ErrNotExist) {
+		return notExist()
+	}
 	if err != nil {
 		failed.Append(arg)
 		return fmt.Errorf("failed to expand path: %w", err)
@@ -70,8 +85,12 @@ func (c *CLI) processFile(arg string, failed *syncStringSlice) error {
 		return fmt.Errorf("refusing to remove forbidden path: %q", arg)
 	}
 
-	// Check path safety
-	unsafe, err := fs.IsUnsafePath(expandedPath)
+	// Check path safety, on the argument as given too: "dir/sub/.." ends
+	// in "..", which rm refuses, though it resolves to "dir"
+	unsafe, err := fs.IsUnsafePath(arg)
+	if err == nil && !unsafe {
+		unsafe, err = fs.IsUnsafePath(expandedPath)
+	}
 	if err != nil {
 		failed.Append(arg)
 		return fmt.Errorf("failed to check path safety: %w", err)
@@ -83,14 +102,7 @@ func (c *CLI) processFile(arg string, failed *syncStringSlice) error {
 
 	// Check if file exists (use Lstat to handle broken symlinks)
 	if _, err := os.Lstat(path); os.IsNotExist(err) {
-		if !c.option.Rm.Force {
-			failed.Append(arg)
-			return fmt.Errorf("%s: no such file or directory", arg)
-		}
-		if c.option.Rm.Verbose {
-			fmt.Fprintf(os.Stderr, "skipping %s: no such file or directory\n", arg)
-		}
-		return nil
+		return notExist()
 	}
 
 	// Move to trash. Like rm -f, -f ignores only nonexistent files: a file
@@ -112,8 +124,48 @@ func (c *CLI) processFile(arg string, failed *syncStringSlice) error {
 // should be treated literally — a file named "$foo" must not be
 // interpreted as an environment variable reference.
 // Shell-level expansion (e.g. ~ or $HOME) is the shell's job, not ours.
+//
+// A ".." is resolved through the filesystem, as rm and the kernel do: in
+// "link/../victim", ".." is the parent of what link points to, while
+// filepath.Clean would drop "link/.." and name another file.
 func expandPath(path string) (string, error) {
-	return filepath.Clean(path), nil
+	if !hasDotDot(path) {
+		return filepath.Clean(path), nil
+	}
+
+	// Resolve the directory the last element is in; the last element
+	// itself is what gets trashed, so a symlink there is kept as is
+	trimmed := strings.TrimRightFunc(path, func(r rune) bool {
+		return r < 0x80 && os.IsPathSeparator(uint8(r))
+	})
+	if trimmed == "" || trimmed == filepath.VolumeName(trimmed) {
+		return filepath.Clean(path), nil
+	}
+	dir, base := filepath.Split(trimmed)
+	if base == "." || base == ".." {
+		// Left to the path safety check, which refuses these
+		return filepath.Clean(path), nil
+	}
+	if dir == "" {
+		dir = "."
+	}
+	// A directory on the way that does not exist makes the path not
+	// exist, as with rm, rather than one that Clean would name instead
+	resolved, err := filepath.EvalSymlinks(dir)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(resolved, base), nil
+}
+
+// hasDotDot reports whether path has ".." as one of its elements.
+func hasDotDot(path string) bool {
+	for elem := range strings.SplitSeq(filepath.ToSlash(path), "/") {
+		if elem == ".." {
+			return true
+		}
+	}
+	return false
 }
 
 // isForbiddenPath checks if the given absolute path is in the forbidden paths list

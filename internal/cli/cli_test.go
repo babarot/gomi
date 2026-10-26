@@ -28,6 +28,12 @@ func TestExpandPath(t *testing.T) {
 		{"", "."},
 	}
 
+	// "foo/../bar.txt" goes through foo, which must exist as with rm
+	t.Chdir(t.TempDir())
+	if err := os.Mkdir("foo", 0o755); err != nil {
+		t.Fatal(err)
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
 			got, err := expandPath(tt.input)
