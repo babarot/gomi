@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.10.0](https://github.com/babarot/gomi/compare/v1.9.1...v1.10.0) - 2026-10-26
+### Bug fixes
+- Keep the copy when Move cannot remove all of the source by @babarot in https://github.com/babarot/gomi/pull/177
+- List and keep dangling symlinks in the XDG trash by @babarot in https://github.com/babarot/gomi/pull/179
+### Refactorings
+- Measure coverage over the TUI and CLI and test where data can be lost by @babarot in https://github.com/babarot/gomi/pull/175
+
 ## [v1.9.1](https://github.com/babarot/gomi/compare/v1.9.0...v1.9.1) - 2026-10-25
 ### Bug fixes
 - Ask for a new name when a broken symlink has the restored file's name by @babarot in https://github.com/babarot/gomi/pull/166
