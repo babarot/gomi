@@ -191,8 +191,8 @@ core:
     gomi_dir: ~/.gomi   # Path to store trashed files. Can be changed to another location.
                         # Supports environment variable expansion like $HOME or ~.
                         # If empty, defaults to ~/.gomi.
-                        # This is a legacy storage setting. If set with strategy "auto",
-                        # gomi will automatically use legacy storage as the primary backend.
+                        # Used with strategy "legacy". With "auto", gomi uses the XDG trash
+                        # and also reads ~/.gomi if it exists.
 
     home_fallback: true # If true, fallbacks to home trash when external trash fails
 

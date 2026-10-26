@@ -10,8 +10,8 @@ set -euo pipefail
 cp /data/.gomi /usr/local/bin/gomi
 chmod +x /usr/local/bin/gomi
 
-# The first run writes the default config. The default gomi_dir would make
-# strategy auto read only the legacy trash, so ask for the XDG one.
+# The first run writes the default config. Ask for the XDG trash only, and
+# turn on permanent deletion.
 gomi --version > /dev/null
 config="$HOME/.config/gomi/config.yaml"
 sed -i 's/strategy: auto/strategy: xdg/; /permanent_delete:/{n;s/enable: false/enable: true/}' "$config"
