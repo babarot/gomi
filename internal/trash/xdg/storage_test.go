@@ -2,9 +2,11 @@ package xdg
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -437,6 +439,49 @@ func TestStorage_List_SkipsInvalidInfo(t *testing.T) {
 	// Should skip orphan (no valid .trashinfo)
 	if len(files) != 0 {
 		t.Errorf("List() returned %d files, want 0 (orphan should be skipped)", len(files))
+	}
+}
+
+// The .trashinfo files are read several at a time; the list keeps the order
+// of files/ and skips the same entries as reading them one by one does
+func TestStorage_List_ManyEntries(t *testing.T) {
+	s, dataDir := newTestStorage(t)
+	trashRoot := filepath.Join(dataDir, "Trash")
+
+	var want []string
+	for i := range 100 {
+		name := fmt.Sprintf("file%03d.txt", i)
+		if err := os.WriteFile(filepath.Join(trashRoot, "files", name), []byte(name), 0644); err != nil {
+			t.Fatal(err)
+		}
+		infoPath := filepath.Join(trashRoot, "info", name+".trashinfo")
+		switch {
+		case i%7 == 0:
+			// no .trashinfo
+			continue
+		case i%11 == 0:
+			if err := os.WriteFile(infoPath, []byte("not a trashinfo"), 0644); err != nil {
+				t.Fatal(err)
+			}
+			continue
+		}
+		info := &TrashInfo{Path: filepath.Join("/tmp", name), DeletionDate: time.Now()}
+		if err := info.Save(infoPath); err != nil {
+			t.Fatal(err)
+		}
+		want = append(want, name)
+	}
+
+	files, err := s.List()
+	if err != nil {
+		t.Fatalf("List() error = %v", err)
+	}
+	var got []string
+	for _, f := range files {
+		got = append(got, f.Name)
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("List() = %v, want %v", got, want)
 	}
 }
 
