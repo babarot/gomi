@@ -962,10 +962,8 @@ func TestFindAllTrashDirectories(t *testing.T) {
 }
 
 // A dangling symlink is trashed as the link itself (rename moves the link),
-// so the trash must list it, or it cannot be restored. List uses os.Stat,
-// which follows the link and fails, so the item is skipped.
+// so the trash must list it, or it cannot be restored.
 func TestStorage_PutAndList_DanglingSymlink(t *testing.T) {
-	t.Skip("bug: listLocation (storage.go:349) uses os.Stat, so a trashed dangling symlink is never listed and cannot be restored")
 	s, _ := newTestStorage(t)
 	link := filepath.Join(t.TempDir(), "dangling")
 	if err := os.Symlink(filepath.Join(t.TempDir(), "gone"), link); err != nil {

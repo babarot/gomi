@@ -181,7 +181,6 @@ func TestFindOrphanedTrashInfoFiles_DanglingSymlink(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("symlinks need privileges on Windows")
 	}
-	t.Skip("bug: FindOrphanedTrashInfoFiles (orphan.go:54) uses os.Stat, which follows the link, so a trashed dangling symlink is reported as orphaned and prune deletes its .trashinfo")
 
 	root, filesDir, infoDir := newOrphanTestTrash(t)
 	if err := os.Symlink(filepath.Join(root, "nowhere"), filepath.Join(filesDir, "link")); err != nil {
