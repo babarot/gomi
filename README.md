@@ -241,6 +241,7 @@ ui:
     colorscheme: nord  # Available themes: https://xyproto.github.io/splash/docs/index.html
     directory_command: ls -F -A --color=always # run in the directory; give eza and others that read paths from stdin a "." (eza -T .)
     position: auto # where the list shows the preview: auto (right when wide enough), right, below or none
+    image: auto # how images are drawn: auto (kitty graphics protocol when the terminal answers for it, else half blocks), kitty or halfblocks
   style: # adjusts the gomi theme; other themes ignore it
     list_view:
       cursor: "#AD58B4"         # purple - color of the cursor border and text

@@ -3,6 +3,7 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"image"
 	"path/filepath"
 	"testing"
 	"time"
@@ -11,6 +12,8 @@ import (
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/charmbracelet/x/ansi/kitty"
 
 	"github.com/babarot/gomi/internal/config"
 	"github.com/babarot/gomi/internal/trash"
@@ -445,6 +448,74 @@ func TestUpdate_PreviewLoadedMsg_AfterMovingOn(t *testing.T) {
 	}
 }
 
+func TestUpdate_KittyGraphicsAnswer(t *testing.T) {
+	m := newTestModel()
+	a := File{File: &trash.File{Name: "a", TrashPath: "/trash/a"}}
+
+	updated, _ := m.Update(ShowDetailMsg{file: a})
+	updated, _ = updated.Update(previewLoadedMsg{path: "/trash/b", previewResult: previewResult{content: "half blocks", available: true}})
+
+	// an answer to something else is not taken for one
+	updated, _ = updated.Update(uv.KittyGraphicsEvent{Options: kitty.Options{ID: 7}, Payload: []byte("OK")})
+	if asModel(t, updated).kittyGraphics {
+		t.Fatal("an answer to another ID turns on the kitty graphics protocol")
+	}
+
+	updated, cmd := updated.Update(uv.KittyGraphicsEvent{Options: kitty.Options{ID: kittyQueryID}, Payload: []byte("OK")})
+	model := asModel(t, updated)
+	if !model.kittyGraphics {
+		t.Fatal("the answer does not turn on the kitty graphics protocol")
+	}
+	if _, ok := model.previews["/trash/b"]; ok {
+		t.Error("a preview read before the answer is kept")
+	}
+	// a's preview is being read already, so it is not read twice
+	if cmd != nil {
+		t.Error("the answer reads a's preview again while it is being read")
+	}
+
+	// a's preview read before the answer is read again
+	updated, cmd = model.Update(previewLoadedMsg{path: "/trash/a", previewResult: previewResult{content: "half blocks", available: true}})
+	model = asModel(t, updated)
+	if _, ok := model.previews["/trash/a"]; ok {
+		t.Error("a preview read before the answer is kept")
+	}
+	if cmd == nil || !model.reading[previewKey("/trash/a")] {
+		t.Error("a's preview is not read again")
+	}
+}
+
+func TestLoadDetail_ImageOfAnotherSize(t *testing.T) {
+	m := newTestModel()
+	m.viewport.SetWidth(40)
+	m.viewport.SetHeight(20)
+	f := File{File: &trash.File{Name: "a.png", TrashPath: "/trash/a.png", SizeKnown: true}}
+
+	m.previews[f.TrashPath] = previewResult{available: true, kitty: true, imageID: 1, size: image.Pt(40, 20)}
+	if got := len(m.loadDetail(f)); got != 0 {
+		t.Errorf("commands for an image of the same size = %d, want 0", got)
+	}
+
+	// the pane grew, as when the detail view opens over the list
+	m.viewport.SetWidth(80)
+	if got := len(m.loadDetail(f)); got != 1 {
+		t.Fatalf("commands for an image of another size = %d, want 1", got)
+	}
+
+	// the image read again frees the one it replaces
+	updated, cmd := m.Update(previewLoadedMsg{path: f.TrashPath, previewResult: previewResult{available: true, kitty: true, imageID: 2, size: image.Pt(80, 20), graphics: "image"}})
+	if got := asModel(t, updated).previews[f.TrashPath].imageID; got != 2 {
+		t.Errorf("imageID = %d, want 2", got)
+	}
+	raw, ok := cmd().(tea.RawMsg)
+	if !ok {
+		t.Fatalf("got %T, want tea.RawMsg", cmd())
+	}
+	if want := "image" + deleteImages([]int{1}); raw.Msg != want {
+		t.Errorf("sent %q, want %q", raw.Msg, want)
+	}
+}
+
 // removeRecorder is a trash that records which files are removed.
 type removeRecorder struct {
 	trash.Trash
@@ -617,7 +688,7 @@ func TestUpdate_DetailView_DeleteRemovesSelectionNotCursor(t *testing.T) {
 func TestLoadPreviewCmd_DirectoryGone(t *testing.T) {
 	// the directory is deleted before its preview is read
 	f := File{File: &trash.File{Name: "gone", TrashPath: filepath.Join(t.TempDir(), "gone"), IsDir: true}}
-	msg, ok := loadPreviewCmd(f, 60, 20)().(previewLoadedMsg)
+	msg, ok := loadPreviewCmd(f, 60, 20, false, image.Point{})().(previewLoadedMsg)
 	if !ok {
 		t.Fatalf("got %T, want previewLoadedMsg", msg)
 	}

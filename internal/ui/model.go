@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"image"
 	"os"
 	"slices"
 	"time"
@@ -47,6 +48,12 @@ type Model struct {
 	// sortMenu is set while the picker's sort menu is open, on sortSel
 	sortMenu bool
 	sortSel  int
+
+	// kittyGraphics is set once the terminal is known to draw images with
+	// the kitty graphics protocol, and cell is how many pixels a cell is
+	// once the terminal tells
+	kittyGraphics bool
+	cell          image.Point
 
 	// previewSeq counts the cursor's moves, so that only the preview of the
 	// file it rests on is read

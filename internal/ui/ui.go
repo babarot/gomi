@@ -3,6 +3,7 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -73,6 +74,17 @@ func (m Model) Init() tea.Cmd {
 		// styles depend on whether the background is dark
 		tea.RequestBackgroundColor,
 	}
+	// images drawn with half blocks ask the terminal nothing
+	switch {
+	case m.config.Preview.Image == imageHalfBlocks:
+	case m.config.Preview.Image == imageKitty:
+		cmds = append(cmds, tea.Raw(requestCellSize))
+	case noPlaceholders():
+	default:
+		// the cell size is asked first, so that it is known by the time
+		// the terminal answers the query
+		cmds = append(cmds, tea.Raw(requestCellSize+kittyQuery))
+	}
 	if m.load != nil {
 		cmds = append(cmds, m.loadCmd(), loadTick())
 	} else {
@@ -106,12 +118,23 @@ func Render(t trash.Trash, load Loader, opts RenderOptions) ([]*trash.File, erro
 	m.progress = &trash.Progress{}
 	m.loadStart = now()
 	m.state.SetView(Loading)
+	m.kittyGraphics = m.config.Preview.Image == imageKitty
 
 	// Initialize UI program
 	p := tea.NewProgram(m)
 
 	// Run the UI
 	result, err := p.Run()
+	if final, ok := result.(Model); ok {
+		var ids []int
+		for _, r := range final.previews {
+			if r.imageID != 0 {
+				ids = append(ids, r.imageID)
+			}
+		}
+		// the images are kept in the terminal until they are freed
+		fmt.Fprint(os.Stdout, deleteImages(ids))
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to show file selection UI: %w", err)
 	}

@@ -88,6 +88,9 @@ type previewDueMsg struct{ seq int }
 // followCursor makes the preview beside the list show the file on the
 // cursor, and has it read once the cursor rests there
 func (m Model) followCursor(cmd tea.Cmd) (Model, tea.Cmd) {
+	if m.state.current == DetailView {
+		return m.reloadStaleImage(cmd)
+	}
 	if m.state.current != ListView || m.listLayout().side == sideNone {
 		return m, cmd
 	}
@@ -103,7 +106,7 @@ func (m Model) followCursor(cmd tea.Cmd) (Model, tea.Cmd) {
 	// the preview shows no file yet before the first one
 	if !ok || (m.detailFile.File != nil && f.TrashPath == m.detailFile.TrashPath) {
 		m.resizePreview()
-		return m, cmd
+		return m.reloadStaleImage(cmd)
 	}
 	m.detailFile = f
 	m.viewport = m.newViewportModel(f)
