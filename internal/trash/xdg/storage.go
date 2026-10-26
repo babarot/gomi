@@ -129,8 +129,11 @@ func (s *Storage) Put(src string) error {
 	// Move file to trash
 	dstPath := filepath.Join(loc.filesDir, trashName)
 	if err := fs.Move(abs, dstPath, s.config.HomeFallback); err != nil {
-		// If move fails, clean up the .trashinfo file
-		os.Remove(infoPath)
+		// The file is in the trash in full, so its .trashinfo is kept for
+		// it to be listed; only what is left at src is reported
+		if !errors.Is(err, fs.ErrSourceRemains) {
+			os.Remove(infoPath)
+		}
 		return trash.NewStorageError("put", src, fmt.Errorf("failed to move file to trash: %w", err))
 	}
 

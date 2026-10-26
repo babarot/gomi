@@ -1,15 +1,18 @@
 package legacy
 
 import (
+	"errors"
 	iofs "io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/babarot/gomi/internal/config"
 	"github.com/babarot/gomi/internal/trash"
 	"github.com/babarot/gomi/internal/trash/legacy/history"
+	"github.com/babarot/gomi/internal/utils/fs"
 )
 
 func newTestConfig(dir string) trash.Config {
@@ -538,7 +541,6 @@ func TestStorage_Put_RollsBackWhenHistorySaveFails(t *testing.T) {
 	}
 
 	t.Run("history has no entry for it", func(t *testing.T) {
-		t.Skip("known bug: Put adds the entry to the in-memory history before saving and keeps it after rolling the file back, so List shows it and the next save writes it (internal/trash/legacy/storage.go:115-138)")
 		unblock()
 		other := filepath.Join(t.TempDir(), "other.txt")
 		if err := os.WriteFile(other, []byte("other"), 0644); err != nil {
@@ -655,4 +657,50 @@ func TestStorage_Restore_HistorySaveFails(t *testing.T) {
 		t.Fatal("Restore() succeeded, want an error from saving the history")
 	}
 	assertContent(t, srcFile, "data")
+}
+
+// When the copy fallback cannot remove all of the source, the trash holds
+// the only complete copy, so Put keeps it in the history and reports what
+// is left behind.
+func TestStorage_Put_SourceRemainsIsKeptInHistory(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix-specific test")
+	}
+	if os.Getuid() == 0 {
+		t.Skip("root is never denied permission")
+	}
+	dir := t.TempDir()
+	s := reopen(t, dir)
+
+	// rename fails since the parent is read-only; RemoveAll then removes
+	// the files inside src and fails on src itself
+	parent := filepath.Join(t.TempDir(), "locked")
+	src := filepath.Join(parent, "src")
+	if err := os.MkdirAll(filepath.Join(src, "sub"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(src, "a.txt"), []byte("a"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(src, "sub", "b.txt"), []byte("b"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(parent, 0555); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(parent, 0755) })
+
+	if err := s.Put(src); !errors.Is(err, fs.ErrSourceRemains) {
+		t.Fatalf("Put() error = %v, want fs.ErrSourceRemains", err)
+	}
+
+	files, err := reopen(t, dir).List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(files) != 1 {
+		t.Fatalf("List() returned %d files, want 1", len(files))
+	}
+	assertContent(t, filepath.Join(files[0].TrashPath, "a.txt"), "a")
+	assertContent(t, filepath.Join(files[0].TrashPath, "sub", "b.txt"), "b")
 }

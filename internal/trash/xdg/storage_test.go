@@ -11,6 +11,7 @@ import (
 
 	"github.com/babarot/gomi/internal/config"
 	"github.com/babarot/gomi/internal/trash"
+	"github.com/babarot/gomi/internal/utils/fs"
 )
 
 const testRunID = "test-run"
@@ -980,4 +981,46 @@ func TestStorage_PutAndList_DanglingSymlink(t *testing.T) {
 	if len(files) != 1 || files[0].OriginalPath != link {
 		t.Fatalf("List() = %v, want the dangling link", files)
 	}
+}
+
+// When the copy fallback cannot remove all of the source, the trash holds
+// the only complete copy, so Put keeps its .trashinfo and reports what is
+// left behind.
+func TestStorage_Put_SourceRemainsIsListed(t *testing.T) {
+	if os.Getuid() == 0 {
+		t.Skip("root is never denied permission")
+	}
+	s, _ := newTestXDGStorage(t, true)
+
+	// rename fails since the parent is read-only; RemoveAll then removes
+	// the files inside src and fails on src itself
+	parent := filepath.Join(t.TempDir(), "locked")
+	src := filepath.Join(parent, "src")
+	if err := os.MkdirAll(filepath.Join(src, "sub"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(src, "a.txt"), []byte("a"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(src, "sub", "b.txt"), []byte("b"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(parent, 0555); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(parent, 0755) })
+
+	if err := s.Put(src); !errors.Is(err, fs.ErrSourceRemains) {
+		t.Fatalf("Put() error = %v, want fs.ErrSourceRemains", err)
+	}
+
+	files, err := s.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(files) != 1 {
+		t.Fatalf("List() returned %d files, want 1", len(files))
+	}
+	assertContent(t, filepath.Join(files[0].TrashPath, "a.txt"), "a")
+	assertContent(t, filepath.Join(files[0].TrashPath, "sub", "b.txt"), "b")
 }

@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -298,7 +299,6 @@ func TestMove_CopyFallback(t *testing.T) {
 // read-only; os.RemoveAll(src) then deletes everything inside src before
 // it fails to remove src itself.
 func TestMove_CopyFallbackKeepsDataWhenSourceRemovalFails(t *testing.T) {
-	t.Skip("known bug: Move removes the complete copy at dst when os.RemoveAll(src) fails after deleting part of src (internal/utils/fs/atomic.go:40-44)")
 	skipUnlessPermissionsApply(t)
 	dir := createTempDir(t)
 	parent := filepath.Join(dir, "locked")
@@ -306,9 +306,13 @@ func TestMove_CopyFallbackKeepsDataWhenSourceRemovalFails(t *testing.T) {
 	dst := filepath.Join(dir, "dst")
 	lockDir(t, parent)
 
-	if err := Move(src, dst, true); err == nil {
-		t.Fatal("Move() succeeded, want an error")
+	if err := Move(src, dst, true); !errors.Is(err, ErrSourceRemains) {
+		t.Fatalf("Move() error = %v, want ErrSourceRemains", err)
 	}
+
+	// dst is the complete copy
+	assertFile(t, filepath.Join(dst, "a.txt"), "a")
+	assertFile(t, filepath.Join(dst, "sub", "b.txt"), "b")
 
 	// Each file must be at src or at dst
 	for _, rel := range []string{"a.txt", filepath.Join("sub", "b.txt")} {
