@@ -130,7 +130,8 @@ func (h *History) backup() error {
 
 // Update updates the history by appending the given files to the existing ones.
 // It overwrites the current history file with the updated data and sets the version before saving.
-// A backup of the current state is created before the update is applied.
+// When it returns, the history it holds is also written to the backup file,
+// whether or not saving succeeded.
 func (h *History) Update(files []File) error {
 	slog.Debug("updating history file", "path", h.path)
 	defer func() {
@@ -148,7 +149,8 @@ func (h *History) Update(files []File) error {
 }
 
 // Save saves the current history to the file, overwriting the existing data.
-// A backup is performed before saving the history to ensure the current state is preserved.
+// When it returns, the history it holds is also written to the backup file,
+// whether or not saving succeeded.
 // Unlike 'update', it does not modify the list of files or set the version.
 func (h *History) Save() error {
 	slog.Debug("saving history file", "path", h.path)
@@ -229,7 +231,7 @@ func (h History) FindByID(id string) *File {
 	return nil
 }
 
-// RemoveByPath removes a file from the history by its original path
+// RemoveByPath removes a file from the history by its path in the trash
 func (h *History) RemoveByPath(path string) {
 	var filtered []File
 	for _, f := range h.Files {
