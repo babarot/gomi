@@ -297,3 +297,191 @@ func TestConfig_Validate_Views(t *testing.T) {
 		}
 	}
 }
+
+// setHome points the home directory at a temporary one for the test
+func setHome(t *testing.T) string {
+	t.Helper()
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	return home
+}
+
+// writeConfig writes content as a config file and returns its path
+func writeConfig(t *testing.T, content string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func TestLoad_CreatesDefaultConfig(t *testing.T) {
+	home := setHome(t)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, "xdg"))
+
+	cfg, err := Load("")
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	path := filepath.Join(home, "xdg", "gomi", "config.yaml")
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("default config not written to %s: %v", path, err)
+	}
+	if want := filepath.Join(home, ".gomi"); cfg.Core.Trash.GomiDir != want {
+		t.Errorf("GomiDir = %q, want %q", cfg.Core.Trash.GomiDir, want)
+	}
+	if cfg.Core.Trash.Strategy != "auto" {
+		t.Errorf("Strategy = %q, want %q", cfg.Core.Trash.Strategy, "auto")
+	}
+	if !cfg.Core.Restore.Confirm {
+		t.Error("Restore.Confirm should be true by default")
+	}
+
+	// Loading again reads the file just written
+	again, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load(%s) error = %v", path, err)
+	}
+	if again.Core.Trash.GomiDir != cfg.Core.Trash.GomiDir || !again.Core.Restore.Confirm {
+		t.Errorf("reloaded config differs: %+v", again.Core)
+	}
+}
+
+func TestLoad_ExistingFileIsKept(t *testing.T) {
+	setHome(t)
+	content := "core:\n  trash:\n    strategy: legacy\n"
+	path := writeConfig(t, content)
+
+	if _, err := Load(path); err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != content {
+		t.Errorf("config file was rewritten: %q", data)
+	}
+}
+
+func TestLoad_Values(t *testing.T) {
+	home := setHome(t)
+	path := writeConfig(t, `core:
+  trash:
+    strategy: legacy
+    home_fallback: false
+    gomi_dir: ~/my-trash
+    forbidden_paths:
+      - /important
+  restore:
+    confirm: false
+    verbose: true
+  permanent_delete:
+    enable: true
+ui:
+  theme: nord
+  view: places
+history:
+  include:
+    within_days: 7
+  exclude:
+    files:
+      - secret.txt
+    size:
+      max: 1GB
+logging:
+  level: warn
+`)
+
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	tr := cfg.Core.Trash
+	if tr.Strategy != "legacy" {
+		t.Errorf("Strategy = %q, want legacy", tr.Strategy)
+	}
+	if tr.HomeFallback {
+		t.Error("HomeFallback should be false")
+	}
+	if want := home + "/my-trash"; tr.GomiDir != want {
+		t.Errorf("GomiDir = %q, want %q", tr.GomiDir, want)
+	}
+	if len(tr.ForbiddenPaths) != 1 || tr.ForbiddenPaths[0] != "/important" {
+		t.Errorf("ForbiddenPaths = %v, want [/important]", tr.ForbiddenPaths)
+	}
+	if cfg.Core.Restore.Confirm || !cfg.Core.Restore.Verbose {
+		t.Errorf("Restore = %+v, want confirm false, verbose true", cfg.Core.Restore)
+	}
+	if !cfg.Core.PermanentDelete.Enable {
+		t.Error("PermanentDelete.Enable should be true")
+	}
+	if cfg.UI.Theme != "nord" || cfg.UI.View != "places" {
+		t.Errorf("UI theme, view = %q, %q, want nord, places", cfg.UI.Theme, cfg.UI.View)
+	}
+	if cfg.History.Include.Period != 7 {
+		t.Errorf("Period = %d, want 7", cfg.History.Include.Period)
+	}
+	if ex := cfg.History.Exclude; len(ex.Files) != 1 || ex.Files[0] != "secret.txt" || ex.Size.Max != "1GB" {
+		t.Errorf("Exclude = %+v, want files [secret.txt], max 1GB", ex)
+	}
+	if cfg.Logging.Level != "warn" {
+		t.Errorf("Logging.Level = %q, want warn", cfg.Logging.Level)
+	}
+}
+
+func TestLoad_Errors(t *testing.T) {
+	tests := []struct {
+		name    string
+		content string
+		want    string // in the error
+	}{
+		{"malformed yaml", "core:\n  trash: [\n", "parse"},
+		{"invalid strategy", "core:\n  trash:\n    strategy: cloud\n", "strategy"},
+		{"invalid size", "history:\n  exclude:\n    size:\n      max: huge\n", "max"},
+		// trash_dir is retired: it errors instead of silently choosing
+		// another trash directory than the user wrote
+		{"retired trash_dir", "core:\n  trash_dir: /tmp/old-trash\n", "trash_dir"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setHome(t)
+			cfg, err := Load(writeConfig(t, tt.content))
+			if err == nil {
+				t.Fatalf("Load() = %+v, want an error", cfg)
+			}
+			if !strings.Contains(err.Error(), tt.want) {
+				t.Errorf("Load() error = %v, want it to mention %q", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestExpandPaths(t *testing.T) {
+	home := setHome(t)
+	t.Setenv("GOMI_TEST_DIR", "trash-from-env")
+
+	tests := []struct {
+		name    string
+		gomiDir string
+		want    string
+	}{
+		{"empty stays empty", "", ""},
+		{"tilde", "~/.gomi", home + "/.gomi"},
+		{"env var", "~/$GOMI_TEST_DIR", home + "/trash-from-env"},
+		{"absolute", "/var/gomi", "/var/gomi"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &Config{Core: Core{Trash: TrashConfig{GomiDir: tt.gomiDir}}}
+			if err := c.expandPaths(); err != nil {
+				t.Fatalf("expandPaths() error = %v", err)
+			}
+			if c.Core.Trash.GomiDir != tt.want {
+				t.Errorf("GomiDir = %q, want %q", c.Core.Trash.GomiDir, tt.want)
+			}
+		})
+	}
+}
