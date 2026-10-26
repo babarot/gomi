@@ -70,7 +70,7 @@ jobs:
       - name: Extract coverage
         if: runner.os == 'Linux' && github.ref == 'refs/heads/main'
         run: |
-          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+          COVERAGE=$(go tool cover -func=coverage.out | awk '$1 == "total:" {print $3}' | sed 's/%//')
           echo "COVERAGE=$COVERAGE" >> "$GITHUB_ENV"
       - name: Update coverage badge
         if: runner.os == 'Linux' && github.ref == 'refs/heads/main'
