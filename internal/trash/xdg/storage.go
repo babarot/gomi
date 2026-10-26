@@ -347,9 +347,10 @@ func (s *Storage) listLocation(loc *trashLocation, cache *sizeCache) ([]*trash.F
 		// Get absolute path
 		origPath := info.GetAbsolutePath()
 
-		// Get file info
+		// Get file info of the entry itself, so that a trashed symlink is
+		// listed whether or not its target exists
 		filePath := filepath.Join(loc.filesDir, entry.Name())
-		fileInfo, err := os.Stat(filePath)
+		fileInfo, err := os.Lstat(filePath)
 		if err != nil {
 			// Skip inaccessible files
 			continue

@@ -50,8 +50,9 @@ func FindOrphanedTrashInfoFiles(trashDir string) ([]OrphanedFile, error) {
 		fileName := strings.TrimSuffix(entry.Name(), ".trashinfo")
 		trashInfoPath := filepath.Join(infoDir, entry.Name())
 
-		// Check if corresponding file exists in files directory
-		_, err := os.Stat(filepath.Join(filesDir, fileName))
+		// Check if corresponding file exists in files directory. Lstat, not
+		// Stat: a trashed symlink is there even when its target is not
+		_, err := os.Lstat(filepath.Join(filesDir, fileName))
 		if os.IsNotExist(err) {
 			metadata, parseErr := ParseTrashInfoFile(trashInfoPath)
 			if parseErr != nil {
