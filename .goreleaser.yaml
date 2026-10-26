@@ -75,6 +75,16 @@ brews:
     license: MIT
     url_template: "https://github.com/babarot/gomi/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
 
+nix:
+  - repository:
+      owner: babarot
+      name: nur-packages
+      token: "{{ .Env.NUR_GITHUB_TOKEN }}"
+    homepage: https://gomi.dev
+    description: A Safer Alternative to the UNIX rm Command!
+    license: mit
+    main_program: gomi
+
 scoops:
   - repository:
       owner: babarot
