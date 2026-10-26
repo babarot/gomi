@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"testing"
 )
 
@@ -151,5 +152,141 @@ func TestGetMountPoints(t *testing.T) {
 	}
 	if !hasRoot {
 		t.Error("mount points should include /")
+	}
+}
+
+// makeTrashDir makes dir with files/ and info/ in it.
+func makeTrashDir(t *testing.T, dir string) {
+	t.Helper()
+	for _, sub := range []string{"files", "info"} {
+		if err := os.MkdirAll(filepath.Join(dir, sub), 0700); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+// makeSharedTrash makes $topdir/.Trash, sticky or not, and returns it.
+func makeSharedTrash(t *testing.T, topdir string, sticky bool) string {
+	t.Helper()
+	dir := filepath.Join(topdir, ".Trash")
+	if err := os.MkdirAll(dir, 0777); err != nil {
+		t.Fatal(err)
+	}
+	mode := os.FileMode(0777)
+	if sticky {
+		mode |= os.ModeSticky
+	}
+	if err := os.Chmod(dir, mode); err != nil {
+		t.Fatal(err)
+	}
+	fi, err := os.Lstat(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := fi.Mode()&os.ModeSticky != 0; got != sticky {
+		t.Skipf("cannot set the sticky bit to %v here", sticky)
+	}
+	return dir
+}
+
+// The spec: $topdir/.Trash must have the sticky bit set, or it is not used.
+func TestIsValidExternalTrash_SharedTrashStickyBit(t *testing.T) {
+	top := t.TempDir()
+	if dir := makeSharedTrash(t, top, true); !isValidExternalTrash(dir) {
+		t.Error(".Trash with the sticky bit should be valid")
+	}
+	top = t.TempDir()
+	if dir := makeSharedTrash(t, top, false); isValidExternalTrash(dir) {
+		t.Error(".Trash without the sticky bit should not be valid")
+	}
+}
+
+// scanExternalTrashes asks isValidExternalTrash about $topdir/.Trash/$uid,
+// and the spec says that one is not used unless $topdir/.Trash is a sticky,
+// non-symlink directory (the user falls back to $topdir/.Trash-$uid).
+// isValidExternalTrash only checks the sticky bit when given .Trash itself,
+// so it accepts $uid under a .Trash anyone can tamper with.
+func TestIsValidExternalTrash_UidDirUnderNonStickyTrash(t *testing.T) {
+	t.Skip("bug: isValidExternalTrash (mountpoint.go:151) checks the sticky bit only when the base name is .Trash, but scanExternalTrashes (storage.go:287) passes $topdir/.Trash/$uid, so the check never runs")
+	top := t.TempDir()
+	shared := makeSharedTrash(t, top, false)
+	uidDir := filepath.Join(shared, strconv.Itoa(os.Getuid()))
+	makeTrashDir(t, uidDir)
+
+	if isValidExternalTrash(uidDir) {
+		t.Error("$topdir/.Trash/$uid under a non-sticky .Trash should not be valid")
+	}
+}
+
+func TestIsValidExternalTrash_UidDirUnderSymlinkedTrash(t *testing.T) {
+	t.Skip("bug: isValidExternalTrash (mountpoint.go:132) Lstats $topdir/.Trash/$uid, which follows a symlinked $topdir/.Trash, so the spec's no-symlink check on .Trash never runs")
+	top := t.TempDir()
+	elsewhere := makeSharedTrash(t, t.TempDir(), true)
+	if err := os.Symlink(elsewhere, filepath.Join(top, ".Trash")); err != nil {
+		t.Fatal(err)
+	}
+	uidDir := filepath.Join(top, ".Trash", strconv.Itoa(os.Getuid()))
+	makeTrashDir(t, uidDir)
+
+	if isValidExternalTrash(uidDir) {
+		t.Error("$topdir/.Trash/$uid through a symlinked .Trash should not be valid")
+	}
+}
+
+// The $uid directory under a proper sticky .Trash is valid.
+func TestIsValidExternalTrash_UidDirUnderStickyTrash(t *testing.T) {
+	shared := makeSharedTrash(t, t.TempDir(), true)
+	uidDir := filepath.Join(shared, strconv.Itoa(os.Getuid()))
+	makeTrashDir(t, uidDir)
+	if !isValidExternalTrash(uidDir) {
+		t.Error("$topdir/.Trash/$uid under a sticky .Trash should be valid")
+	}
+}
+
+// .Trash-$uid needs no sticky bit; it belongs to one user.
+func TestIsValidExternalTrash_UserTrashWithoutSticky(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), ".Trash-"+strconv.Itoa(os.Getuid()))
+	makeTrashDir(t, dir)
+	fi, err := os.Lstat(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fi.Mode()&os.ModeSticky != 0 {
+		t.Fatal("test dir unexpectedly sticky")
+	}
+	if !isValidExternalTrash(dir) {
+		t.Error(".Trash-$uid without the sticky bit should be valid")
+	}
+}
+
+// A trash made by another tool with looser modes on files/ and info/ is
+// still used, so what is in it stays listable and restorable.
+func TestIsValidExternalTrash_LooseSubdirModes(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), ".Trash-"+strconv.Itoa(os.Getuid()))
+	makeTrashDir(t, dir)
+	for _, sub := range []string{"files", "info"} {
+		if err := os.Chmod(filepath.Join(dir, sub), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if !isValidExternalTrash(dir) {
+		t.Error("trash with 0755 subdirectories should still be valid")
+	}
+}
+
+// A trash whose files/ and info/ cannot be looked at cannot take files.
+func TestIsValidExternalTrash_UnsearchableTrash(t *testing.T) {
+	if os.Getuid() == 0 {
+		t.Skip("root is never denied permission")
+	}
+	dir := filepath.Join(t.TempDir(), ".Trash-"+strconv.Itoa(os.Getuid()))
+	makeTrashDir(t, dir)
+	if err := os.Chmod(dir, 0); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(dir, 0700) })
+
+	if isValidExternalTrash(dir) {
+		t.Error("trash whose subdirectories cannot be stat'ed should not be valid")
 	}
 }

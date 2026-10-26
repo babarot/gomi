@@ -549,3 +549,435 @@ func TestStorage_List_SizeKnown(t *testing.T) {
 		}
 	}
 }
+
+// newTestXDGStorage is newTestStorage with the concrete type, so that tests
+// can turn HomeFallback off and look at the trash locations.
+func newTestXDGStorage(t *testing.T, homeFallback bool) (*Storage, string) {
+	t.Helper()
+	s, dataDir := newTestStorage(t)
+	xs, ok := s.(*Storage)
+	if !ok {
+		t.Fatalf("NewStorage() returned %T, want *Storage", s)
+	}
+	xs.config.HomeFallback = homeFallback
+	return xs, dataDir
+}
+
+// putOne trashes a new file with the given content and returns its source
+// path and the one item the trash then lists.
+func putOne(t *testing.T, s trash.Storage, name, content string) (string, *trash.File) {
+	t.Helper()
+	src := filepath.Join(t.TempDir(), name)
+	if err := os.WriteFile(src, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Put(src); err != nil {
+		t.Fatalf("Put() error = %v", err)
+	}
+	files, err := s.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(files) != 1 {
+		t.Fatalf("List() returned %d files, want 1", len(files))
+	}
+	return src, files[0]
+}
+
+func assertContent(t *testing.T, path, want string) {
+	t.Helper()
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	if string(b) != want {
+		t.Errorf("%s: content = %q, want %q", path, b, want)
+	}
+}
+
+func assertNotExist(t *testing.T, path string) {
+	t.Helper()
+	if _, err := os.Lstat(path); !os.IsNotExist(err) {
+		t.Errorf("%s should not exist (err = %v)", path, err)
+	}
+}
+
+// With no destination given, the file goes back to where it was trashed from.
+func TestStorage_Restore_EmptyDstUsesOriginalPath(t *testing.T) {
+	s, _ := newTestStorage(t)
+	src, f := putOne(t, s, "back.txt", "back home")
+
+	if err := s.Restore(f, ""); err != nil {
+		t.Fatalf("Restore() error = %v", err)
+	}
+	assertContent(t, src, "back home")
+	assertNotExist(t, f.TrashPath)
+	assertNotExist(t, infoPathForFile(f.TrashPath))
+}
+
+// The data file was removed from files/ behind gomi's back: Restore must
+// fail and must not create anything at the destination.
+func TestStorage_Restore_MissingTrashFile(t *testing.T) {
+	s, _ := newTestStorage(t)
+	src, f := putOne(t, s, "vanished.txt", "x")
+
+	if err := os.Remove(f.TrashPath); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Restore(f, src); err == nil {
+		t.Fatal("Restore() should fail when the trashed file is missing")
+	}
+	assertNotExist(t, src)
+	// the metadata is left for prune to judge, not removed by a failed restore
+	if _, err := os.Stat(infoPathForFile(f.TrashPath)); err != nil {
+		t.Errorf(".trashinfo should be kept: %v", err)
+	}
+}
+
+// When the destination cannot be created, the trashed file and its
+// .trashinfo stay where they are and the item is still listed.
+func TestStorage_Restore_FailureKeepsTrashItem(t *testing.T) {
+	s, _ := newTestStorage(t)
+	_, f := putOne(t, s, "keep.txt", "precious")
+
+	// the destination's parent is a regular file, so it cannot be a directory
+	blocker := filepath.Join(t.TempDir(), "blocker")
+	if err := os.WriteFile(blocker, []byte("blocker"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Restore(f, filepath.Join(blocker, "keep.txt")); err == nil {
+		t.Fatal("Restore() should fail when the destination directory cannot be made")
+	}
+
+	assertContent(t, blocker, "blocker")
+	assertContent(t, f.TrashPath, "precious")
+	if _, err := os.Stat(infoPathForFile(f.TrashPath)); err != nil {
+		t.Errorf(".trashinfo should be kept: %v", err)
+	}
+	files, err := s.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(files) != 1 || files[0].TrashPath != f.TrashPath {
+		t.Errorf("List() after failed restore = %v, want the item still in the trash", files)
+	}
+}
+
+// Storage.Restore does not ask: the CLI asks the user before restoring onto
+// an existing name (cli.restoreFile) and only then calls it. Restoring onto
+// an existing file replaces that file with the trashed one.
+func TestStorage_Restore_ReplacesExistingFile(t *testing.T) {
+	s, _ := newTestStorage(t)
+	src, f := putOne(t, s, "same.txt", "from trash")
+
+	if err := os.WriteFile(src, []byte("newer"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Restore(f, src); err != nil {
+		t.Fatalf("Restore() error = %v", err)
+	}
+	assertContent(t, src, "from trash")
+	assertNotExist(t, f.TrashPath)
+	files, err := s.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(files) != 0 {
+		t.Errorf("List() returned %d after restore, want 0", len(files))
+	}
+}
+
+// A directory cannot be renamed onto a non-empty directory. Without the
+// copy fallback, Restore must fail and leave both directories untouched.
+func TestStorage_Restore_OntoNonEmptyDirWithoutFallback(t *testing.T) {
+	s, _ := newTestXDGStorage(t, false)
+
+	srcDir := filepath.Join(t.TempDir(), "proj")
+	if err := os.MkdirAll(srcDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(srcDir, "old.txt"), []byte("old"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Put(srcDir); err != nil {
+		t.Fatalf("Put() error = %v", err)
+	}
+	files, err := s.List()
+	if err != nil || len(files) != 1 {
+		t.Fatalf("List() = %v, %v; want one item", files, err)
+	}
+	f := files[0]
+
+	// a new directory of the same name was made in the meantime
+	if err := os.MkdirAll(srcDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(srcDir, "new.txt"), []byte("new"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := s.Restore(f, srcDir); err == nil {
+		t.Fatal("Restore() onto a non-empty directory should fail without fallback")
+	}
+	assertContent(t, filepath.Join(srcDir, "new.txt"), "new")
+	assertNotExist(t, filepath.Join(srcDir, "old.txt"))
+	assertContent(t, filepath.Join(f.TrashPath, "old.txt"), "old")
+	if _, err := os.Stat(infoPathForFile(f.TrashPath)); err != nil {
+		t.Errorf(".trashinfo should be kept: %v", err)
+	}
+}
+
+func TestSelectTrashLocation(t *testing.T) {
+	s, _ := newTestXDGStorage(t, false)
+	home := s.homeTrash
+	src := filepath.Join(t.TempDir(), "a.txt")
+	if err := os.WriteFile(src, []byte("a"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// t.TempDir and XDG_DATA_HOME are on the same device in the test
+	same, err := isOnSameDevice(src, home.root)
+	if err != nil || !same {
+		t.Skipf("temp dir and test trash are not on one device (same=%v, err=%v)", same, err)
+	}
+
+	t.Run("same device goes to home trash", func(t *testing.T) {
+		loc, err := s.selectTrashLocation(src)
+		if err != nil {
+			t.Fatalf("selectTrashLocation() error = %v", err)
+		}
+		if loc != home {
+			t.Errorf("got %s, want home trash %s", loc.root, home.root)
+		}
+	})
+
+	// a home trash that cannot be compared stands for one on another device
+	unreachable := &trashLocation{root: filepath.Join(t.TempDir(), "missing"), isHome: true}
+	ext := &trashLocation{root: t.TempDir(), mountRoot: "/"}
+
+	t.Run("external trash on the file's device", func(t *testing.T) {
+		s := &Storage{homeTrash: unreachable, externalTrashes: []*trashLocation{ext}}
+		loc, err := s.selectTrashLocation(src)
+		if err != nil {
+			t.Fatalf("selectTrashLocation() error = %v", err)
+		}
+		if loc != ext {
+			t.Errorf("got %s, want external trash %s", loc.root, ext.root)
+		}
+	})
+
+	t.Run("no matching trash with home fallback", func(t *testing.T) {
+		s := &Storage{homeTrash: unreachable, config: trash.Config{HomeFallback: true}}
+		loc, err := s.selectTrashLocation(src)
+		if err != nil {
+			t.Fatalf("selectTrashLocation() error = %v", err)
+		}
+		if loc != unreachable {
+			t.Errorf("got %s, want home trash", loc.root)
+		}
+	})
+
+	t.Run("no matching trash without home fallback", func(t *testing.T) {
+		s := &Storage{homeTrash: unreachable}
+		if _, err := s.selectTrashLocation(src); !errors.Is(err, trash.ErrCrossDevice) {
+			t.Errorf("selectTrashLocation() error = %v, want ErrCrossDevice", err)
+		}
+	})
+}
+
+// When no trash can take the file and home fallback is off, Put fails and
+// the file stays where it is, with no .trashinfo left behind.
+func TestStorage_Put_CrossDeviceWithoutFallback(t *testing.T) {
+	s, dataDir := newTestXDGStorage(t, false)
+	infoDir := s.homeTrash.infoDir
+	// make the home trash impossible to compare against, as if on another device
+	s.homeTrash = &trashLocation{
+		root:     filepath.Join(dataDir, "missing"),
+		filesDir: s.homeTrash.filesDir,
+		infoDir:  infoDir,
+		isHome:   true,
+	}
+
+	src := filepath.Join(t.TempDir(), "stay.txt")
+	if err := os.WriteFile(src, []byte("stay"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Put(src); !errors.Is(err, trash.ErrCrossDevice) {
+		t.Fatalf("Put() error = %v, want ErrCrossDevice", err)
+	}
+	assertContent(t, src, "stay")
+	entries, err := os.ReadDir(infoDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 0 {
+		t.Errorf("info dir has %d entries, want none", len(entries))
+	}
+}
+
+// Without XDG_DATA_HOME the home trash is ~/.local/share/Trash.
+func TestInitHomeTrash_DefaultsToHome(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("XDG trash is not used on Windows")
+	}
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_DATA_HOME", "")
+
+	loc, err := (&Storage{}).initHomeTrash()
+	if err != nil {
+		t.Fatalf("initHomeTrash() error = %v", err)
+	}
+	want := filepath.Join(home, ".local", "share", "Trash")
+	if loc.root != want {
+		t.Errorf("root = %q, want %q", loc.root, want)
+	}
+	if !loc.isHome || loc.mountRoot != "" {
+		t.Errorf("isHome = %v, mountRoot = %q; want true, empty", loc.isHome, loc.mountRoot)
+	}
+	for _, dir := range []string{loc.filesDir, loc.infoDir} {
+		fi, err := os.Stat(dir)
+		if err != nil {
+			t.Errorf("%s not created: %v", dir, err)
+			continue
+		}
+		if fi.Mode().Perm()&0077 != 0 {
+			t.Errorf("%s mode = %o, want no access for group and others", dir, fi.Mode().Perm())
+		}
+	}
+}
+
+// A trash that cannot be created makes NewStorage fail rather than return a
+// storage that would lose files on Put.
+func TestNewStorage_HomeTrashUncreatable(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("XDG trash is not used on Windows")
+	}
+	for _, tc := range []struct {
+		name    string
+		blocked string // path made a regular file before NewStorage
+	}{
+		{"data dir is a file", ""},
+		{"files dir is a file", filepath.Join("Trash", "files")},
+		{"info dir is a file", filepath.Join("Trash", "info")},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dataDir := filepath.Join(t.TempDir(), "data")
+			blocked := filepath.Join(dataDir, tc.blocked)
+			if err := os.MkdirAll(filepath.Dir(blocked), 0755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(blocked, []byte("not a dir"), 0644); err != nil {
+				t.Fatal(err)
+			}
+			t.Setenv("XDG_DATA_HOME", dataDir)
+
+			if _, err := NewStorage(trash.Config{ForceHomeTrash: true}); err == nil {
+				t.Error("NewStorage() should fail when the home trash cannot be created")
+			}
+			assertContent(t, blocked, "not a dir")
+		})
+	}
+}
+
+// Opening the storage again keeps what is already in the trash.
+func TestNewStorage_KeepsExistingItems(t *testing.T) {
+	s, dataDir := newTestStorage(t)
+	src, _ := putOne(t, s, "kept.txt", "still here")
+
+	s2, err := NewStorage(trash.Config{ForceHomeTrash: true, HomeFallback: true})
+	if err != nil {
+		t.Fatalf("NewStorage() error = %v", err)
+	}
+	files, err := s2.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(files) != 1 || files[0].OriginalPath != src {
+		t.Fatalf("List() = %v, want the item trashed before", files)
+	}
+	if want := filepath.Join(dataDir, "Trash", "files", "kept.txt"); files[0].TrashPath != want {
+		t.Errorf("TrashPath = %q, want %q", files[0].TrashPath, want)
+	}
+	assertContent(t, files[0].TrashPath, "still here")
+}
+
+// Scanning the real mount points for external trashes only looks; the home
+// trash stays first and the storage stays usable.
+func TestNewStorage_ScansExternalTrashes(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("XDG trash is not used on Windows")
+	}
+	dataDir := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", dataDir)
+
+	s, err := NewStorage(trash.Config{HomeFallback: true})
+	if err != nil {
+		t.Fatalf("NewStorage() error = %v", err)
+	}
+	xs, ok := s.(*Storage)
+	if !ok {
+		t.Fatalf("NewStorage() returned %T, want *Storage", s)
+	}
+	trashes := s.Info().Trashes
+	if want := filepath.Join(dataDir, "Trash"); len(trashes) == 0 || trashes[0] != want {
+		t.Fatalf("Trashes = %v, want %s first", trashes, want)
+	}
+	for _, ext := range xs.externalTrashes {
+		if ext.isHome || ext.mountRoot == "" {
+			t.Errorf("external trash %s: isHome = %v, mountRoot = %q", ext.root, ext.isHome, ext.mountRoot)
+		}
+		if !isValidExternalTrash(ext.root) {
+			t.Errorf("external trash %s does not pass isValidExternalTrash", ext.root)
+		}
+	}
+}
+
+func TestFindAllTrashDirectories(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("XDG trash is not used on Windows")
+	}
+	dataDir := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", dataDir)
+
+	dirs, err := FindAllTrashDirectories()
+	if err != nil {
+		t.Fatalf("FindAllTrashDirectories() error = %v", err)
+	}
+	if want := filepath.Join(dataDir, "Trash"); len(dirs) == 0 || dirs[0] != want {
+		t.Fatalf("dirs = %v, want %s first", dirs, want)
+	}
+	seen := map[string]bool{}
+	for _, d := range dirs {
+		if seen[d] {
+			t.Errorf("%s listed twice", d)
+		}
+		seen[d] = true
+	}
+	// prune reads info/ of each; the home one must be there to read
+	if _, err := FindOrphanedTrashInfoFiles(dirs[0]); err != nil {
+		t.Errorf("FindOrphanedTrashInfoFiles(home) error = %v", err)
+	}
+}
+
+// A dangling symlink is trashed as the link itself (rename moves the link),
+// so the trash must list it, or it cannot be restored. List uses os.Stat,
+// which follows the link and fails, so the item is skipped.
+func TestStorage_PutAndList_DanglingSymlink(t *testing.T) {
+	t.Skip("bug: listLocation (storage.go:349) uses os.Stat, so a trashed dangling symlink is never listed and cannot be restored")
+	s, _ := newTestStorage(t)
+	link := filepath.Join(t.TempDir(), "dangling")
+	if err := os.Symlink(filepath.Join(t.TempDir(), "gone"), link); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Put(link); err != nil {
+		t.Fatalf("Put() error = %v", err)
+	}
+	files, err := s.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(files) != 1 || files[0].OriginalPath != link {
+		t.Fatalf("List() = %v, want the dangling link", files)
+	}
+}

@@ -3,6 +3,7 @@ package fs
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -76,7 +77,8 @@ func TestMove(t *testing.T) {
 		t.Fatalf("Destination file content mismatch. Expected %q, got %q", content, dstContent)
 	}
 
-	// Test move across devices (fallback copy)
+	// Move with fallbackCopy set; rename still succeeds here, so the copy
+	// fallback itself is exercised by the TestMove_CopyFallback tests
 	srcPath = filepath.Join(dir, "source2.txt")
 	dstPath = filepath.Join(dir, "destination2.txt")
 	createTestFile(t, srcPath, content)
@@ -195,6 +197,126 @@ func TestCreateWithBackupNoOriginal(t *testing.T) {
 	_, err = os.Stat(backupPath)
 	if !os.IsNotExist(err) {
 		t.Fatal("Backup file should not exist when original file did not exist")
+	}
+}
+
+// skipUnlessPermissionsApply skips tests that rely on permission bits to
+// make rename(2) fail
+func skipUnlessPermissionsApply(t *testing.T) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix-specific test")
+	}
+	if os.Getuid() == 0 {
+		t.Skip("root is never denied permission")
+	}
+}
+
+// lockDir makes dir read-only, so entries in it cannot be renamed or
+// removed, until the test ends
+func lockDir(t *testing.T, dir string) {
+	t.Helper()
+	if err := os.Chmod(dir, 0555); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(dir, 0755) })
+}
+
+// newSourceDir creates parent/src holding a file and a file in a
+// subdirectory, and returns its path
+func newSourceDir(t *testing.T, parent string) string {
+	t.Helper()
+	src := filepath.Join(parent, "src")
+	if err := os.MkdirAll(filepath.Join(src, "sub"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	createTestFile(t, filepath.Join(src, "a.txt"), "a")
+	createTestFile(t, filepath.Join(src, "sub", "b.txt"), "b")
+	return src
+}
+
+// assertFile fails unless path holds content
+func assertFile(t *testing.T, path, content string) {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Errorf("%s: %v", path, err)
+		return
+	}
+	if string(data) != content {
+		t.Errorf("%s = %q, want %q", path, data, content)
+	}
+}
+
+// Without the fallback, a failed rename must leave the source alone and
+// create nothing at the destination.
+func TestMove_RenameFailsWithoutFallback(t *testing.T) {
+	skipUnlessPermissionsApply(t)
+	dir := createTempDir(t)
+	parent := filepath.Join(dir, "locked")
+	src := newSourceDir(t, parent)
+	dst := filepath.Join(dir, "dst")
+	lockDir(t, parent)
+
+	if err := Move(src, dst, false); err == nil {
+		t.Fatal("Move() succeeded, want an error")
+	}
+	assertFile(t, filepath.Join(src, "a.txt"), "a")
+	assertFile(t, filepath.Join(src, "sub", "b.txt"), "b")
+	if _, err := os.Stat(dst); !os.IsNotExist(err) {
+		t.Errorf("dst should not exist: %v", err)
+	}
+}
+
+// When rename fails because the destination directory is not empty, the
+// copy fallback moves the source's contents there and removes the source.
+func TestMove_CopyFallback(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix-specific test")
+	}
+	dir := createTempDir(t)
+	src := newSourceDir(t, dir)
+	dst := filepath.Join(dir, "dst")
+	if err := os.MkdirAll(dst, 0755); err != nil {
+		t.Fatal(err)
+	}
+	createTestFile(t, filepath.Join(dst, "existing.txt"), "existing")
+
+	if err := Move(src, dst, true); err != nil {
+		t.Fatalf("Move() error = %v", err)
+	}
+	assertFile(t, filepath.Join(dst, "a.txt"), "a")
+	assertFile(t, filepath.Join(dst, "sub", "b.txt"), "b")
+	assertFile(t, filepath.Join(dst, "existing.txt"), "existing")
+	if _, err := os.Stat(src); !os.IsNotExist(err) {
+		t.Errorf("src should not exist: %v", err)
+	}
+}
+
+// When the copy fallback cannot finish removing the source, the data must
+// survive somewhere. Here rename fails because the source's parent is
+// read-only; os.RemoveAll(src) then deletes everything inside src before
+// it fails to remove src itself.
+func TestMove_CopyFallbackKeepsDataWhenSourceRemovalFails(t *testing.T) {
+	t.Skip("known bug: Move removes the complete copy at dst when os.RemoveAll(src) fails after deleting part of src (internal/utils/fs/atomic.go:40-44)")
+	skipUnlessPermissionsApply(t)
+	dir := createTempDir(t)
+	parent := filepath.Join(dir, "locked")
+	src := newSourceDir(t, parent)
+	dst := filepath.Join(dir, "dst")
+	lockDir(t, parent)
+
+	if err := Move(src, dst, true); err == nil {
+		t.Fatal("Move() succeeded, want an error")
+	}
+
+	// Each file must be at src or at dst
+	for _, rel := range []string{"a.txt", filepath.Join("sub", "b.txt")} {
+		_, srcErr := os.Stat(filepath.Join(src, rel))
+		_, dstErr := os.Stat(filepath.Join(dst, rel))
+		if srcErr != nil && dstErr != nil {
+			t.Errorf("%s is lost: not in src (%v) nor in dst (%v)", rel, srcErr, dstErr)
+		}
 	}
 }
 

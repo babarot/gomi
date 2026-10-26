@@ -192,3 +192,33 @@ func TestExpandPath(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateDeprecated(t *testing.T) {
+	validate := validator.New()
+	if err := validate.RegisterValidation("deprecated", validateDeprecated); err != nil {
+		t.Fatal(err)
+	}
+
+	type retired struct {
+		Field string `validate:"deprecated"`
+	}
+
+	t.Run("empty value passes", func(t *testing.T) {
+		if err := validate.Struct(retired{}); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
+	t.Run("field without deprecation info warns and passes", func(t *testing.T) {
+		if err := validate.Struct(retired{Field: "x"}); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
+}
+
+func TestConfig_Validate_TrashDir(t *testing.T) {
+	cfg := NewDefaultConfig()
+	cfg.Core.TrashDir = "/tmp/old-trash"
+	if err := cfg.validate(); err == nil {
+		t.Error("expected validation error for the retired trash_dir")
+	}
+}
