@@ -55,6 +55,36 @@ func (f File) FilterValue() string {
 	return f.Name
 }
 
+// listDir is the builtin preview of the directory at path: its entries,
+// one a line, with their mode and size
+func listDir(path string) (string, error) {
+	// the preview is read in the background, so the directory may be
+	// deleted while it is listed
+	dirs, err := os.ReadDir(path)
+	if err != nil {
+		return "", ErrCannotPreview
+	}
+	lines := []string{}
+	for _, dir := range dirs {
+		info, err := dir.Info()
+		if err != nil {
+			continue
+		}
+		name := dir.Name()
+		if info.IsDir() {
+			name += "/"
+		}
+		lines = append(lines,
+			fmt.Sprintf("%s %7s  %s",
+				info.Mode().String(),
+				humanize.Bytes(uint64(info.Size())),
+				name,
+			),
+		)
+	}
+	return strings.Join(lines, "\n"), nil
+}
+
 // maxPreviewLines is the most lines of a text file the preview reads and
 // highlights; the preview is read again for each file the cursor rests on
 const maxPreviewLines = 1000
@@ -72,39 +102,26 @@ func (f File) Browse(w, h int) (string, error) {
 	if fi.IsDir() {
 		if f.dirListCommand == "" {
 			slog.Debug("preview dir command is not set, fallback to builtin dir func")
-			lines := []string{}
-			// the preview is read in the background, so the directory may be
-			// deleted while it is listed
-			dirs, err := os.ReadDir(f.TrashPath)
-			if err != nil {
-				return content, ErrCannotPreview
-			}
-			for _, dir := range dirs {
-				info, err := dir.Info()
-				if err != nil {
-					continue
-				}
-				name := dir.Name()
-				if info.IsDir() {
-					name += "/"
-				}
-				lines = append(lines,
-					fmt.Sprintf("%s %7s  %s",
-						info.Mode().String(),
-						humanize.Bytes(uint64(info.Size())),
-						name,
-					),
-				)
-			}
-			return strings.Join(lines, "\n"), nil
+			return listDir(f.TrashPath)
 		}
 		input := fmt.Sprintf("cd %s; %s", shellescape.Quote(f.TrashPath), f.dirListCommand)
 		slog.Debug("run ls-like command", "input", input)
 		out, _, err := shell.RunCommand(input)
 		if err != nil {
 			slog.Error("command failed", "command", input, "error", err)
+			return out, err
 		}
-		return out, err
+		// a command that lists nothing for a directory that is not empty
+		// is taken as not working, such as eza without a path, which reads
+		// the paths from stdin when it is not a terminal
+		if strings.TrimSpace(out) == "" {
+			if entries, err := os.ReadDir(f.TrashPath); err == nil && len(entries) > 0 {
+				slog.Warn("preview dir command listed nothing, fallback to builtin dir func",
+					"command", input)
+				return listDir(f.TrashPath)
+			}
+		}
+		return out, nil
 	}
 	mtype, err := mimetype.DetectFile(f.TrashPath)
 	if err != nil {
