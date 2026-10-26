@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"image"
 	"log/slog"
 
 	tea "charm.land/bubbletea/v2"
@@ -16,6 +17,13 @@ type previewResult struct {
 	// says what it is
 	available bool
 	mimeType  string
+	// graphics is the sequence that sends the image of the preview to the
+	// terminal, and imageID the image; content then holds its placeholders
+	graphics string
+	imageID  int
+	// kitty is whether the preview was read to draw images with the kitty
+	// graphics protocol
+	kitty bool
 }
 
 // previewLoadedMsg carries the preview of the file at path
@@ -44,12 +52,19 @@ func slot() func() {
 }
 
 // loadPreviewCmd reads the preview of f, which may run a command, decode
-// an image or highlight a whole file
-func loadPreviewCmd(f File, w, h int) tea.Cmd {
+// an image or highlight a whole file; with kitty, an image is drawn with
+// the kitty graphics protocol on cells of cell pixels
+func loadPreviewCmd(f File, w, h int, kitty bool, cell image.Point) tea.Cmd {
 	return func() tea.Msg {
 		defer slot()()
+		if kitty {
+			if r, ok := kittyPreview(f.TrashPath, w, h, cell); ok {
+				r.kitty = true
+				return previewLoadedMsg{path: f.TrashPath, previewResult: r}
+			}
+		}
 		content, err := f.Browse(w, h)
-		r := previewResult{content: content, available: err == nil}
+		r := previewResult{content: content, available: err == nil, kitty: kitty}
 		if err != nil {
 			slog.Warn("file.Browse returned error", "content", err)
 			if mtype, _ := mimetype.DetectFile(f.TrashPath); mtype != nil {
@@ -78,7 +93,7 @@ func (m Model) loadDetail(f File) []tea.Cmd {
 	if _, ok := m.previews[path]; !ok && !m.reading[previewKey(path)] {
 		m.reading[previewKey(path)] = true
 		// the viewport is sized for the pane f is shown in
-		cmds = append(cmds, loadPreviewCmd(f, m.viewport.Width(), m.viewport.Height()))
+		cmds = append(cmds, loadPreviewCmd(f, m.viewport.Width(), m.viewport.Height(), m.kittyGraphics, m.cell))
 	}
 	if _, ok := m.sizes[path]; !ok && !f.SizeKnown && !m.reading[sizeKey(path)] {
 		m.reading[sizeKey(path)] = true

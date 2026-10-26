@@ -180,6 +180,11 @@ type PreviewConfig struct {
 	// cursor: "auto" (right of the list when the terminal is wide enough,
 	// else nowhere), "right", "below" or "none"; empty is "auto"
 	Position string `yaml:"position" validate:"omitempty,oneof=auto right below none"`
+
+	// Image is how the preview draws images: "auto" (with the kitty
+	// graphics protocol when the terminal answers for it, else with half
+	// blocks), "kitty" or "halfblocks"; empty is "auto"
+	Image string `yaml:"image" validate:"omitempty,oneof=auto kitty halfblocks"`
 }
 
 // History configures history management and filtering

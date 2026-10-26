@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"image"
 	"log/slog"
 	"maps"
 	"slices"
@@ -10,6 +11,7 @@ import (
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
+	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/samber/lo"
 
 	"github.com/babarot/gomi/internal/ui/keys"
@@ -126,12 +128,42 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.loadDetail(msg.file)...)
 		return m, tea.Batch(cmds...)
 
+	case uv.CellSizeEvent:
+		m.cell = image.Pt(msg.Width, msg.Height)
+		return m, nil
+
+	case uv.KittyGraphicsEvent:
+		if m.kittyGraphics || !kittyAnswered(msg) {
+			return m, nil
+		}
+		// the previews read before the answer drew images with half blocks
+		m.kittyGraphics = true
+		maps.DeleteFunc(m.previews, func(_ string, r previewResult) bool { return !r.kitty })
+		if m.detailFile.File != nil {
+			return m, tea.Batch(m.loadDetail(m.detailFile)...)
+		}
+		return m, nil
+
 	case previewLoadedMsg:
 		delete(m.reading, previewKey(msg.path))
+		if m.kittyGraphics && !msg.kitty {
+			// read before the terminal answered; read it again
+			if m.detailFile.File != nil && m.detailFile.TrashPath == msg.path {
+				return m, tea.Batch(m.loadDetail(m.detailFile)...)
+			}
+			return m, nil
+		}
+		// the image is sent once, even when the preview moved to another
+		// file, and stays in the terminal for when it comes back
+		graphics := msg.graphics
+		msg.graphics = ""
 		m.previews[msg.path] = msg.previewResult
 		// the result may come after the preview moved to another file
 		if m.detailFile.File != nil && m.detailFile.TrashPath == msg.path {
 			m.viewport.SetContent(msg.content)
+		}
+		if graphics != "" {
+			return m, tea.Raw(graphics)
 		}
 		return m, nil
 
