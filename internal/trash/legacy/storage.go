@@ -2,6 +2,7 @@ package legacy
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -98,9 +99,12 @@ func (s *Storage) Put(src string) error {
 		return trash.NewStorageError("put", src, err)
 	}
 
-	// Move file to trash (with fallback copy for cross-device moves)
-	if err := fs.Move(abs, trashPath, true); err != nil {
-		return trash.NewStorageError("put", src, err)
+	// Move file to trash (with fallback copy for cross-device moves). When
+	// part of src is left, the file is in the trash in full, so it is still
+	// added to the history and the error is returned after that
+	moveErr := fs.Move(abs, trashPath, true)
+	if moveErr != nil && !errors.Is(moveErr, fs.ErrSourceRemains) {
+		return trash.NewStorageError("put", src, moveErr)
 	}
 
 	// Files removed in one run share the run ID, so they can be told apart
@@ -123,13 +127,18 @@ func (s *Storage) Put(src string) error {
 
 	// Save history
 	if err := s.saveHistory(); err != nil {
+		// Try to roll back the file move. The entry stays in the history
+		// while anything of the file is left in the trash
+		rollbackErr := fs.Move(trashPath, abs, true)
+		if rollbackErr == nil {
+			s.history.RemoveByPath(trashPath)
+		}
 		s.mu.Unlock()
-		// Try to roll back the file move
-		if moveErr := fs.Move(trashPath, abs, true); moveErr != nil {
+		if rollbackErr != nil {
 			return trash.NewStorageError(
 				"put",
 				src,
-				fmt.Errorf("failed to save history and rollback failed: %w (original error: %w)", moveErr, err))
+				fmt.Errorf("failed to save history and rollback failed: %w (original error: %w)", rollbackErr, err))
 		}
 		return trash.NewStorageError(
 			"put",
@@ -138,6 +147,9 @@ func (s *Storage) Put(src string) error {
 	}
 	s.mu.Unlock()
 
+	if moveErr != nil {
+		return trash.NewStorageError("put", src, moveErr)
+	}
 	return nil
 }
 

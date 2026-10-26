@@ -1,8 +1,8 @@
 package fs
 
 import (
+	"errors"
 	"fmt"
-	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -16,9 +16,14 @@ func Create(path string, perm os.FileMode) (*os.File, error) {
 	return os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, perm)
 }
 
+// ErrSourceRemains is returned by Move when src was copied to dst but could
+// not be removed afterwards. dst holds all of the data, and src may still
+// hold part of it.
+var ErrSourceRemains = errors.New("source remains after copy")
+
 // Move moves a file or directory from src to dst.
-// If the move fails due to being on different devices and fallbackCopy is true,
-// it will fall back to copy and delete.
+// If rename(2) fails and fallbackCopy is true, it falls back to copy and
+// delete, which also moves src across devices.
 func Move(src, dst string, fallbackCopy bool) error {
 	// Ensure the destination directory exists
 	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
@@ -36,13 +41,11 @@ func Move(src, dst string, fallbackCopy bool) error {
 			return fmt.Errorf("failed to copy file: %w", err)
 		}
 
-		// If copy succeeds, remove the original
+		// If copy succeeds, remove the original. RemoveAll can fail after
+		// removing part of a directory, so the copy is kept: it is the only
+		// complete one
 		if err := os.RemoveAll(src); err != nil {
-			// If we can't remove the source, try to remove the copy
-			if err := os.RemoveAll(dst); err != nil {
-				slog.Error("failed to remove the copy", "path", dst)
-			}
-			return fmt.Errorf("failed to remove source after copy: %w", err)
+			return fmt.Errorf("%w: %w", ErrSourceRemains, err)
 		}
 	}
 

@@ -66,9 +66,14 @@ func New(home string, c config.History) History {
 	}
 }
 
-func (h *History) Open() error {
+func (h *History) Open() (err error) {
 	slog.Debug("opening history file", "path", h.path)
+	// A history that could not be read is not backed up, so that it does
+	// not overwrite a good backup
 	defer func() {
+		if err != nil {
+			return
+		}
 		_ = h.backup()
 		slog.Debug("backed up")
 	}()

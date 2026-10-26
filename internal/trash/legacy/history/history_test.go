@@ -408,7 +408,6 @@ func TestHistory_Open_CorruptFile(t *testing.T) {
 	}
 
 	t.Run("backup survives", func(t *testing.T) {
-		t.Skip("known bug: Open's deferred backup() runs even when decoding fails and overwrites a good history.json.backup with the empty in-memory history (internal/trash/legacy/history/history.go:71-74)")
 		if got := readHistoryFile(t, backupPath); len(got.Files) != 1 || got.Files[0].ID != "id1" {
 			t.Errorf("backup Files = %v, want the entry it had before Open", got.Files)
 		}
