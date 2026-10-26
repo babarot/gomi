@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/babarot/gomi/internal/trash"
@@ -143,6 +144,8 @@ func (s *Storage) Put(src string) error {
 func (s *Storage) List() ([]*trash.File, error) {
 	var files []*trash.File
 
+	start := time.Now()
+
 	// With a size filter, each trash's directorysizes tells the disk usage
 	// of the directories measured before; the filter measures the others
 	// and the caches are written back once it is done
@@ -191,6 +194,9 @@ func (s *Storage) List() ([]*trash.File, error) {
 	for _, c := range caches {
 		c.save()
 	}
+	slog.Debug("xdg storage listed",
+		"files", len(files),
+		"took", time.Since(start))
 	return filtered, nil
 }
 
@@ -317,6 +323,57 @@ func (s *Storage) scanExternalTrashes() error {
 	return nil
 }
 
+// infoReaders is how many .trashinfo files are read at once. Opening one
+// can wait on a security scanner that inspects every open, which takes
+// most of the time of a listing when its caches are cold; the waits of
+// files read at once overlap.
+const infoReaders = 16
+
+// entryInfo is what reading an entry of files/ found: its .trashinfo and
+// the entry itself, or nil when it is skipped
+type entryInfo struct {
+	info     *TrashInfo
+	fileInfo os.FileInfo
+}
+
+// readEntry reads the .trashinfo of the entry name in loc, and lstats the
+// entry itself, so that a trashed symlink is listed whether or not its
+// target exists
+func readEntry(loc *trashLocation, name string) entryInfo {
+	info, err := loadTrashInfo(filepath.Join(loc.infoDir, name+".trashinfo"))
+	if err != nil {
+		// Skip files without valid info
+		return entryInfo{}
+	}
+	fileInfo, err := os.Lstat(filepath.Join(loc.filesDir, name))
+	if err != nil {
+		// Skip inaccessible files
+		return entryInfo{}
+	}
+	return entryInfo{info: info, fileInfo: fileInfo}
+}
+
+// readEntries reads the entries of files/ in loc, infoReaders at a time.
+// Each result is at the index of its entry, in the order of entries.
+func readEntries(loc *trashLocation, entries []os.DirEntry) []entryInfo {
+	found := make([]entryInfo, len(entries))
+	next := make(chan int)
+	var wg sync.WaitGroup
+	for range min(infoReaders, len(entries)) {
+		wg.Go(func() {
+			for i := range next {
+				found[i] = readEntry(loc, entries[i].Name())
+			}
+		})
+	}
+	for i := range entries {
+		next <- i
+	}
+	close(next)
+	wg.Wait()
+	return found
+}
+
 // listLocation lists the trash at loc. With cache, the directories get the
 // size the size filter judges them by from it.
 func (s *Storage) listLocation(loc *trashLocation, cache *sizeCache) ([]*trash.File, error) {
@@ -328,16 +385,16 @@ func (s *Storage) listLocation(loc *trashLocation, cache *sizeCache) ([]*trash.F
 		return nil, fmt.Errorf("failed to read files directory: %w", err)
 	}
 
-	for _, entry := range entries {
+	// the entries are read at once, and the cache is filled one by one
+	// after them, as it is not safe to share
+	found := readEntries(loc, entries)
+	for i, entry := range entries {
 		if cache != nil {
 			cache.names[entry.Name()] = true
 		}
 
-		// Load corresponding .trashinfo file
-		infoPath := filepath.Join(loc.infoDir, entry.Name()+".trashinfo")
-		info, err := loadTrashInfo(infoPath)
-		if err != nil {
-			// Skip files without valid info
+		info, fileInfo := found[i].info, found[i].fileInfo
+		if info == nil {
 			continue
 		}
 
@@ -347,15 +404,8 @@ func (s *Storage) listLocation(loc *trashLocation, cache *sizeCache) ([]*trash.F
 		// Get absolute path
 		origPath := info.GetAbsolutePath()
 
-		// Get file info of the entry itself, so that a trashed symlink is
-		// listed whether or not its target exists
 		filePath := filepath.Join(loc.filesDir, entry.Name())
-		fileInfo, err := os.Lstat(filePath)
-		if err != nil {
-			// Skip inaccessible files
-			continue
-		}
-
+		infoPath := filepath.Join(loc.infoDir, entry.Name()+".trashinfo")
 		file := &trash.File{
 			Name:         filepath.Base(origPath),
 			OriginalPath: origPath,
