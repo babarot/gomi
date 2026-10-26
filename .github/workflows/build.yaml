@@ -7,6 +7,10 @@ on:
   pull_request:
     paths:
       - '**/*.go'
+      - 'go.mod'
+      - 'go.sum'
+      - '.octocov.yaml'
+      - '.github/workflows/build.yaml'
   workflow_dispatch:
 
 jobs:
@@ -56,7 +60,7 @@ jobs:
       - name: Run tests with coverage
         if: runner.os == 'Linux'
         run: |
-          COVERPKG=$(go list ./... | grep -v -E '(/cli|/ui|/utils/log)' | paste -sd, -)
+          COVERPKG=$(go list ./... | grep -v -E '(/scripts/|^github.com/babarot/gomi$)' | paste -sd, -)
           go test ./... -coverprofile=coverage.out -covermode=count -coverpkg="$COVERPKG"
       - name: Run octocov
         if: runner.os == 'Linux'
