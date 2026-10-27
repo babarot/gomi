@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"image"
-	imgcolor "image/color"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
@@ -23,7 +22,6 @@ import (
 	"github.com/alecthomas/chroma/quick"
 	"github.com/alecthomas/chroma/styles"
 	"github.com/dustin/go-humanize"
-	"github.com/eliukblau/pixterm/pkg/ansimage"
 	"github.com/fatih/color"
 	"github.com/gabriel-vasile/mimetype"
 )
@@ -216,27 +214,7 @@ func (f File) previewImage(path string, maxWidth, maxHeight int) (string, error)
 		"height", origHeight,
 	)
 
-	// Set the background color to transparent.
-	bgColor := imgcolor.RGBA{0, 0, 0, 0}
-	// a row of half blocks is two pixels high; the last row tells the size
-	height := max(2, (maxHeight-1)*2)
-
-	pix, err := ansimage.NewScaledFromImage(
-		img,
-		height,
-		maxWidth,
-		bgColor,
-		ansimage.ScaleModeFit,
-		ansimage.NoDithering,
-	)
-	if err != nil {
-		return "", fmt.Errorf("failed to create ANSI image: %w", err)
-	}
-
-	// Get the ANSI image as a string.
-	ansiStr := pix.Render()
-	// Append image information, but keep it concise
-	info := fmt.Sprintf("\nImage: %dx%d pixels", origWidth, origHeight)
-
-	return ansiStr + info, nil
+	// the last row tells the size
+	content := halfBlocks(img, maxWidth, max(1, maxHeight-1))
+	return content + fmt.Sprintf("\nImage: %dx%d pixels", origWidth, origHeight), nil
 }

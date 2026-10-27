@@ -550,16 +550,20 @@ func TestLoadDetail_HalfBlocksOfAnotherSize(t *testing.T) {
 		t.Errorf("commands for half blocks of another size = %d, want 1", got)
 	}
 
-	// half blocks that could not be drawn in a pane too small for a tall
-	// image are drawn again in a larger one
+	// an image that could not be drawn is read again in another pane
 	delete(m.reading, previewKey(path))
-	msg, ok = loadPreviewCmd(f, 1, 20, false, image.Point{})().(previewLoadedMsg)
+	broken := filepath.Join(t.TempDir(), "broken.png")
+	if err := os.WriteFile(broken, []byte("\x89PNG\r\n\x1a\nbroken"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	bf := File{File: &trash.File{Name: "broken.png", TrashPath: broken, SizeKnown: true}}
+	msg, ok = loadPreviewCmd(bf, 40, 20, false, image.Point{})().(previewLoadedMsg)
 	if !ok || msg.available {
 		t.Fatalf("got %+v, want a preview that cannot be drawn", msg)
 	}
-	m.previews[path] = msg.previewResult
-	if got := len(m.loadDetail(f)); got != 1 {
-		t.Errorf("commands for half blocks that could not be drawn = %d, want 1", got)
+	m.previews[broken] = msg.previewResult
+	if got := len(m.loadDetail(bf)); got != 1 {
+		t.Errorf("commands for an image that could not be drawn = %d, want 1", got)
 	}
 
 	// half blocks free nothing in the terminal
