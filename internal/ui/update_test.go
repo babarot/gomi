@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	"image/png"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -513,6 +515,62 @@ func TestLoadDetail_ImageOfAnotherSize(t *testing.T) {
 	}
 	if want := "image" + deleteImages([]int{1}); raw.Msg != want {
 		t.Errorf("sent %q, want %q", raw.Msg, want)
+	}
+}
+
+func TestLoadDetail_HalfBlocksOfAnotherSize(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "a.png")
+	fp, err := os.Create(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := png.Encode(fp, image.NewRGBA(image.Rect(0, 0, 40, 20))); err != nil {
+		t.Fatal(err)
+	}
+	fp.Close()
+	f := File{File: &trash.File{Name: "a.png", TrashPath: path, SizeKnown: true}}
+
+	msg, ok := loadPreviewCmd(f, 40, 20, false, image.Point{})().(previewLoadedMsg)
+	if !ok {
+		t.Fatalf("got %T, want previewLoadedMsg", msg)
+	}
+	if msg.size != image.Pt(40, 20) {
+		t.Errorf("size = %v, want the pane the image was drawn for", msg.size)
+	}
+
+	m := newTestModel()
+	m.viewport.SetWidth(40)
+	m.viewport.SetHeight(20)
+	m.previews[path] = msg.previewResult
+	if got := len(m.loadDetail(f)); got != 0 {
+		t.Errorf("commands for half blocks of the same size = %d, want 0", got)
+	}
+	m.viewport.SetWidth(80)
+	if got := len(m.loadDetail(f)); got != 1 {
+		t.Errorf("commands for half blocks of another size = %d, want 1", got)
+	}
+
+	// half blocks that could not be drawn in a pane too small for a tall
+	// image are drawn again in a larger one
+	delete(m.reading, previewKey(path))
+	msg, ok = loadPreviewCmd(f, 1, 20, false, image.Point{})().(previewLoadedMsg)
+	if !ok || msg.available {
+		t.Fatalf("got %+v, want a preview that cannot be drawn", msg)
+	}
+	m.previews[path] = msg.previewResult
+	if got := len(m.loadDetail(f)); got != 1 {
+		t.Errorf("commands for half blocks that could not be drawn = %d, want 1", got)
+	}
+
+	// half blocks free nothing in the terminal
+	updated, cmd := m.Update(previewLoadedMsg{path: path, previewResult: previewResult{available: true, size: image.Pt(80, 20)}})
+	if got := asModel(t, updated).previews[path].size; got != image.Pt(80, 20) {
+		t.Errorf("size = %v, want %v", got, image.Pt(80, 20))
+	}
+	if cmd != nil {
+		if _, ok := cmd().(tea.RawMsg); ok {
+			t.Error("replacing half blocks sends something to the terminal")
+		}
 	}
 }
 

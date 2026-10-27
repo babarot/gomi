@@ -69,11 +69,17 @@ func loadPreviewCmd(f File, w, h int, kitty bool, cell image.Point) tea.Cmd {
 		}
 		content, err := f.Browse(w, h)
 		r := previewResult{content: content, available: err == nil, kitty: kitty}
+		mtype, _ := mimetype.DetectFile(f.TrashPath)
 		if err != nil {
 			slog.Warn("file.Browse returned error", "content", err)
-			if mtype, _ := mimetype.DetectFile(f.TrashPath); mtype != nil {
+			if mtype != nil {
 				r.mimeType = mtype.String()
 			}
+		}
+		if mtype != nil && isImageFile(mtype.String()) {
+			// half blocks are drawn for the pane as well, and may not be
+			// drawn in one too small for the image
+			r.size = image.Pt(w, h)
 		}
 		return previewLoadedMsg{path: f.TrashPath, previewResult: r}
 	}
@@ -111,7 +117,7 @@ func (m Model) loadDetail(f File) []tea.Cmd {
 // pane of another size than the viewport
 func (m Model) staleImage(path string) bool {
 	r, ok := m.previews[path]
-	return ok && r.imageID != 0 && r.size != image.Pt(m.viewport.Width(), m.viewport.Height())
+	return ok && r.size != (image.Point{}) && r.size != image.Pt(m.viewport.Width(), m.viewport.Height())
 }
 
 // reloadStaleImage has the image of the preview read again once the pane
