@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.11.0](https://github.com/babarot/gomi/compare/v1.10.1...v1.11.0) - 2026-10-27
+### New Features
+- Draw image previews with the kitty graphics protocol by @babarot in https://github.com/babarot/gomi/pull/191
+### Bug fixes
+- Draw half blocks again when their pane changes size by @babarot in https://github.com/babarot/gomi/pull/193
+### Improvements
+- Draw half blocks without pixterm by @babarot in https://github.com/babarot/gomi/pull/194
+
 ## [v1.10.1](https://github.com/babarot/gomi/compare/v1.10.0...v1.10.1) - 2026-10-26
 ### Bug fixes
 - Use $topdir/.Trash/$uid only under a valid .Trash by @babarot in https://github.com/babarot/gomi/pull/184
