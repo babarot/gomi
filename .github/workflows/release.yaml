@@ -9,7 +9,20 @@ concurrency:
   group: ${{ github.workflow }}
 
 jobs:
+  test:
+    uses: ./.github/workflows/build.yaml
+    secrets:
+      # The coverage badge on main is written with it
+      GIST_SECRET: ${{ secrets.GIST_SECRET }}
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+
+  # Nothing is released, nor the pull request of the next release made,
+  # from a main that fails the tests
   tagpr:
+    needs: test
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

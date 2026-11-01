@@ -1,6 +1,6 @@
 module github.com/babarot/gomi
 
-go 1.26.0
+go 1.26.10
 
 require (
 	al.essio.dev/pkg/shellescape v1.5.1
@@ -31,7 +31,7 @@ require (
 	github.com/samber/lo v1.49.1
 	golang.org/x/image v0.41.0
 	golang.org/x/sync v0.22.0
-	golang.org/x/text v0.37.0
+	golang.org/x/text v0.39.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
