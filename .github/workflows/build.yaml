@@ -1,16 +1,20 @@
 name: Go
 
+# On main, Release runs this before it releases
 on:
-  push:
-    branches:
-      - main
   pull_request:
     paths:
       - '**/*.go'
       - 'go.mod'
       - 'go.sum'
       - '.octocov.yaml'
+      - 'mise.toml'
+      - '.golangci.yaml'
       - '.github/workflows/build.yaml'
+  workflow_call:
+    secrets:
+      GIST_SECRET:
+        required: false
   workflow_dispatch:
 
 jobs:
@@ -29,10 +33,34 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@82606bf257cbaff209d206a39f5134f0cfbfd2ee # v9.2.1
+      - name: Setup mise
+        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
         with:
-          version: latest
+          version: 2026.9.18
+      - name: Run golangci-lint and go mod tidy
+        run: mise run lint
+
+  vuln:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Setup Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Setup mise
+        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        with:
+          version: 2026.9.18
+      - name: Run govulncheck
+        run: mise run vuln
 
   build:
     strategy:
@@ -55,14 +83,18 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      # mise run test is a shell script, which Windows does not run as is
       - name: Run tests
-        if: runner.os != 'Linux'
+        if: runner.os == 'Windows'
         run: go test ./...
-      - name: Run tests with coverage
-        if: runner.os == 'Linux'
-        run: |
-          COVERPKG=$(go list ./... | grep -v -E '(/scripts/|^github.com/babarot/gomi$)' | paste -sd, -)
-          go test ./... -coverprofile=coverage.out -covermode=count -coverpkg="$COVERPKG"
+      - name: Setup mise
+        if: runner.os != 'Windows'
+        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        with:
+          version: 2026.9.18
+      - name: Run tests with the race detector and coverage
+        if: runner.os != 'Windows'
+        run: mise run test
       - name: Run octocov
         if: runner.os == 'Linux'
         uses: k1LoW/octocov-action@b3b6ee60482a667950f87553abf1df63217235d9 # v1.5.1

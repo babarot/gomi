@@ -18,15 +18,25 @@ description = "Remove ./gomi and coverage.out"
 run = "rm -f gomi coverage.out"
 
 [tasks.test]
-description = "Check formatting, and run the Go tests, writing coverage.out"
+description = "Check formatting, and run the Go tests with the race detector, writing coverage.out"
+# The coverage leaves out scripts and the main package, though the tests of
+# the main package still run.
 run = '''
 test -z "$(gofmt -l .)" || { gofmt -l .; echo "gofmt: the files above are not formatted"; exit 1; }
-go test ./... -coverprofile=coverage.out -covermode=count
+coverpkg="$(go list ./... | grep -v -E '(/scripts/|^github.com/babarot/gomi$)' | paste -sd, -)"
+go test -race ./... -coverprofile=coverage.out -covermode=atomic -coverpkg="$coverpkg"
 '''
 
 [tasks.lint]
-description = "Run golangci-lint"
-run = "golangci-lint run ./..."
+description = "Run golangci-lint, and check that go.mod and go.sum are tidy"
+run = '''
+golangci-lint run ./...
+go mod tidy -diff
+'''
+
+[tasks.vuln]
+description = "Check the dependencies and the standard library for known vulnerabilities"
+run = "go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./..."
 
 [tasks."site:serve"]
 description = "Serve docs/ (gomi.dev) at http://localhost:4664 as GitHub Pages does: mise run site:serve [-addr HOST:PORT] [-dir DIR]"
