@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -68,6 +69,9 @@ type diskTrash struct {
 	removeErrs map[string]error // by file name
 	restoreErr error
 
+	// mu guards the lists below, which Put appends to from the goroutines
+	// CLI.Put starts
+	mu       sync.Mutex
 	put      []string
 	removed  []string
 	restored []string
@@ -96,7 +100,9 @@ func (d *diskTrash) add(t *testing.T, name, originalPath, content string, age ti
 }
 
 func (d *diskTrash) Put(src string) error {
+	d.mu.Lock()
 	d.put = append(d.put, src)
+	d.mu.Unlock()
 	return os.Rename(src, filepath.Join(d.dir, filepath.Base(src)))
 }
 
@@ -108,7 +114,9 @@ func (d *diskTrash) Restore(file *trash.File, dst string) error {
 	if d.restoreErr != nil {
 		return d.restoreErr
 	}
+	d.mu.Lock()
 	d.restored = append(d.restored, dst)
+	d.mu.Unlock()
 	return os.Rename(file.TrashPath, dst)
 }
 
@@ -116,7 +124,9 @@ func (d *diskTrash) Remove(file *trash.File) error {
 	if err := d.removeErrs[file.Name]; err != nil {
 		return err
 	}
+	d.mu.Lock()
 	d.removed = append(d.removed, file.Name)
+	d.mu.Unlock()
 	return os.RemoveAll(file.TrashPath)
 }
 
