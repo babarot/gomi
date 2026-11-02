@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"regexp"
 	"slices"
+	"sync"
 	"time"
 
 	"github.com/docker/go-units"
@@ -164,14 +165,43 @@ func filterSize[T Filterable](item T) (int64, error) {
 	return n, nil
 }
 
+// sizeMeasurers is how many items the size filter sizes at once. Sizing an
+// item that has no cached size walks it, and most of a walk is spent
+// waiting on the file system; the waits of items sized at once overlap.
+const sizeMeasurers = 8
+
+// filterSizes sizes the items, sizeMeasurers at a time. Each result is at
+// the index of its item. Each item is sized by one goroutine only, so what
+// it keeps of its size is not shared.
+func filterSizes[T Filterable](items []T) ([]int64, []error) {
+	sizes := make([]int64, len(items))
+	errs := make([]error, len(items))
+	next := make(chan int)
+	var wg sync.WaitGroup
+	for range min(sizeMeasurers, len(items)) {
+		wg.Go(func() {
+			for i := range next {
+				sizes[i], errs[i] = filterSize(items[i])
+			}
+		})
+	}
+	for i := range items {
+		next <- i
+	}
+	close(next)
+	wg.Wait()
+	return sizes, errs
+}
+
 func rejectBySize[T Filterable](items []T, size config.SizeConfig) []T {
 	if size.Min == "" && size.Max == "" {
 		return items
 	}
 
+	sizes, errs := filterSizes(items)
 	var filtered []T
-	for _, item := range items {
-		fileSize, err := filterSize(item)
+	for i, item := range items {
+		fileSize, err := sizes[i], errs[i]
 		if err != nil {
 			continue // Skip items we can't size
 		}

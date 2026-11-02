@@ -1,7 +1,9 @@
 package trash
 
 import (
+	"fmt"
 	"slices"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -151,20 +153,21 @@ func TestFilter(t *testing.T) {
 	}
 }
 
-// sizeCountingItem counts how many times its size is looked up
+// sizeCountingItem counts how many times its size is looked up. The size
+// filter looks up several items at once, so the count is atomic.
 type sizeCountingItem struct {
 	TestItem
-	sizeCalls *int
+	sizeCalls *atomic.Int64
 }
 
 func (s sizeCountingItem) GetSize() int64 {
-	*s.sizeCalls++
+	s.sizeCalls.Add(1)
 	return s.size
 }
 
 func TestFilterSizesOnlyItemsOtherFiltersKeep(t *testing.T) {
 	now := time.Now()
-	var calls int
+	var calls atomic.Int64
 	items := []sizeCountingItem{
 		{TestItem{name: "recent.txt", path: "/trash/recent.txt", size: 100, deletedAt: now.Add(-1 * time.Hour)}, &calls},
 		{TestItem{name: "old.txt", path: "/trash/old.txt", size: 100, deletedAt: now.Add(-400 * 24 * time.Hour)}, &calls},
@@ -183,7 +186,30 @@ func TestFilterSizesOnlyItemsOtherFiltersKeep(t *testing.T) {
 	if len(result) != 1 || result[0].GetName() != "recent.txt" {
 		t.Fatalf("got %v, want [recent.txt]", result)
 	}
-	if calls != 1 {
-		t.Errorf("sized %d items, want 1: only recent.txt passes the other filters", calls)
+	if n := calls.Load(); n != 1 {
+		t.Errorf("sized %d items, want 1: only recent.txt passes the other filters", n)
+	}
+}
+
+// TestRejectBySizeKeepsOrder sizes more items than sizeMeasurers, which
+// are sized at once, and keeps those in range in the order given
+func TestRejectBySizeKeepsOrder(t *testing.T) {
+	var items []TestItem
+	var want []string
+	for i := range 50 {
+		size := int64(1+(i*37)%97) * 1024
+		item := TestItem{name: fmt.Sprintf("item%02d", i), size: size}
+		items = append(items, item)
+		if size <= 50_000 { // FromHumanSize reads 50KB as decimal
+			want = append(want, item.name)
+		}
+	}
+
+	var got []string
+	for _, item := range rejectBySize(items, config.SizeConfig{Max: "50KB"}) {
+		got = append(got, item.name)
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("kept %v, want %v", got, want)
 	}
 }
