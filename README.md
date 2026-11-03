@@ -129,7 +129,7 @@ github:
   repo: gomi
   release:
     name: gomi
-    tag: v1.10.1
+    tag: v1.11.0
   command:
     link:
     - from: gomi
