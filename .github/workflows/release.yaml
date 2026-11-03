@@ -31,7 +31,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      # A merge that landed while the tests ran, a release pull request among
+      # them, is not in this commit. tagpr on it would open the release pull
+      # request again for a version already released. The run for the newer
+      # main, which waits for this one, runs tagpr after its own tests pass
+      - name: Check that main has not moved on
+        id: head
+        run: |
+          main=$(git ls-remote origin refs/heads/main | cut -f1)
+          if [ "$main" = "$GITHUB_SHA" ]; then
+            echo "latest=true" >>"$GITHUB_OUTPUT"
+          else
+            echo "::notice::main is at $main, not $GITHUB_SHA; leaving tagpr to the newer run"
+          fi
       - name: Run tagpr
+        if: steps.head.outputs.latest == 'true'
         uses: Songmu/tagpr@555e72cee68c09d43dc2337dc9ba890955b630da # v1.19.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
