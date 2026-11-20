@@ -203,10 +203,13 @@ func uiHeight(spec string, termHeight, cursorY int) int {
 	return min(max(n, minHeight), termHeight)
 }
 
-// waitsForCursor reports whether the height waits for the terminal to
-// tell where the prompt left the cursor
+// waitsForCursor reports whether the UI waits for the terminal to tell
+// where the prompt left the cursor before drawing. It always does: an
+// "auto" height reaches from there down, and the mouse finds the rows from
+// where the UI starts (frameTop). Asked after the first frame, the answer
+// would be where the frame left the cursor instead.
 func (m Model) waitsForCursor() bool {
-	return m.config.Height == config.HeightAuto || m.config.Height == ""
+	return true
 }
 
 // startView is the view the list starts in: ui.view when ui.views has it,

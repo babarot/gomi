@@ -29,7 +29,11 @@ func helpStyles(p styles.Palette, isDark bool) help.Styles {
 
 // View returns the current UI state
 func (m Model) View() tea.View {
-	return tea.NewView(m.view())
+	v := tea.NewView(m.view())
+	if m.mouseOn() {
+		v.MouseMode = tea.MouseModeCellMotion
+	}
+	return v
 }
 
 func (m Model) view() string {

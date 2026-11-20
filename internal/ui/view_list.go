@@ -108,7 +108,7 @@ func (m Model) emptyText() string {
 func (m Model) headerLine() string {
 	left := m.fg(m.palette.Cursor).Bold(true).Render("gomi") +
 		m.fg(m.palette.Description).Render(fmt.Sprintf("  %d in the trash · %s", len(m.list.files), m.totalSize()))
-	right := m.fg(m.palette.Description).Render("view: " + m.list.view)
+	right := m.fg(m.palette.Description).Render(m.viewLabel())
 	if m.list.scoped {
 		where := shortPath(m.displayPath(m.list.cwd), max(8, m.width/3))
 		right = m.fg(m.palette.FilterPrompt).Render("in "+where) + m.fg(m.palette.Description).Render(" · ") + right
@@ -122,6 +122,10 @@ func (m Model) headerLine() string {
 	}
 	return " " + left + strings.Repeat(" ", gap) + right
 }
+
+// viewLabel is the view the list is in, at the right end of the header,
+// where a click goes to the next view
+func (m Model) viewLabel() string { return "view: " + m.list.view }
 
 // totalSize is the size of everything in the trash, with … while a
 // directory is still being sized.
