@@ -84,7 +84,7 @@ This opens the trash under the prompt, using the rows below it (see `ui.height`)
   - `batches`: the files by the command that deleted them; `l` and `h` (or `space`) open and close a batch
   - `picker`: one row a file, typing to find it as in fzf; `esc` hands the keys to the list and `s` chooses the order
 - `?` shows every key.
-- A click puts the cursor on a file, a click on `view:` in the header goes to the next view as `v` does, and the wheel moves the cursor in the list and scrolls the preview under the pointer. Restoring and deleting stay on keys. While gomi takes the mouse, hold Shift (Option in some terminals) to select text on the screen.
+- A click puts the cursor on a file, a click on `view:` in the header goes to the next view as `v` does, and the wheel moves the cursor in the list and scrolls the preview under the pointer. This works while typing in the filter too, keeping what was typed. Restoring and deleting stay on keys. While gomi takes the mouse, hold Shift (Option in some terminals) to select text on the screen.
 
 A mark at the end of a row tells what restoring the file would meet: `!` means something has its name there now, so gomi asks for a new name, and `+` means its directory is gone, so gomi makes it again. The marks look at each file alone: when two files from the same path are restored at once, the second one asks for a new name without a mark.
 

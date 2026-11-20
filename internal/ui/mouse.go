@@ -37,9 +37,11 @@ func (m Model) frameTop() int {
 }
 
 // mouseTakesNothing reports whether what has the focus keeps the mouse
-// from the list and the preview
+// from the list and the preview. The filter does not: nothing the mouse
+// does throws away what was typed, and it keeps the focus while the mouse
+// moves the cursor or scrolls, as the arrows do while typing.
 func (m Model) mouseTakesNothing() bool {
-	return m.state.Confirming() || m.sortMenu || m.helpOpen || m.list.filtering
+	return m.state.Confirming() || m.sortMenu || m.helpOpen
 }
 
 // updateMouse handles a click or a turn of the wheel
@@ -81,6 +83,10 @@ func (m Model) listMouse(msg tea.MouseMsg, x, y int) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		if y == 0 && m.onViewLabel(x) {
+			// what is typed is kept, as esc in the picker and enter in the
+			// filter keep it, and the next view narrows by it
+			m.list.filtering = false
+			m.list.filter.Blur()
 			m, cmd := m.switchView()
 			return m.followCursor(cmd)
 		}

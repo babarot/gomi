@@ -95,7 +95,6 @@ func TestMouse_ClickOnHeadingOrOutsideDoesNothing(t *testing.T) {
 func TestMouse_NothingWhileSomethingHasTheFocus(t *testing.T) {
 	withNow(t)
 	for name, set := range map[string]func(*Model){
-		"filter":   func(m *Model) { m.list.filtering = true },
 		"help":     func(m *Model) { m.helpOpen = true },
 		"sort":     func(m *Model) { m.sortMenu = true },
 		"confirm":  func(m *Model) { m.openDeleteConfirm([]File{listFile("a", time.Hour, "a")}) },
@@ -215,5 +214,41 @@ func TestMouse_ClickOnViewToPickerFocusesFilter(t *testing.T) {
 	m = asModel(t, updated)
 	if m.list.view != viewPicker || !m.list.filtering {
 		t.Errorf("view %s, filtering %v; want picker with the focus in the filter", m.list.view, m.list.filtering)
+	}
+}
+
+func TestMouse_PickerTakesTheMouseWhileTyping(t *testing.T) {
+	withNow(t)
+	m := mouseModel(t)
+	m.list.setView(viewPicker, listNow)
+	m.list.filtering = true
+	m.list.filter.Focus()
+	m.list.filter.SetValue("user") // every file was deleted from /home/user
+
+	// the wheel and a click move the cursor; the filter keeps the focus
+	// and what was typed
+	start, _ := m.list.current(listNow)
+	updated, _ := m.Update(wheel(tea.MouseWheelDown, 20, m.frameTop()+3))
+	m = asModel(t, updated)
+	if f, _ := m.list.current(listNow); f.TrashPath == start.TrashPath {
+		t.Errorf("the wheel did not move the cursor in the picker")
+	}
+	target := m.list.rows(listNow)[0].file
+	updated, _ = m.Update(click(20, rowOf(t, m, target.Name)))
+	m = asModel(t, updated)
+	if f, _ := m.list.current(listNow); f.TrashPath != target.TrashPath {
+		t.Errorf("cursor on %q, want %q", f.Name, target.Name)
+	}
+	if !m.list.filtering || m.list.filter.Value() != "user" {
+		t.Errorf("filtering %v, query %q; want the filter to keep the focus and user", m.list.filtering, m.list.filter.Value())
+	}
+
+	// a click on the view goes on to the next view, keeping what was typed
+	end := ansi.StringWidth(ansi.Strip(m.headerLine()))
+	want := m.nextView()
+	updated, _ = m.Update(click(end-1, m.frameTop()))
+	m = asModel(t, updated)
+	if m.list.view != want || m.list.filtering || m.list.filter.Value() != "user" {
+		t.Errorf("view %s, filtering %v, query %q; want %s, false, user", m.list.view, m.list.filtering, m.list.filter.Value(), want)
 	}
 }
