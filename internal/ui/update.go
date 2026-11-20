@@ -68,6 +68,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return next, cmd
 		}
 
+	case tea.MouseClickMsg:
+		return m.updateMouse(msg)
+	case tea.MouseWheelMsg:
+		return m.updateMouse(msg)
+
 	case tea.BackgroundColorMsg:
 		m.setBackground(msg.IsDark())
 		m.bgKnown = true
