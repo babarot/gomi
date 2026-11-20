@@ -182,3 +182,38 @@ func TestMouse_ModeOnlyWhereTheMouseActs(t *testing.T) {
 		t.Errorf("the mouse is taken where the UI's rows are not known")
 	}
 }
+
+func TestMouse_ClickOnViewGoesToNextView(t *testing.T) {
+	withNow(t)
+	m := mouseModel(t)
+	header := ansi.Strip(m.headerLine())
+	end := ansi.StringWidth(header)
+	label := ansi.StringWidth(m.viewLabel())
+	y := m.frameTop()
+
+	// left of "view: recent" stays
+	updated, _ := m.Update(click(end-label-2, y))
+	if got := asModel(t, updated).list.view; got != viewRecent {
+		t.Errorf("a click beside the view's name went to %s", got)
+	}
+	for _, x := range []int{end - label, end - 1} {
+		m := mouseModel(t)
+		want := m.nextView() // the list is shared with what Update returns
+		updated, _ := m.Update(click(x, y))
+		if got := asModel(t, updated).list.view; got != want {
+			t.Errorf("a click at column %d: view %s, want %s", x, got, want)
+		}
+	}
+}
+
+func TestMouse_ClickOnViewToPickerFocusesFilter(t *testing.T) {
+	withNow(t)
+	m := mouseModel(t)
+	m.list.setView(viewBatches, listNow)
+	end := ansi.StringWidth(ansi.Strip(m.headerLine()))
+	updated, _ := m.Update(click(end-1, m.frameTop()))
+	m = asModel(t, updated)
+	if m.list.view != viewPicker || !m.list.filtering {
+		t.Errorf("view %s, filtering %v; want picker with the focus in the filter", m.list.view, m.list.filtering)
+	}
+}

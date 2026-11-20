@@ -309,13 +309,7 @@ func (m Model) updateListView(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case key.Matches(msg, m.keyMap.List.View):
-		m.list.setView(m.nextView(), t)
-		if m.list.view == viewPicker {
-			// the picker starts with the focus in the filter
-			m.list.filtering = true
-			return m, m.list.filter.Focus()
-		}
-		return m, nil
+		return m.switchView()
 
 	case m.list.view == viewPicker && key.Matches(msg, m.keyMap.List.Sort):
 		m.sortMenu = true
@@ -397,6 +391,18 @@ func (m Model) updateListView(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.list.toStart(t)
 	case key.Matches(msg, keys.DefaultKeyMapListGoToEnd):
 		m.list.toEnd(t)
+	}
+	return m, nil
+}
+
+// switchView goes to the next view, as v and a click on the header's view
+// do
+func (m Model) switchView() (Model, tea.Cmd) {
+	m.list.setView(m.nextView(), now())
+	if m.list.view == viewPicker {
+		// the picker starts with the focus in the filter
+		m.list.filtering = true
+		return m, m.list.filter.Focus()
 	}
 	return m, nil
 }

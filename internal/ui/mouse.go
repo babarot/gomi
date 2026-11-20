@@ -1,11 +1,15 @@
 package ui
 
 import (
+	"strings"
+
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 )
 
-// The mouse only points and moves: a click puts the cursor on a row, and
-// the wheel moves the cursor in the list and scrolls a preview. Restoring
+// The mouse only points and moves: a click puts the cursor on a row or
+// goes to the next view from the header, and the wheel moves the cursor in
+// the list and scrolls a preview. Restoring
 // and deleting stay on keys, and the mouse does nothing while a dialog,
 // the sort menu, the key list or the filter has the focus.
 
@@ -73,7 +77,14 @@ func (m Model) listMouse(msg tea.MouseMsg, x, y int) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.MouseClickMsg:
-		if msg.Button != tea.MouseLeft || !inRows {
+		if msg.Button != tea.MouseLeft {
+			return m, nil
+		}
+		if y == 0 && m.onViewLabel(x) {
+			m, cmd := m.switchView()
+			return m.followCursor(cmd)
+		}
+		if !inRows {
 			return m, nil
 		}
 		rows := m.list.rows(t)
@@ -100,6 +111,17 @@ func (m Model) listMouse(msg tea.MouseMsg, x, y int) (tea.Model, tea.Cmd) {
 		}
 	}
 	return m, nil
+}
+
+// onViewLabel reports whether column x of the header is on the view's
+// name, drawn last on the header and ending a column before its edge
+func (m Model) onViewLabel(x int) bool {
+	header := ansi.Strip(m.headerLine())
+	if !strings.HasSuffix(header, m.viewLabel()) {
+		return false // cut off on a narrow terminal
+	}
+	end := ansi.StringWidth(header)
+	return x >= end-ansi.StringWidth(m.viewLabel()) && x < end
 }
 
 // scrollPreview scrolls the preview's contents by a turn of the wheel
