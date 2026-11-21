@@ -105,7 +105,7 @@ func TestIsForbiddenPath(t *testing.T) {
 			Core: config.Core{
 				Trash: config.TrashConfig{
 					ForbiddenPaths: []config.ForbiddenPath{
-						{Path: "/", Recursive: false},
+						{Path: "/", Recursive: true},
 						{Path: "/etc", Recursive: true},
 						{Path: "/usr", Recursive: true},
 						{Path: "$HOME/.gomi", Recursive: true},
@@ -196,10 +196,12 @@ func TestIsForbidden(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	t.Setenv("GOMI_TEST_EMPTY", "")
+
 	toForbidden := func(paths ...string) []config.ForbiddenPath {
 		res := make([]config.ForbiddenPath, len(paths))
 		for i, p := range paths {
-			res[i] = config.ForbiddenPath{Path: p, Recursive: p != "/"}
+			res[i] = config.ForbiddenPath{Path: p, Recursive: true}
 		}
 		return res
 	}
@@ -232,6 +234,10 @@ func TestIsForbidden(t *testing.T) {
 		{"non-recursive forbidden given as symlink", sys, []config.ForbiddenPath{{Path: link, Recursive: false}}, "", true},
 		{"non-recursive through symlinked parent", filepath.Join(link, "x"), []config.ForbiddenPath{{Path: filepath.Join(sys, "x"), Recursive: false}}, "", true},
 		{"non-recursive through symlinked parent inside is allowed", filepath.Join(link, "x", "sub"), []config.ForbiddenPath{{Path: filepath.Join(sys, "x"), Recursive: false}}, "", false},
+		// "/" matches only itself, whatever recursive says
+		{"recursive root matches only itself", filepath.Join(home, "x"), []config.ForbiddenPath{{Path: "/", Recursive: true}}, "", false},
+		{"recursive root given as //", filepath.Join(home, "x"), []config.ForbiddenPath{{Path: "//", Recursive: true}}, "", false},
+		{"recursive root from an empty variable", filepath.Join(home, "x"), []config.ForbiddenPath{{Path: "$GOMI_TEST_EMPTY/", Recursive: true}}, "", false},
 	}
 
 	for _, tt := range tests {

@@ -59,24 +59,23 @@ type TrashConfig struct {
 }
 
 // ForbiddenPath specifies a path that cannot be moved to trash.
-// By default, paths protect themselves and everything inside them recursively
-// (with the exception of "/", which protects only itself).
-// Setting recursive to false allows protecting a path itself without protecting
-// its contents.
+// By default, a path protects itself and everything inside it. Setting
+// recursive to false protects the path itself but not its contents. "/"
+// protects only itself either way.
 type ForbiddenPath struct {
 	Path      string `yaml:"path"`
 	Recursive bool   `yaml:"recursive"`
 }
 
 // UnmarshalYAML implements yaml.Unmarshaler to support:
-// - scalar string: "/etc" (recursive: true; "/" defaults to recursive: false)
+// - scalar string: "/etc" (recursive: true)
 // - mapping with path and recursive: {path: "$HOME/.config", recursive: false}
 // - mapping shorthand: {"$HOME/.config": false}
 func (f *ForbiddenPath) UnmarshalYAML(unmarshal func(any) error) error {
 	var s string
 	if err := unmarshal(&s); err == nil {
 		f.Path = s
-		f.Recursive = (s != "/")
+		f.Recursive = true
 		return nil
 	}
 
@@ -103,14 +102,14 @@ func (f *ForbiddenPath) UnmarshalYAML(unmarshal func(any) error) error {
 	if raw.Recursive != nil {
 		f.Recursive = *raw.Recursive
 	} else {
-		f.Recursive = (raw.Path != "/")
+		f.Recursive = true
 	}
 	return nil
 }
 
 // MarshalYAML implements yaml.Marshaler.
 func (f ForbiddenPath) MarshalYAML() (any, error) {
-	if (f.Path == "/" && !f.Recursive) || (f.Path != "/" && f.Recursive) {
+	if f.Recursive {
 		return f.Path, nil
 	}
 	return struct {

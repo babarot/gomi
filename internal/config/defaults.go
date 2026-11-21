@@ -26,7 +26,7 @@ func NewDefaultConfig() *Config {
 					// gomi dir
 					{Path: "$HOME/.gomi", Recursive: true},
 					// Critical system directories
-					{Path: "/", Recursive: false},
+					{Path: "/", Recursive: true},
 					{Path: "/etc", Recursive: true},
 					{Path: "/usr", Recursive: true},
 					{Path: "/var", Recursive: true},

@@ -510,7 +510,7 @@ core:
 			want: []ForbiddenPath{
 				{Path: "/etc", Recursive: true},
 				{Path: "/usr", Recursive: true},
-				{Path: "/", Recursive: false},
+				{Path: "/", Recursive: true},
 			},
 		},
 		{

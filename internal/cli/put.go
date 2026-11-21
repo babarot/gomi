@@ -245,22 +245,17 @@ func dirForms(dir string) []string {
 }
 
 // anyWithin reports whether any of paths matches or is inside any of dirs.
-// With inclusive, a path equal to a dir counts too.
-// With recursive, paths inside a dir count too.
+// With inclusive, a path equal to a dir counts too. With recursive, paths
+// inside a dir count too. Nothing is inside "/": it only matches exactly,
+// as forbidding "/" has always meant, whatever recursive says.
 func anyWithin(paths, dirs []string, inclusive bool, recursive bool) bool {
 	for _, p := range paths {
 		for _, d := range dirs {
 			if inclusive && p == d {
 				return true
 			}
-			if recursive {
-				if d == "/" {
-					if p != "/" && strings.HasPrefix(p, "/") {
-						return true
-					}
-				} else if strings.HasPrefix(p, d+string(filepath.Separator)) {
-					return true
-				}
+			if recursive && strings.HasPrefix(p, d+string(filepath.Separator)) {
+				return true
 			}
 		}
 	}
