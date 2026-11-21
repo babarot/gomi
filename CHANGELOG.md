@@ -1,5 +1,14 @@
 # Changelog
 
+## [v1.12.0](https://github.com/babarot/gomi/compare/v1.11.0...v1.12.0) - 2026-11-21
+### New Features
+- Support the mouse in the TUI by @babarot in https://github.com/babarot/gomi/pull/201
+- Resize the preview by dragging its edge by @babarot in https://github.com/babarot/gomi/pull/203
+### Bug fixes
+- Fix the forbidden_paths recursive option added in #140 by @babarot in https://github.com/babarot/gomi/pull/204
+### Improvements
+- Allow forbidden_paths to protect paths non-recursively by @AdamMagued in https://github.com/babarot/gomi/pull/140
+
 ## [v1.11.0](https://github.com/babarot/gomi/compare/v1.10.1...v1.11.0) - 2026-11-17
 ### New Features
 - Draw image previews with the kitty graphics protocol by @babarot in https://github.com/babarot/gomi/pull/191
