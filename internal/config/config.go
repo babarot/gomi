@@ -6,9 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
@@ -70,7 +72,10 @@ type ForbiddenPath struct {
 // UnmarshalYAML implements yaml.Unmarshaler to support:
 // - scalar string: "/etc" (recursive: true)
 // - mapping with path and recursive: {path: "$HOME/.config", recursive: false}
-// - mapping shorthand: {"$HOME/.config": false}
+//
+// recursive defaults to true when left out. Keys other than path and
+// recursive are an error, so that a typo does not silently change what is
+// protected.
 func (f *ForbiddenPath) UnmarshalYAML(unmarshal func(any) error) error {
 	var s string
 	if err := unmarshal(&s); err == nil {
@@ -79,31 +84,23 @@ func (f *ForbiddenPath) UnmarshalYAML(unmarshal func(any) error) error {
 		return nil
 	}
 
-	var m map[string]bool
-	if err := unmarshal(&m); err == nil && len(m) == 1 {
-		for k, v := range m {
-			f.Path = k
-			f.Recursive = v
-		}
-		return nil
-	}
-
 	var raw struct {
-		Path      string `yaml:"path"`
-		Recursive *bool  `yaml:"recursive"`
+		Path      string         `yaml:"path"`
+		Recursive *bool          `yaml:"recursive"`
+		Unknown   map[string]any `yaml:",inline"`
 	}
 	if err := unmarshal(&raw); err != nil {
 		return err
+	}
+	if len(raw.Unknown) > 0 {
+		keys := slices.Sorted(maps.Keys(raw.Unknown))
+		return fmt.Errorf("forbidden path: unknown key %q (want path and recursive)", keys[0])
 	}
 	if raw.Path == "" {
 		return errors.New("forbidden path cannot be empty")
 	}
 	f.Path = raw.Path
-	if raw.Recursive != nil {
-		f.Recursive = *raw.Recursive
-	} else {
-		f.Recursive = true
-	}
+	f.Recursive = raw.Recursive == nil || *raw.Recursive
 	return nil
 }
 

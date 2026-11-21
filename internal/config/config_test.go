@@ -554,20 +554,69 @@ core:
 			},
 		},
 		{
-			name: "shorthand mapping with boolean",
+			name: "recursive left empty defaults to true",
 			yaml: `
 core:
   trash:
     forbidden_paths:
-      - /etc
-      - $HOME/.config: false
-      - /var: true
+      - path: /etc
+        recursive:
 `,
 			want: []ForbiddenPath{
 				{Path: "/etc", Recursive: true},
-				{Path: "$HOME/.config", Recursive: false},
-				{Path: "/var", Recursive: true},
 			},
+		},
+		{
+			name: "shorthand mapping is an error",
+			yaml: `
+core:
+  trash:
+    forbidden_paths:
+      - $HOME/.config: false
+`,
+			wantErr: true,
+		},
+		{
+			name: "shorthand with the value left out is an error",
+			yaml: `
+core:
+  trash:
+    forbidden_paths:
+      - /etc:
+`,
+			wantErr: true,
+		},
+		{
+			name: "unknown key is an error",
+			yaml: `
+core:
+  trash:
+    forbidden_paths:
+      - path: /etc
+        recurse: false
+`,
+			wantErr: true,
+		},
+		{
+			name: "recursive without path is an error",
+			yaml: `
+core:
+  trash:
+    forbidden_paths:
+      - recursive: false
+`,
+			wantErr: true,
+		},
+		{
+			name: "recursive that is not a bool is an error",
+			yaml: `
+core:
+  trash:
+    forbidden_paths:
+      - path: /etc
+        recursive: flase
+`,
+			wantErr: true,
 		},
 	}
 
@@ -577,6 +626,9 @@ core:
 			err := yaml.Unmarshal([]byte(tt.yaml), &cfg)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("Unmarshal error = %v, wantErr = %v", err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
 			}
 			if !reflect.DeepEqual(cfg.Core.Trash.ForbiddenPaths, tt.want) {
 				t.Errorf("ForbiddenPaths = %+v, want %+v", cfg.Core.Trash.ForbiddenPaths, tt.want)
