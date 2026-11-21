@@ -27,6 +27,9 @@ const (
 	minListWidth = 40
 	// minListRows is the fewest rows the list keeps over the preview
 	minListRows = 3
+	// minDraggedPane is the narrowest the preview right of the list is
+	// dragged to
+	minDraggedPane = 24
 )
 
 // layout is how the list view splits its rows and columns
@@ -52,26 +55,39 @@ func (m Model) listLayout() layout {
 	switch m.config.Preview.Position {
 	case "none":
 	case "below":
-		paneH := avail / 2
-		if avail-paneH < minListRows {
-			paneH = avail - minListRows
-		}
-		if paneH >= paneInfoRows+3 {
-			l.side, l.paneW, l.paneH, l.rows = sideBelow, m.width, paneH, avail-paneH
-		}
+		l.below(m.width, avail, m.paneH)
 	case "right":
-		l.rightOf(m.width, avail)
+		l.rightOf(m.width, avail, m.paneW)
 	default: // auto
 		if m.width >= autoRightWidth {
-			l.rightOf(m.width, avail)
+			l.rightOf(m.width, avail, m.paneW)
 		}
 	}
 	return l
 }
 
-// rightOf puts the preview right of the list, when the list keeps room
-func (l *layout) rightOf(width, avail int) {
+// below puts the preview under the list, half the rows or the height it
+// was dragged to, when both keep room. The count line is between them.
+func (l *layout) below(width, avail, dragged int) {
+	paneH := avail / 2
+	if dragged > 0 {
+		paneH = max(dragged, paneInfoRows+3)
+	}
+	if avail-paneH < minListRows {
+		paneH = avail - minListRows
+	}
+	if paneH >= paneInfoRows+3 {
+		l.side, l.paneW, l.paneH, l.rows = sideBelow, width, paneH, avail-paneH
+	}
+}
+
+// rightOf puts the preview right of the list, when the list keeps room. A
+// width it was dragged to gives way to the list on a narrower terminal.
+func (l *layout) rightOf(width, avail, dragged int) {
 	paneW := min(max(width*42/100, minRightPane), maxRightPane)
+	if dragged > 0 {
+		paneW = min(max(dragged, minDraggedPane), max(minDraggedPane, width-1-minListWidth))
+	}
 	if width-paneW-1 < minListWidth || avail < paneInfoRows+3 {
 		return
 	}

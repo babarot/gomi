@@ -72,6 +72,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateMouse(msg)
 	case tea.MouseWheelMsg:
 		return m.updateMouse(msg)
+	case tea.MouseMotionMsg:
+		return m.updateMouse(msg)
+	case tea.MouseReleaseMsg:
+		return m.updateMouse(msg)
 
 	case tea.BackgroundColorMsg:
 		m.setBackground(msg.IsDark())

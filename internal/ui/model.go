@@ -89,6 +89,16 @@ type Model struct {
 	// is drawn before, so that the terminal reports the cursor where the
 	// prompt left it
 	settled bool
+	// paneW and paneH are the width and height the preview right of the
+	// list and under it were dragged to, or 0 for the size they start at;
+	// layoutStore keeps them for the next launch
+	paneW, paneH int
+	layoutStore  Layout
+	// drag is the edge of the preview being dragged, and edgeClick when an
+	// edge was last clicked, to tell a second click
+	drag      drag
+	edgeClick time.Time
+
 	// home is the home directory, written as ~ in paths
 	home string
 	// status tells what was just done, such as deleting files
@@ -157,6 +167,10 @@ func NewModel(t trash.Trash, files []*trash.File, opts RenderOptions) Model {
 		home:      home,
 	}
 	m.settled = !m.waitsForCursor()
+	if opts.Layout != nil {
+		m.layoutStore = opts.Layout
+		m.paneW, m.paneH = opts.Layout.PaneWidth(), opts.Layout.PaneHeight()
+	}
 	m.list.sizeOf = m.knownSize
 	// Until the terminal reports its background, assume a dark one
 	m.setBackground(true)

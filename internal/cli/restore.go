@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/babarot/gomi/internal/state"
 	"github.com/babarot/gomi/internal/trash"
 	"github.com/babarot/gomi/internal/ui"
 )
@@ -17,10 +18,15 @@ func (c *CLI) Restore() error {
 	defer slog.Debug("cli.restore finished")
 
 	// Show UI for file selection; it reads the trash once it has started
-	selected, err := render(c.trash, c.loadFiles, ui.RenderOptions{
+	opts := ui.RenderOptions{
 		Config:        c.config.UI,
 		DeleteEnabled: c.config.Core.PermanentDelete.Enable,
-	})
+	}
+	// the sizes the preview was dragged to are kept for the next launch
+	if dir, err := state.DefaultDir(); err == nil {
+		opts.Layout = state.Open(dir)
+	}
+	selected, err := render(c.trash, c.loadFiles, opts)
 	switch {
 	case errors.Is(err, errTrashEmpty):
 		fmt.Println("The trash is empty. Let's try deleting a file first")
