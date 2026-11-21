@@ -196,17 +196,7 @@ func isForbidden(path string, forbiddenPaths []config.ForbiddenPath, tempDir str
 
 	for _, entry := range forbiddenPaths {
 		// Expand forbidden path with environment variables
-		expandedPath := os.ExpandEnv(entry.Path)
-		if expandedPath == "~" {
-			if home, err := os.UserHomeDir(); err == nil {
-				expandedPath = home
-			}
-		} else if strings.HasPrefix(expandedPath, "~/") {
-			if home, err := os.UserHomeDir(); err == nil {
-				expandedPath = filepath.Join(home, expandedPath[2:])
-			}
-		}
-		forbidden := dirForms(expandedPath)
+		forbidden := dirForms(os.ExpandEnv(entry.Path))
 
 		if !anyWithin(targets, forbidden, true, entry.Recursive) {
 			continue
