@@ -6,9 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
@@ -59,58 +61,52 @@ type TrashConfig struct {
 }
 
 // ForbiddenPath specifies a path that cannot be moved to trash.
-// By default, paths protect themselves and everything inside them recursively
-// (with the exception of "/", which protects only itself).
-// Setting recursive to false allows protecting a path itself without protecting
-// its contents.
+// By default, a path protects itself and everything inside it. Setting
+// recursive to false protects the path itself but not its contents. "/"
+// protects only itself either way.
 type ForbiddenPath struct {
 	Path      string `yaml:"path"`
 	Recursive bool   `yaml:"recursive"`
 }
 
 // UnmarshalYAML implements yaml.Unmarshaler to support:
-// - scalar string: "/etc" (recursive: true; "/" defaults to recursive: false)
+// - scalar string: "/etc" (recursive: true)
 // - mapping with path and recursive: {path: "$HOME/.config", recursive: false}
-// - mapping shorthand: {"$HOME/.config": false}
+//
+// recursive defaults to true when left out. Keys other than path and
+// recursive are an error, so that a typo does not silently change what is
+// protected.
 func (f *ForbiddenPath) UnmarshalYAML(unmarshal func(any) error) error {
 	var s string
 	if err := unmarshal(&s); err == nil {
 		f.Path = s
-		f.Recursive = (s != "/")
-		return nil
-	}
-
-	var m map[string]bool
-	if err := unmarshal(&m); err == nil && len(m) == 1 {
-		for k, v := range m {
-			f.Path = k
-			f.Recursive = v
-		}
+		f.Recursive = true
 		return nil
 	}
 
 	var raw struct {
-		Path      string `yaml:"path"`
-		Recursive *bool  `yaml:"recursive"`
+		Path      string         `yaml:"path"`
+		Recursive *bool          `yaml:"recursive"`
+		Unknown   map[string]any `yaml:",inline"`
 	}
 	if err := unmarshal(&raw); err != nil {
 		return err
+	}
+	if len(raw.Unknown) > 0 {
+		keys := slices.Sorted(maps.Keys(raw.Unknown))
+		return fmt.Errorf("forbidden path: unknown key %q (want path and recursive)", keys[0])
 	}
 	if raw.Path == "" {
 		return errors.New("forbidden path cannot be empty")
 	}
 	f.Path = raw.Path
-	if raw.Recursive != nil {
-		f.Recursive = *raw.Recursive
-	} else {
-		f.Recursive = (raw.Path != "/")
-	}
+	f.Recursive = raw.Recursive == nil || *raw.Recursive
 	return nil
 }
 
 // MarshalYAML implements yaml.Marshaler.
 func (f ForbiddenPath) MarshalYAML() (any, error) {
-	if (f.Path == "/" && !f.Recursive) || (f.Path != "/" && f.Recursive) {
+	if f.Recursive {
 		return f.Path, nil
 	}
 	return struct {
@@ -413,6 +409,15 @@ func (c *Config) validate() error {
 			}
 		}
 		return fmt.Errorf("unexpected validation error: %w", err)
+	}
+
+	// An empty entry ("", or a null such as "- ~" that yaml leaves as the
+	// zero value) protects nothing, while whoever wrote it meant to protect
+	// something.
+	for i, fp := range c.Core.Trash.ForbiddenPaths {
+		if strings.TrimSpace(fp.Path) == "" {
+			return fmt.Errorf("validation error: core.trash.forbidden_paths[%d] is empty", i)
+		}
 	}
 
 	slog.Debug("config validate done")

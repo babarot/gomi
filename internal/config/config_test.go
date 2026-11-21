@@ -448,6 +448,11 @@ func TestLoad_Errors(t *testing.T) {
 		// trash_dir is retired: it errors instead of silently choosing
 		// another trash directory than the user wrote
 		{"retired trash_dir", "core:\n  trash_dir: /tmp/old-trash\n", "trash_dir"},
+		// An empty or null entry protects nothing, though it was meant to
+		{"empty forbidden path", "core:\n  trash:\n    forbidden_paths:\n      - /etc\n      - \"\"\n", "forbidden_paths[1]"},
+		{"null forbidden path", "core:\n  trash:\n    forbidden_paths:\n      - ~\n", "forbidden_paths[0]"},
+		{"blank forbidden path", "core:\n  trash:\n    forbidden_paths:\n      -\n", "forbidden_paths[0]"},
+		{"empty path in the map form", "core:\n  trash:\n    forbidden_paths:\n      - path: \"\"\n", "empty"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -510,7 +515,7 @@ core:
 			want: []ForbiddenPath{
 				{Path: "/etc", Recursive: true},
 				{Path: "/usr", Recursive: true},
-				{Path: "/", Recursive: false},
+				{Path: "/", Recursive: true},
 			},
 		},
 		{
@@ -554,20 +559,69 @@ core:
 			},
 		},
 		{
-			name: "shorthand mapping with boolean",
+			name: "recursive left empty defaults to true",
 			yaml: `
 core:
   trash:
     forbidden_paths:
-      - /etc
-      - $HOME/.config: false
-      - /var: true
+      - path: /etc
+        recursive:
 `,
 			want: []ForbiddenPath{
 				{Path: "/etc", Recursive: true},
-				{Path: "$HOME/.config", Recursive: false},
-				{Path: "/var", Recursive: true},
 			},
+		},
+		{
+			name: "shorthand mapping is an error",
+			yaml: `
+core:
+  trash:
+    forbidden_paths:
+      - $HOME/.config: false
+`,
+			wantErr: true,
+		},
+		{
+			name: "shorthand with the value left out is an error",
+			yaml: `
+core:
+  trash:
+    forbidden_paths:
+      - /etc:
+`,
+			wantErr: true,
+		},
+		{
+			name: "unknown key is an error",
+			yaml: `
+core:
+  trash:
+    forbidden_paths:
+      - path: /etc
+        recurse: false
+`,
+			wantErr: true,
+		},
+		{
+			name: "recursive without path is an error",
+			yaml: `
+core:
+  trash:
+    forbidden_paths:
+      - recursive: false
+`,
+			wantErr: true,
+		},
+		{
+			name: "recursive that is not a bool is an error",
+			yaml: `
+core:
+  trash:
+    forbidden_paths:
+      - path: /etc
+        recursive: flase
+`,
+			wantErr: true,
 		},
 	}
 
@@ -577,6 +631,9 @@ core:
 			err := yaml.Unmarshal([]byte(tt.yaml), &cfg)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("Unmarshal error = %v, wantErr = %v", err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
 			}
 			if !reflect.DeepEqual(cfg.Core.Trash.ForbiddenPaths, tt.want) {
 				t.Errorf("ForbiddenPaths = %+v, want %+v", cfg.Core.Trash.ForbiddenPaths, tt.want)
