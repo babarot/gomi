@@ -448,6 +448,11 @@ func TestLoad_Errors(t *testing.T) {
 		// trash_dir is retired: it errors instead of silently choosing
 		// another trash directory than the user wrote
 		{"retired trash_dir", "core:\n  trash_dir: /tmp/old-trash\n", "trash_dir"},
+		// An empty or null entry protects nothing, though it was meant to
+		{"empty forbidden path", "core:\n  trash:\n    forbidden_paths:\n      - /etc\n      - \"\"\n", "forbidden_paths[1]"},
+		{"null forbidden path", "core:\n  trash:\n    forbidden_paths:\n      - ~\n", "forbidden_paths[0]"},
+		{"blank forbidden path", "core:\n  trash:\n    forbidden_paths:\n      -\n", "forbidden_paths[0]"},
+		{"empty path in the map form", "core:\n  trash:\n    forbidden_paths:\n      - path: \"\"\n", "empty"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

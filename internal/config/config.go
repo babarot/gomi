@@ -411,6 +411,15 @@ func (c *Config) validate() error {
 		return fmt.Errorf("unexpected validation error: %w", err)
 	}
 
+	// An empty entry ("", or a null such as "- ~" that yaml leaves as the
+	// zero value) protects nothing, while whoever wrote it meant to protect
+	// something.
+	for i, fp := range c.Core.Trash.ForbiddenPaths {
+		if strings.TrimSpace(fp.Path) == "" {
+			return fmt.Errorf("validation error: core.trash.forbidden_paths[%d] is empty", i)
+		}
+	}
+
 	slog.Debug("config validate done")
 	return nil
 }
