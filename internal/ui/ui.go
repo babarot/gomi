@@ -66,6 +66,8 @@ func relativeTime(t time.Time) string {
 type RenderOptions struct {
 	Config        config.UI
 	DeleteEnabled bool
+	// Layout keeps the sizes the preview was dragged to; nil keeps none
+	Layout Layout
 }
 
 // Init implements tea.Model
